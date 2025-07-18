@@ -40,4 +40,5 @@ export interface GameState {
   spinnerId: string | null;
   isGameOver: boolean;
   selectedHandIndex: number | null;
+  currentPlayer?: number; // Add current player for multiplayer sync
 }

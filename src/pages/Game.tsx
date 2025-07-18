@@ -40,177 +40,178 @@ export default function Game() {
   // Initialize local domino game logic
   const dominoGameHook = useDominoGame();
 
-  // Sync database state to local state when it changes (from other players)
+  // Sync database state to local state - COMPLETE SYNC FOR ALL PLAYERS
   useEffect(() => {
     if (syncedGameHook.syncState.gameState && !syncedGameHook.syncState.isLoading) {
-      console.log('🔄 Syncing database state to local state');
+      console.log('🔄 Complete sync from database to local state');
       
       const dbState = syncedGameHook.syncState.gameState;
       const myPosition = syncedGameHook.syncState.playerPosition;
-      const currentPlayer = syncedGameHook.syncState.currentPlayer;
       
-      // Only sync if it's not our turn (meaning another player made a move)
-      // or if our local state is significantly different (initial load)
-      const shouldSync = currentPlayer !== myPosition || 
-                        !dominoGameHook.gameState ||
-                        Object.keys(dominoGameHook.gameState.board || {}).length !== Object.keys(dbState.board || {}).length;
+      // ALWAYS sync the complete state from database
+      // All players must see exactly the same board, boneyard, dominoes
+      dominoGameHook.setGameState({
+        // Shared state (must be identical for all players)
+        board: dbState.board || {},
+        dominoes: dbState.dominoes || {},
+        boneyard: dbState.boneyard || [],
+        openEnds: dbState.openEnds || [],
+        forbiddens: dbState.forbiddens || {},
+        nextDominoId: dbState.nextDominoId || 0,
+        spinnerId: dbState.spinnerId || null,
+        isGameOver: dbState.isGameOver || false,
+        currentPlayer: dbState.currentPlayer || 0,
+        
+        // Player specific data
+        playerHand: (dbState as any).playerHands?.[myPosition] || [],
+        playerHands: (dbState as any).playerHands || [],
+        selectedHandIndex: null // Reset selection on sync
+      });
       
-      if (shouldSync) {
-        const myHand = (dbState as any).playerHands?.[myPosition] || [];
-        
-        console.log('My hand from DB:', myHand);
-        
-        // Update local game state with shared data + my hand from database
-        dominoGameHook.setGameState({
-          ...dbState,
-          playerHand: myHand // Use my hand from database
-        });
-      } else {
-        console.log('Skipping sync - it\'s our turn or no significant changes');
-      }
+      console.log('✅ Complete sync done - all players see same state');
     }
-  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading]);
+  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading, syncedGameHook.syncState.playerPosition]);
 
-  // Wrap executeMove to also update database
+  // Wrap executeMove to also update database - SIMPLIFIED SYNC
   const wrappedExecuteMove = useCallback(async (move: any) => {
-    console.log('wrappedExecuteMove called with move:', move);
+    console.log('🎯 Move attempt:', move);
     
-    // Check if it's the current player's turn BEFORE executing anything
+    // Check if it's the current player's turn
     const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
     const currentPlayerTurn = syncedGameHook.syncState.currentPlayer;
     
     if (currentPlayerPosition !== currentPlayerTurn) {
-      console.log('Not your turn! Current player:', currentPlayerTurn, 'Your position:', currentPlayerPosition);
-      // Show a toast or some feedback that it's not their turn
+      console.log('❌ Not your turn!');
+      toast({
+        title: "Not your turn",
+        description: "Wait for your turn to play",
+        variant: "destructive"
+      });
       return;
     }
     
-    // Get the current hand BEFORE executing the move
-    const currentDbState = syncedGameHook.syncState.gameState;
-    
-    console.log('🔍 DEBUG: Before move execution:');
-    console.log('Current DB state hands:', currentDbState ? (currentDbState as any).playerHands : 'no state');
-    console.log('Current player position:', currentPlayerPosition);
-    console.log('Current player from sync state:', syncedGameHook.syncState.currentPlayer);
-    
-    if (!currentDbState || !(currentDbState as any).playerHands) {
-      console.log('Cannot execute move - missing game state');
+    const dbState = syncedGameHook.syncState.gameState;
+    if (!dbState || !(dbState as any).playerHands) {
+      console.log('❌ Missing game state');
       return;
     }
     
-    const originalHand = (currentDbState as any).playerHands[currentPlayerPosition];
-    console.log('Original hand from DB:', originalHand);
-    const currentPlayerHand = [...originalHand];
-    
-    // Find and remove the played domino from the hand
-    const playedDominoIndex = currentPlayerHand.findIndex(domino => 
-      (domino.value1 === move.dominoData.value1 && domino.value2 === move.dominoData.value2) ||
-      (domino.value1 === move.dominoData.value2 && domino.value2 === move.dominoData.value1)
-    );
-    
-    if (playedDominoIndex === -1) {
-      console.log('Cannot find played domino in hand');
-      return;
-    }
-    
-    // Remove the played domino
-    currentPlayerHand.splice(playedDominoIndex, 1);
-    
-    // Execute the move locally
+    // Execute move locally first for immediate feedback
     dominoGameHook.executeMove(move);
     
-    // Wait a bit longer for the state to update, then sync to database
-    setTimeout(() => {
-      console.log('Attempting to sync to database...');
-      
-      // Get the current database state to preserve other players' hands
-      const dbState = syncedGameHook.syncState.gameState;
+    // Wait for local state to update, then sync to database
+    setTimeout(async () => {
       const currentState = dominoGameHook.gameState;
+      if (!currentState) return;
       
+      // Get current player's hand from database
+      const currentPlayerHand = [...((dbState as any).playerHands[currentPlayerPosition] || [])];
       
-      if (dbState && (dbState as any).playerHands && currentState) {
-        console.log('🔍 DETAILED DEBUG - Before database update:');
-        console.log('Current DB state board:', Object.keys(dbState.board || {}));
-        console.log('Current local state board:', Object.keys(currentState.board || {}));
-        console.log('Current DB dominoes:', Object.keys((dbState as any).dominoes || {}));  
-        console.log('Current local dominoes:', Object.keys(currentState.dominoes || {}));
-        console.log('Current DB player hands:', (dbState as any).playerHands?.map((hand: any) => hand.length));
-        console.log('Current local player hands:', currentState.playerHands?.map((hand: any) => hand.length));
-        
-        // Create updated database state with current player's updated hand
-        const updatedDbState = {
-          ...currentState, // Use current state as base (board, dominoes, etc.)
-          playerHands: [...(dbState as any).playerHands] // Copy existing hands from DB
-        };
-        
-        // Update current player's hand with the correctly calculated hand
-        updatedDbState.playerHands[currentPlayerPosition] = currentPlayerHand;
-        
-        console.log('🔍 DETAILED DEBUG - What we will save to DB:');
-        console.log('Updated DB state board:', Object.keys(updatedDbState.board || {}));
-        console.log('Updated DB dominoes:', Object.keys(updatedDbState.dominoes || {}));
-        console.log('Updated DB player hands:', updatedDbState.playerHands?.map((hand: any) => hand.length));
-        
-        // Determine next player (simple rotation)
-        const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
-        
-        console.log('Syncing move to database:', {
-          currentPlayer: syncedGameHook.syncState.currentPlayer,
-          nextPlayer,
-          playerPosition: syncedGameHook.syncState.playerPosition,
-          handSize: currentPlayerHand.length
-        });
-        
-        syncedGameHook.updateGameState(updatedDbState, nextPlayer);
-        
-        // After updating database, reload game state for both players
-        setTimeout(() => {
-          syncedGameHook.loadGameState();
-        }, 100);
-      } else {
-        console.log('Cannot sync - missing required data:', {
-          hasDbState: !!dbState,
-          hasPlayerHands: !!(dbState && (dbState as any).playerHands),
-          hasCurrentState: !!currentState
-        });
+      // Remove the played domino from hand
+      const playedDominoIndex = currentPlayerHand.findIndex(domino => 
+        (domino.value1 === move.dominoData.value1 && domino.value2 === move.dominoData.value2) ||
+        (domino.value1 === move.dominoData.value2 && domino.value2 === move.dominoData.value1)
+      );
+      
+      if (playedDominoIndex !== -1) {
+        currentPlayerHand.splice(playedDominoIndex, 1);
       }
-    }, 300);
-  }, [dominoGameHook.executeMove, syncedGameHook.syncState, syncedGameHook.updateGameState]);
+      
+      // Create new complete game state for database
+      const newGameState = {
+        // Use current local state (board, dominoes, etc.)
+        board: currentState.board,
+        dominoes: currentState.dominoes,
+        boneyard: currentState.boneyard,
+        openEnds: currentState.openEnds,
+        forbiddens: currentState.forbiddens,
+        nextDominoId: currentState.nextDominoId,
+        spinnerId: currentState.spinnerId,
+        isGameOver: currentState.isGameOver,
+        
+        // Update player hands with correct data
+        playerHands: [...((dbState as any).playerHands || [])],
+        currentPlayer: currentState.currentPlayer
+      };
+      
+      // Update current player's hand
+      newGameState.playerHands[currentPlayerPosition] = currentPlayerHand;
+      
+      // Next player
+      const nextPlayer = (currentPlayerTurn + 1) % syncedGameHook.syncState.allPlayers.length;
+      
+      console.log('💾 Saving to database:', {
+        currentPlayer: currentPlayerTurn,
+        nextPlayer,
+        handSize: currentPlayerHand.length
+      });
+      
+      await syncedGameHook.updateGameState(newGameState, nextPlayer);
+    }, 200);
+  }, [dominoGameHook, syncedGameHook, toast]);
 
-  // Wrap drawFromBoneyard to also update database
+  // Wrap drawFromBoneyard to also update database - SIMPLIFIED SYNC
   const wrappedDrawFromBoneyard = useCallback(async () => {
-    // First draw locally
+    const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
+    const currentPlayerTurn = syncedGameHook.syncState.currentPlayer;
+    
+    if (currentPlayerPosition !== currentPlayerTurn) {
+      console.log('❌ Not your turn to draw!');
+      toast({
+        title: "Not your turn",
+        description: "Wait for your turn to draw",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const dbState = syncedGameHook.syncState.gameState;
+    if (!dbState || !(dbState as any).playerHands) {
+      console.log('❌ Missing game state for draw');
+      return;
+    }
+    
+    // Execute draw locally first
     dominoGameHook.drawFromBoneyard();
     
-    // Wait for state to update, then sync to database
-    setTimeout(() => {
-      const dbState = syncedGameHook.syncState.gameState;
+    // Wait for local state to update, then sync to database
+    setTimeout(async () => {
       const currentState = dominoGameHook.gameState;
+      if (!currentState) return;
       
-      if (dbState && (dbState as any).playerHands && currentState) {
-        // Create updated database state with current player's updated hand and boneyard
-        const updatedDbState = {
-          ...currentState, // Use current state as base (includes updated boneyard)
-          playerHands: [...(dbState as any).playerHands] // Copy existing hands from DB
-        };
+      // Create new complete game state for database
+      const newGameState = {
+        // Use current local state
+        board: currentState.board,
+        dominoes: currentState.dominoes,
+        boneyard: currentState.boneyard, // Updated boneyard
+        openEnds: currentState.openEnds,
+        forbiddens: currentState.forbiddens,
+        nextDominoId: currentState.nextDominoId,
+        spinnerId: currentState.spinnerId,
+        isGameOver: currentState.isGameOver,
         
-        // Update current player's hand
-        updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
-        
-        // Determine next player (simple rotation)
-        const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
-        
-        console.log('Syncing draw to database:', {
-          currentPlayer: syncedGameHook.syncState.currentPlayer,
-          nextPlayer,
-          boneyardSize: currentState.boneyard.length,
-          handSize: currentState.playerHand.length
-        });
-        
-        syncedGameHook.updateGameState(updatedDbState, nextPlayer);
-      }
+        // Update player hands
+        playerHands: [...((dbState as any).playerHands || [])],
+        currentPlayer: currentState.currentPlayer
+      };
+      
+      // Update current player's hand with new domino
+      newGameState.playerHands[currentPlayerPosition] = currentState.playerHand;
+      
+      // Next player
+      const nextPlayer = (currentPlayerTurn + 1) % syncedGameHook.syncState.allPlayers.length;
+      
+      console.log('💾 Saving draw to database:', {
+        currentPlayer: currentPlayerTurn,
+        nextPlayer,
+        boneyardSize: currentState.boneyard.length,
+        handSize: currentState.playerHand.length
+      });
+      
+      await syncedGameHook.updateGameState(newGameState, nextPlayer);
     }, 200);
-  }, [dominoGameHook.drawFromBoneyard, dominoGameHook.gameState, syncedGameHook.syncState, syncedGameHook.updateGameState]);
+  }, [dominoGameHook, syncedGameHook, toast]);
 
   // Create combined hook for DominoGame component
   const combinedGameHook = {
