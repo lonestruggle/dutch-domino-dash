@@ -12,21 +12,6 @@ const shuffleArray = <T>(array: T[]): void => {
   }
 };
 
-const hasDifferentNeighbor = (x: number, y: number, board: GameState['board']): boolean => {
-  const neighbors = [
-    [x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y],
-    [x + 1, y - 1], [x - 1, y - 1], [x + 1, y + 1], [x - 1, y + 1]
-  ];
-
-  let neighborCount = 0;
-  for (const [nx, ny] of neighbors) {
-    if (board[`${nx},${ny}`]) {
-      neighborCount++;
-    }
-  }
-
-  return neighborCount > 3;
-};
 
 export const useDominoGame = () => {
   const [gameState, setGameState] = useState<GameState>({
@@ -145,6 +130,30 @@ export const useDominoGame = () => {
     return openEnds;
   }, []);
 
+  const hasDifferentNeighbor = useCallback((x: number, y: number, state: GameState): boolean => {
+    const neighbors = {
+      N: [x, y - 1],
+      S: [x, y + 1],
+      W: [x - 1, y],
+      E: [x + 1, y],
+      NE: [x + 1, y - 1],
+      NW: [x - 1, y - 1],
+      SE: [x + 1, y + 1],
+      SW: [x - 1, y + 1]
+    };
+
+    let nCount = 0;
+    for (const direction in neighbors) {
+      const [nx, ny] = neighbors[direction as keyof typeof neighbors];
+      const neighborKey = `${nx},${ny}`;
+      if (state.board[neighborKey]) {
+        nCount += 1;
+      }
+    }
+
+    return nCount > 3;
+  }, []);
+
   const findLegalMoves = useCallback((dominoData: DominoData, state?: GameState): LegalMove[] => {
     const currentState = state || gameStateRef.current;
     const moves: LegalMove[] = [];
@@ -183,6 +192,10 @@ export const useDominoGame = () => {
           const toDominoForward = currentState.dominoes[currentState.board[toCellKeyForward]?.dominoId];
 
           if (!fromDomino || toDomino || toDominoForward || currentState.forbiddens[toCellKey]) {
+            return;
+          }
+
+          if (hasDifferentNeighbor(end.x, end.y, currentState)) {
             return;
           }
 
@@ -474,6 +487,6 @@ export const useDominoGame = () => {
     drawFromBoneyard,
     startNewGame,
     resetGame,
-    hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y, gameState.board),
+    hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y, gameState),
   };
 };
