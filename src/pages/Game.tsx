@@ -64,9 +64,17 @@ export default function Game() {
   const wrappedExecuteMove = useCallback(async (move: any) => {
     console.log('wrappedExecuteMove called with move:', move);
     
+    // Check if it's the current player's turn
+    const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
+    const currentPlayerTurn = syncedGameHook.syncState.currentPlayer;
+    
+    if (currentPlayerPosition !== currentPlayerTurn) {
+      console.log('Not your turn! Current player:', currentPlayerTurn, 'Your position:', currentPlayerPosition);
+      return;
+    }
+    
     // Get the current hand BEFORE executing the move
     const currentDbState = syncedGameHook.syncState.gameState;
-    const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
     
     console.log('🔍 DEBUG: Before move execution:');
     console.log('Current DB state hands:', currentDbState ? (currentDbState as any).playerHands : 'no state');
