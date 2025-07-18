@@ -83,15 +83,18 @@ export default function Lobby() {
       return;
     }
 
-    // Create initial game state
+    // Create initial game state with correct structure
     const initialGameState = {
-      players: lobby.players.map(p => ({
-        id: p.user_id,
-        username: p.username,
-        position: p.player_position
-      })),
-      dominoSet: [], // This will be initialized by the game logic
-      gameStarted: false
+      dominoes: {},
+      board: {},
+      playerHand: [],
+      boneyard: [],
+      openEnds: [],
+      forbiddens: {},
+      nextDominoId: 0,
+      spinnerId: null,
+      isGameOver: false,
+      selectedHandIndex: null
     };
 
     // Create game record
