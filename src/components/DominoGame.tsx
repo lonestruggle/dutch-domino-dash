@@ -13,7 +13,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     gameState,
     findLegalMoves,
     executeMove,
-    selectDomino,
+    selectHandDomino,
     drawFromBoneyard,
     startNewGame,
     hasDifferentNeighbor,
@@ -96,7 +96,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <PlayerHand
           hand={gameState?.playerHand || []}
           selectedIndex={gameState?.selectedHandIndex}
-          onDominoSelect={selectDomino}
+          onDominoSelect={selectHandDomino}
         />
 
         {/* Game Actions */}
