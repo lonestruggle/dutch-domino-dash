@@ -131,27 +131,40 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
     localGame.startNewGame();
     setIsGameInitialized(true);
     
-    // Save the new game state after it initializes
-    setTimeout(async () => {
-      console.log('Saving new game state after initialization...');
-      await saveGameState(localGame.gameState);
-      
-      // Notify all players that a new game started
-      await supabase
-        .from('games')
-        .update({ 
-          status: 'active',
-          current_player_turn: 0,
-          updated_at: new Date().toISOString()
-        })
-        .eq('lobby_id', gameId);
+    // Wait for the game to be properly initialized with starter domino
+    const waitForInitialization = () => {
+      setTimeout(async () => {
+        console.log('Checking if game is initialized...');
+        const currentState = localGame.gameState;
         
-      toast({
-        title: "Nieuw spel gestart!",
-        description: "Alle spelers kunnen nu spelen",
-        variant: "default"
-      });
-    }, 1000);
+        // Check if game has been properly initialized (has dominoes and board)
+        if (Object.keys(currentState.dominoes).length > 0 && Object.keys(currentState.board).length > 0) {
+          console.log('Game is properly initialized, saving state...');
+          await saveGameState(currentState);
+          
+          // Notify all players that a new game started
+          await supabase
+            .from('games')
+            .update({ 
+              status: 'active',
+              current_player_turn: 0,
+              updated_at: new Date().toISOString()
+            })
+            .eq('lobby_id', gameId);
+            
+          toast({
+            title: "Nieuw spel gestart!",
+            description: "Alle spelers kunnen nu spelen",
+            variant: "default"
+          });
+        } else {
+          console.log('Game not yet initialized, waiting...');
+          waitForInitialization();
+        }
+      }, 200);
+    };
+    
+    waitForInitialization();
   }, [syncState.isHost, localGame, saveGameState, gameId, toast]);
 
   // Synced execute move
