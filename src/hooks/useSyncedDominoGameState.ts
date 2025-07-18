@@ -279,7 +279,19 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
         { event: '*', schema: 'public', table: 'games', filter: `lobby_id=eq.${gameId}` },
         (payload) => {
           console.log('Game updated:', payload);
-          loadGameState();
+          
+          // Only update if we have new data and it's not our own update
+          if (payload.new && payload.eventType === 'UPDATE') {
+            const newGameState = payload.new.game_state;
+            const newCurrentPlayer = payload.new.current_player_turn;
+            
+            // Update sync state directly instead of reloading everything
+            setSyncState(prev => ({
+              ...prev,
+              gameState: newGameState,
+              currentPlayer: newCurrentPlayer
+            }));
+          }
         }
       )
       .on(
@@ -287,6 +299,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
         { event: '*', schema: 'public', table: 'lobby_players', filter: `lobby_id=eq.${gameId}` },
         (payload) => {
           console.log('Players updated:', payload);
+          // Only reload player data for player changes
           loadGameState();
         }
       )
