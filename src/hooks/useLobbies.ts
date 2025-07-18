@@ -79,15 +79,6 @@ export const useLobbies = () => {
   const joinLobby = async (lobbyId: string, user: User) => {
     if (!user) return { error: 'Not authenticated' };
 
-    // Get current players count and find next available position
-    const { data: players, error: playersError } = await supabase
-      .from('lobby_players')
-      .select('player_position')
-      .eq('lobby_id', lobbyId)
-      .order('player_position');
-
-    if (playersError) return { error: playersError };
-
     // Check if user is already in this lobby
     const { data: existingPlayer } = await supabase
       .from('lobby_players')
@@ -97,8 +88,18 @@ export const useLobbies = () => {
       .single();
 
     if (existingPlayer) {
-      return { error: 'You are already in this lobby' };
+      // User is already in lobby, return success so they can navigate to it
+      return { error: null };
     }
+
+    // Get current players count and find next available position
+    const { data: players, error: playersError } = await supabase
+      .from('lobby_players')
+      .select('player_position')
+      .eq('lobby_id', lobbyId)
+      .order('player_position');
+
+    if (playersError) return { error: playersError };
 
     // Find next available position
     let nextPosition = 0;
