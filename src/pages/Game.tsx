@@ -79,10 +79,42 @@ export default function Game() {
     }, 100);
   }, [dominoGameHook, syncedGameHook]);
 
+  // Wrap drawFromBoneyard to also update database
+  const wrappedDrawFromBoneyard = useCallback(async () => {
+    // First draw locally
+    dominoGameHook.drawFromBoneyard();
+    
+    // Then update the database with the new state after a short delay
+    setTimeout(() => {
+      // Get the updated state from dominoGameHook
+      const currentState = dominoGameHook.gameState;
+      
+      // Get the current database state to preserve other players' hands
+      const dbState = syncedGameHook.syncState.gameState;
+      
+      if (dbState && (dbState as any).playerHands) {
+        // Create updated database state with current player's updated hand and boneyard
+        const updatedDbState = {
+          ...dbState,
+          ...currentState, // Copy board, dominoes, boneyard, etc.
+          playerHands: [...(dbState as any).playerHands] // Copy existing hands
+        };
+        
+        // Update current player's hand
+        updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
+        
+        // Determine next player (simple rotation)
+        const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
+        syncedGameHook.updateGameState(updatedDbState, nextPlayer);
+      }
+    }, 100);
+  }, [dominoGameHook, syncedGameHook]);
+
   // Create combined hook for DominoGame component
   const combinedGameHook = {
     ...dominoGameHook,
     executeMove: wrappedExecuteMove,
+    drawFromBoneyard: wrappedDrawFromBoneyard,
     syncState: syncedGameHook.syncState,
     startNewGame: syncedGameHook.startNewGame
   };
