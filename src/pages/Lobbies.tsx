@@ -14,7 +14,7 @@ import { Plus, Users, LogIn, Trash2 } from 'lucide-react';
 export default function Lobbies() {
   const navigate = useNavigate();
   const { user, isAuthenticated, signInWithUsername } = useSimpleAuth();
-  const { lobbies, loading, createLobby, joinLobby, refetch } = useLobbies();
+  const { lobbies, loading, createLobby, joinLobby, deleteLobby } = useLobbies();
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
@@ -96,44 +96,20 @@ export default function Lobbies() {
   const handleDeleteLobby = async (lobbyId: string) => {
     if (!user) return;
     
-    // First delete all lobby players
-    const { error: playersError } = await supabase
-      .from('lobby_players')
-      .delete()
-      .eq('lobby_id', lobbyId);
-
-    if (playersError) {
+    const { error } = await deleteLobby(lobbyId, user);
+    
+    if (error) {
       toast({
         title: "Error",
-        description: "Could not delete lobby players",
+        description: typeof error === 'string' ? error : error.message || "Could not delete lobby",
         variant: "destructive"
       });
-      return;
-    }
-
-    // Then delete the lobby
-    const { error: lobbyError } = await supabase
-      .from('lobbies')
-      .delete()
-      .eq('id', lobbyId)
-      .eq('created_by', user.id); // Only allow creator to delete
-
-    if (lobbyError) {
+    } else {
       toast({
-        title: "Error", 
-        description: "Could not delete lobby",
-        variant: "destructive"
+        title: "Success",
+        description: "Lobby deleted successfully"
       });
-      return;
     }
-
-    toast({
-      title: "Success",
-      description: "Lobby deleted successfully"
-    });
-    
-    // Refresh the lobby list
-    refetch();
   };
 
   if (!isAuthenticated) {

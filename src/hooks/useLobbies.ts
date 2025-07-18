@@ -147,11 +147,38 @@ export const useLobbies = () => {
     };
   }, []);
 
+  const deleteLobby = async (lobbyId: string, user: User) => {
+    if (!user) return { error: 'Not authenticated' };
+    
+    // First delete all lobby players
+    const { error: playersError } = await supabase
+      .from('lobby_players')
+      .delete()
+      .eq('lobby_id', lobbyId);
+
+    if (playersError) return { error: playersError };
+
+    // Then delete the lobby
+    const { error: lobbyError } = await supabase
+      .from('lobbies')
+      .delete()
+      .eq('id', lobbyId)
+      .eq('created_by', user.id); // Only allow creator to delete
+
+    if (lobbyError) return { error: lobbyError };
+
+    // Immediately update the local state
+    setLobbies(prevLobbies => prevLobbies.filter(lobby => lobby.id !== lobbyId));
+    
+    return { error: null };
+  };
+
   return {
     lobbies,
     loading,
     createLobby,
     joinLobby,
+    deleteLobby,
     refetch: fetchLobbies
   };
 };
