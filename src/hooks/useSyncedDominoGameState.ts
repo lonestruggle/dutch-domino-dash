@@ -97,6 +97,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
         dominoes: gameState.dominoes || {},
         board: gameState.board || {},
         playerHand,
+        playerHands: gameState.playerHands || [], // Add this line!
         boneyard: gameState.boneyard || [],
         openEnds: gameState.openEnds || [],
         forbiddens: gameState.forbiddens || {},

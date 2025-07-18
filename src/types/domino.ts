@@ -32,6 +32,7 @@ export interface GameState {
   dominoes: Record<string, DominoState>;
   board: Record<string, { dominoId: string; value: number }>;
   playerHand: DominoData[];
+  playerHands?: DominoData[][]; // Add this for multiplayer support
   boneyard: DominoData[];
   openEnds: OpenEnd[];
   forbiddens: Record<string, boolean>;
