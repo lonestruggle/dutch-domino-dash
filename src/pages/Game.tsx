@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { DominoGame } from '@/components/DominoGame';
 import { useSyncedDominoGame } from '@/hooks/useSyncedDominoGame';
+import { useDominoGame } from '@/hooks/useDominoGame';
 
 interface GameData {
   id: string;
@@ -30,11 +31,18 @@ export default function Game() {
   console.log('Game params:', params);
   console.log('Game ID extracted:', gameId);
 
-  // Only use the synced game hook when we have valid params and auth
+  // Initialize both hooks
+  const dominoGameHook = useDominoGame();
   const syncedGameHook = useSyncedDominoGame(
     (gameId && isAuthenticated) ? gameId : '', 
     (user?.id && isAuthenticated) ? user.id : ''
   );
+
+  // Create combined hook for DominoGame component
+  const combinedGameHook = {
+    ...dominoGameHook,
+    syncState: syncedGameHook.syncState
+  };
 
   const fetchGame = async () => {
     if (!gameId) return;
@@ -121,7 +129,7 @@ export default function Game() {
           <h1 className="text-3xl font-bold">Multiplayer Domino Game</h1>
         </div>
 
-        <DominoGame gameHook={syncedGameHook} />
+        <DominoGame gameHook={combinedGameHook} />
       </div>
     </div>
   );
