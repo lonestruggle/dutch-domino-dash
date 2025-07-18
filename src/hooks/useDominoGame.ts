@@ -212,7 +212,25 @@ export const useDominoGame = () => {
             return;
           }
 
-          moves.push({ end, dominoData, flipped, orientation, fromDomino });
+          let { x, y } = end;
+          let adjustedFlipped = flipped;
+
+          // Adjust position and flipping based on direction to ensure correct pip matching
+          if (orientation === 'horizontal') {
+            if (end.fromDir === 'W') {
+              x -= 1; // Place to the left
+              adjustedFlipped = !flipped; // Flip to match the right side of the open end
+            }
+            // For "E", no adjustment needed as it works fine
+          } else {
+            if (end.fromDir === 'N') {
+              y -= 1; // Place above
+              adjustedFlipped = !flipped; // Flip to match the bottom side of the open end
+            }
+            // For "S", no adjustment needed as it works fine
+          }
+
+          moves.push({ end, dominoData, flipped: adjustedFlipped, orientation, x, y, fromDomino });
           uniqueEnds[`${end.x},${end.y}`] = true;
         }
       };
@@ -241,23 +259,9 @@ export const useDominoGame = () => {
       });
       
       const id = `d${prev.nextDominoId}`;
-      let { x, y } = end;
-      let adjustedFlipped = flipped;
+      const { x, y, flipped: adjustedFlipped } = move;
 
-      // Adjust position and flipping based on direction to ensure correct pip matching
-      if (orientation === 'horizontal') {
-        if (end.fromDir === 'W') {
-          x -= 1; // Place to the left
-          adjustedFlipped = !flipped; // Flip to match the right side of the open end
-        }
-        // For "E", no adjustment needed as it works fine
-      } else {
-        if (end.fromDir === 'N') {
-          y -= 1; // Place above
-          adjustedFlipped = !flipped; // Flip to match the bottom side of the open end
-        }
-        // For "S", no adjustment needed as it works fine
-      }
+      // Use the pre-calculated position and flipped values from findLegalMoves
 
       const newForbiddens = { ...prev.forbiddens };
 

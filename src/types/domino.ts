@@ -24,6 +24,8 @@ export interface LegalMove {
   dominoData: DominoData;
   flipped: boolean;
   orientation: 'horizontal' | 'vertical';
+  x: number;
+  y: number;
   fromDomino?: DominoState;
   index?: number;
 }
