@@ -97,9 +97,9 @@ export default function Game() {
     }
     
     // Execute move locally first for immediate feedback
+    console.log('🎯 BEFORE LOCAL MOVE - Board state:', Object.keys(dbState.board || {}));
     dominoGameHook.executeMove(move);
-    
-    // Wait for local state to update, then sync to database
+    console.log('🎯 AFTER LOCAL MOVE - Local board state:', Object.keys(dominoGameHook.gameState?.board || {}));
     setTimeout(async () => {
       const currentState = dominoGameHook.gameState;
       if (!currentState) return;
@@ -143,11 +143,19 @@ export default function Game() {
       console.log('💾 Saving to database:', {
         currentPlayer: currentPlayerTurn,
         nextPlayer,
-        handSize: currentPlayerHand.length
+        handSize: currentPlayerHand.length,
+        boardKeys: Object.keys(newGameState.board),
+        dominoKeys: Object.keys(newGameState.dominoes)
       });
       
       // Make sure we explicitly set the currentPlayer in the game state
       newGameState.currentPlayer = nextPlayer;
+      
+      console.log('💾 COMPLETE GAME STATE BEING SAVED:', {
+        dominoes: Object.keys(newGameState.dominoes),
+        board: Object.keys(newGameState.board),
+        currentPlayer: newGameState.currentPlayer
+      });
       
       await syncedGameHook.updateGameState(newGameState, nextPlayer);
     }, 200);

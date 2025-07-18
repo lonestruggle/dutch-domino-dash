@@ -107,6 +107,12 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
         selectedHandIndex: gameState.selectedHandIndex || null,
         currentPlayer: gameData?.current_player_turn || 0 // ALWAYS use database column as source of truth
       } : null;
+      
+      console.log('🔍 LOADED FROM DATABASE:', {
+        dominoes: Object.keys(gameState?.dominoes || {}),
+        board: Object.keys(gameState?.board || {}),
+        currentPlayer: gameData?.current_player_turn
+      });
 
       setSyncState({
         isLoading: false,
@@ -285,9 +291,12 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'games', filter: `lobby_id=eq.${gameId}` },
         (payload) => {
-          console.log('Game updated by other player:', payload);
+          console.log('🔄 Game updated by other player, reloading state...', payload);
+          console.log('🔄 BEFORE RELOAD - Current dominoes:', Object.keys(syncState.gameState?.dominoes || {}));
           // Reload the game state when other player makes a move
-          loadGameState();
+          loadGameState().then(() => {
+            console.log('🔄 AFTER RELOAD - Reloaded dominoes:', Object.keys(syncState.gameState?.dominoes || {}));
+          });
         }
       )
       .subscribe();
