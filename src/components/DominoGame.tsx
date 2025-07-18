@@ -27,8 +27,23 @@ export const DominoGame: React.FC<DominoGameProps> = ({ gameHook }) => {
     isGameInitialized,
   } = game;
 
-  // All hooks must be called before any early returns
+  // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
   const [gameStatus, setGameStatus] = useState<string>('');
+
+  const legalMoves = useMemo(() => {
+    if (gameState.selectedHandIndex === null) return [];
+    const selectedDomino = gameState.playerHand[gameState.selectedHandIndex];
+    if (!selectedDomino) return [];
+    
+    return findLegalMoves(selectedDomino).map(move => ({
+      ...move,
+      index: gameState.selectedHandIndex,
+    }));
+  }, [gameState.selectedHandIndex, gameState.playerHand, findLegalMoves, gameState.board]);
+
+  const hasLegalMoves = useMemo(() => {
+    return gameState.playerHand.some(domino => findLegalMoves(domino).length > 0);
+  }, [gameState.playerHand, findLegalMoves]);
 
   // Show waiting screen if multiplayer game is not initialized
   if (gameHook && !isGameInitialized) {
@@ -51,21 +66,6 @@ export const DominoGame: React.FC<DominoGameProps> = ({ gameHook }) => {
       </div>
     );
   }
-
-  const legalMoves = useMemo(() => {
-    if (gameState.selectedHandIndex === null) return [];
-    const selectedDomino = gameState.playerHand[gameState.selectedHandIndex];
-    if (!selectedDomino) return [];
-    
-    return findLegalMoves(selectedDomino).map(move => ({
-      ...move,
-      index: gameState.selectedHandIndex,
-    }));
-  }, [gameState.selectedHandIndex, gameState.playerHand, findLegalMoves, gameState.board]);
-
-  const hasLegalMoves = useMemo(() => {
-    return gameState.playerHand.some(domino => findLegalMoves(domino).length > 0);
-  }, [gameState.playerHand, findLegalMoves]);
 
   const centerViewOnBoard = () => {
     // This will be handled by the GameBoard component
