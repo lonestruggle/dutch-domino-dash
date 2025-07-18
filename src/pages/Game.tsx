@@ -111,64 +111,63 @@ export default function Game() {
     
     // Build the new game state manually for database save (don't wait for React state update)
     setTimeout(async () => {
-      // Use the local state AFTER the React update has processed
-      // But we need to wait a bit more for the state to actually update
+      console.log('💾 BUILDING STATE FOR DATABASE...');
+      console.log('💾 Current local state after move:', {
+        boardKeys: Object.keys(dominoGameHook.gameState?.board || {}),
+        dominoKeys: Object.keys(dominoGameHook.gameState?.dominoes || {}),
+        nextDominoId: dominoGameHook.gameState?.nextDominoId
+      });
+      
+      // Check if React state was updated
       const currentState = dominoGameHook.gameState;
-      if (!currentState) return;
+      const hasStateUpdated = Object.keys(currentState?.board || {}).length > Object.keys(dbState.board || {}).length;
       
-      // Get current player's hand from database
-      const currentPlayerHand = [...((dbState as any).playerHands[currentPlayerPosition] || [])];
+      console.log('💾 React state updated?', hasStateUpdated);
       
-      // Remove the played domino from hand using the index
-      const handIndex = moveWithIndex.index;
-      if (handIndex !== undefined && handIndex !== null && handIndex < currentPlayerHand.length) {
-        currentPlayerHand.splice(handIndex, 1);
-      }
+      if (hasStateUpdated) {
+        // Use the updated React state
+        console.log('💾 Using updated React state');
+        const currentPlayerHand = [...((dbState as any).playerHands[currentPlayerPosition] || [])];
+        const handIndex = moveWithIndex.index;
+        if (handIndex !== undefined && handIndex !== null && handIndex < currentPlayerHand.length) {
+          currentPlayerHand.splice(handIndex, 1);
+        }
 
-      // Create new complete game state for database
-      const newGameState: any = {
-        // Use the CURRENT local state which now contains the new domino
-        board: currentState.board,
-        dominoes: currentState.dominoes,
-        boneyard: currentState.boneyard || [],
-        openEnds: currentState.openEnds || [],
-        forbiddens: currentState.forbiddens || {},
-        nextDominoId: currentState.nextDominoId,
-        spinnerId: currentState.spinnerId,
-        isGameOver: currentState.isGameOver || false,
+        const newGameState: any = {
+          board: currentState.board,
+          dominoes: currentState.dominoes,
+          boneyard: currentState.boneyard || [],
+          openEnds: currentState.openEnds || [],
+          forbiddens: currentState.forbiddens || {},
+          nextDominoId: currentState.nextDominoId,
+          spinnerId: currentState.spinnerId,
+          isGameOver: currentState.isGameOver || false,
+          playerHands: [...((dbState as any).playerHands || [])]
+        };
         
-        // Update player hands with correct data
-        playerHands: [...((dbState as any).playerHands || [])]
-      };
-      
-      // Update current player's hand
-      newGameState.playerHands[currentPlayerPosition] = currentPlayerHand;
-      
-      // Next player
-      const nextPlayer = (currentPlayerTurn + 1) % syncedGameHook.syncState.allPlayers.length;
-      
-      // Add currentPlayer field
-      newGameState.currentPlayer = nextPlayer;
-      
-      console.log('💾 Saving to database:', {
-        currentPlayer: currentPlayerTurn,
-        nextPlayer,
-        handSize: currentPlayerHand.length,
-        boardKeys: Object.keys(newGameState.board),
-        dominoKeys: Object.keys(newGameState.dominoes)
-      });
-      
-      // Make sure we explicitly set the currentPlayer in the game state
-      newGameState.currentPlayer = nextPlayer;
-      
-      console.log('💾 COMPLETE GAME STATE BEING SAVED:', {
-        dominoes: Object.keys(newGameState.dominoes),
-        board: Object.keys(newGameState.board),
-        currentPlayer: newGameState.currentPlayer
-      });
-      
-      await syncedGameHook.updateGameState(newGameState, nextPlayer);
-    }, 200);
+        newGameState.playerHands[currentPlayerPosition] = currentPlayerHand;
+        const nextPlayer = (currentPlayerTurn + 1) % syncedGameHook.syncState.allPlayers.length;
+        newGameState.currentPlayer = nextPlayer;
+        
+        console.log('💾 Saving to database:', {
+          currentPlayer: currentPlayerTurn,
+          nextPlayer,
+          handSize: currentPlayerHand.length,
+          boardKeys: Object.keys(newGameState.board),
+          dominoKeys: Object.keys(newGameState.dominoes)
+        });
+        
+        console.log('💾 COMPLETE GAME STATE BEING SAVED:', {
+          dominoes: Object.keys(newGameState.dominoes),
+          board: Object.keys(newGameState.board),
+          currentPlayer: newGameState.currentPlayer
+        });
+        
+        await syncedGameHook.updateGameState(newGameState, nextPlayer);
+      } else {
+        console.log('❌ React state not updated yet, cannot save to database');
+      }
+    }, 300); // Increased timeout
   }, [dominoGameHook, syncedGameHook, toast]);
 
   // Wrap drawFromBoneyard to also update database - SIMPLIFIED SYNC
