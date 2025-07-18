@@ -78,15 +78,19 @@ export default function Lobbies() {
   const handleJoinLobby = async (lobbyId: string) => {
     if (!user) return;
     
+    console.log('Attempting to join lobby:', lobbyId);
     const { error } = await joinLobby(lobbyId, user);
+    console.log('Join lobby result:', { error });
     
     if (error) {
+      console.log('Join failed with error:', error);
       toast({
         title: "Error",
         description: typeof error === 'string' ? error : error.message || "Could not join lobby",
         variant: "destructive"
       });
     } else {
+      console.log('Join successful, navigating to lobby:', lobbyId);
       navigate(`/lobby/${lobbyId}`);
     }
   };
