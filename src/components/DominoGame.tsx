@@ -7,7 +7,14 @@ import { useDominoGame } from '@/hooks/useDominoGame';
 import { toast } from 'sonner';
 import { RefreshCw, Plus, Crown } from 'lucide-react';
 
-export const DominoGame: React.FC = () => {
+interface DominoGameProps {
+  gameHook?: any; // Custom game hook for multiplayer
+}
+
+export const DominoGame: React.FC<DominoGameProps> = ({ gameHook }) => {
+  const defaultGame = useDominoGame();
+  const game = gameHook || defaultGame;
+  
   const {
     gameState,
     findLegalMoves,
@@ -16,7 +23,8 @@ export const DominoGame: React.FC = () => {
     drawFromBoneyard,
     startNewGame,
     hasDifferentNeighbor,
-  } = useDominoGame();
+    syncState,
+  } = game;
 
   const [gameStatus, setGameStatus] = useState<string>('');
 
@@ -84,6 +92,12 @@ export const DominoGame: React.FC = () => {
             <h1 className="text-2xl font-bold text-ui-text">Nederlandse Domino</h1>
           </div>
           <div className="flex items-center gap-4">
+            {syncState && (
+              <div className="text-sm text-ui-muted">
+                Spelers: <span className="font-semibold">{syncState.allPlayers.length}</span>
+                {syncState.isHost && <span className="ml-2 text-primary">(Host)</span>}
+              </div>
+            )}
             <div className="text-sm text-ui-muted">
               Boneyard: <span className="font-semibold">{gameState.boneyard.length}</span>
             </div>

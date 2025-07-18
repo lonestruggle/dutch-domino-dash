@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { DominoGame } from '@/components/DominoGame';
+import { useSyncedDominoGame } from '@/hooks/useSyncedDominoGame';
 
 interface GameData {
   id: string;
@@ -124,7 +125,7 @@ export default function Game() {
           <h1 className="text-3xl font-bold">Multiplayer Domino Game</h1>
         </div>
 
-        <DominoGame />
+        <DominoGame gameHook={useSyncedDominoGame(gameId || '', user?.id || '')} />
       </div>
     </div>
   );
