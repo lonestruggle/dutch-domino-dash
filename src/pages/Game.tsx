@@ -43,8 +43,51 @@ export default function Game() {
   // Sync local state with database state when it changes
   useEffect(() => {
     if (syncedGameHook.syncState.gameState && !syncedGameHook.syncState.isLoading) {
-      // Update local game state to match database state
-      dominoGameHook.setGameState(syncedGameHook.syncState.gameState);
+      // Update local game state to match database state and regenerate open ends
+      const dbState = syncedGameHook.syncState.gameState;
+      
+      // Calculate open ends for the current board state
+      const openEnds = [];
+      for (const coord in dbState.board) {
+        const [x, y] = coord.split(',').map(Number);
+        const cell = dbState.board[coord];
+        const domino = dbState.dominoes[cell.dominoId];
+
+        const neighbors = {
+          N: [x, y - 1],
+          S: [x, y + 1],
+          W: [x - 1, y],
+          E: [x + 1, y],
+        };
+
+        for (const dir in neighbors) {
+          const [nx, ny] = neighbors[dir as keyof typeof neighbors];
+          if (dbState.board[`${nx},${ny}`]) continue;
+
+          const isDouble = domino?.data?.value1 === domino?.data?.value2;
+          if (isDouble) {
+            const isVertical = domino.orientation === 'vertical';
+            if (
+              (isVertical && (dir === 'N' || dir === 'S')) ||
+              (!isVertical && (dir === 'W' || dir === 'E'))
+            ) {
+              continue;
+            }
+          }
+
+          openEnds.push({
+            x: nx,
+            y: ny,
+            value: cell.value,
+            fromDir: dir as 'N' | 'S' | 'E' | 'W',
+          });
+        }
+      }
+      
+      dominoGameHook.setGameState({
+        ...dbState,
+        openEnds
+      });
     }
   }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading]);
 

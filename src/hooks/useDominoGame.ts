@@ -320,7 +320,7 @@ export const useDominoGame = () => {
         };
       });
 
-      return {
+      const newState = {
         ...prev,
         dominoes: newDominoes,
         board: newBoard,
@@ -330,6 +330,11 @@ export const useDominoGame = () => {
         spinnerId: !prev.spinnerId && isDouble(dominoData) ? id : prev.spinnerId,
         forbiddens: newForbiddens,
       };
+      
+      // Update open ends after placing domino
+      newState.openEnds = regenerateOpenEnds(newState);
+      
+      return newState;
     });
   }, []);
 
