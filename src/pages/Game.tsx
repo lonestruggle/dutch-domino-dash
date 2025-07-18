@@ -111,67 +111,31 @@ export default function Game() {
     
     // Build the new game state manually for database save (don't wait for React state update)
     setTimeout(async () => {
-      // Manually build what the new state should be
-      const { end, dominoData, flipped, orientation } = moveWithIndex;
-      const handIndex = moveWithIndex.index;
+      // Use the local state AFTER the React update has processed
+      // But we need to wait a bit more for the state to actually update
+      const currentState = dominoGameHook.gameState;
+      if (!currentState) return;
       
-      // Get current player's hand from database and remove played domino
+      // Get current player's hand from database
       const currentPlayerHand = [...((dbState as any).playerHands[currentPlayerPosition] || [])];
+      
+      // Remove the played domino from hand using the index
+      const handIndex = moveWithIndex.index;
       if (handIndex !== undefined && handIndex !== null && handIndex < currentPlayerHand.length) {
         currentPlayerHand.splice(handIndex, 1);
       }
-      
-      // Build new domino and board state manually
-      const dominoId = `d${dbState.nextDominoId || 0}`;
-      let { x, y } = end;
-      let adjustedFlipped = flipped;
-      
-      // Apply position adjustments (same as executeMove)
-      if (orientation === 'horizontal') {
-        if (end.fromDir === 'W') {
-          x -= 1;
-          adjustedFlipped = !flipped;
-        }
-      } else {
-        if (end.fromDir === 'N') {
-          y -= 1;
-          adjustedFlipped = !flipped;
-        }
-      }
-      
-      // Create new board state
-      const newBoard = { ...dbState.board };
-      const newDominoes = { ...dbState.dominoes };
-      
-      // Add new domino
-      newDominoes[dominoId] = {
-        data: dominoData,
-        x, y, orientation,
-        flipped: adjustedFlipped,
-        isSpinner: dominoData.value1 === dominoData.value2
-      };
-      
-      // Add new board cells
-      const pips = adjustedFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
-      const cells = orientation === 'horizontal' ? [[x, y], [x + 1, y]] : [[x, y], [x, y + 1]];
-      
-      cells.forEach((cell, i) => {
-        newBoard[`${cell[0]},${cell[1]}`] = {
-          dominoId: dominoId,
-          value: pips[i],
-        };
-      });
 
       // Create new complete game state for database
       const newGameState: any = {
-        board: newBoard,
-        dominoes: newDominoes,
-        boneyard: dbState.boneyard || [],
-        openEnds: dbState.openEnds || [],
-        forbiddens: dbState.forbiddens || {},
-        nextDominoId: (dbState.nextDominoId || 0) + 1,
-        spinnerId: dbState.spinnerId || (dominoData.value1 === dominoData.value2 ? dominoId : null),
-        isGameOver: dbState.isGameOver || false,
+        // Use the CURRENT local state which now contains the new domino
+        board: currentState.board,
+        dominoes: currentState.dominoes,
+        boneyard: currentState.boneyard || [],
+        openEnds: currentState.openEnds || [],
+        forbiddens: currentState.forbiddens || {},
+        nextDominoId: currentState.nextDominoId,
+        spinnerId: currentState.spinnerId,
+        isGameOver: currentState.isGameOver || false,
         
         // Update player hands with correct data
         playerHands: [...((dbState as any).playerHands || [])]
