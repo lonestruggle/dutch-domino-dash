@@ -27,6 +27,9 @@ export const DominoGame: React.FC<DominoGameProps> = ({ gameHook }) => {
     isGameInitialized,
   } = game;
 
+  // All hooks must be called before any early returns
+  const [gameStatus, setGameStatus] = useState<string>('');
+
   // Show waiting screen if multiplayer game is not initialized
   if (gameHook && !isGameInitialized) {
     return (
@@ -48,8 +51,6 @@ export const DominoGame: React.FC<DominoGameProps> = ({ gameHook }) => {
       </div>
     );
   }
-
-  const [gameStatus, setGameStatus] = useState<string>('');
 
   const legalMoves = useMemo(() => {
     if (gameState.selectedHandIndex === null) return [];
