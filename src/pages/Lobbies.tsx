@@ -87,8 +87,8 @@ export default function Lobbies() {
         variant: "destructive"
       });
     } else {
-      // Force navigation by using replace and then navigating
-      navigate(`/lobby/${lobbyId}`, { replace: true });
+      // Use window.location to force navigation
+      window.location.href = `/lobby/${lobbyId}`;
     }
   };
 
