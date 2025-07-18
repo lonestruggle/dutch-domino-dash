@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDominoGame } from './useDominoGame';
 import { supabase } from '@/integrations/supabase/client';
@@ -113,6 +114,85 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
     }
   }, [gameId]);
 
+  // Create a working game state directly if local game fails
+  const createWorkingGameState = useCallback(() => {
+    console.log('Creating working game state directly...');
+    
+    // Create a full domino set
+    const fullSet = [];
+    for (let i = 0; i <= 6; i++) {
+      for (let j = i; j <= 6; j++) {
+        fullSet.push({ value1: i, value2: j });
+      }
+    }
+    
+    // Shuffle the set
+    for (let i = fullSet.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [fullSet[i], fullSet[j]] = [fullSet[j], fullSet[i]];
+    }
+
+    const playerHand = fullSet.slice(0, 7);
+    const boneyard = fullSet.slice(7);
+
+    // Find highest double or highest value starter
+    let starterIndex = -1;
+    for (let i = 6; i >= 0; i--) {
+      starterIndex = playerHand.findIndex(d => d.value1 === i && d.value2 === i);
+      if (starterIndex > -1) break;
+    }
+
+    if (starterIndex === -1) {
+      let highestPip = -1;
+      playerHand.forEach((d, i) => {
+        const total = d.value1 + d.value2;
+        if (total > highestPip) {
+          highestPip = total;
+          starterIndex = i;
+        }
+      });
+    }
+
+    const starter = playerHand.splice(starterIndex, 1)[0];
+    const isDouble = starter.value1 === starter.value2;
+    const orientation = isDouble ? 'vertical' : 'horizontal';
+
+    // Create domino state
+    const dominoState = {
+      data: starter,
+      x: 0,
+      y: 0,
+      orientation,
+      flipped: false,
+      isSpinner: isDouble,
+    };
+
+    // Create board
+    const pips = [starter.value1, starter.value2];
+    const cells = orientation === 'horizontal' ? [[0, 0], [1, 0]] : [[0, 0], [0, 1]];
+    const board: any = {};
+    
+    cells.forEach((cell, i) => {
+      board[`${cell[0]},${cell[1]}`] = {
+        dominoId: 'd0',
+        value: pips[i],
+      };
+    });
+
+    return {
+      dominoes: { 'd0': dominoState },
+      board,
+      playerHand,
+      boneyard,
+      openEnds: [],
+      forbiddens: {},
+      nextDominoId: 1,
+      spinnerId: isDouble ? 'd0' : null,
+      isGameOver: false,
+      selectedHandIndex: null,
+    };
+  }, []);
+
   // Synced start new game (only host can do this)
   const startSyncedNewGame = useCallback(async () => {
     if (!syncState.isHost) {
@@ -131,7 +211,7 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
     localGame.startNewGame();
     setIsGameInitialized(true);
     
-    // Wait for the game to be properly initialized with starter domino
+    // Wait for the game to be properly initialized with improved timing
     let attempts = 0;
     const maxAttempts = 20; // Maximum 4 seconds (20 * 200ms)
     
@@ -140,6 +220,10 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
         attempts++;
         console.log(`Checking if game is initialized... (attempt ${attempts}/${maxAttempts})`);
         const currentState = localGame.gameState;
+        
+        console.log('Current local game state:', currentState);
+        console.log('Dominoes count:', Object.keys(currentState.dominoes).length);
+        console.log('Board count:', Object.keys(currentState.board).length);
         
         // Check if game has been properly initialized (has dominoes and board)
         if (Object.keys(currentState.dominoes).length > 0 && Object.keys(currentState.board).length > 0) {
@@ -165,18 +249,33 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
           console.log('Game not yet initialized, waiting...');
           waitForInitialization();
         } else {
-          console.error('Game initialization timed out');
+          console.log('Game initialization timed out, creating working state directly...');
+          
+          // Fallback: Create a working game state directly
+          const workingState = createWorkingGameState();
+          await saveGameState(workingState);
+          
+          // Notify all players that a new game started
+          await supabase
+            .from('games')
+            .update({ 
+              status: 'active',
+              current_player_turn: 0,
+              updated_at: new Date().toISOString()
+            })
+            .eq('lobby_id', gameId);
+            
           toast({
-            title: "Fout bij opstarten",
-            description: "Het spel kon niet worden gestart. Probeer opnieuw.",
-            variant: "destructive"
+            title: "Nieuw spel gestart!",
+            description: "Alle spelers kunnen nu spelen",
+            variant: "default"
           });
         }
-      }, 200);
+      }, attempts === 0 ? 100 : 200); // First check after 100ms, then every 200ms
     };
     
     waitForInitialization();
-  }, [syncState.isHost, localGame, saveGameState, gameId, toast]);
+  }, [syncState.isHost, localGame, saveGameState, gameId, toast, createWorkingGameState]);
 
   // Synced execute move
   const executeSyncedMove = useCallback(async (move: LegalMove) => {
