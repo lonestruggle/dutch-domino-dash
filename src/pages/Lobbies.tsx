@@ -5,33 +5,49 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useAuth';
+import { useSimpleAuth } from '@/hooks/useSimpleAuth';
 import { useLobbies } from '@/hooks/useLobbies';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Users, Play, LogIn } from 'lucide-react';
+import { Plus, Users, LogIn } from 'lucide-react';
 
 export default function Lobbies() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, signInAnonymously } = useAuth();
+  const { user, isAuthenticated, signInWithUsername } = useSimpleAuth();
   const { lobbies, loading, createLobby, joinLobby } = useLobbies();
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
+  const [username, setUsername] = useState('');
   const [lobbyName, setLobbyName] = useState('');
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [creating, setCreating] = useState(false);
 
   const handleSignIn = async () => {
-    const { error } = await signInAnonymously();
+    if (!username.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a username",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const { error } = await signInWithUsername(username);
     if (error) {
       toast({
         title: "Error",
-        description: "Could not sign in",
+        description: error,
         variant: "destructive"
       });
+    } else {
+      setShowUsernameDialog(false);
+      setUsername('');
     }
   };
 
   const handleCreateLobby = async () => {
+    if (!user) return;
+    
     if (!lobbyName.trim()) {
       toast({
         title: "Error",
@@ -42,7 +58,7 @@ export default function Lobbies() {
     }
 
     setCreating(true);
-    const { data, error } = await createLobby(lobbyName.trim(), maxPlayers);
+    const { data, error } = await createLobby(lobbyName.trim(), user, maxPlayers);
     
     if (error) {
       toast({
@@ -60,7 +76,9 @@ export default function Lobbies() {
   };
 
   const handleJoinLobby = async (lobbyId: string) => {
-    const { error } = await joinLobby(lobbyId);
+    if (!user) return;
+    
+    const { error } = await joinLobby(lobbyId, user);
     
     if (error) {
       toast({
@@ -82,12 +100,22 @@ export default function Lobbies() {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">
-              Sign in to create or join multiplayer lobbies
+              Enter your username to join multiplayer lobbies
             </p>
-            <div className="space-y-2">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSignIn()}
+                />
+              </div>
               <Button onClick={handleSignIn} className="w-full">
                 <LogIn className="h-4 w-4 mr-2" />
-                Sign In to Play Multiplayer
+                Join Multiplayer
               </Button>
               <Button variant="outline" onClick={() => navigate('/')} className="w-full">
                 Back to Home
@@ -103,7 +131,10 @@ export default function Lobbies() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Multiplayer Lobbies</h1>
+          <div>
+            <h1 className="text-3xl font-bold">Multiplayer Lobbies</h1>
+            <p className="text-muted-foreground">Welcome, {user?.username}!</p>
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate('/')}>
               Back to Home

@@ -59,6 +59,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          created_by_username: string | null
           id: string
           max_players: number
           name: string
@@ -68,6 +69,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          created_by_username?: string | null
           id?: string
           max_players?: number
           name: string
@@ -77,6 +79,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          created_by_username?: string | null
           id?: string
           max_players?: number
           name?: string
@@ -92,6 +95,7 @@ export type Database = {
           lobby_id: string
           player_position: number
           user_id: string
+          username: string | null
         }
         Insert: {
           id?: string
@@ -99,6 +103,7 @@ export type Database = {
           lobby_id: string
           player_position: number
           user_id: string
+          username?: string | null
         }
         Update: {
           id?: string
@@ -106,6 +111,7 @@ export type Database = {
           lobby_id?: string
           player_position?: number
           user_id?: string
+          username?: string | null
         }
         Relationships: [
           {

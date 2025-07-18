@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks/useAuth';
+import { useSimpleAuth } from '@/hooks/useSimpleAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Users, Play, LogOut } from 'lucide-react';
@@ -10,6 +10,7 @@ import { Users, Play, LogOut } from 'lucide-react';
 interface LobbyPlayer {
   id: string;
   user_id: string;
+  username: string;
   player_position: number;
   joined_at: string;
 }
@@ -26,7 +27,7 @@ interface LobbyDetails {
 export default function Lobby() {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useSimpleAuth();
   const { toast } = useToast();
   const [lobby, setLobby] = useState<LobbyDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,7 +125,7 @@ export default function Lobby() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/');
+      navigate('/lobbies');
       return;
     }
 
@@ -235,7 +236,7 @@ export default function Lobby() {
                       <span>
                         {player ? (
                           <>
-                            Player {position + 1}
+                            {player.username}
                             {player.user_id === lobby.created_by && (
                               <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">
                                 Creator

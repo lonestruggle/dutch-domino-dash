@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User } from './useSimpleAuth';
 
 export interface Lobby {
   id: string;
@@ -44,8 +45,7 @@ export const useLobbies = () => {
     setLoading(false);
   };
 
-  const createLobby = async (name: string, maxPlayers: number = 4) => {
-    const { data: { user } } = await supabase.auth.getUser();
+  const createLobby = async (name: string, user: User, maxPlayers: number = 4) => {
     if (!user) return { error: 'Not authenticated' };
 
     const { data: lobby, error: lobbyError } = await supabase
@@ -53,6 +53,7 @@ export const useLobbies = () => {
       .insert({
         name,
         created_by: user.id,
+        created_by_username: user.username,
         max_players: maxPlayers
       })
       .select()
@@ -66,6 +67,7 @@ export const useLobbies = () => {
       .insert({
         lobby_id: lobby.id,
         user_id: user.id,
+        username: user.username,
         player_position: 0
       });
 
@@ -74,8 +76,7 @@ export const useLobbies = () => {
     return { data: lobby, error: null };
   };
 
-  const joinLobby = async (lobbyId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+  const joinLobby = async (lobbyId: string, user: User) => {
     if (!user) return { error: 'Not authenticated' };
 
     // Get current players count and find next available position
@@ -86,6 +87,18 @@ export const useLobbies = () => {
       .order('player_position');
 
     if (playersError) return { error: playersError };
+
+    // Check if user is already in this lobby
+    const { data: existingPlayer } = await supabase
+      .from('lobby_players')
+      .select('id')
+      .eq('lobby_id', lobbyId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (existingPlayer) {
+      return { error: 'You are already in this lobby' };
+    }
 
     // Find next available position
     let nextPosition = 0;
@@ -103,6 +116,7 @@ export const useLobbies = () => {
       .insert({
         lobby_id: lobbyId,
         user_id: user.id,
+        username: user.username,
         player_position: nextPosition
       });
 
