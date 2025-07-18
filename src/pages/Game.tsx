@@ -62,12 +62,19 @@ export default function Game() {
     const currentDbState = syncedGameHook.syncState.gameState;
     const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
     
+    console.log('🔍 DEBUG: Before move execution:');
+    console.log('Current DB state hands:', currentDbState ? (currentDbState as any).playerHands : 'no state');
+    console.log('Current player position:', currentPlayerPosition);
+    console.log('Current player from sync state:', syncedGameHook.syncState.currentPlayer);
+    
     if (!currentDbState || !(currentDbState as any).playerHands) {
       console.log('Cannot execute move - missing game state');
       return;
     }
     
-    const currentPlayerHand = [...(currentDbState as any).playerHands[currentPlayerPosition]];
+    const originalHand = (currentDbState as any).playerHands[currentPlayerPosition];
+    console.log('Original hand from DB:', originalHand);
+    const currentPlayerHand = [...originalHand];
     
     // Find and remove the played domino from the hand
     const playedDominoIndex = currentPlayerHand.findIndex(domino => 
