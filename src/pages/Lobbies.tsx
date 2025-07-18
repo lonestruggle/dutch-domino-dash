@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSimpleAuth } from '@/hooks/useSimpleAuth';
 import { useLobbies } from '@/hooks/useLobbies';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Users, LogIn } from 'lucide-react';
+import { Plus, Users, LogIn, Trash2 } from 'lucide-react';
 
 export default function Lobbies() {
   const navigate = useNavigate();
@@ -90,6 +91,46 @@ export default function Lobbies() {
       // Use window.location to force navigation
       window.location.href = `/lobby/${lobbyId}`;
     }
+  };
+
+  const handleDeleteLobby = async (lobbyId: string) => {
+    if (!user) return;
+    
+    // First delete all lobby players
+    const { error: playersError } = await supabase
+      .from('lobby_players')
+      .delete()
+      .eq('lobby_id', lobbyId);
+
+    if (playersError) {
+      toast({
+        title: "Error",
+        description: "Could not delete lobby players",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Then delete the lobby
+    const { error: lobbyError } = await supabase
+      .from('lobbies')
+      .delete()
+      .eq('id', lobbyId)
+      .eq('created_by', user.id); // Only allow creator to delete
+
+    if (lobbyError) {
+      toast({
+        title: "Error", 
+        description: "Could not delete lobby",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Lobby deleted successfully"
+    });
   };
 
   if (!isAuthenticated) {
@@ -214,13 +255,24 @@ export default function Lobbies() {
                       <div className="text-sm text-muted-foreground">
                         Status: {lobby.status}
                       </div>
-                      <Button
-                        onClick={() => handleJoinLobby(lobby.id)}
-                        disabled={lobby.player_count >= lobby.max_players}
-                        size="sm"
-                      >
-                        {lobby.player_count >= lobby.max_players ? 'Full' : 'Join'}
-                      </Button>
+                      <div className="flex gap-2">
+                        {user?.id === lobby.created_by && (
+                          <Button
+                            onClick={() => handleDeleteLobby(lobby.id)}
+                            variant="destructive"
+                            size="sm"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          onClick={() => handleJoinLobby(lobby.id)}
+                          disabled={lobby.player_count >= lobby.max_players}
+                          size="sm"
+                        >
+                          {lobby.player_count >= lobby.max_players ? 'Full' : 'Join'}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
