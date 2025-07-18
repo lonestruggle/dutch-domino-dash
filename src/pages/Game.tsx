@@ -52,7 +52,32 @@ export default function Game() {
   const wrappedExecuteMove = useCallback(async (move: any) => {
     console.log('wrappedExecuteMove called with move:', move);
     
-    // First execute the move locally
+    // Get the current hand BEFORE executing the move
+    const currentDbState = syncedGameHook.syncState.gameState;
+    const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
+    
+    if (!currentDbState || !(currentDbState as any).playerHands) {
+      console.log('Cannot execute move - missing game state');
+      return;
+    }
+    
+    const currentPlayerHand = [...(currentDbState as any).playerHands[currentPlayerPosition]];
+    
+    // Find and remove the played domino from the hand
+    const playedDominoIndex = currentPlayerHand.findIndex(domino => 
+      (domino.value1 === move.dominoData.value1 && domino.value2 === move.dominoData.value2) ||
+      (domino.value1 === move.dominoData.value2 && domino.value2 === move.dominoData.value1)
+    );
+    
+    if (playedDominoIndex === -1) {
+      console.log('Cannot find played domino in hand');
+      return;
+    }
+    
+    // Remove the played domino
+    currentPlayerHand.splice(playedDominoIndex, 1);
+    
+    // Execute the move locally
     dominoGameHook.executeMove(move);
     
     // Wait a bit longer for the state to update, then sync to database
@@ -63,8 +88,8 @@ export default function Game() {
       const dbState = syncedGameHook.syncState.gameState;
       const currentState = dominoGameHook.gameState;
       
-      console.log('Current game state:', currentState);
-      console.log('DB state:', dbState);
+      console.log('Updated player hand:', currentPlayerHand);
+      console.log('Local state after move:', currentState);
       
       if (dbState && (dbState as any).playerHands && currentState) {
         // Create updated database state with current player's updated hand
@@ -73,8 +98,8 @@ export default function Game() {
           playerHands: [...(dbState as any).playerHands] // Copy existing hands from DB
         };
         
-        // Update current player's hand with the new state
-        updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
+        // Update current player's hand with the correctly calculated hand
+        updatedDbState.playerHands[currentPlayerPosition] = currentPlayerHand;
         
         // Determine next player (simple rotation)
         const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
@@ -83,7 +108,7 @@ export default function Game() {
           currentPlayer: syncedGameHook.syncState.currentPlayer,
           nextPlayer,
           playerPosition: syncedGameHook.syncState.playerPosition,
-          handSize: currentState.playerHand.length
+          handSize: currentPlayerHand.length
         });
         
         syncedGameHook.updateGameState(updatedDbState, nextPlayer);
