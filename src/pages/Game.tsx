@@ -146,6 +146,9 @@ export default function Game() {
         handSize: currentPlayerHand.length
       });
       
+      // Make sure we explicitly set the currentPlayer in the game state
+      newGameState.currentPlayer = nextPlayer;
+      
       await syncedGameHook.updateGameState(newGameState, nextPlayer);
     }, 200);
   }, [dominoGameHook, syncedGameHook, toast]);
