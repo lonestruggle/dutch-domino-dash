@@ -268,9 +268,27 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
     await updateGameState(newGameState, starterPlayerIndex);
   }, [gameId, syncState.isHost, syncState.allPlayers, syncState.playerPosition, updateGameState]);
 
-  // Only load initial game state, no continuous sync
+  // Load initial game state and listen for updates
   useEffect(() => {
     loadGameState();
+    
+    // Subscribe to game changes - when other player makes a move
+    const channel = supabase
+      .channel(`game-${gameId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'games', filter: `lobby_id=eq.${gameId}` },
+        (payload) => {
+          console.log('Game updated by other player:', payload);
+          // Reload the game state when other player makes a move
+          loadGameState();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [gameId, userId]);
 
   return {

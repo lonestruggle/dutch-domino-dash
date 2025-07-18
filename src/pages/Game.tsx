@@ -40,10 +40,10 @@ export default function Game() {
   // Initialize local domino game logic
   const dominoGameHook = useDominoGame();
 
-  // Only sync database state to local state once on initial load
+  // Sync database state to local state when it changes (from other players)
   useEffect(() => {
     if (syncedGameHook.syncState.gameState && !syncedGameHook.syncState.isLoading) {
-      console.log('🔄 Initial sync of database state to local state');
+      console.log('🔄 Syncing database state to local state');
       
       // Only sync the shared parts of the game state, not the local player hand
       const dbState = syncedGameHook.syncState.gameState;
@@ -58,7 +58,7 @@ export default function Game() {
         playerHand: myHand // Use my hand from database
       });
     }
-  }, [syncedGameHook.syncState.isLoading]); // Only run once when loading is complete
+  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading]); // React to game state changes
 
   // Wrap executeMove to also update database
   const wrappedExecuteMove = useCallback(async (move: any) => {
