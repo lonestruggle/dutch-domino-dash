@@ -48,67 +48,90 @@ export default function Game() {
     }
   }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading]);
 
-  // Wrap executeMove to also update database
+  // Wrap executeMove to also update database immediately
   const wrappedExecuteMove = useCallback(async (move: any) => {
-    // First execute the move locally
+    // Check if it's the current player's turn
+    if (syncedGameHook.syncState.currentPlayer !== syncedGameHook.syncState.playerPosition) {
+      toast({
+        title: "Not your turn",
+        description: "Please wait for your turn to play.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Execute the move locally first
     dominoGameHook.executeMove(move);
     
-    // Then update the database with the new state after a short delay
-    setTimeout(() => {
-      // Get the updated state from dominoGameHook
-      const currentState = dominoGameHook.gameState;
+    // Immediately update the database with the new state
+    const currentState = dominoGameHook.gameState;
+    const dbState = syncedGameHook.syncState.gameState;
+    
+    if (dbState && (dbState as any).playerHands) {
+      // Create updated database state
+      const updatedDbState = {
+        ...dbState,
+        // Update with current game state
+        dominoes: currentState.dominoes,
+        board: currentState.board,
+        boneyard: currentState.boneyard,
+        openEnds: currentState.openEnds,
+        forbiddens: currentState.forbiddens,
+        nextDominoId: currentState.nextDominoId,
+        spinnerId: currentState.spinnerId,
+        isGameOver: currentState.isGameOver,
+        playerHands: [...(dbState as any).playerHands] // Preserve all player hands
+      };
       
-      // Get the current database state to preserve other players' hands
-      const dbState = syncedGameHook.syncState.gameState;
+      // Update current player's hand with the new state
+      updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
       
-      if (dbState && (dbState as any).playerHands) {
-        // Create updated database state with current player's updated hand
-        const updatedDbState = {
-          ...dbState,
-          ...currentState, // Copy board, dominoes, etc.
-          playerHands: [...(dbState as any).playerHands] // Copy existing hands
-        };
-        
-        // Update current player's hand
-        updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
-        
-        // Determine next player (simple rotation)
-        const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
-        syncedGameHook.updateGameState(updatedDbState, nextPlayer);
-      }
-    }, 100);
-  }, [dominoGameHook, syncedGameHook]);
+      // Move to next player
+      const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
+      
+      // Update database immediately
+      await syncedGameHook.updateGameState(updatedDbState, nextPlayer);
+    }
+  }, [dominoGameHook, syncedGameHook, toast]);
 
-  // Wrap drawFromBoneyard to also update database
+  // Wrap drawFromBoneyard to also update database immediately
   const wrappedDrawFromBoneyard = useCallback(async () => {
-    // First draw locally
+    // Check if it's the current player's turn
+    if (syncedGameHook.syncState.currentPlayer !== syncedGameHook.syncState.playerPosition) {
+      toast({
+        title: "Not your turn",
+        description: "Please wait for your turn to draw.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Draw locally first
     dominoGameHook.drawFromBoneyard();
     
-    // Then update the database with the new state after a short delay
-    setTimeout(() => {
-      // Get the updated state from dominoGameHook
-      const currentState = dominoGameHook.gameState;
+    // Immediately update the database with the new state
+    const currentState = dominoGameHook.gameState;
+    const dbState = syncedGameHook.syncState.gameState;
+    
+    if (dbState && (dbState as any).playerHands) {
+      // Create updated database state
+      const updatedDbState = {
+        ...dbState,
+        // Update boneyard
+        boneyard: currentState.boneyard,
+        playerHands: [...(dbState as any).playerHands] // Preserve all player hands
+      };
       
-      // Get the current database state to preserve other players' hands
-      const dbState = syncedGameHook.syncState.gameState;
+      // Update current player's hand with the drawn domino
+      updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
       
-      if (dbState && (dbState as any).playerHands) {
-        // Create updated database state with current player's updated hand and boneyard
-        const updatedDbState = {
-          ...dbState,
-          ...currentState, // Copy board, dominoes, boneyard, etc.
-          playerHands: [...(dbState as any).playerHands] // Copy existing hands
-        };
-        
-        // Update current player's hand
-        updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
-        
-        // Determine next player (simple rotation)
-        const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
-        syncedGameHook.updateGameState(updatedDbState, nextPlayer);
-      }
-    }, 100);
-  }, [dominoGameHook, syncedGameHook]);
+      // Move to next player
+      const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
+      
+      // Update database immediately
+      await syncedGameHook.updateGameState(updatedDbState, nextPlayer);
+    }
+  }, [dominoGameHook, syncedGameHook, toast]);
 
   // Create combined hook for DominoGame component
   const combinedGameHook = {
