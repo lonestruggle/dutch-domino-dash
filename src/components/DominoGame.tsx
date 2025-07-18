@@ -24,7 +24,30 @@ export const DominoGame: React.FC<DominoGameProps> = ({ gameHook }) => {
     startNewGame,
     hasDifferentNeighbor,
     syncState,
+    isGameInitialized,
   } = game;
+
+  // Show waiting screen if multiplayer game is not initialized
+  if (gameHook && !isGameInitialized) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-md p-6 text-center">
+          <h2 className="text-xl font-bold mb-4">Wachten op spel...</h2>
+          <p className="text-muted-foreground mb-4">
+            {syncState?.isHost 
+              ? "Je bent de host. Klik op 'Nieuw Spel' om te beginnen." 
+              : "Wacht tot de host het spel start."}
+          </p>
+          {syncState?.isHost && (
+            <Button onClick={startNewGame} className="flex items-center gap-2 mx-auto">
+              <RefreshCw className="w-4 h-4" />
+              Start Spel
+            </Button>
+          )}
+        </Card>
+      </div>
+    );
+  }
 
   const [gameStatus, setGameStatus] = useState<string>('');
 

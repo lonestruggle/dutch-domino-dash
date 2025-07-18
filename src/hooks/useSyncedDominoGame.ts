@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDominoGame } from './useDominoGame';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -20,16 +20,21 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
     playerPosition: 0,
     allPlayers: []
   });
+  
+  const [isGameInitialized, setIsGameInitialized] = useState(false);
+  const gameStateRef = useRef<GameState | null>(null);
 
   // Load initial game state from database
   const loadGameState = useCallback(async () => {
+    if (!gameId || !userId) return;
+    
     try {
       // Get game data
       const { data: gameData, error: gameError } = await supabase
         .from('games')
         .select('*')
         .eq('lobby_id', gameId)
-        .single();
+        .maybeSingle();
 
       if (gameError) throw gameError;
 
@@ -39,7 +44,7 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
         .select('*')
         .eq('lobby_id', gameId)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (playerError) throw playerError;
 
@@ -52,29 +57,34 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
 
       if (playersError) throw playersError;
 
-      setSyncState({
-        isLoading: false,
-        isHost: playerData.player_position === 0,
-        playerPosition: playerData.player_position,
-        allPlayers: allPlayersData.map(p => ({ 
-          username: p.username || 'Anonymous', 
-          position: p.player_position 
-        }))
-      });
+      if (playerData && allPlayersData) {
+        setSyncState({
+          isLoading: false,
+          isHost: playerData.player_position === 0,
+          playerPosition: playerData.player_position,
+          allPlayers: allPlayersData.map(p => ({ 
+            username: p.username || 'Anonymous', 
+            position: p.player_position 
+          }))
+        });
 
-      // If there's a saved game state, restore it
-      if (gameData.game_state && typeof gameData.game_state === 'object') {
-        const savedState = gameData.game_state as any;
-        if (savedState.dominoes && Object.keys(savedState.dominoes).length > 0) {
-          // Restore the game state directly
-          localGame.resetGame();
-          setTimeout(() => {
-            // Apply saved state (simplified - in real scenario you'd need to reconstruct the state properly)
-            console.log('Restoring game state:', savedState);
-          }, 100);
+        // Only load saved game state if there is one and it's meaningful
+        if (gameData && gameData.game_state && typeof gameData.game_state === 'object') {
+          const savedState = gameData.game_state as any;
+          // Check if the game actually has meaningful state (more than just defaults)
+          if (savedState.dominoes && Object.keys(savedState.dominoes).length > 0) {
+            console.log('Loading saved game state:', savedState);
+            gameStateRef.current = savedState;
+            setIsGameInitialized(true);
+          } else {
+            // No meaningful game state, wait for host to start game
+            console.log('No saved game state, waiting for game to start');
+            setIsGameInitialized(false);
+          }
+        } else {
+          setIsGameInitialized(false);
         }
       }
-
     } catch (error) {
       console.error('Error loading game state:', error);
       toast({
@@ -83,11 +93,14 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
         variant: "destructive"
       });
     }
-  }, [gameId, userId, localGame, toast]);
+  }, [gameId, userId, toast]);
 
   // Save game state to database
   const saveGameState = useCallback(async (gameState: GameState) => {
+    if (!gameId) return;
+    
     try {
+      console.log('Saving game state:', gameState);
       await supabase
         .from('games')
         .update({ 
@@ -104,17 +117,20 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
   const startSyncedNewGame = useCallback(async () => {
     if (!syncState.isHost) {
       toast({
-        title: "Not allowed",
-        description: "Only the host can start a new game",
+        title: "Alleen de host kan het spel starten",
+        description: "Wacht tot de host een nieuw spel start",
         variant: "destructive"
       });
       return;
     }
 
+    console.log('Host starting new game...');
     localGame.startNewGame();
+    setIsGameInitialized(true);
     
-    // Save the new game state after a delay to let it initialize
+    // Save the new game state after it initializes
     setTimeout(async () => {
+      console.log('Saving new game state after initialization...');
       await saveGameState(localGame.gameState);
       
       // Notify all players that a new game started
@@ -126,7 +142,13 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
           updated_at: new Date().toISOString()
         })
         .eq('lobby_id', gameId);
-    }, 200);
+        
+      toast({
+        title: "Nieuw spel gestart!",
+        description: "Alle spelers kunnen nu spelen",
+        variant: "default"
+      });
+    }, 500);
   }, [syncState.isHost, localGame, saveGameState, gameId, toast]);
 
   // Synced execute move
@@ -143,27 +165,38 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
   useEffect(() => {
     if (!gameId) return;
 
+    console.log('Setting up real-time subscription for game:', gameId);
+    
     const channel = supabase
       .channel(`game-sync-${gameId}`)
       .on(
         'postgres_changes',
         { 
-          event: '*', 
+          event: 'UPDATE', 
           schema: 'public', 
           table: 'games', 
           filter: `lobby_id=eq.${gameId}` 
         },
         (payload) => {
-          console.log('Game state updated:', payload);
-          // Reload game state when it changes
-          if (payload.eventType === 'UPDATE' && payload.new) {
-            loadGameState();
+          console.log('Game state updated via real-time:', payload);
+          if (payload.new && payload.new.game_state) {
+            // Only update if we're not the one who made the change
+            const newGameState = payload.new.game_state as GameState;
+            if (newGameState && Object.keys(newGameState.dominoes || {}).length > 0) {
+              console.log('Applying received game state from other player');
+              gameStateRef.current = newGameState;
+              // Force a reload of the game state
+              loadGameState();
+            }
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [gameId, loadGameState]);
@@ -174,13 +207,19 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
   }, [loadGameState]);
 
   return {
-    // Pass through all local game functionality
-    ...localGame,
+    // Pass through most local game functionality
+    gameState: gameStateRef.current || localGame.gameState,
+    findLegalMoves: localGame.findLegalMoves,
+    selectDomino: localGame.selectDomino,
+    drawFromBoneyard: localGame.drawFromBoneyard,
+    resetGame: localGame.resetGame,
+    hasDifferentNeighbor: localGame.hasDifferentNeighbor,
     // Override specific functions with synced versions
     startNewGame: startSyncedNewGame,
     executeMove: executeSyncedMove,
     // Add sync state
     syncState,
+    isGameInitialized,
     saveGameState: () => saveGameState(localGame.gameState)
   };
 };
