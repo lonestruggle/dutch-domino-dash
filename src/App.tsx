@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import Index from "./pages/Index";
 import Lobbies from "./pages/Lobbies";
 import Lobby from "./pages/Lobby";
+import Game from "./pages/Game";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/single-player" element={<Index />} />
           <Route path="/lobbies" element={<Lobbies />} />
           <Route path="/lobby/:lobbyId" element={<Lobby />} />
+          <Route path="/game/:gameId" element={<Game />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
