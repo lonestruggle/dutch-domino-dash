@@ -25,15 +25,21 @@ interface LobbyDetails {
 }
 
 export default function Lobby() {
-  const { lobbyId } = useParams<{ lobbyId: string }>();
+  const params = useParams();
+  const lobbyId = params.lobbyId;
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useSimpleAuth();
   const { toast } = useToast();
   const [lobby, setLobby] = useState<LobbyDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  console.log('Lobby params:', params);
+  console.log('Lobby ID extracted:', lobbyId);
 
   const fetchLobby = async () => {
     if (!lobbyId) return;
+
+    console.log('fetchLobby called with lobbyId:', lobbyId);
 
     const { data, error } = await supabase
       .from('lobbies')

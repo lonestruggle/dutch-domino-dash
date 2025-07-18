@@ -19,15 +19,22 @@ interface GameData {
 }
 
 export default function Game() {
-  const { gameId } = useParams<{ gameId: string }>();
+  const params = useParams();
+  const gameId = params.gameId;
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useSimpleAuth();
   const { toast } = useToast();
   const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Use the synced game hook here instead of in JSX
-  const syncedGameHook = useSyncedDominoGame(gameId || '', user?.id || '');
+  console.log('Game params:', params);
+  console.log('Game ID extracted:', gameId);
+
+  // Only use the synced game hook when we have valid params and auth
+  const syncedGameHook = useSyncedDominoGame(
+    (gameId && isAuthenticated) ? gameId : '', 
+    (user?.id && isAuthenticated) ? user.id : ''
+  );
 
   const fetchGame = async () => {
     if (!gameId) return;
