@@ -98,7 +98,15 @@ export default function Game() {
     
     // Execute move locally first for immediate feedback
     console.log('🎯 BEFORE LOCAL MOVE - Board state:', Object.keys(dbState.board || {}));
-    dominoGameHook.executeMove(move);
+    
+    // Add the selected hand index to the move
+    const moveWithIndex = {
+      ...move,
+      index: dominoGameHook.gameState.selectedHandIndex
+    };
+    
+    console.log('🎯 MOVE WITH INDEX:', { move: moveWithIndex, selectedIndex: dominoGameHook.gameState.selectedHandIndex });
+    dominoGameHook.executeMove(moveWithIndex);
     console.log('🎯 AFTER LOCAL MOVE - Local board state:', Object.keys(dominoGameHook.gameState?.board || {}));
     setTimeout(async () => {
       const currentState = dominoGameHook.gameState;
