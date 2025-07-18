@@ -105,7 +105,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
         spinnerId: gameState.spinnerId || null,
         isGameOver: gameState.isGameOver || false,
         selectedHandIndex: gameState.selectedHandIndex || null,
-        currentPlayer: gameData?.current_player_turn || 0
+        currentPlayer: gameData?.current_player_turn || 0 // ALWAYS use database column as source of truth
       } : null;
 
       setSyncState({
@@ -114,7 +114,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
         playerPosition: playerData?.player_position || 0,
         allPlayers,
         gameState: localGameState,
-        currentPlayer: gameData?.current_player_turn || 0
+        currentPlayer: gameData?.current_player_turn || 0 // ALWAYS use database column as source of truth
       });
 
       console.log('Sync state updated:', {
@@ -123,7 +123,13 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
         playerPosition: playerData?.player_position || 0,
         allPlayers,
         gameState: localGameState,
-        currentPlayer: gameData?.current_player_turn || 0
+        currentPlayer: gameData?.current_player_turn || 0 // ALWAYS use database column as source of truth
+      });
+
+      console.log('🎯 CURRENT PLAYER DEBUG:', {
+        databaseColumn: gameData?.current_player_turn,
+        gameStateField: gameState?.currentPlayer,
+        finalCurrentPlayer: gameData?.current_player_turn || 0
       });
 
     } catch (error) {
