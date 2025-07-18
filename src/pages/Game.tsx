@@ -108,38 +108,73 @@ export default function Game() {
     console.log('🎯 MOVE WITH INDEX:', { move: moveWithIndex, selectedIndex: dominoGameHook.gameState.selectedHandIndex });
     dominoGameHook.executeMove(moveWithIndex);
     console.log('🎯 AFTER LOCAL MOVE - Local board state:', Object.keys(dominoGameHook.gameState?.board || {}));
+    
+    // Build the new game state manually for database save (don't wait for React state update)
     setTimeout(async () => {
-      const currentState = dominoGameHook.gameState;
-      if (!currentState) return;
+      // Manually build what the new state should be
+      const { end, dominoData, flipped, orientation } = moveWithIndex;
+      const handIndex = moveWithIndex.index;
       
-      // Get current player's hand from database
+      // Get current player's hand from database and remove played domino
       const currentPlayerHand = [...((dbState as any).playerHands[currentPlayerPosition] || [])];
-      
-      // Remove the played domino from hand
-      const playedDominoIndex = currentPlayerHand.findIndex(domino => 
-        (domino.value1 === move.dominoData.value1 && domino.value2 === move.dominoData.value2) ||
-        (domino.value1 === move.dominoData.value2 && domino.value2 === move.dominoData.value1)
-      );
-      
-      if (playedDominoIndex !== -1) {
-        currentPlayerHand.splice(playedDominoIndex, 1);
+      if (handIndex !== undefined && handIndex !== null && handIndex < currentPlayerHand.length) {
+        currentPlayerHand.splice(handIndex, 1);
       }
       
+      // Build new domino and board state manually
+      const dominoId = `d${dbState.nextDominoId || 0}`;
+      let { x, y } = end;
+      let adjustedFlipped = flipped;
+      
+      // Apply position adjustments (same as executeMove)
+      if (orientation === 'horizontal') {
+        if (end.fromDir === 'W') {
+          x -= 1;
+          adjustedFlipped = !flipped;
+        }
+      } else {
+        if (end.fromDir === 'N') {
+          y -= 1;
+          adjustedFlipped = !flipped;
+        }
+      }
+      
+      // Create new board state
+      const newBoard = { ...dbState.board };
+      const newDominoes = { ...dbState.dominoes };
+      
+      // Add new domino
+      newDominoes[dominoId] = {
+        data: dominoData,
+        x, y, orientation,
+        flipped: adjustedFlipped,
+        isSpinner: dominoData.value1 === dominoData.value2
+      };
+      
+      // Add new board cells
+      const pips = adjustedFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
+      const cells = orientation === 'horizontal' ? [[x, y], [x + 1, y]] : [[x, y], [x, y + 1]];
+      
+      cells.forEach((cell, i) => {
+        newBoard[`${cell[0]},${cell[1]}`] = {
+          dominoId: dominoId,
+          value: pips[i],
+        };
+      });
+
       // Create new complete game state for database
-      const newGameState = {
-        // Use current local state (board, dominoes, etc.)
-        board: currentState.board,
-        dominoes: currentState.dominoes,
-        boneyard: currentState.boneyard,
-        openEnds: currentState.openEnds,
-        forbiddens: currentState.forbiddens,
-        nextDominoId: currentState.nextDominoId,
-        spinnerId: currentState.spinnerId,
-        isGameOver: currentState.isGameOver,
+      const newGameState: any = {
+        board: newBoard,
+        dominoes: newDominoes,
+        boneyard: dbState.boneyard || [],
+        openEnds: dbState.openEnds || [],
+        forbiddens: dbState.forbiddens || {},
+        nextDominoId: (dbState.nextDominoId || 0) + 1,
+        spinnerId: dbState.spinnerId || (dominoData.value1 === dominoData.value2 ? dominoId : null),
+        isGameOver: dbState.isGameOver || false,
         
         // Update player hands with correct data
-        playerHands: [...((dbState as any).playerHands || [])],
-        currentPlayer: currentState.currentPlayer
+        playerHands: [...((dbState as any).playerHands || [])]
       };
       
       // Update current player's hand
@@ -147,6 +182,9 @@ export default function Game() {
       
       // Next player
       const nextPlayer = (currentPlayerTurn + 1) % syncedGameHook.syncState.allPlayers.length;
+      
+      // Add currentPlayer field
+      newGameState.currentPlayer = nextPlayer;
       
       console.log('💾 Saving to database:', {
         currentPlayer: currentPlayerTurn,
