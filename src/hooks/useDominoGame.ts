@@ -105,8 +105,46 @@ export const useDominoGame = () => {
 
   const regenerateOpenEnds = useCallback((state: GameState): OpenEnd[] => {
     const openEnds: OpenEnd[] = [];
+    const trueEnds = new Set<string>(); // Track actual chain ends
     
+    // First pass: identify actual chain ends (positions with only one connected domino)
     for (const coord in state.board) {
+      const [x, y] = coord.split(',').map(Number);
+      const cell = state.board[coord];
+      const domino = state.dominoes[cell.dominoId];
+
+      // Count how many neighbors this cell has
+      const neighbors = [
+        [x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]
+      ];
+      
+      let connectedNeighbors = 0;
+      for (const [nx, ny] of neighbors) {
+        if (state.board[`${nx},${ny}`]) {
+          const neighborDomino = state.dominoes[state.board[`${nx},${ny}`].dominoId];
+          // Only count if it's a different domino
+          if (neighborDomino && state.board[`${nx},${ny}`].dominoId !== cell.dominoId) {
+            connectedNeighbors++;
+          }
+        }
+      }
+      
+      // For doubles (spinners), they can have more connections
+      if (isDouble(domino.data) && domino.isSpinner) {
+        // Spinner can connect in 4 directions, so end pieces have fewer connections
+        if (connectedNeighbors <= 3) {
+          trueEnds.add(coord);
+        }
+      } else {
+        // Regular dominoes: end pieces have only 1 connection to other dominoes
+        if (connectedNeighbors <= 1) {
+          trueEnds.add(coord);
+        }
+      }
+    }
+    
+    // Second pass: only create open ends for true chain ends
+    for (const coord of trueEnds) {
       const [x, y] = coord.split(',').map(Number);
       const cell = state.board[coord];
       const domino = state.dominoes[cell.dominoId];
@@ -120,16 +158,19 @@ export const useDominoGame = () => {
 
       for (const dir in neighbors) {
         const [nx, ny] = neighbors[dir as keyof typeof neighbors];
-        if (state.board[`${nx},${ny}`]) continue;
+        if (state.board[`${nx},${ny}`]) continue; // Already occupied
 
+        // For doubles, check orientation restrictions
         if (isDouble(domino.data)) {
           const isVertical = domino.orientation === 'vertical';
           // Non-spinner doubles only connect perpendicular to their orientation
-          if (
-            (isVertical && (dir === 'N' || dir === 'S')) ||
-            (!isVertical && (dir === 'W' || dir === 'E'))
-          ) {
-            continue;
+          if (!domino.isSpinner) {
+            if (
+              (isVertical && (dir === 'N' || dir === 'S')) ||
+              (!isVertical && (dir === 'W' || dir === 'E'))
+            ) {
+              continue;
+            }
           }
         }
 
