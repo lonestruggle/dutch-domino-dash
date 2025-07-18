@@ -150,7 +150,11 @@ export const useDominoGame = () => {
     const moves: LegalMove[] = [];
     const selectedIsDouble = isDouble(dominoData);
     const uniqueEnds: Record<string, boolean> = {};
-    const openEnds = regenerateOpenEnds(currentState);
+    
+    // Use the already calculated openEnds from game state, fallback to regenerating if not available
+    const openEnds = currentState.openEnds && currentState.openEnds.length > 0 
+      ? currentState.openEnds 
+      : regenerateOpenEnds(currentState);
 
     openEnds.forEach((end) => {
       if (uniqueEnds[`${end.x},${end.y}`]) return;
