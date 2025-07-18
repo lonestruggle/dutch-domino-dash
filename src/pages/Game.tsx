@@ -64,12 +64,13 @@ export default function Game() {
   const wrappedExecuteMove = useCallback(async (move: any) => {
     console.log('wrappedExecuteMove called with move:', move);
     
-    // Check if it's the current player's turn
+    // Check if it's the current player's turn BEFORE executing anything
     const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
     const currentPlayerTurn = syncedGameHook.syncState.currentPlayer;
     
     if (currentPlayerPosition !== currentPlayerTurn) {
       console.log('Not your turn! Current player:', currentPlayerTurn, 'Your position:', currentPlayerPosition);
+      // Show a toast or some feedback that it's not their turn
       return;
     }
     
