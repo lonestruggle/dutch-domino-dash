@@ -125,6 +125,9 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
     }
 
     console.log('Host starting new game...');
+    
+    // Reset the saved game state and use local game state
+    gameStateRef.current = null;
     localGame.startNewGame();
     setIsGameInitialized(true);
     
@@ -148,7 +151,7 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
         description: "Alle spelers kunnen nu spelen",
         variant: "default"
       });
-    }, 500);
+    }, 1000);
   }, [syncState.isHost, localGame, saveGameState, gameId, toast]);
 
   // Synced execute move
@@ -185,8 +188,7 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
             if (newGameState && Object.keys(newGameState.dominoes || {}).length > 0) {
               console.log('Applying received game state from other player');
               gameStateRef.current = newGameState;
-              // Force a reload of the game state
-              loadGameState();
+              setIsGameInitialized(true);
             }
           }
         }
@@ -199,7 +201,7 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
       console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [gameId, loadGameState]);
+  }, [gameId]);
 
   // Initial load
   useEffect(() => {
