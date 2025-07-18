@@ -188,6 +188,7 @@ export default function Lobby() {
   }
 
   const isLobbyCreator = user?.id === lobby.created_by;
+  console.log('Debug lobby creator check:', { userId: user?.id, createdBy: lobby.created_by, isLobbyCreator });
   const playerSlots = Array.from({ length: lobby.max_players }, (_, index) => {
     const player = lobby.players.find(p => p.player_position === index);
     return { position: index, player };
