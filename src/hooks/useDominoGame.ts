@@ -301,6 +301,12 @@ export const useDominoGame = () => {
 
           let { x, y } = end;
           let adjustedFlipped = flipped;
+          let finalOrientation: 'horizontal' | 'vertical' = orientation;
+
+          // For doubles, flip the orientation like in original code
+          if (selectedIsDouble) {
+            finalOrientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
+          }
 
           // Adjust position and flipping based on direction to ensure correct pip matching
           if (orientation === 'horizontal') {
@@ -317,7 +323,7 @@ export const useDominoGame = () => {
             // For "S", no adjustment needed as it works fine
           }
 
-          moves.push({ end, dominoData, flipped: adjustedFlipped, orientation, x, y, fromDomino });
+          moves.push({ end, dominoData, flipped: adjustedFlipped, orientation: finalOrientation, x, y, fromDomino });
 
           uniqueEnds[`${end.x},${end.y}`] = true;
         }
