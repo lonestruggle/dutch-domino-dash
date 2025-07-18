@@ -220,6 +220,13 @@ export const useDominoGame = () => {
     }
 
     setGameState(prev => {
+      console.log('🎯 EXECUTE MOVE - setGameState called with prev:', { 
+        dominoesCount: Object.keys(prev.dominoes).length, 
+        boardKeys: Object.keys(prev.board).length,
+        handSize: prev.playerHand.length,
+        nextDominoId: prev.nextDominoId
+      });
+      
       const id = `d${prev.nextDominoId}`;
       let { x, y } = end;
       let adjustedFlipped = flipped;
@@ -324,7 +331,16 @@ export const useDominoGame = () => {
         };
       });
 
-      return {
+      console.log('🎯 EXECUTE MOVE - new state created:', {
+        dominoesCount: Object.keys(newDominoes).length,
+        boardKeys: Object.keys(newBoard).length,
+        handSize: newHand.length,
+        dominoId: id,
+        position: { x, y },
+        cells
+      });
+
+      const result = {
         ...prev,
         dominoes: newDominoes,
         board: newBoard,
@@ -334,6 +350,14 @@ export const useDominoGame = () => {
         spinnerId: !prev.spinnerId && isDouble(dominoData) ? id : prev.spinnerId,
         forbiddens: newForbiddens,
       };
+      
+      console.log('🎯 EXECUTE MOVE - returning result:', {
+        dominoesCount: Object.keys(result.dominoes).length,
+        boardKeys: Object.keys(result.board).length,
+        handSize: result.playerHand.length
+      });
+      
+      return result;
     });
   }, []);
 
