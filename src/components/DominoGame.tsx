@@ -15,6 +15,7 @@ export const DominoGame: React.FC = () => {
     selectDomino,
     drawFromBoneyard,
     startNewGame,
+    hasDifferentNeighbor,
   } = useDominoGame();
 
   const [gameStatus, setGameStatus] = useState<string>('');
@@ -97,6 +98,7 @@ export const DominoGame: React.FC = () => {
           legalMoves={legalMoves}
           onMoveExecute={handleMoveExecute}
           onCenterView={centerViewOnBoard}
+          hasDifferentNeighbor={hasDifferentNeighbor}
         />
       </div>
 

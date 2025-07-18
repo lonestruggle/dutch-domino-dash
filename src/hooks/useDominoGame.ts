@@ -12,6 +12,22 @@ const shuffleArray = <T>(array: T[]): void => {
   }
 };
 
+const hasDifferentNeighbor = (x: number, y: number, board: GameState['board']): boolean => {
+  const neighbors = [
+    [x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y],
+    [x + 1, y - 1], [x - 1, y - 1], [x + 1, y + 1], [x - 1, y + 1]
+  ];
+
+  let neighborCount = 0;
+  for (const [nx, ny] of neighbors) {
+    if (board[`${nx},${ny}`]) {
+      neighborCount++;
+    }
+  }
+
+  return neighborCount > 3;
+};
+
 export const useDominoGame = () => {
   const [gameState, setGameState] = useState<GameState>({
     dominoes: {},
@@ -108,6 +124,7 @@ export const useDominoGame = () => {
 
         if (isDouble(domino.data)) {
           const isVertical = domino.orientation === 'vertical';
+          // Non-spinner doubles only connect perpendicular to their orientation
           if (
             (isVertical && (dir === 'N' || dir === 'S')) ||
             (!isVertical && (dir === 'W' || dir === 'E'))
@@ -203,22 +220,23 @@ export const useDominoGame = () => {
       let { x, y } = end;
       let adjustedFlipped = flipped;
 
-      // Adjust position and flipping based on direction
+      // Adjust position and flipping based on direction to ensure correct pip matching
       if (orientation === 'horizontal') {
         if (end.fromDir === 'W') {
-          x -= 1;
-          adjustedFlipped = !flipped;
+          x -= 1; // Place to the left
+          adjustedFlipped = !flipped; // Flip to match the right side of the open end
         }
+        // For "E", no adjustment needed as it works fine
       } else {
         if (end.fromDir === 'N') {
-          y -= 1;
-          adjustedFlipped = !flipped;
+          y -= 1; // Place above
+          adjustedFlipped = !flipped; // Flip to match the bottom side of the open end
         }
+        // For "S", no adjustment needed as it works fine
       }
 
-      // Update forbiddens
       const newForbiddens = { ...prev.forbiddens };
-      
+
       if (isDouble(dominoData)) {
         if (end.fromDir === 'N' || end.fromDir === 'S') {
           if (end.fromDir === 'S') {
@@ -248,10 +266,37 @@ export const useDominoGame = () => {
           newForbiddens[`${x + 1},${y + 1}`] = true;
           newForbiddens[`${x},${y + 3}`] = true;
         }
-        // Add other directions...
+        if (dir === 'S') {
+          newForbiddens[`${x - 1},${y - 1}`] = true;
+          newForbiddens[`${x + 1},${y - 1}`] = true;
+          newForbiddens[`${x - 1},${y}`] = true;
+          newForbiddens[`${x + 1},${y}`] = true;
+          newForbiddens[`${x},${y - 2}`] = true;
+        }
+        if (dir === 'W') {
+          newForbiddens[`${x + 2},${y + 1}`] = true;
+          newForbiddens[`${x + 2},${y - 1}`] = true;
+          newForbiddens[`${x + 1},${y + 1}`] = true;
+          newForbiddens[`${x + 1},${y - 1}`] = true;
+          if (`${x + 3},${y}` !== '1,0') newForbiddens[`${x + 3},${y}`] = true;
+        }
+        if (dir === 'E') {
+          newForbiddens[`${x - 1},${y - 1}`] = true;
+          newForbiddens[`${x - 1},${y + 1}`] = true;
+          newForbiddens[`${x},${y - 1}`] = true;
+          newForbiddens[`${x},${y + 1}`] = true;
+          if (`${x - 2},${y}` !== '-1,0') newForbiddens[`${x - 2},${y}`] = true;
+        }
       }
 
-      // Place domino
+      if (!prev.spinnerId && isDouble(dominoData)) {
+        prev.spinnerId = id;
+      }
+
+      const newHand = [...prev.playerHand];
+      newHand.splice(index, 1);
+
+      // Place domino on grid
       const dominoState: DominoState = {
         data: dominoData,
         x,
@@ -274,9 +319,6 @@ export const useDominoGame = () => {
           value: pips[i],
         };
       });
-
-      const newHand = [...prev.playerHand];
-      newHand.splice(index, 1);
 
       return {
         ...prev,
@@ -403,5 +445,6 @@ export const useDominoGame = () => {
     drawFromBoneyard,
     startNewGame,
     resetGame,
+    hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y, gameState.board),
   };
 };

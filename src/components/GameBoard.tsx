@@ -9,6 +9,7 @@ interface GameBoardProps {
   legalMoves: LegalMove[];
   onMoveExecute: (move: LegalMove) => void;
   onCenterView: () => void;
+  hasDifferentNeighbor: (x: number, y: number) => boolean;
 }
 
 const CELL_SIZE = 48;
@@ -18,7 +19,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   gameState,
   legalMoves,
   onMoveExecute,
-  onCenterView
+  onCenterView,
+  hasDifferentNeighbor
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -34,22 +36,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [gameState.dominoes]);
 
-  const hasDifferentNeighbor = (x: number, y: number): boolean => {
-    const { board } = gameState;
-    const neighbors = [
-      [x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y],
-      [x + 1, y - 1], [x - 1, y - 1], [x + 1, y + 1], [x - 1, y + 1]
-    ];
-
-    let neighborCount = 0;
-    for (const [nx, ny] of neighbors) {
-      if (board[`${nx},${ny}`]) {
-        neighborCount++;
-      }
-    }
-
-    return neighborCount > 3;
-  };
 
   return (
     <div 
