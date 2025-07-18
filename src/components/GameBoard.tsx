@@ -12,7 +12,7 @@ interface GameBoardProps {
 }
 
 const CELL_SIZE = 48;
-const BOARD_SIZE = 5000;
+const BOARD_SIZE = 1500;
 
 export const GameBoard: React.FC<GameBoardProps> = ({
   gameState,
@@ -27,8 +27,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // Center view when game starts
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       containerRef.current.scrollTo({
-        left: 1950,
-        top: 2250,
+        left: BOARD_SIZE / 2 - 200,
+        top: BOARD_SIZE / 2 - 200,
         behavior: 'smooth'
       });
     }
