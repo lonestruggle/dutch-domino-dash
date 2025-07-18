@@ -40,14 +40,10 @@ export default function Game() {
   // Initialize local domino game logic
   const dominoGameHook = useDominoGame();
 
-  // Sync local state with database state when it changes
+  // Only sync database state to local state once on initial load
   useEffect(() => {
     if (syncedGameHook.syncState.gameState && !syncedGameHook.syncState.isLoading) {
-      console.log('🔄 Syncing database state to local state');
-      console.log('Database dominoes:', Object.keys(syncedGameHook.syncState.gameState.dominoes));
-      console.log('Database board:', syncedGameHook.syncState.gameState.board);
-      console.log('Database currentPlayer:', syncedGameHook.syncState.currentPlayer);
-      console.log('My position:', syncedGameHook.syncState.playerPosition);
+      console.log('🔄 Initial sync of database state to local state');
       
       // Only sync the shared parts of the game state, not the local player hand
       const dbState = syncedGameHook.syncState.gameState;
@@ -62,7 +58,7 @@ export default function Game() {
         playerHand: myHand // Use my hand from database
       });
     }
-  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading, syncedGameHook.syncState.currentPlayer, syncedGameHook.syncState.playerPosition]);
+  }, [syncedGameHook.syncState.isLoading]); // Only run once when loading is complete
 
   // Wrap executeMove to also update database
   const wrappedExecuteMove = useCallback(async (move: any) => {
@@ -135,6 +131,11 @@ export default function Game() {
         });
         
         syncedGameHook.updateGameState(updatedDbState, nextPlayer);
+        
+        // After updating database, reload game state for both players
+        setTimeout(() => {
+          syncedGameHook.loadGameState();
+        }, 100);
       } else {
         console.log('Cannot sync - missing required data:', {
           hasDbState: !!dbState,

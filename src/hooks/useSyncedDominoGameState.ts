@@ -268,47 +268,10 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
     await updateGameState(newGameState, starterPlayerIndex);
   }, [gameId, syncState.isHost, syncState.allPlayers, syncState.playerPosition, updateGameState]);
 
+  // Only load initial game state, no continuous sync
   useEffect(() => {
     loadGameState();
-    
-    // Subscribe to game changes
-    const channel = supabase
-      .channel(`game-${gameId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'games', filter: `lobby_id=eq.${gameId}` },
-        (payload) => {
-          console.log('Game updated:', payload);
-          
-          // Only update if we have new data and it's not our own update
-          if (payload.new && payload.eventType === 'UPDATE') {
-            const newGameState = payload.new.game_state;
-            const newCurrentPlayer = payload.new.current_player_turn;
-            
-            // Update sync state directly instead of reloading everything
-            setSyncState(prev => ({
-              ...prev,
-              gameState: newGameState,
-              currentPlayer: newCurrentPlayer
-            }));
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'lobby_players', filter: `lobby_id=eq.${gameId}` },
-        (payload) => {
-          console.log('Players updated:', payload);
-          // Only reload player data for player changes
-          loadGameState();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [loadGameState, gameId]);
+  }, [gameId, userId]);
 
   return {
     syncState,
