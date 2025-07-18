@@ -2,96 +2,217 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Domino Game Design System - Nederlandse kleuren en elegant design */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Main colors */
+    --background: 42 39% 96%;
+    --foreground: 220 13% 18%;
 
+    /* Game specific colors */
+    --board-green: 162 48% 18%;
+    --board-green-dark: 162 48% 12%;
+    --felt-gradient: linear-gradient(135deg, hsl(162 48% 18%), hsl(162 48% 12%));
+    
+    /* Dutch orange accents */
+    --dutch-orange: 24 100% 50%;
+    --dutch-orange-light: 24 100% 60%;
+    --dutch-orange-glow: 24 100% 50% / 0.3;
+    
+    /* Domino colors */
+    --domino-bg: 0 0% 98%;
+    --domino-border: 220 13% 18%;
+    --domino-shadow: 220 13% 18% / 0.25;
+    --domino-pip: 220 13% 18%;
+    
+    /* UI colors */
+    --ui-bg: 42 39% 96%;
+    --ui-border: 35 26% 75%;
+    --ui-text: 220 13% 18%;
+    --ui-muted: 220 13% 46%;
+    
+    /* Interactive states */
+    --hover-glow: 24 100% 50% / 0.4;
+    --selected-glow: 24 100% 50% / 0.6;
+    --target-bg: 24 100% 50% / 0.3;
+    --target-border: 24 100% 50%;
+    
+    /* Shadows and effects */
+    --shadow-domino: 0 3px 6px hsl(220 13% 18% / 0.15);
+    --shadow-elevated: 0 8px 25px hsl(220 13% 18% / 0.15);
+    --shadow-inset: inset 0 0 25px hsl(220 13% 18% / 0.3);
+    
+    /* Dimensions */
+    --cell-size: 48px;
+    --domino-radius: 6px;
+    --ui-radius: 8px;
+    
+    /* Animations */
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Standard shadcn colors */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 220 13% 18%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
+    --popover-foreground: 220 13% 18%;
+    --primary: 24 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 42 39% 92%;
+    --secondary-foreground: 220 13% 18%;
+    --muted: 42 39% 92%;
+    --muted-foreground: 220 13% 46%;
+    --accent: 24 100% 96%;
+    --accent-foreground: 24 100% 50%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 35 26% 85%;
+    --input: 35 26% 85%;
+    --ring: 24 100% 50%;
     --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 220 13% 9%;
+    --foreground: 42 39% 96%;
+    --board-green: 162 48% 8%;
+    --board-green-dark: 162 48% 5%;
+    --felt-gradient: linear-gradient(135deg, hsl(162 48% 8%), hsl(162 48% 5%));
+    --domino-bg: 220 13% 15%;
+    --domino-border: 42 39% 85%;
+    --domino-pip: 42 39% 85%;
+    --ui-bg: 220 13% 12%;
+    --ui-text: 42 39% 96%;
+    --ui-muted: 42 39% 65%;
+    --shadow-inset: inset 0 0 25px hsl(220 13% 0% / 0.5);
+    
+    --card: 220 13% 12%;
+    --card-foreground: 42 39% 96%;
+    --popover: 220 13% 12%;
+    --popover-foreground: 42 39% 96%;
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 42 39% 96%;
+    --muted: 220 13% 15%;
+    --muted-foreground: 42 39% 65%;
+    --accent: 220 13% 18%;
+    --accent-foreground: 24 100% 50%;
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
   }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  }
+  
+  /* Remove default scrollbars and add custom ones */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+@layer components {
+  /* Domino game specific styles */
+  .game-board {
+    background: var(--felt-gradient);
+    box-shadow: var(--shadow-inset);
+  }
+  
+  .domino-tile {
+    background: hsl(var(--domino-bg));
+    border: 1px solid hsl(var(--domino-border));
+    border-radius: var(--domino-radius);
+    box-shadow: var(--shadow-domino);
+    transition: var(--transition-smooth);
+  }
+  
+  .domino-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
+  }
+  
+  .domino-tile.selected {
+    box-shadow: 0 0 0 3px hsl(var(--hover-glow)), var(--shadow-elevated);
+    transform: scale(1.05);
+  }
+  
+  .domino-pip {
+    background: hsl(var(--domino-pip));
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+  }
+  
+  .placement-target {
+    background: hsl(var(--target-bg));
+    border: 2px dashed hsl(var(--target-border));
+    border-radius: var(--domino-radius);
+    transition: var(--transition-smooth);
+    cursor: pointer;
+  }
+  
+  .placement-target:hover {
+    background: hsl(var(--selected-glow));
+    transform: scale(1.02);
+  }
+  
+  .game-ui {
+    background: hsl(var(--ui-bg));
+    border: 1px solid hsl(var(--ui-border));
+    border-radius: var(--ui-radius);
+    box-shadow: var(--shadow-domino);
+  }
+
+  /* Pip positioning classes */
+  .pip-pattern-1 .domino-pip:nth-child(1) { top: 50%; left: 50%; }
+  
+  .pip-pattern-2 .domino-pip:nth-child(1) { top: 25%; left: 25%; }
+  .pip-pattern-2 .domino-pip:nth-child(2) { top: 75%; left: 75%; }
+  
+  .pip-pattern-3 .domino-pip:nth-child(1) { top: 25%; left: 25%; }
+  .pip-pattern-3 .domino-pip:nth-child(2) { top: 50%; left: 50%; }
+  .pip-pattern-3 .domino-pip:nth-child(3) { top: 75%; left: 75%; }
+  
+  .pip-pattern-4 .domino-pip:nth-child(1) { top: 25%; left: 25%; }
+  .pip-pattern-4 .domino-pip:nth-child(2) { top: 25%; left: 75%; }
+  .pip-pattern-4 .domino-pip:nth-child(3) { top: 75%; left: 25%; }
+  .pip-pattern-4 .domino-pip:nth-child(4) { top: 75%; left: 75%; }
+  
+  .pip-pattern-5 .domino-pip:nth-child(1) { top: 25%; left: 25%; }
+  .pip-pattern-5 .domino-pip:nth-child(2) { top: 25%; left: 75%; }
+  .pip-pattern-5 .domino-pip:nth-child(3) { top: 50%; left: 50%; }
+  .pip-pattern-5 .domino-pip:nth-child(4) { top: 75%; left: 25%; }
+  .pip-pattern-5 .domino-pip:nth-child(5) { top: 75%; left: 75%; }
+  
+  .pip-pattern-6 .domino-pip:nth-child(1) { top: 25%; left: 33.3%; }
+  .pip-pattern-6 .domino-pip:nth-child(2) { top: 25%; left: 66.6%; }
+  .pip-pattern-6 .domino-pip:nth-child(3) { top: 50%; left: 33.3%; }
+  .pip-pattern-6 .domino-pip:nth-child(4) { top: 50%; left: 66.6%; }
+  .pip-pattern-6 .domino-pip:nth-child(5) { top: 75%; left: 33.3%; }
+  .pip-pattern-6 .domino-pip:nth-child(6) { top: 75%; left: 66.6%; }
 }
 
 @layer base {
