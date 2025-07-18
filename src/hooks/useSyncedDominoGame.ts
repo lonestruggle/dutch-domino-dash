@@ -125,30 +125,49 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
     }
 
     console.log('Host starting new game...');
-    localGame.startNewGame();
-    setIsGameInitialized(true);
     
-    // Save the new game state after it initializes
+    // Start the local game first
+    localGame.startNewGame();
+    
+    // Wait longer for the game to fully initialize before saving
     setTimeout(async () => {
-      console.log('Saving new game state after initialization...');
-      await saveGameState(localGame.gameState);
+      console.log('Checking game state before saving:', localGame.gameState);
       
-      // Notify all players that a new game started
-      await supabase
-        .from('games')
-        .update({ 
-          status: 'active',
-          current_player_turn: 0,
-          updated_at: new Date().toISOString()
-        })
-        .eq('lobby_id', gameId);
+      // Ensure the game actually has content before saving
+      if (localGame.gameState.playerHand.length > 0 || Object.keys(localGame.gameState.dominoes).length > 0) {
+        console.log('Saving initialized game state...');
+        await saveGameState(localGame.gameState);
+        setIsGameInitialized(true);
+        gameStateRef.current = localGame.gameState;
         
-      toast({
-        title: "Nieuw spel gestart!",
-        description: "Alle spelers kunnen nu spelen",
-        variant: "default"
-      });
-    }, 500);
+        // Notify all players that a new game started
+        await supabase
+          .from('games')
+          .update({ 
+            status: 'active',
+            current_player_turn: 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('lobby_id', gameId);
+          
+        toast({
+          title: "Nieuw spel gestart!",
+          description: "Alle spelers kunnen nu spelen",
+          variant: "default"
+        });
+      } else {
+        console.log('Game not fully initialized yet, trying again...');
+        // Try again after another delay
+        setTimeout(async () => {
+          if (localGame.gameState.playerHand.length > 0 || Object.keys(localGame.gameState.dominoes).length > 0) {
+            console.log('Saving game state on second attempt...');
+            await saveGameState(localGame.gameState);
+            setIsGameInitialized(true);
+            gameStateRef.current = localGame.gameState;
+          }
+        }, 1000);
+      }
+    }, 1000);
   }, [syncState.isHost, localGame, saveGameState, gameId, toast]);
 
   // Synced execute move
@@ -180,13 +199,19 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
         (payload) => {
           console.log('Game state updated via real-time:', payload);
           if (payload.new && payload.new.game_state) {
-            // Only update if we're not the one who made the change
             const newGameState = payload.new.game_state as GameState;
-            if (newGameState && Object.keys(newGameState.dominoes || {}).length > 0) {
+            console.log('Received new game state:', newGameState);
+            
+            // Check if this is a meaningful game state update
+            if (newGameState && (Object.keys(newGameState.dominoes || {}).length > 0 || newGameState.playerHand?.length > 0)) {
               console.log('Applying received game state from other player');
               gameStateRef.current = newGameState;
-              // Force a reload of the game state
-              loadGameState();
+              setIsGameInitialized(true);
+              
+              // Force component re-render by updating state
+              setTimeout(() => {
+                gameStateRef.current = newGameState;
+              }, 100);
             }
           }
         }
