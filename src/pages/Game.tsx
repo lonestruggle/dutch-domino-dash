@@ -49,10 +49,20 @@ export default function Game() {
       console.log('Database currentPlayer:', syncedGameHook.syncState.currentPlayer);
       console.log('My position:', syncedGameHook.syncState.playerPosition);
       
-      // Update local game state to match database state
-      dominoGameHook.setGameState(syncedGameHook.syncState.gameState);
+      // Only sync the shared parts of the game state, not the local player hand
+      const dbState = syncedGameHook.syncState.gameState;
+      const myPosition = syncedGameHook.syncState.playerPosition;
+      const myHand = (dbState as any).playerHands?.[myPosition] || [];
+      
+      console.log('My hand from DB:', myHand);
+      
+      // Update local game state with shared data + my hand from database
+      dominoGameHook.setGameState({
+        ...dbState,
+        playerHand: myHand // Use my hand from database
+      });
     }
-  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading]);
+  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading, syncedGameHook.syncState.currentPlayer, syncedGameHook.syncState.playerPosition]);
 
   // Wrap executeMove to also update database
   const wrappedExecuteMove = useCallback(async (move: any) => {
