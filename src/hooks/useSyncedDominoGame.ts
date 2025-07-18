@@ -155,7 +155,7 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
 
     const starter = playerHand.splice(starterIndex, 1)[0];
     const isDouble = starter.value1 === starter.value2;
-    const orientation = isDouble ? 'vertical' : 'horizontal';
+    const orientation: 'vertical' | 'horizontal' = isDouble ? 'vertical' : 'horizontal';
 
     // Create domino state
     const dominoState = {
