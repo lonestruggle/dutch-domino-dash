@@ -27,7 +27,7 @@ interface LobbyDetails {
 export default function Lobby() {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useSimpleAuth();
+  const { user, isAuthenticated, loading: authLoading } = useSimpleAuth();
   const { toast } = useToast();
   const [lobby, setLobby] = useState<LobbyDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,7 +124,11 @@ export default function Lobby() {
   };
 
   useEffect(() => {
-    console.log('Lobby useEffect - isAuthenticated:', isAuthenticated, 'user:', user);
+    console.log('Lobby useEffect - authLoading:', authLoading, 'isAuthenticated:', isAuthenticated, 'user:', user);
+    
+    // Wait for auth to finish loading
+    if (authLoading) return;
+    
     if (!isAuthenticated) {
       console.log('Not authenticated, redirecting to lobbies');
       navigate('/lobbies');
@@ -157,7 +161,7 @@ export default function Lobby() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [lobbyId, isAuthenticated, navigate]);
+  }, [lobbyId, isAuthenticated, authLoading, navigate]);
 
   if (!isAuthenticated) {
     return null;
