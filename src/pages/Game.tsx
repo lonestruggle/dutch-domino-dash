@@ -43,6 +43,12 @@ export default function Game() {
   // Sync local state with database state when it changes
   useEffect(() => {
     if (syncedGameHook.syncState.gameState && !syncedGameHook.syncState.isLoading) {
+      console.log('🔄 Syncing database state to local state');
+      console.log('Database dominoes:', Object.keys(syncedGameHook.syncState.gameState.dominoes));
+      console.log('Database board:', syncedGameHook.syncState.gameState.board);
+      console.log('Database currentPlayer:', syncedGameHook.syncState.currentPlayer);
+      console.log('My position:', syncedGameHook.syncState.playerPosition);
+      
       // Update local game state to match database state
       dominoGameHook.setGameState(syncedGameHook.syncState.gameState);
     }
