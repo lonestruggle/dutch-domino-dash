@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSimpleAuth } from '@/hooks/useSimpleAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Play, LogOut } from 'lucide-react';
+import { Users, Play, LogOut, Copy } from 'lucide-react';
 
 interface LobbyPlayer {
   id: string;
@@ -155,6 +155,23 @@ export default function Lobby() {
     navigate('/');
   };
 
+  const copyLobbyLink = async () => {
+    const lobbyUrl = `${window.location.origin}/lobby/${lobbyId}`;
+    try {
+      await navigator.clipboard.writeText(lobbyUrl);
+      toast({
+        title: "Success",
+        description: "Lobby link copied to clipboard!"
+      });
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Could not copy link",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     console.log('Lobby useEffect - authLoading:', authLoading, 'isAuthenticated:', isAuthenticated, 'user:', user);
     
@@ -243,6 +260,10 @@ export default function Lobby() {
                 {lobby.name}
               </CardTitle>
               <div className="flex gap-2">
+                <Button variant="outline" onClick={copyLobbyLink}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Share Link
+                </Button>
                 <Button variant="outline" onClick={leaveLobby}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Leave
