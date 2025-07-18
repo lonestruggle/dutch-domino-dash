@@ -45,20 +45,31 @@ export default function Game() {
     if (syncedGameHook.syncState.gameState && !syncedGameHook.syncState.isLoading) {
       console.log('🔄 Syncing database state to local state');
       
-      // Only sync the shared parts of the game state, not the local player hand
       const dbState = syncedGameHook.syncState.gameState;
       const myPosition = syncedGameHook.syncState.playerPosition;
-      const myHand = (dbState as any).playerHands?.[myPosition] || [];
+      const currentPlayer = syncedGameHook.syncState.currentPlayer;
       
-      console.log('My hand from DB:', myHand);
+      // Only sync if it's not our turn (meaning another player made a move)
+      // or if our local state is significantly different (initial load)
+      const shouldSync = currentPlayer !== myPosition || 
+                        !dominoGameHook.gameState ||
+                        Object.keys(dominoGameHook.gameState.board || {}).length !== Object.keys(dbState.board || {}).length;
       
-      // Update local game state with shared data + my hand from database
-      dominoGameHook.setGameState({
-        ...dbState,
-        playerHand: myHand // Use my hand from database
-      });
+      if (shouldSync) {
+        const myHand = (dbState as any).playerHands?.[myPosition] || [];
+        
+        console.log('My hand from DB:', myHand);
+        
+        // Update local game state with shared data + my hand from database
+        dominoGameHook.setGameState({
+          ...dbState,
+          playerHand: myHand // Use my hand from database
+        });
+      } else {
+        console.log('Skipping sync - it\'s our turn or no significant changes');
+      }
     }
-  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading]); // React to game state changes
+  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading]);
 
   // Wrap executeMove to also update database
   const wrappedExecuteMove = useCallback(async (move: any) => {
