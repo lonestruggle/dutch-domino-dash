@@ -48,11 +48,28 @@ export default function Game() {
       
       // Calculate open ends for the current board state
       const openEnds = [];
+      
+      // Get all domino positions and their orientations
+      const dominoPositions = new Map();
+      for (const coord in dbState.board) {
+        const cell = dbState.board[coord];
+        const domino = dbState.dominoes[cell.dominoId];
+        if (!dominoPositions.has(cell.dominoId)) {
+          dominoPositions.set(cell.dominoId, {
+            positions: [],
+            orientation: domino?.orientation || 'horizontal',
+            isSpinner: domino?.isSpinner || false
+          });
+        }
+        dominoPositions.get(cell.dominoId).positions.push([parseInt(coord.split(',')[0]), parseInt(coord.split(',')[1])]);
+      }
+      
+      // Find open ends for each domino
       for (const coord in dbState.board) {
         const [x, y] = coord.split(',').map(Number);
         const cell = dbState.board[coord];
-        const domino = dbState.dominoes[cell.dominoId];
-
+        const dominoInfo = dominoPositions.get(cell.dominoId);
+        
         const neighbors = {
           N: [x, y - 1],
           S: [x, y + 1],
@@ -64,23 +81,28 @@ export default function Game() {
           const [nx, ny] = neighbors[dir as keyof typeof neighbors];
           if (dbState.board[`${nx},${ny}`]) continue;
 
-          const isDouble = domino?.data?.value1 === domino?.data?.value2;
-          if (isDouble) {
-            const isVertical = domino.orientation === 'vertical';
-            if (
-              (isVertical && (dir === 'N' || dir === 'S')) ||
-              (!isVertical && (dir === 'W' || dir === 'E'))
-            ) {
-              continue;
-            }
+          // Check if this is a valid open end based on domino orientation
+          let isValidEnd = true;
+          
+          if (dominoInfo?.isSpinner) {
+            // Spinners can connect in all directions
+            isValidEnd = true;
+          } else if (dominoInfo?.orientation === 'vertical') {
+            // Vertical dominoes can only connect North and South
+            isValidEnd = dir === 'N' || dir === 'S';
+          } else {
+            // Horizontal dominoes can only connect East and West
+            isValidEnd = dir === 'E' || dir === 'W';
           }
 
-          openEnds.push({
-            x: nx,
-            y: ny,
-            value: cell.value,
-            fromDir: dir as 'N' | 'S' | 'E' | 'W',
-          });
+          if (isValidEnd) {
+            openEnds.push({
+              x: nx,
+              y: ny,
+              value: cell.value,
+              fromDir: dir as 'N' | 'S' | 'E' | 'W',
+            });
+          }
         }
       }
       
