@@ -60,37 +60,85 @@ export default function Game() {
       return;
     }
 
-    // Execute the move locally first
-    dominoGameHook.executeMove(move);
-    
-    // Immediately update the database with the new state
+    const { index, end, dominoData, flipped, orientation } = move;
+    if (index === undefined) return;
+
     const currentState = dominoGameHook.gameState;
     const dbState = syncedGameHook.syncState.gameState;
     
     if (dbState && (dbState as any).playerHands) {
+      // Calculate the new state after the move
+      const id = `d${currentState.nextDominoId}`;
+      let { x, y } = end;
+      let adjustedFlipped = flipped;
+
+      // Adjust position and flipping based on direction
+      if (orientation === 'horizontal') {
+        if (end.fromDir === 'W') {
+          x -= 1;
+          adjustedFlipped = !flipped;
+        }
+      } else {
+        if (end.fromDir === 'N') {
+          y -= 1;
+          adjustedFlipped = !flipped;
+        }
+      }
+
+      // Create the new domino state
+      const dominoState = {
+        data: dominoData,
+        x,
+        y,
+        orientation,
+        flipped: adjustedFlipped,
+        isSpinner: dominoData.value1 === dominoData.value2,
+      };
+
+      // Calculate new board state
+      const pips = adjustedFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
+      const cells = orientation === 'horizontal' ? [[x, y], [x + 1, y]] : [[x, y], [x, y + 1]];
+
+      const newBoard = { ...currentState.board };
+      const newDominoes = { ...currentState.dominoes };
+      
+      newDominoes[id] = dominoState;
+      cells.forEach((cell, i) => {
+        newBoard[`${cell[0]},${cell[1]}`] = {
+          dominoId: id,
+          value: pips[i],
+        };
+      });
+
+      // Update player hand
+      const newHand = [...currentState.playerHand];
+      newHand.splice(index, 1);
+
       // Create updated database state
       const updatedDbState = {
         ...dbState,
-        // Update with current game state
-        dominoes: currentState.dominoes,
-        board: currentState.board,
+        dominoes: newDominoes,
+        board: newBoard,
         boneyard: currentState.boneyard,
         openEnds: currentState.openEnds,
         forbiddens: currentState.forbiddens,
-        nextDominoId: currentState.nextDominoId,
-        spinnerId: currentState.spinnerId,
+        nextDominoId: currentState.nextDominoId + 1,
+        spinnerId: !currentState.spinnerId && (dominoData.value1 === dominoData.value2) ? id : currentState.spinnerId,
         isGameOver: currentState.isGameOver,
-        playerHands: [...(dbState as any).playerHands] // Preserve all player hands
+        playerHands: [...(dbState as any).playerHands]
       };
       
       // Update current player's hand with the new state
-      updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
+      updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = newHand;
       
       // Move to next player
       const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
       
-      // Update database immediately
+      // Update database first, then execute the move locally
       await syncedGameHook.updateGameState(updatedDbState, nextPlayer);
+      
+      // Execute the move locally
+      dominoGameHook.executeMove(move);
     }
   }, [dominoGameHook, syncedGameHook, toast]);
 
