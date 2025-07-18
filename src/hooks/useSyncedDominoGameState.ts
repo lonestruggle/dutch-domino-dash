@@ -96,8 +96,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
       const localGameState = gameState ? {
         dominoes: gameState.dominoes || {},
         board: gameState.board || {},
-        playerHand,
-        playerHands: gameState.playerHands || [], // Add this line!
+        playerHand: [...playerHand], // Create a copy to avoid circular reference
+        playerHands: gameState.playerHands || [], // Keep original playerHands from database
         boneyard: gameState.boneyard || [],
         openEnds: gameState.openEnds || [],
         forbiddens: gameState.forbiddens || {},
