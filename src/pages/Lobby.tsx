@@ -124,7 +124,9 @@ export default function Lobby() {
   };
 
   useEffect(() => {
+    console.log('Lobby useEffect - isAuthenticated:', isAuthenticated, 'user:', user);
     if (!isAuthenticated) {
+      console.log('Not authenticated, redirecting to lobbies');
       navigate('/lobbies');
       return;
     }
