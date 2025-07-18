@@ -212,8 +212,12 @@ export const useDominoGame = () => {
   }, [regenerateOpenEnds]);
 
   const executeMove = useCallback((move: LegalMove) => {
+    console.log('🎯 EXECUTE MOVE CALLED:', { move, hasIndex: move.index !== undefined });
     const { index, end, dominoData, flipped, orientation } = move;
-    if (index === undefined) return;
+    if (index === undefined) {
+      console.log('❌ EXECUTE MOVE ABORTED: no index');
+      return;
+    }
 
     setGameState(prev => {
       const id = `d${prev.nextDominoId}`;
