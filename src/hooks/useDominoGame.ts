@@ -309,7 +309,7 @@ export const useDominoGame = () => {
           }
 
           // Adjust position and flipping based on direction to ensure correct pip matching
-          if (orientation === 'horizontal') {
+          if (finalOrientation === 'horizontal') {
             if (end.fromDir === 'W') {
               x -= 1; // Place to the left
               adjustedFlipped = !flipped; // Flip to match the right side of the open end
