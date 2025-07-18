@@ -43,208 +43,72 @@ export default function Game() {
   // Sync local state with database state when it changes
   useEffect(() => {
     if (syncedGameHook.syncState.gameState && !syncedGameHook.syncState.isLoading) {
-      // Update local game state to match database state and regenerate open ends
-      const dbState = syncedGameHook.syncState.gameState;
-      
-      // Calculate open ends for the current board state
-      const openEnds = [];
-      
-      // Get all domino positions and their orientations
-      const dominoPositions = new Map();
-      for (const coord in dbState.board) {
-        const cell = dbState.board[coord];
-        const domino = dbState.dominoes[cell.dominoId];
-        if (!dominoPositions.has(cell.dominoId)) {
-          dominoPositions.set(cell.dominoId, {
-            positions: [],
-            orientation: domino?.orientation || 'horizontal',
-            isSpinner: domino?.isSpinner || false
-          });
-        }
-        dominoPositions.get(cell.dominoId).positions.push([parseInt(coord.split(',')[0]), parseInt(coord.split(',')[1])]);
-      }
-      
-      // Find open ends for each domino
-      for (const coord in dbState.board) {
-        const [x, y] = coord.split(',').map(Number);
-        const cell = dbState.board[coord];
-        const dominoInfo = dominoPositions.get(cell.dominoId);
-        
-        const neighbors = {
-          N: [x, y - 1],
-          S: [x, y + 1],
-          W: [x - 1, y],
-          E: [x + 1, y],
-        };
-
-        for (const dir in neighbors) {
-          const [nx, ny] = neighbors[dir as keyof typeof neighbors];
-          if (dbState.board[`${nx},${ny}`]) continue;
-
-          // Check if this is a valid open end based on domino orientation
-          let isValidEnd = true;
-          
-          if (dominoInfo?.isSpinner) {
-            // Spinners can connect in all directions
-            isValidEnd = true;
-          } else if (dominoInfo?.orientation === 'vertical') {
-            // Vertical dominoes can only connect North and South
-            isValidEnd = dir === 'N' || dir === 'S';
-          } else {
-            // Horizontal dominoes can only connect East and West
-            isValidEnd = dir === 'E' || dir === 'W';
-          }
-
-          if (isValidEnd) {
-            openEnds.push({
-              x: nx,
-              y: ny,
-              value: cell.value,
-              fromDir: dir as 'N' | 'S' | 'E' | 'W',
-            });
-          }
-        }
-      }
-      
-      dominoGameHook.setGameState({
-        ...dbState,
-        openEnds
-      });
+      // Update local game state to match database state
+      dominoGameHook.setGameState(syncedGameHook.syncState.gameState);
     }
   }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading]);
 
-  // Wrap executeMove to also update database immediately
+  // Wrap executeMove to also update database
   const wrappedExecuteMove = useCallback(async (move: any) => {
-    // Check if it's the current player's turn
-    if (syncedGameHook.syncState.currentPlayer !== syncedGameHook.syncState.playerPosition) {
-      toast({
-        title: "Not your turn",
-        description: "Please wait for your turn to play.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const { index, end, dominoData, flipped, orientation } = move;
-    if (index === undefined) return;
-
-    const currentState = dominoGameHook.gameState;
-    const dbState = syncedGameHook.syncState.gameState;
+    // First execute the move locally
+    dominoGameHook.executeMove(move);
     
-    if (dbState && (dbState as any).playerHands) {
-      // Calculate the new state after the move
-      const id = `d${currentState.nextDominoId}`;
-      let { x, y } = end;
-      let adjustedFlipped = flipped;
-
-      // Adjust position and flipping based on direction
-      if (orientation === 'horizontal') {
-        if (end.fromDir === 'W') {
-          x -= 1;
-          adjustedFlipped = !flipped;
-        }
-      } else {
-        if (end.fromDir === 'N') {
-          y -= 1;
-          adjustedFlipped = !flipped;
-        }
-      }
-
-      // Create the new domino state
-      const dominoState = {
-        data: dominoData,
-        x,
-        y,
-        orientation,
-        flipped: adjustedFlipped,
-        isSpinner: dominoData.value1 === dominoData.value2,
-      };
-
-      // Calculate new board state
-      const pips = adjustedFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
-      const cells = orientation === 'horizontal' ? [[x, y], [x + 1, y]] : [[x, y], [x, y + 1]];
-
-      const newBoard = { ...currentState.board };
-      const newDominoes = { ...currentState.dominoes };
+    // Then update the database with the new state after a short delay
+    setTimeout(() => {
+      // Get the updated state from dominoGameHook
+      const currentState = dominoGameHook.gameState;
       
-      newDominoes[id] = dominoState;
-      cells.forEach((cell, i) => {
-        newBoard[`${cell[0]},${cell[1]}`] = {
-          dominoId: id,
-          value: pips[i],
+      // Get the current database state to preserve other players' hands
+      const dbState = syncedGameHook.syncState.gameState;
+      
+      if (dbState && (dbState as any).playerHands) {
+        // Create updated database state with current player's updated hand
+        const updatedDbState = {
+          ...dbState,
+          ...currentState, // Copy board, dominoes, etc.
+          playerHands: [...(dbState as any).playerHands] // Copy existing hands
         };
-      });
+        
+        // Update current player's hand
+        updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
+        
+        // Determine next player (simple rotation)
+        const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
+        syncedGameHook.updateGameState(updatedDbState, nextPlayer);
+      }
+    }, 100);
+  }, [dominoGameHook, syncedGameHook]);
 
-      // Update player hand
-      const newHand = [...currentState.playerHand];
-      newHand.splice(index, 1);
-
-      // Create updated database state
-      const updatedDbState = {
-        ...dbState,
-        dominoes: newDominoes,
-        board: newBoard,
-        boneyard: currentState.boneyard,
-        openEnds: currentState.openEnds,
-        forbiddens: currentState.forbiddens,
-        nextDominoId: currentState.nextDominoId + 1,
-        spinnerId: !currentState.spinnerId && (dominoData.value1 === dominoData.value2) ? id : currentState.spinnerId,
-        isGameOver: currentState.isGameOver,
-        playerHands: [...(dbState as any).playerHands]
-      };
-      
-      // Update current player's hand with the new state
-      updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = newHand;
-      
-      // Move to next player
-      const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
-      
-      // Update database first, then execute the move locally
-      await syncedGameHook.updateGameState(updatedDbState, nextPlayer);
-      
-      // Execute the move locally
-      dominoGameHook.executeMove(move);
-    }
-  }, [dominoGameHook, syncedGameHook, toast]);
-
-  // Wrap drawFromBoneyard to also update database immediately
+  // Wrap drawFromBoneyard to also update database
   const wrappedDrawFromBoneyard = useCallback(async () => {
-    // Check if it's the current player's turn
-    if (syncedGameHook.syncState.currentPlayer !== syncedGameHook.syncState.playerPosition) {
-      toast({
-        title: "Not your turn",
-        description: "Please wait for your turn to draw.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Draw locally first
+    // First draw locally
     dominoGameHook.drawFromBoneyard();
     
-    // Immediately update the database with the new state
-    const currentState = dominoGameHook.gameState;
-    const dbState = syncedGameHook.syncState.gameState;
-    
-    if (dbState && (dbState as any).playerHands) {
-      // Create updated database state
-      const updatedDbState = {
-        ...dbState,
-        // Update boneyard
-        boneyard: currentState.boneyard,
-        playerHands: [...(dbState as any).playerHands] // Preserve all player hands
-      };
+    // Then update the database with the new state after a short delay
+    setTimeout(() => {
+      // Get the updated state from dominoGameHook
+      const currentState = dominoGameHook.gameState;
       
-      // Update current player's hand with the drawn domino
-      updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
+      // Get the current database state to preserve other players' hands
+      const dbState = syncedGameHook.syncState.gameState;
       
-      // Move to next player
-      const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
-      
-      // Update database immediately
-      await syncedGameHook.updateGameState(updatedDbState, nextPlayer);
-    }
-  }, [dominoGameHook, syncedGameHook, toast]);
+      if (dbState && (dbState as any).playerHands) {
+        // Create updated database state with current player's updated hand and boneyard
+        const updatedDbState = {
+          ...dbState,
+          ...currentState, // Copy board, dominoes, boneyard, etc.
+          playerHands: [...(dbState as any).playerHands] // Copy existing hands
+        };
+        
+        // Update current player's hand
+        updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
+        
+        // Determine next player (simple rotation)
+        const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
+        syncedGameHook.updateGameState(updatedDbState, nextPlayer);
+      }
+    }, 100);
+  }, [dominoGameHook, syncedGameHook]);
 
   // Create combined hook for DominoGame component
   const combinedGameHook = {

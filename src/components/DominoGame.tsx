@@ -38,14 +38,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
 
-  // Temporary debug logs
-  console.log('Game state check:', {
-    selectedHandIndex: gameState?.selectedHandIndex,
-    openEndsCount: gameState?.openEnds?.length,
-    legalMovesCount: legalMoves.length,
-    selectedDomino
-  });
-
   // Add index to legal moves for executeMove
   const legalMovesWithIndex = legalMoves.map(move => ({
     ...move,

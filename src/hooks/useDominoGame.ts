@@ -150,11 +150,7 @@ export const useDominoGame = () => {
     const moves: LegalMove[] = [];
     const selectedIsDouble = isDouble(dominoData);
     const uniqueEnds: Record<string, boolean> = {};
-    
-    // Use the already calculated openEnds from game state, fallback to regenerating if not available
-    const openEnds = currentState.openEnds && currentState.openEnds.length > 0 
-      ? currentState.openEnds 
-      : regenerateOpenEnds(currentState);
+    const openEnds = regenerateOpenEnds(currentState);
 
     openEnds.forEach((end) => {
       if (uniqueEnds[`${end.x},${end.y}`]) return;
@@ -324,7 +320,7 @@ export const useDominoGame = () => {
         };
       });
 
-      const newState = {
+      return {
         ...prev,
         dominoes: newDominoes,
         board: newBoard,
@@ -334,11 +330,6 @@ export const useDominoGame = () => {
         spinnerId: !prev.spinnerId && isDouble(dominoData) ? id : prev.spinnerId,
         forbiddens: newForbiddens,
       };
-      
-      // Update open ends after placing domino
-      newState.openEnds = regenerateOpenEnds(newState);
-      
-      return newState;
     });
   }, []);
 
