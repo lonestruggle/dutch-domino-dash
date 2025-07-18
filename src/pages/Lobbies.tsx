@@ -14,7 +14,7 @@ import { Plus, Users, LogIn, Trash2 } from 'lucide-react';
 export default function Lobbies() {
   const navigate = useNavigate();
   const { user, isAuthenticated, signInWithUsername } = useSimpleAuth();
-  const { lobbies, loading, createLobby, joinLobby } = useLobbies();
+  const { lobbies, loading, createLobby, joinLobby, refetch } = useLobbies();
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
@@ -131,6 +131,9 @@ export default function Lobbies() {
       title: "Success",
       description: "Lobby deleted successfully"
     });
+    
+    // Refresh the lobby list
+    refetch();
   };
 
   if (!isAuthenticated) {
