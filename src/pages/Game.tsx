@@ -107,10 +107,16 @@ export default function Game() {
       const dbState = syncedGameHook.syncState.gameState;
       const currentState = dominoGameHook.gameState;
       
-      console.log('Updated player hand:', currentPlayerHand);
-      console.log('Local state after move:', currentState);
       
       if (dbState && (dbState as any).playerHands && currentState) {
+        console.log('🔍 DETAILED DEBUG - Before database update:');
+        console.log('Current DB state board:', Object.keys(dbState.board || {}));
+        console.log('Current local state board:', Object.keys(currentState.board || {}));
+        console.log('Current DB dominoes:', Object.keys((dbState as any).dominoes || {}));  
+        console.log('Current local dominoes:', Object.keys(currentState.dominoes || {}));
+        console.log('Current DB player hands:', (dbState as any).playerHands?.map((hand: any) => hand.length));
+        console.log('Current local player hands:', currentState.playerHands?.map((hand: any) => hand.length));
+        
         // Create updated database state with current player's updated hand
         const updatedDbState = {
           ...currentState, // Use current state as base (board, dominoes, etc.)
@@ -119,6 +125,11 @@ export default function Game() {
         
         // Update current player's hand with the correctly calculated hand
         updatedDbState.playerHands[currentPlayerPosition] = currentPlayerHand;
+        
+        console.log('🔍 DETAILED DEBUG - What we will save to DB:');
+        console.log('Updated DB state board:', Object.keys(updatedDbState.board || {}));
+        console.log('Updated DB dominoes:', Object.keys(updatedDbState.dominoes || {}));
+        console.log('Updated DB player hands:', updatedDbState.playerHands?.map((hand: any) => hand.length));
         
         // Determine next player (simple rotation)
         const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
