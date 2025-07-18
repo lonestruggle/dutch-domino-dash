@@ -12,7 +12,6 @@ const shuffleArray = <T>(array: T[]): void => {
   }
 };
 
-
 export const useDominoGame = () => {
   const [gameState, setGameState] = useState<GameState>({
     dominoes: {},
@@ -63,31 +62,96 @@ export const useDominoGame = () => {
     };
 
     const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
-    const cells = orientation === 'horizontal'
-      ? [[x, y], [x + 1, y]]
+    const cells = orientation === 'horizontal' 
+      ? [[x, y], [x + 1, y]] 
       : [[x, y], [x, y + 1]];
 
     setGameState(prev => {
-      const newBoard = { ...prev.board };
-      const newDominoes = { ...prev.dominoes };
+      const newState = { ...prev };
+      newState.dominoes[id] = dominoState;
 
-      newDominoes[id] = dominoState;
-      
       cells.forEach((cell, i) => {
-        newBoard[`${cell[0]},${cell[1]}`] = {
+        newState.board[`${cell[0]},${cell[1]}`] = {
           dominoId: id,
           value: pips[i],
         };
       });
 
-      return {
-        ...prev,
-        dominoes: newDominoes,
-        board: newBoard,
-      };
+      return newState;
     });
   }, []);
 
+  const startGame = useCallback(() => {
+    resetGame();
+    let fullSet: DominoData[] = [];
+    for (let i = 0; i <= 6; i++) {
+      for (let j = i; j <= 6; j++) {
+        fullSet.push({ value1: i, value2: j });
+      }
+    }
+    shuffleArray(fullSet);
+
+    const playerHand = fullSet.slice(0, 7);
+    const boneyard = fullSet.slice(7);
+
+    // Find highest double or highest total value
+    let starter: DominoData;
+    let starterIndex = -1;
+
+    // Look for highest double first
+    for (let i = 6; i >= 0; i--) {
+      starterIndex = playerHand.findIndex(d => d.value1 === i && d.value2 === i);
+      if (starterIndex > -1) break;
+    }
+
+    // If no double, find highest total value
+    if (starterIndex === -1) {
+      let highestPip = -1;
+      playerHand.forEach((d, i) => {
+        const total = d.value1 + d.value2;
+        if (total > highestPip) {
+          highestPip = total;
+          starterIndex = i;
+        }
+      });
+    }
+
+    starter = playerHand.splice(starterIndex, 1)[0];
+    const starterId = 'd0';
+    const orientation = isDouble(starter) ? 'vertical' : 'horizontal';
+
+    setGameState({
+      dominoes: {
+        [starterId]: {
+          data: starter,
+          x: 0,
+          y: 0,
+          orientation,
+          flipped: false,
+          isSpinner: isDouble(starter),
+        }
+      },
+      board: orientation === 'horizontal' 
+        ? {
+            '0,0': { dominoId: starterId, value: starter.value1 },
+            '1,0': { dominoId: starterId, value: starter.value2 }
+          }
+        : {
+            '0,0': { dominoId: starterId, value: starter.value1 },
+            '0,1': { dominoId: starterId, value: starter.value2 }
+          },
+      playerHand,
+      boneyard,
+      openEnds: [],
+      forbiddens: {},
+      nextDominoId: 1,
+      spinnerId: isDouble(starter) ? starterId : null,
+      isGameOver: false,
+      selectedHandIndex: null,
+    });
+  }, [resetGame]);
+
+  // EXACT COPY FROM YOUR ORIGINAL CODE
   const regenerateOpenEnds = useCallback((state: GameState): OpenEnd[] => {
     const openEnds: OpenEnd[] = [];
     
@@ -130,7 +194,9 @@ export const useDominoGame = () => {
     return openEnds;
   }, []);
 
-  const hasDifferentNeighbor = useCallback((x: number, y: number, state: GameState): boolean => {
+  // EXACT COPY FROM YOUR ORIGINAL CODE
+  const hasDifferentNeighbor = useCallback((x: number, y: number): boolean => {
+    const { board } = gameStateRef.current;
     const neighbors = {
       N: [x, y - 1],
       S: [x, y + 1],
@@ -143,26 +209,34 @@ export const useDominoGame = () => {
     };
 
     let nCount = 0;
+
     for (const direction in neighbors) {
       const [nx, ny] = neighbors[direction as keyof typeof neighbors];
       const neighborKey = `${nx},${ny}`;
-      if (state.board[neighborKey]) {
+      if (board[neighborKey]) {
         nCount += 1;
       }
     }
 
-    return nCount > 3;
+    if (nCount > 3) {
+      return true;
+    }
+
+    return false;
   }, []);
 
-  const findLegalMoves = useCallback((dominoData: DominoData, state?: GameState): LegalMove[] => {
-    const currentState = state || gameStateRef.current;
+  // EXACT COPY FROM YOUR ORIGINAL CODE
+  const findLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
     const moves: LegalMove[] = [];
     const selectedIsDouble = isDouble(dominoData);
     const uniqueEnds: Record<string, boolean> = {};
+    const currentState = gameStateRef.current;
     const openEnds = regenerateOpenEnds(currentState);
 
     openEnds.forEach((end) => {
-      if (uniqueEnds[`${end.x},${end.y}`]) return;
+      if (uniqueEnds[`${end.x},${end.y}`]) {
+        return;
+      }
 
       const check = (value: number, flipped: boolean) => {
         if (end.value === value) {
@@ -187,22 +261,35 @@ export const useDominoGame = () => {
             E: `${end.x + 2},${end.y}`,
           }[end.fromDir];
 
-          const fromDomino = currentState.dominoes[currentState.board[fromCellKey]?.dominoId];
           const toDomino = currentState.dominoes[currentState.board[toCellKey]?.dominoId];
           const toDominoForward = currentState.dominoes[currentState.board[toCellKeyForward]?.dominoId];
+          const fromDomino = currentState.dominoes[currentState.board[fromCellKey]?.dominoId];
 
-          if (!fromDomino || toDomino || toDominoForward || currentState.forbiddens[toCellKey]) {
+          if (!fromDomino) {
+            return;
+          }
+          if (toDomino) {
+            return;
+          }
+          if (toDominoForward) {
             return;
           }
 
-          if (hasDifferentNeighbor(end.x, end.y, currentState)) {
+          if (currentState.forbiddens[toCellKey]) {
             return;
           }
 
-          const orientation = (end.fromDir === 'N' || end.fromDir === 'S') ? 'vertical' : 'horizontal';
-
-          if (fromDomino.isSpinner && moves.find(x => x.end.fromDir === end.fromDir && x.fromDomino === fromDomino)) {
+          if (hasDifferentNeighbor(end.x, end.y)) {
             return;
+          }
+
+          const orientation = end.fromDir === 'N' || end.fromDir === 'S' ? 'vertical' : 'horizontal';
+
+          if (fromDomino.isSpinner && fromDomino) {
+            // Parallel Moves from double items are forbidden.
+            if (moves.find(x => x.end.fromDir === end.fromDir && x.fromDomino === fromDomino)) {
+              return;
+            }
           }
 
           if (selectedIsDouble && fromDomino.orientation === 'horizontal' && (end.fromDir === 'N' || end.fromDir === 'S')) {
@@ -231,6 +318,7 @@ export const useDominoGame = () => {
           }
 
           moves.push({ end, dominoData, flipped: adjustedFlipped, orientation, x, y, fromDomino });
+
           uniqueEnds[`${end.x},${end.y}`] = true;
         }
       };
@@ -240,80 +328,69 @@ export const useDominoGame = () => {
     });
 
     return moves;
-  }, [regenerateOpenEnds]);
+  }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
   const executeMove = useCallback((move: LegalMove) => {
-    console.log('🎯 EXECUTE MOVE CALLED:', { move, hasIndex: move.index !== undefined });
     const { index, end, dominoData, flipped, orientation } = move;
     if (index === undefined) {
-      console.log('❌ EXECUTE MOVE ABORTED: no index');
       return;
     }
 
     setGameState(prev => {
-      console.log('🎯 EXECUTE MOVE - setGameState called with prev:', { 
-        dominoesCount: Object.keys(prev.dominoes).length, 
-        boardKeys: Object.keys(prev.board).length,
-        handSize: prev.playerHand.length,
-        nextDominoId: prev.nextDominoId
-      });
-      
       const id = `d${prev.nextDominoId}`;
       const { x, y, flipped: adjustedFlipped } = move;
 
       // Use the pre-calculated position and flipped values from findLegalMoves
 
-      const newForbiddens = { ...prev.forbiddens };
-
       if (isDouble(dominoData)) {
         if (end.fromDir === 'N' || end.fromDir === 'S') {
           if (end.fromDir === 'S') {
-            newForbiddens[`${x + 1},${y - 1}`] = true;
-            newForbiddens[`${x - 1},${y - 1}`] = true;
+            prev.forbiddens[`${x + 1},${y - 1}`] = true;
+            prev.forbiddens[`${x - 1},${y - 1}`] = true;
           }
           if (end.fromDir === 'N') {
-            newForbiddens[`${x - 1},${y + 1}`] = true;
-            newForbiddens[`${x + 1},${y + 1}`] = true;
+            prev.forbiddens[`${x - 1},${y + 1}`] = true;
+            prev.forbiddens[`${x + 1},${y + 1}`] = true;
           }
         } else {
           if (end.fromDir === 'E') {
-            newForbiddens[`${x - 1},${y + 1}`] = true;
-            newForbiddens[`${x - 1},${y - 1}`] = true;
+            prev.forbiddens[`${x - 1},${y + 1}`] = true;
+            prev.forbiddens[`${x - 1},${y - 1}`] = true;
           }
           if (end.fromDir === 'W') {
-            newForbiddens[`${x + 1},${y + 1}`] = true;
-            newForbiddens[`${x + 1},${y - 1}`] = true;
+            prev.forbiddens[`${x + 1},${y + 1}`] = true;
+            prev.forbiddens[`${x + 1},${y - 1}`] = true;
           }
         }
       } else {
-        const dir = end.fromDir;
+        let dir = end.fromDir;
         if (dir === 'N') {
-          newForbiddens[`${x - 1},${y + 2}`] = true;
-          newForbiddens[`${x + 1},${y + 2}`] = true;
-          newForbiddens[`${x - 1},${y + 1}`] = true;
-          newForbiddens[`${x + 1},${y + 1}`] = true;
-          newForbiddens[`${x},${y + 3}`] = true;
+          prev.forbiddens[`${x - 1},${y + 2}`] = true;
+          prev.forbiddens[`${x + 1},${y + 2}`] = true;
+          prev.forbiddens[`${x - 1},${y + 1}`] = true;
+          prev.forbiddens[`${x + 1},${y + 1}`] = true;
+          prev.forbiddens[`${x},${y + 3}`] = true;
         }
         if (dir === 'S') {
-          newForbiddens[`${x - 1},${y - 1}`] = true;
-          newForbiddens[`${x + 1},${y - 1}`] = true;
-          newForbiddens[`${x - 1},${y}`] = true;
-          newForbiddens[`${x + 1},${y}`] = true;
-          newForbiddens[`${x},${y - 2}`] = true;
+          prev.forbiddens[`${x - 1},${y - 1}`] = true;
+          prev.forbiddens[`${x + 1},${y - 1}`] = true;
+          prev.forbiddens[`${x - 1},${y}`] = true;
+          prev.forbiddens[`${x + 1},${y}`] = true;
+          prev.forbiddens[`${x},${y - 2}`] = true;
         }
         if (dir === 'W') {
-          newForbiddens[`${x + 2},${y + 1}`] = true;
-          newForbiddens[`${x + 2},${y - 1}`] = true;
-          newForbiddens[`${x + 1},${y + 1}`] = true;
-          newForbiddens[`${x + 1},${y - 1}`] = true;
-          if (`${x + 3},${y}` !== '1,0') newForbiddens[`${x + 3},${y}`] = true;
+          prev.forbiddens[`${x + 2},${y + 1}`] = true;
+          prev.forbiddens[`${x + 2},${y - 1}`] = true;
+          prev.forbiddens[`${x + 1},${y + 1}`] = true;
+          prev.forbiddens[`${x + 1},${y - 1}`] = true;
+          if (`${x + 3},${y}` !== '1,0') prev.forbiddens[`${x + 3},${y}`] = true;
         }
         if (dir === 'E') {
-          newForbiddens[`${x - 1},${y - 1}`] = true;
-          newForbiddens[`${x - 1},${y + 1}`] = true;
-          newForbiddens[`${x},${y - 1}`] = true;
-          newForbiddens[`${x},${y + 1}`] = true;
-          if (`${x - 2},${y}` !== '-1,0') newForbiddens[`${x - 2},${y}`] = true;
+          prev.forbiddens[`${x - 1},${y - 1}`] = true;
+          prev.forbiddens[`${x - 1},${y + 1}`] = true;
+          prev.forbiddens[`${x},${y - 1}`] = true;
+          prev.forbiddens[`${x},${y + 1}`] = true;
+          if (`${x - 2},${y}` !== '-1,0') prev.forbiddens[`${x - 2},${y}`] = true;
         }
       }
 
@@ -321,10 +398,9 @@ export const useDominoGame = () => {
         prev.spinnerId = id;
       }
 
-      const newHand = [...prev.playerHand];
-      newHand.splice(index, 1);
+      const newPlayerHand = [...prev.playerHand];
+      newPlayerHand.splice(index, 1);
 
-      // Place domino on grid
       const dominoState: DominoState = {
         data: dominoData,
         x,
@@ -334,13 +410,15 @@ export const useDominoGame = () => {
         isSpinner: isDouble(dominoData),
       };
 
-      const pips = adjustedFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
-      const cells = orientation === 'horizontal' ? [[x, y], [x + 1, y]] : [[x, y], [x, y + 1]];
+      const pips = adjustedFlipped 
+        ? [dominoData.value2, dominoData.value1] 
+        : [dominoData.value1, dominoData.value2];
+
+      const cells = orientation === 'horizontal' 
+        ? [[x, y], [x + 1, y]] 
+        : [[x, y], [x, y + 1]];
 
       const newBoard = { ...prev.board };
-      const newDominoes = { ...prev.dominoes };
-      
-      newDominoes[id] = dominoState;
       cells.forEach((cell, i) => {
         newBoard[`${cell[0]},${cell[1]}`] = {
           dominoId: id,
@@ -348,149 +426,45 @@ export const useDominoGame = () => {
         };
       });
 
-      console.log('🎯 EXECUTE MOVE - new state created:', {
-        dominoesCount: Object.keys(newDominoes).length,
-        boardKeys: Object.keys(newBoard).length,
-        handSize: newHand.length,
-        dominoId: id,
-        position: { x, y },
-        cells
-      });
-
-      const result = {
+      return {
         ...prev,
-        dominoes: newDominoes,
+        dominoes: { ...prev.dominoes, [id]: dominoState },
         board: newBoard,
-        playerHand: newHand,
+        playerHand: newPlayerHand,
         selectedHandIndex: null,
         nextDominoId: prev.nextDominoId + 1,
-        spinnerId: !prev.spinnerId && isDouble(dominoData) ? id : prev.spinnerId,
-        forbiddens: newForbiddens,
       };
-      
-      console.log('🎯 EXECUTE MOVE - returning result:', {
-        dominoesCount: Object.keys(result.dominoes).length,
-        boardKeys: Object.keys(result.board).length,
-        handSize: result.playerHand.length
-      });
-      
-      return result;
     });
   }, []);
 
-  const selectDomino = useCallback((index: number) => {
+  const drawFromBoneyard = useCallback(() => {
+    if (gameState.isGameOver || gameState.boneyard.length === 0) return;
+
+    setGameState(prev => ({
+      ...prev,
+      playerHand: [...prev.playerHand, prev.boneyard[prev.boneyard.length - 1]],
+      boneyard: prev.boneyard.slice(0, -1),
+    }));
+  }, [gameState.isGameOver, gameState.boneyard.length]);
+
+  const selectHandDomino = useCallback((index: number) => {
     setGameState(prev => ({
       ...prev,
       selectedHandIndex: prev.selectedHandIndex === index ? null : index,
     }));
   }, []);
 
-  const drawFromBoneyard = useCallback(() => {
-    setGameState(prev => {
-      if (prev.isGameOver || prev.boneyard.length === 0) return prev;
-      
-      const newBoneyard = [...prev.boneyard];
-      const drawnDomino = newBoneyard.pop()!;
-      
-      return {
-        ...prev,
-        playerHand: [...prev.playerHand, drawnDomino],
-        boneyard: newBoneyard,
-      };
-    });
-  }, []);
-
-  const startNewGame = useCallback(() => {
-    const fullSet: DominoData[] = [];
-    for (let i = 0; i <= 6; i++) {
-      for (let j = i; j <= 6; j++) {
-        fullSet.push({ value1: i, value2: j });
-      }
-    }
-    shuffleArray(fullSet);
-
-    const playerHand = fullSet.slice(0, 7);
-    const boneyard = fullSet.slice(7);
-
-    // Find highest double or highest value starter
-    let starterIndex = -1;
-    for (let i = 6; i >= 0; i--) {
-      starterIndex = playerHand.findIndex(d => d.value1 === i && d.value2 === i);
-      if (starterIndex > -1) break;
-    }
-
-    if (starterIndex === -1) {
-      let highestPip = -1;
-      playerHand.forEach((d, i) => {
-        const total = d.value1 + d.value2;
-        if (total > highestPip) {
-          highestPip = total;
-          starterIndex = i;
-        }
-      });
-    }
-
-    const starter = playerHand.splice(starterIndex, 1)[0];
-    const starterId = 'd0';
-    const orientation = isDouble(starter) ? 'vertical' : 'horizontal';
-
-    setGameState({
-      dominoes: {},
-      board: {},
-      playerHand,
-      boneyard,
-      openEnds: [],
-      forbiddens: {},
-      nextDominoId: 1,
-      spinnerId: isDouble(starter) ? starterId : null,
-      isGameOver: false,
-      selectedHandIndex: null,
-    });
-
-    // Place starter domino immediately
-    setTimeout(() => {
-      const dominoState: DominoState = {
-        data: starter,
-        x: 0,
-        y: 0,
-        orientation,
-        flipped: false,
-        isSpinner: isDouble(starter),
-      };
-
-      const pips = [starter.value1, starter.value2];
-      const cells = orientation === 'horizontal' ? [[0, 0], [1, 0]] : [[0, 0], [0, 1]];
-
-      setGameState(prev => {
-        const newBoard = { ...prev.board };
-        const newDominoes = { ...prev.dominoes };
-
-        newDominoes[starterId] = dominoState;
-        cells.forEach((cell, i) => {
-          newBoard[`${cell[0]},${cell[1]}`] = {
-            dominoId: starterId,
-            value: pips[i],
-          };
-        });
-
-        return {
-          ...prev,
-          dominoes: newDominoes,
-          board: newBoard,
-        };
-      });
-    }, 50);
-  }, []);
-
   return {
     gameState,
     setGameState,
+    startGame,
+    placeDominoOnGrid,
     findLegalMoves,
     executeMove,
-    selectDomino,
     drawFromBoneyard,
-    startNewGame,
+    selectHandDomino,
     resetGame,
-    hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y, gameState),
+    hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y),
+    regenerateOpenEnds: () => regenerateOpenEnds(gameStateRef.current),
   };
 };
