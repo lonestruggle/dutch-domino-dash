@@ -50,14 +50,21 @@ export default function Game() {
 
   // Wrap executeMove to also update database
   const wrappedExecuteMove = useCallback(async (move: any) => {
+    console.log('wrappedExecuteMove called with move:', move);
+    
     // First execute the move locally
     dominoGameHook.executeMove(move);
     
     // Wait a bit longer for the state to update, then sync to database
     setTimeout(() => {
+      console.log('Attempting to sync to database...');
+      
       // Get the current database state to preserve other players' hands
       const dbState = syncedGameHook.syncState.gameState;
       const currentState = dominoGameHook.gameState;
+      
+      console.log('Current game state:', currentState);
+      console.log('DB state:', dbState);
       
       if (dbState && (dbState as any).playerHands && currentState) {
         // Create updated database state with current player's updated hand
@@ -80,9 +87,15 @@ export default function Game() {
         });
         
         syncedGameHook.updateGameState(updatedDbState, nextPlayer);
+      } else {
+        console.log('Cannot sync - missing required data:', {
+          hasDbState: !!dbState,
+          hasPlayerHands: !!(dbState && (dbState as any).playerHands),
+          hasCurrentState: !!currentState
+        });
       }
-    }, 200);
-  }, [dominoGameHook.executeMove, dominoGameHook.gameState, syncedGameHook.syncState, syncedGameHook.updateGameState]);
+    }, 300);
+  }, [dominoGameHook.executeMove, syncedGameHook.syncState, syncedGameHook.updateGameState]);
 
   // Wrap drawFromBoneyard to also update database
   const wrappedDrawFromBoneyard = useCallback(async () => {
