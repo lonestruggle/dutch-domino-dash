@@ -446,11 +446,29 @@ export const useDominoGame = () => {
   const drawFromBoneyard = useCallback(() => {
     if (gameState.isGameOver || gameState.boneyard.length === 0) return;
 
-    setGameState(prev => ({
-      ...prev,
-      playerHand: [...prev.playerHand, prev.boneyard[prev.boneyard.length - 1]],
-      boneyard: prev.boneyard.slice(0, -1),
-    }));
+    setGameState(prev => {
+      // Draw a domino from the boneyard
+      const newPlayerHand = [...prev.playerHand, prev.boneyard[prev.boneyard.length - 1]];
+      const newBoneyard = prev.boneyard.slice(0, -1);
+      
+      // Check if the newly drawn domino can be played
+      const drawnDomino = prev.boneyard[prev.boneyard.length - 1];
+      const openEnds = regenerateOpenEnds(prev);
+      const canPlay = openEnds.some(end => 
+        drawnDomino.value1 === end.value || drawnDomino.value2 === end.value
+      );
+      
+      // If the drawn domino can be played, auto-select it
+      const selectedIndex = canPlay ? newPlayerHand.length - 1 : prev.selectedHandIndex;
+      
+      return {
+        ...prev,
+        playerHand: newPlayerHand,
+        boneyard: newBoneyard,
+        selectedHandIndex: selectedIndex,
+        // Don't change current player - only change when a domino is actually played
+      };
+    });
   }, [gameState.isGameOver, gameState.boneyard.length]);
 
   const selectHandDomino = useCallback((index: number) => {
