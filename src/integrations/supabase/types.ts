@@ -14,7 +14,109 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      games: {
+        Row: {
+          created_at: string
+          current_player_turn: number
+          game_state: Json
+          id: string
+          lobby_id: string
+          status: string
+          updated_at: string
+          winner_position: number | null
+        }
+        Insert: {
+          created_at?: string
+          current_player_turn?: number
+          game_state: Json
+          id?: string
+          lobby_id: string
+          status?: string
+          updated_at?: string
+          winner_position?: number | null
+        }
+        Update: {
+          created_at?: string
+          current_player_turn?: number
+          game_state?: Json
+          id?: string
+          lobby_id?: string
+          status?: string
+          updated_at?: string
+          winner_position?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "games_lobby_id_fkey"
+            columns: ["lobby_id"]
+            isOneToOne: false
+            referencedRelation: "lobbies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lobbies: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          max_players: number
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          max_players?: number
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          max_players?: number
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lobby_players: {
+        Row: {
+          id: string
+          joined_at: string
+          lobby_id: string
+          player_position: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          lobby_id: string
+          player_position: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          lobby_id?: string
+          player_position?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lobby_players_lobby_id_fkey"
+            columns: ["lobby_id"]
+            isOneToOne: false
+            referencedRelation: "lobbies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
