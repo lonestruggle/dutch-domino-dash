@@ -78,7 +78,7 @@ export default function Lobbies() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-center">Welcome to Domino Game</CardTitle>
+            <CardTitle className="text-center">Welcome to Multiplayer</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">
@@ -87,11 +87,10 @@ export default function Lobbies() {
             <div className="space-y-2">
               <Button onClick={handleSignIn} className="w-full">
                 <LogIn className="h-4 w-4 mr-2" />
-                Sign In Anonymously
+                Sign In to Play Multiplayer
               </Button>
-              <Button variant="outline" onClick={() => navigate('/single-player')} className="w-full">
-                <Play className="h-4 w-4 mr-2" />
-                Play Single Player
+              <Button variant="outline" onClick={() => navigate('/')} className="w-full">
+                Back to Home
               </Button>
             </div>
           </CardContent>
@@ -104,11 +103,10 @@ export default function Lobbies() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Domino Lobbies</h1>
+          <h1 className="text-3xl font-bold">Multiplayer Lobbies</h1>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/single-player')}>
-              <Play className="h-4 w-4 mr-2" />
-              Single Player
+            <Button variant="outline" onClick={() => navigate('/')}>
+              Back to Home
             </Button>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>

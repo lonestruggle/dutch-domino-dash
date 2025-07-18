@@ -177,7 +177,7 @@ export default function Lobby() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">Lobby not found</p>
-            <Button onClick={() => navigate('/')} className="mt-4">
+            <Button onClick={() => navigate('/lobbies')} className="mt-4">
               Back to Lobbies
             </Button>
           </CardContent>
