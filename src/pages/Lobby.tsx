@@ -83,6 +83,38 @@ export default function Lobby() {
       return;
     }
 
+    // Create initial game state
+    const initialGameState = {
+      players: lobby.players.map(p => ({
+        id: p.user_id,
+        username: p.username,
+        position: p.player_position
+      })),
+      dominoSet: [], // This will be initialized by the game logic
+      gameStarted: false
+    };
+
+    // Create game record
+    const { data: gameData, error: gameError } = await supabase
+      .from('games')
+      .insert({
+        lobby_id: lobby.id,
+        current_player_turn: 0,
+        game_state: initialGameState,
+        status: 'active'
+      })
+      .select()
+      .single();
+
+    if (gameError) {
+      toast({
+        title: "Error",
+        description: "Could not create game",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Update lobby status to playing
     const { error: updateError } = await supabase
       .from('lobbies')
