@@ -439,6 +439,7 @@ export const useDominoGame = () => {
 
   return {
     gameState,
+    setGameState,
     findLegalMoves,
     executeMove,
     selectDomino,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,11 +40,50 @@ export default function Game() {
   // Initialize local domino game logic
   const dominoGameHook = useDominoGame();
 
+  // Sync local state with database state when it changes
+  useEffect(() => {
+    if (syncedGameHook.syncState.gameState && !syncedGameHook.syncState.isLoading) {
+      // Update local game state to match database state
+      dominoGameHook.setGameState(syncedGameHook.syncState.gameState);
+    }
+  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading]);
+
+  // Wrap executeMove to also update database
+  const wrappedExecuteMove = useCallback(async (move: any) => {
+    // First execute the move locally
+    dominoGameHook.executeMove(move);
+    
+    // Then update the database with the new state after a short delay
+    setTimeout(() => {
+      // Get the updated state from dominoGameHook
+      const currentState = dominoGameHook.gameState;
+      
+      // Get the current database state to preserve other players' hands
+      const dbState = syncedGameHook.syncState.gameState;
+      
+      if (dbState && (dbState as any).playerHands) {
+        // Create updated database state with current player's updated hand
+        const updatedDbState = {
+          ...dbState,
+          ...currentState, // Copy board, dominoes, etc.
+          playerHands: [...(dbState as any).playerHands] // Copy existing hands
+        };
+        
+        // Update current player's hand
+        updatedDbState.playerHands[syncedGameHook.syncState.playerPosition] = currentState.playerHand;
+        
+        // Determine next player (simple rotation)
+        const nextPlayer = (syncedGameHook.syncState.currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
+        syncedGameHook.updateGameState(updatedDbState, nextPlayer);
+      }
+    }, 100);
+  }, [dominoGameHook, syncedGameHook]);
+
   // Create combined hook for DominoGame component
   const combinedGameHook = {
     ...dominoGameHook,
+    executeMove: wrappedExecuteMove,
     syncState: syncedGameHook.syncState,
-    gameState: syncedGameHook.syncState.gameState || dominoGameHook.gameState,
     startNewGame: syncedGameHook.startNewGame
   };
 
