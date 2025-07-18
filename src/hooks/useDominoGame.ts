@@ -312,13 +312,13 @@ export const useDominoGame = () => {
           if (finalOrientation === 'horizontal') {
             if (end.fromDir === 'W') {
               x -= 1; // Place to the left
-              adjustedFlipped = !flipped; // Flip to match the right side of the open end
+              // Don't flip for horizontal placement to the left
             }
             // For "E", no adjustment needed as it works fine
           } else {
             if (end.fromDir === 'N') {
               y -= 1; // Place above
-              adjustedFlipped = !flipped; // Flip to match the bottom side of the open end
+              // Don't flip for vertical placement above
             }
             // For "S", no adjustment needed as it works fine
           }
