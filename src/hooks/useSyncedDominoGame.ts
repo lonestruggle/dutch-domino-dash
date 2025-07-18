@@ -132,9 +132,13 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
     setIsGameInitialized(true);
     
     // Wait for the game to be properly initialized with starter domino
+    let attempts = 0;
+    const maxAttempts = 20; // Maximum 4 seconds (20 * 200ms)
+    
     const waitForInitialization = () => {
       setTimeout(async () => {
-        console.log('Checking if game is initialized...');
+        attempts++;
+        console.log(`Checking if game is initialized... (attempt ${attempts}/${maxAttempts})`);
         const currentState = localGame.gameState;
         
         // Check if game has been properly initialized (has dominoes and board)
@@ -157,9 +161,16 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
             description: "Alle spelers kunnen nu spelen",
             variant: "default"
           });
-        } else {
+        } else if (attempts < maxAttempts) {
           console.log('Game not yet initialized, waiting...');
           waitForInitialization();
+        } else {
+          console.error('Game initialization timed out');
+          toast({
+            title: "Fout bij opstarten",
+            description: "Het spel kon niet worden gestart. Probeer opnieuw.",
+            variant: "destructive"
+          });
         }
       }, 200);
     };

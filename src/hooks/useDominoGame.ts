@@ -402,7 +402,7 @@ export const useDominoGame = () => {
       selectedHandIndex: null,
     });
 
-    // Place starter domino
+    // Place starter domino immediately
     setTimeout(() => {
       const dominoState: DominoState = {
         data: starter,
@@ -434,7 +434,7 @@ export const useDominoGame = () => {
           board: newBoard,
         };
       });
-    }, 100);
+    }, 50);
   }, []);
 
   return {

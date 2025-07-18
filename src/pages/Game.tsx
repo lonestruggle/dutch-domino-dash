@@ -62,20 +62,6 @@ export default function Game() {
     }
 
     fetchGame();
-
-    // Subscribe to game changes
-    const channel = supabase
-      .channel(`game-${gameId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'games', filter: `lobby_id=eq.${gameId}` },
-        () => fetchGame()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [gameId, isAuthenticated, authLoading, navigate]);
 
   if (!isAuthenticated || authLoading) {
