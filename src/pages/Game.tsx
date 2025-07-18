@@ -26,6 +26,9 @@ export default function Game() {
   const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Use the synced game hook here instead of in JSX
+  const syncedGameHook = useSyncedDominoGame(gameId || '', user?.id || '');
+
   const fetchGame = async () => {
     if (!gameId) return;
 
@@ -125,7 +128,7 @@ export default function Game() {
           <h1 className="text-3xl font-bold">Multiplayer Domino Game</h1>
         </div>
 
-        <DominoGame gameHook={useSyncedDominoGame(gameId || '', user?.id || '')} />
+        <DominoGame gameHook={syncedGameHook} />
       </div>
     </div>
   );
