@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { DominoGame } from '@/components/DominoGame';
-import { useSyncedDominoGame } from '@/hooks/useSyncedDominoGame';
+import { useSyncedDominoGameState } from '@/hooks/useSyncedDominoGameState';
 import { useDominoGame } from '@/hooks/useDominoGame';
 
 interface GameData {
@@ -31,17 +31,21 @@ export default function Game() {
   console.log('Game params:', params);
   console.log('Game ID extracted:', gameId);
 
-  // Initialize both hooks
-  const dominoGameHook = useDominoGame();
-  const syncedGameHook = useSyncedDominoGame(
+  // Initialize synced game state hook
+  const syncedGameHook = useSyncedDominoGameState(
     (gameId && isAuthenticated) ? gameId : '', 
     (user?.id && isAuthenticated) ? user.id : ''
   );
 
+  // Initialize local domino game logic
+  const dominoGameHook = useDominoGame();
+
   // Create combined hook for DominoGame component
   const combinedGameHook = {
     ...dominoGameHook,
-    syncState: syncedGameHook.syncState
+    syncState: syncedGameHook.syncState,
+    gameState: syncedGameHook.syncState.gameState || dominoGameHook.gameState,
+    startNewGame: syncedGameHook.startNewGame
   };
 
   const fetchGame = async () => {
@@ -51,7 +55,9 @@ export default function Game() {
       .from('games')
       .select('*')
       .eq('lobby_id', gameId)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching game:', error);

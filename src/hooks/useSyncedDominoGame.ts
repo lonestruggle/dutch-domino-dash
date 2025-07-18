@@ -33,6 +33,8 @@ export const useSyncedDominoGame = (gameId: string, userId: string) => {
         .from('games')
         .select('*')
         .eq('lobby_id', gameId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (gameError) {

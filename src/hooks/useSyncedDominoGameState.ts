@@ -1,0 +1,305 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { GameState } from '@/types/domino';
+
+interface SyncedGameState {
+  isLoading: boolean;
+  isHost: boolean;
+  playerPosition: number;
+  allPlayers: Array<{ username: string; position: number }>;
+  gameState: GameState | null;
+  currentPlayer: number;
+}
+
+export const useSyncedDominoGameState = (gameId: string, userId: string) => {
+  const { toast } = useToast();
+  const [syncState, setSyncState] = useState<SyncedGameState>({
+    isLoading: true,
+    isHost: false,
+    playerPosition: 0,
+    allPlayers: [],
+    gameState: null,
+    currentPlayer: 0
+  });
+
+  // Load initial game state from database
+  const loadGameState = useCallback(async () => {
+    if (!gameId || !userId) {
+      console.log('Missing gameId or userId:', { gameId, userId });
+      return;
+    }
+    
+    console.log('Loading game state for gameId:', gameId, 'userId:', userId);
+    
+    try {
+      // Get game data
+      const { data: gameData, error: gameError } = await supabase
+        .from('games')
+        .select('*')
+        .eq('lobby_id', gameId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (gameError) {
+        console.error('Game error:', gameError);
+        throw gameError;
+      }
+
+      console.log('Game data:', gameData);
+
+      // Get player position
+      const { data: playerData, error: playerError } = await supabase
+        .from('lobby_players')
+        .select('*')
+        .eq('lobby_id', gameId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (playerError) {
+        console.error('Player error:', playerError);
+        throw playerError;
+      }
+
+      console.log('Player data:', playerData);
+
+      // Get all players
+      const { data: allPlayersData, error: allPlayersError } = await supabase
+        .from('lobby_players')
+        .select('*')
+        .eq('lobby_id', gameId)
+        .order('player_position');
+
+      if (allPlayersError) {
+        console.error('All players error:', allPlayersError);
+        throw allPlayersError;
+      }
+
+      console.log('All players data:', allPlayersData);
+
+      const allPlayers = allPlayersData?.map(p => ({
+        username: p.username || 'Unknown',
+        position: p.player_position
+      })) || [];
+
+      // Extract player's hand from game state
+      const playerPosition = playerData?.player_position || 0;
+      const gameState = gameData?.game_state as any;
+      
+      let playerHand = [];
+      if (gameState && gameState.playerHands && Array.isArray(gameState.playerHands) && gameState.playerHands[playerPosition]) {
+        playerHand = gameState.playerHands[playerPosition];
+      }
+
+      // Create local game state from database state
+      const localGameState = gameState ? {
+        dominoes: gameState.dominoes || {},
+        board: gameState.board || {},
+        playerHand,
+        boneyard: gameState.boneyard || [],
+        openEnds: gameState.openEnds || [],
+        forbiddens: gameState.forbiddens || {},
+        nextDominoId: gameState.nextDominoId || 0,
+        spinnerId: gameState.spinnerId || null,
+        isGameOver: gameState.isGameOver || false,
+        selectedHandIndex: gameState.selectedHandIndex || null,
+        currentPlayer: gameData?.current_player_turn || 0
+      } : null;
+
+      setSyncState({
+        isLoading: false,
+        isHost: playerData?.player_position === 0,
+        playerPosition: playerData?.player_position || 0,
+        allPlayers,
+        gameState: localGameState,
+        currentPlayer: gameData?.current_player_turn || 0
+      });
+
+      console.log('Sync state updated:', {
+        isLoading: false,
+        isHost: playerData?.player_position === 0,
+        playerPosition: playerData?.player_position || 0,
+        allPlayers,
+        gameState: localGameState,
+        currentPlayer: gameData?.current_player_turn || 0
+      });
+
+    } catch (error) {
+      console.error('Error loading game state:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load game state",
+        variant: "destructive"
+      });
+    }
+  }, [gameId, userId, toast]);
+
+  // Update game state in database
+  const updateGameState = useCallback(async (newGameState: any, newCurrentPlayer?: number) => {
+    if (!gameId) return;
+
+    try {
+      const { error } = await supabase
+        .from('games')
+        .update({
+          game_state: newGameState as any,
+          current_player_turn: newCurrentPlayer !== undefined ? newCurrentPlayer : syncState.currentPlayer,
+          updated_at: new Date().toISOString()
+        })
+        .eq('lobby_id', gameId);
+
+      if (error) {
+        console.error('Error updating game state:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update game state",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error updating game state:', error);
+    }
+  }, [gameId, syncState.currentPlayer, toast]);
+
+  // Start new game (updates database)
+  const startNewGame = useCallback(async () => {
+    if (!gameId || !syncState.isHost) return;
+
+    // Create full domino set and shuffle
+    const fullSet = [];
+    for (let i = 0; i <= 6; i++) {
+      for (let j = i; j <= 6; j++) {
+        fullSet.push({ value1: i, value2: j });
+      }
+    }
+    
+    // Shuffle the domino set
+    for (let i = fullSet.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [fullSet[i], fullSet[j]] = [fullSet[j], fullSet[i]];
+    }
+
+    // Create hands for each player
+    const playerHands = [];
+    const playersCount = syncState.allPlayers.length;
+    
+    for (let p = 0; p < playersCount; p++) {
+      playerHands.push(fullSet.slice(p * 7, (p + 1) * 7));
+    }
+    
+    const boneyard = fullSet.slice(playersCount * 7);
+
+    // Find starter domino (highest double or highest pip sum)
+    let starterPlayerIndex = 0;
+    let starterDominoIndex = -1;
+    let starterDomino = null;
+    
+    // Look for highest double first
+    for (let i = 6; i >= 0; i--) {
+      for (let p = 0; p < playersCount; p++) {
+        const doubleIndex = playerHands[p].findIndex(d => d.value1 === i && d.value2 === i);
+        if (doubleIndex > -1) {
+          starterPlayerIndex = p;
+          starterDominoIndex = doubleIndex;
+          starterDomino = playerHands[p][doubleIndex];
+          break;
+        }
+      }
+      if (starterDomino) break;
+    }
+
+    // If no double, find highest pip sum
+    if (!starterDomino) {
+      let highestPip = -1;
+      for (let p = 0; p < playersCount; p++) {
+        playerHands[p].forEach((d, i) => {
+          const total = d.value1 + d.value2;
+          if (total > highestPip) {
+            highestPip = total;
+            starterPlayerIndex = p;
+            starterDominoIndex = i;
+            starterDomino = d;
+          }
+        });
+      }
+    }
+
+    // Remove starter domino from player's hand
+    if (starterDomino && starterDominoIndex > -1) {
+      playerHands[starterPlayerIndex].splice(starterDominoIndex, 1);
+    }
+
+    // Create initial game state with starter domino placed
+    const isDouble = starterDomino?.value1 === starterDomino?.value2;
+    const starterId = 'd0';
+    const orientation: 'vertical' | 'horizontal' = isDouble ? 'vertical' : 'horizontal';
+    
+    const newGameState = {
+      dominoes: {
+        [starterId]: {
+          data: starterDomino,
+          x: 0,
+          y: 0,
+          orientation,
+          flipped: false,
+          isSpinner: isDouble,
+        }
+      },
+      board: isDouble ? {
+        '0,0': { dominoId: starterId, value: starterDomino.value1 },
+        '0,1': { dominoId: starterId, value: starterDomino.value2 }
+      } : {
+        '0,0': { dominoId: starterId, value: starterDomino.value1 },
+        '1,0': { dominoId: starterId, value: starterDomino.value2 }
+      },
+      playerHands,
+      boneyard,
+      openEnds: [],
+      forbiddens: {},
+      nextDominoId: 1,
+      spinnerId: isDouble ? starterId : null,
+      isGameOver: false,
+      selectedHandIndex: null,
+      playerHand: playerHands[syncState.playerPosition] || []
+    };
+
+    await updateGameState(newGameState, starterPlayerIndex);
+  }, [gameId, syncState.isHost, syncState.allPlayers, syncState.playerPosition, updateGameState]);
+
+  useEffect(() => {
+    loadGameState();
+    
+    // Subscribe to game changes
+    const channel = supabase
+      .channel(`game-${gameId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'games', filter: `lobby_id=eq.${gameId}` },
+        (payload) => {
+          console.log('Game updated:', payload);
+          loadGameState();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lobby_players', filter: `lobby_id=eq.${gameId}` },
+        (payload) => {
+          console.log('Players updated:', payload);
+          loadGameState();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadGameState, gameId]);
+
+  return {
+    syncState,
+    loadGameState,
+    updateGameState,
+    startNewGame
+  };
+};
