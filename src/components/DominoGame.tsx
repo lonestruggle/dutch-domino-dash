@@ -130,7 +130,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         </Card>
 
         {/* Game Over Dialog */}
-        <Dialog open={gameState?.isGameOver || false}>
+        <Dialog open={gameState?.isGameOver || false} onOpenChange={() => startNewGame()}>
           <DialogContent className="sm:max-w-md text-center bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300">
             <DialogHeader>
               <DialogTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2 text-yellow-700 mb-4">
