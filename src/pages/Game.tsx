@@ -27,7 +27,7 @@ export default function Game() {
   const { toast } = useToast();
   const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [ignoringSync, setIgnoringSync] = useState(false); // Flag to ignore sync during our own updates
+  const [drawInProgress, setDrawInProgress] = useState(false); // Flag to ignore sync during our own updates
 
   console.log('Game params:', params);
   console.log('Game ID extracted:', gameId);
@@ -36,7 +36,7 @@ export default function Game() {
   const syncedGameHook = useSyncedDominoGameState(
     (gameId && isAuthenticated) ? gameId : '', 
     (user?.id && isAuthenticated) ? user.id : '',
-    ignoringSync // Pass ignore flag to prevent realtime sync during our updates
+    drawInProgress // Pass ignore flag to prevent realtime sync during our updates
   );
 
   // Initialize local domino game logic
@@ -45,7 +45,7 @@ export default function Game() {
   // Sync database state to local state - COMPLETE SYNC FOR ALL PLAYERS
   useEffect(() => {
     // Don't sync if we're in the middle of our own update
-    if (ignoringSync) {
+    if (drawInProgress) {
       console.log('🚫 Ignoring sync - we are updating');
       return;
     }
@@ -87,7 +87,7 @@ export default function Game() {
       
       console.log('✅ Complete sync done - all players see same state');
     }
-  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading, syncedGameHook.syncState.playerPosition, ignoringSync]);
+  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading, syncedGameHook.syncState.playerPosition, drawInProgress]);
 
   // Wrap executeMove to also update database - SIMPLIFIED SYNC
   const wrappedExecuteMove = useCallback(async (move: any) => {
@@ -249,7 +249,7 @@ export default function Game() {
     console.log('🔥 DRAWING FROM BONEYARD - Boneyard size:', dominoGameHook.gameState.boneyard.length);
     
     // Set ignore flag to prevent sync during our update
-    setIgnoringSync(true);
+    setDrawInProgress(true);
     
     // Get the domino that will be drawn BEFORE drawing
     const drawnDomino = (dbState as any).boneyard[(dbState as any).boneyard.length - 1];
@@ -263,7 +263,7 @@ export default function Game() {
       const currentState = dominoGameHook.gameState;
       if (!currentState) {
         console.log('❌ No current state after draw');
-        setIgnoringSync(false);
+        setDrawInProgress(false);
         return;
       }
       
@@ -306,7 +306,7 @@ export default function Game() {
       
       // Clear ignore flag after a longer delay to ensure all operations complete
       setTimeout(() => {
-        setIgnoringSync(false);
+        setDrawInProgress(false);
         console.log('🔓 Re-enabling sync after draw');
       }, 2000); // Increased to 2 seconds
     }, 50); // Reduced timeout to get state faster
