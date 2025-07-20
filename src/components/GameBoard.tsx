@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import { DominoTile } from './DominoTile';
 import { PlacementTarget } from './PlacementTarget';
@@ -15,6 +16,7 @@ interface GameBoardProps {
 const CELL_SIZE = 48;
 const MIN_BOARD_SIZE = 600;
 const PADDING = 200;
+const SCROLL_PADDING = 150; // Extra padding for scroll calculations
 
 export const GameBoard: React.FC<GameBoardProps> = ({
   gameState,
@@ -51,19 +53,105 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return Math.max(requiredSize, MIN_BOARD_SIZE);
   };
 
+  // Calculate optimal viewport center based on all dominoes and legal moves
+  const calculateOptimalViewport = () => {
+    if (!containerRef.current) return null;
+
+    const dominoes = Object.values(gameState.dominoes);
+    if (dominoes.length === 0) return null;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    
+    // Include placed dominoes
+    dominoes.forEach(domino => {
+      const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
+      const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
+      
+      minX = Math.min(minX, domino.x);
+      maxX = Math.max(maxX, domino.x + dominoWidth - 1);
+      minY = Math.min(minY, domino.y);
+      maxY = Math.max(maxY, domino.y + dominoHeight - 1);
+    });
+
+    // Include legal move positions for better viewport planning
+    legalMoves.forEach(move => {
+      const { end } = move;
+      let { x, y } = end;
+      const { orientation } = move;
+      
+      // Adjust position based on direction (same logic as in render)
+      if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
+      if (orientation === "vertical" && end.fromDir === "N") y -= 1;
+
+      const width = orientation === "horizontal" ? 2 : 1;
+      const height = orientation === "vertical" ? 2 : 1;
+      
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x + width - 1);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y + height - 1);
+    });
+
+    // Calculate center point with extra padding
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const boardSize = calculateBoardSize();
+    
+    // Convert grid coordinates to pixel coordinates
+    const pixelCenterX = boardSize / 2 + centerX * CELL_SIZE;
+    const pixelCenterY = boardSize / 2 + centerY * CELL_SIZE;
+    
+    // Calculate optimal scroll position (center the viewport on the content center)
+    const optimalScrollX = pixelCenterX - containerRect.width / 2;
+    const optimalScrollY = pixelCenterY - containerRect.height / 2;
+    
+    return {
+      scrollLeft: Math.max(0, optimalScrollX),
+      scrollTop: Math.max(0, optimalScrollY)
+    };
+  };
+
+  // Auto-scroll to optimal viewport
+  const autoScroll = () => {
+    if (!containerRef.current) return;
+    
+    const viewport = calculateOptimalViewport();
+    if (!viewport) return;
+
+    containerRef.current.scrollTo({
+      left: viewport.scrollLeft,
+      top: viewport.scrollTop,
+      behavior: 'smooth'
+    });
+  };
+
   const boardSize = calculateBoardSize();
 
+  // Auto-scroll when dominoes change or legal moves change
   useEffect(() => {
-    // Center view when game starts
+    // Small delay to ensure DOM is updated
+    const timer = setTimeout(() => {
+      autoScroll();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [gameState.dominoes, legalMoves]);
+
+  // Initial center when game starts
+  useEffect(() => {
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
-      containerRef.current.scrollTo({
-        left: boardSize / 2 - 200,
-        top: boardSize / 2 - 200,
-        behavior: 'smooth'
-      });
+      // For the first domino, center it properly
+      setTimeout(() => {
+        containerRef.current?.scrollTo({
+          left: boardSize / 2 - 200,
+          top: boardSize / 2 - 200,
+          behavior: 'smooth'
+        });
+      }, 100);
     }
   }, [gameState.dominoes, boardSize]);
-
 
   return (
     <div 
