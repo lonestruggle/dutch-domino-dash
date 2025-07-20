@@ -223,10 +223,13 @@ export default function Game() {
     }
     
     const dbState = syncedGameHook.syncState.gameState;
-    if (!dbState || !(dbState as any).playerHands) {
-      console.log('❌ Missing game state for draw');
+    if (!dbState || !(dbState as any).playerHands || !(dbState as any).boneyard?.length) {
+      console.log('❌ Missing game state for draw or boneyard empty');
       return;
     }
+    
+    // Get the domino that will be drawn BEFORE drawing
+    const drawnDomino = (dbState as any).boneyard[(dbState as any).boneyard.length - 1];
     
     // Execute draw locally first
     dominoGameHook.drawFromBoneyard();
@@ -241,7 +244,7 @@ export default function Game() {
         // Use current local state
         board: currentState.board,
         dominoes: currentState.dominoes,
-        boneyard: currentState.boneyard, // Updated boneyard
+        boneyard: currentState.boneyard, // Updated boneyard (one less domino)
         openEnds: currentState.openEnds,
         forbiddens: currentState.forbiddens,
         nextDominoId: currentState.nextDominoId,
@@ -250,23 +253,22 @@ export default function Game() {
         
         // Update player hands
         playerHands: [...((dbState as any).playerHands || [])],
-        currentPlayer: currentState.currentPlayer
+        currentPlayer: currentPlayerTurn // KEEP SAME PLAYER - drawing doesn't end turn!
       };
       
       // Update current player's hand with new domino
       newGameState.playerHands[currentPlayerPosition] = currentState.playerHand;
       
-      // Next player
-      const nextPlayer = (currentPlayerTurn + 1) % syncedGameHook.syncState.allPlayers.length;
-      
       console.log('💾 Saving draw to database:', {
         currentPlayer: currentPlayerTurn,
-        nextPlayer,
+        stayingSamePlayer: true, // Drawing doesn't change turns
         boneyardSize: currentState.boneyard.length,
-        handSize: currentState.playerHand.length
+        handSize: currentState.playerHand.length,
+        drawnDomino
       });
       
-      await syncedGameHook.updateGameState(newGameState, nextPlayer);
+      // DON'T change player turn when drawing - save with same currentPlayer
+      await syncedGameHook.updateGameState(newGameState, currentPlayerTurn);
     }, 200);
   }, [dominoGameHook, syncedGameHook, toast]);
 
