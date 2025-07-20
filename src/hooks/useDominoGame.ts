@@ -337,25 +337,48 @@ export const useDominoGame = () => {
     return moves;
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
-  // Updated blocked game check - checks if ANY domino from all available dominoes can be played
-  const checkBlockedGame = useCallback((allPlayerHands: DominoData[][], boneyard: DominoData[], openEnds: OpenEnd[]): boolean => {
-    // Collect all available dominoes from all player hands and boneyard
-    const allAvailableDominoes: DominoData[] = [];
+  // NEW SIMPLIFIED BLOCKED GAME CHECK - BOARD-BASED
+  const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>): boolean => {
+    console.log('🔍 CHECKING BLOCKED GAME - Board-based approach');
+    console.log('🔍 Open ends:', openEnds);
     
-    // Add dominoes from all player hands
-    allPlayerHands.forEach(hand => {
-      allAvailableDominoes.push(...hand);
-    });
+    if (openEnds.length === 0) {
+      console.log('❌ No open ends - game is blocked');
+      return true;
+    }
+
+    // Get all unique open end values
+    const uniqueOpenEndValues = [...new Set(openEnds.map(end => end.value))];
+    console.log('🔍 Unique open end values:', uniqueOpenEndValues);
+
+    // For each unique open end value, check if all dominoes with that value are already on the board
+    for (const value of uniqueOpenEndValues) {
+      // Count total dominoes that have this value in a complete domino set
+      let totalDominoesWithValue = 0;
+      for (let i = 0; i <= 6; i++) {
+        if (i === value) totalDominoesWithValue++; // (value, value)
+        if (i !== value) totalDominoesWithValue++; // (i, value) where i != value
+      }
+      
+      // Count how many dominoes with this value are already on the board
+      let dominoesOnBoardWithValue = 0;
+      for (const cellKey in board) {
+        if (board[cellKey].value === value) {
+          dominoesOnBoardWithValue++;
+        }
+      }
+      
+      console.log(`🔍 Value ${value}: ${dominoesOnBoardWithValue}/${totalDominoesWithValue} on board`);
+      
+      // If not all dominoes with this value are on the board, this end is not blocked
+      if (dominoesOnBoardWithValue < totalDominoesWithValue) {
+        console.log(`✅ Value ${value} is not blocked - game can continue`);
+        return false;
+      }
+    }
     
-    // Add dominoes from boneyard
-    allAvailableDominoes.push(...boneyard);
-    
-    // Check if any domino can be played on any open end
-    return !allAvailableDominoes.some(domino => 
-      openEnds.some(end => 
-        domino.value1 === end.value || domino.value2 === end.value
-      )
-    );
+    console.log('❌ ALL open end values are blocked - game is blocked');
+    return true;
   }, []);
 
   const executeMove = useCallback((move: LegalMove) => {
@@ -468,12 +491,10 @@ export const useDominoGame = () => {
         isGameOver: isGameWon,
       };
       
-      // If not won by empty hand, check if game is blocked
+      // If not won by empty hand, check if game is blocked using the new board-based approach
       if (!isGameWon) {
         const newOpenEnds = regenerateOpenEnds(newState);
-        // Use all player hands if available (multiplayer), otherwise single player hand
-        const allPlayerHands = newState.playerHands || [newPlayerHand];
-        const isBlocked = checkBlockedGame(allPlayerHands, prev.boneyard, newOpenEnds);
+        const isBlocked = checkBlockedGame(newOpenEnds, newBoard);
         newState.isGameOver = isBlocked;
       }
       
@@ -521,11 +542,9 @@ export const useDominoGame = () => {
         // Don't change current player - only change when a domino is actually played
       };
       
-      // After drawing, if boneyard is now empty, check if the game is blocked
+      // After drawing, if boneyard is now empty, check if the game is blocked using board-based approach
       if (newBoneyard.length === 0) {
-        // Use all player hands if available (multiplayer), otherwise single player hand
-        const allPlayerHands = newState.playerHands || [newPlayerHand];
-        const isBlocked = checkBlockedGame(allPlayerHands, newBoneyard, openEnds);
+        const isBlocked = checkBlockedGame(openEnds, prev.board);
         newState.isGameOver = isBlocked;
       }
       
