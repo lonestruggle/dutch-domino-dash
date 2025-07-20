@@ -27,6 +27,7 @@ export default function Game() {
   const { toast } = useToast();
   const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ignoringSync, setIgnoringSync] = useState(false); // Flag to ignore sync during our own updates
 
   console.log('Game params:', params);
   console.log('Game ID extracted:', gameId);
@@ -42,6 +43,12 @@ export default function Game() {
 
   // Sync database state to local state - COMPLETE SYNC FOR ALL PLAYERS
   useEffect(() => {
+    // Don't sync if we're in the middle of our own update
+    if (ignoringSync) {
+      console.log('🚫 Ignoring sync - we are updating');
+      return;
+    }
+    
     if (syncedGameHook.syncState.gameState && !syncedGameHook.syncState.isLoading) {
       console.log('🔄 Complete sync from database to local state');
       
@@ -70,7 +77,7 @@ export default function Game() {
       
       console.log('✅ Complete sync done - all players see same state');
     }
-  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading, syncedGameHook.syncState.playerPosition]);
+  }, [syncedGameHook.syncState.gameState, syncedGameHook.syncState.isLoading, syncedGameHook.syncState.playerPosition, ignoringSync]);
 
   // Wrap executeMove to also update database - SIMPLIFIED SYNC
   const wrappedExecuteMove = useCallback(async (move: any) => {
@@ -228,8 +235,15 @@ export default function Game() {
       return;
     }
     
+    console.log('🔥 DRAWING FROM BONEYARD - Current hand size:', dominoGameHook.gameState.playerHand.length);
+    console.log('🔥 DRAWING FROM BONEYARD - Boneyard size:', dominoGameHook.gameState.boneyard.length);
+    
+    // Set ignore flag to prevent sync during our update
+    setIgnoringSync(true);
+    
     // Get the domino that will be drawn BEFORE drawing
     const drawnDomino = (dbState as any).boneyard[(dbState as any).boneyard.length - 1];
+    console.log('🎯 Drawing domino:', drawnDomino);
     
     // Execute draw locally first
     dominoGameHook.drawFromBoneyard();
@@ -237,7 +251,14 @@ export default function Game() {
     // Wait for local state to update, then sync to database
     setTimeout(async () => {
       const currentState = dominoGameHook.gameState;
-      if (!currentState) return;
+      if (!currentState) {
+        console.log('❌ No current state after draw');
+        setIgnoringSync(false);
+        return;
+      }
+      
+      console.log('🔥 AFTER LOCAL DRAW - Hand size:', currentState.playerHand.length);
+      console.log('🔥 AFTER LOCAL DRAW - Boneyard size:', currentState.boneyard.length);
       
       // Create new complete game state for database
       const newGameState = {
@@ -251,7 +272,7 @@ export default function Game() {
         spinnerId: currentState.spinnerId,
         isGameOver: currentState.isGameOver,
         
-        // Update player hands
+        // Update player hands from database, then override current player
         playerHands: [...((dbState as any).playerHands || [])],
         currentPlayer: currentPlayerTurn // KEEP SAME PLAYER - drawing doesn't end turn!
       };
@@ -261,15 +282,24 @@ export default function Game() {
       
       console.log('💾 Saving draw to database:', {
         currentPlayer: currentPlayerTurn,
-        stayingSamePlayer: true, // Drawing doesn't change turns
+        stayingSamePlayer: true,
         boneyardSize: currentState.boneyard.length,
         handSize: currentState.playerHand.length,
-        drawnDomino
+        drawnDomino,
+        newPlayerHand: newGameState.playerHands[currentPlayerPosition]
       });
       
-      // DON'T change player turn when drawing - save with same currentPlayer
+      // Save to database but DON'T change player turn
       await syncedGameHook.updateGameState(newGameState, currentPlayerTurn);
-    }, 200);
+      
+      console.log('✅ Draw saved to database, local state should remain');
+      
+      // Clear ignore flag after a delay to allow database update to propagate
+      setTimeout(() => {
+        setIgnoringSync(false);
+        console.log('🔓 Re-enabling sync after draw');
+      }, 1000);
+    }, 100); // Reduced timeout
   }, [dominoGameHook, syncedGameHook, toast]);
 
   // Create combined hook for DominoGame component
