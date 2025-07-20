@@ -36,6 +36,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const isMyTurn = gameState?.currentPlayer === syncState?.playerPosition;
   const currentPlayerName = syncState?.allPlayers?.find(p => p.position === gameState?.currentPlayer)?.username || 'Unknown';
   
+  // Determine if current player won (has empty hand)
+  const didIWin = gameState?.isGameOver && gameState?.playerHand?.length === 0;
+  
   // Calculate legal moves for selected domino
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
@@ -131,44 +134,94 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
         {/* Game Over Dialog */}
         <Dialog open={gameState?.isGameOver || false} onOpenChange={() => startNewGame()}>
-          <DialogContent className="sm:max-w-md text-center bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300">
+          <DialogContent className={`sm:max-w-md text-center ${didIWin 
+            ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300' 
+            : 'bg-gradient-to-br from-red-50 to-gray-50 border-2 border-red-300'
+          }`}>
             <DialogHeader>
-              <DialogTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2 text-yellow-700 mb-4">
-                <Trophy className="w-8 h-8 text-yellow-500 animate-bounce" />
-                Gefeliciteerd!
-                <Trophy className="w-8 h-8 text-yellow-500 animate-bounce" />
+              <DialogTitle className={`text-3xl font-bold text-center flex items-center justify-center gap-2 mb-4 ${
+                didIWin ? 'text-yellow-700' : 'text-red-700'
+              }`}>
+                {didIWin ? (
+                  <>
+                    <Trophy className="w-8 h-8 text-yellow-500 animate-bounce" />
+                    Gefeliciteerd!
+                    <Trophy className="w-8 h-8 text-yellow-500 animate-bounce" />
+                  </>
+                ) : (
+                  <>
+                    😔 Helaas! 😔
+                  </>
+                )}
               </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-6">
-              {/* Celebration Icons */}
-              <div className="flex justify-center space-x-4">
-                <PartyPopper className="w-12 h-12 text-purple-500 animate-pulse" />
-                <Star className="w-12 h-12 text-yellow-500 animate-spin" />
-                <PartyPopper className="w-12 h-12 text-purple-500 animate-pulse" />
-              </div>
-              
-              {/* Winner Message */}
-              <div className="bg-white/70 rounded-lg p-4 border border-yellow-200">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  🎉 Je hebt gewonnen! 🎉
-                </h3>
-                <p className="text-gray-600">
-                  Je hebt alle dominostenen succesvol gespeeld!
-                </p>
-              </div>
-              
-              {/* Decorative elements */}
-              <div className="flex justify-center space-x-8 text-2xl">
-                <span className="animate-bounce delay-100">🎊</span>
-                <span className="animate-bounce delay-200">🏆</span>
-                <span className="animate-bounce delay-300">🎊</span>
-              </div>
+              {didIWin ? (
+                <>
+                  {/* Winner - Celebration Icons */}
+                  <div className="flex justify-center space-x-4">
+                    <PartyPopper className="w-12 h-12 text-purple-500 animate-pulse" />
+                    <Star className="w-12 h-12 text-yellow-500 animate-spin" />
+                    <PartyPopper className="w-12 h-12 text-purple-500 animate-pulse" />
+                  </div>
+                  
+                  {/* Winner Message */}
+                  <div className="bg-white/70 rounded-lg p-4 border border-yellow-200">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                      🎉 Je hebt gewonnen! 🎉
+                    </h3>
+                    <p className="text-gray-600">
+                      Je hebt alle dominostenen succesvol gespeeld!
+                    </p>
+                  </div>
+                  
+                  {/* Decorative elements */}
+                  <div className="flex justify-center space-x-8 text-2xl">
+                    <span className="animate-bounce delay-100">🎊</span>
+                    <span className="animate-bounce delay-200">🏆</span>
+                    <span className="animate-bounce delay-300">🎊</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Loser - Sad Icons */}
+                  <div className="flex justify-center space-x-4">
+                    <span className="text-6xl animate-pulse">😢</span>
+                    <span className="text-6xl animate-pulse delay-300">😞</span>
+                    <span className="text-6xl animate-pulse delay-500">😔</span>
+                  </div>
+                  
+                  {/* Loser Message */}
+                  <div className="bg-white/70 rounded-lg p-4 border border-red-200">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                      Je hebt verloren!
+                    </h3>
+                    <p className="text-gray-600">
+                      Een andere speler heeft alle stenen als eerste gespeeld.
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Veel succes volgende keer! 🍀
+                    </p>
+                  </div>
+                  
+                  {/* Decorative elements */}
+                  <div className="flex justify-center space-x-8 text-2xl">
+                    <span className="animate-bounce delay-100">💔</span>
+                    <span className="animate-bounce delay-200">😭</span>
+                    <span className="animate-bounce delay-300">💔</span>
+                  </div>
+                </>
+              )}
               
               {/* Action Button */}
               <Button 
                 onClick={startNewGame}
-                className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-bold py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                className={`w-full font-bold py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 ${
+                  didIWin 
+                    ? 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white' 
+                    : 'bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white'
+                }`}
               >
                 🎮 Nieuw Spel Starten
               </Button>
