@@ -35,7 +35,8 @@ export default function Game() {
   // Initialize synced game state hook
   const syncedGameHook = useSyncedDominoGameState(
     (gameId && isAuthenticated) ? gameId : '', 
-    (user?.id && isAuthenticated) ? user.id : ''
+    (user?.id && isAuthenticated) ? user.id : '',
+    ignoringSync // Pass ignore flag to prevent realtime sync during our updates
   );
 
   // Initialize local domino game logic

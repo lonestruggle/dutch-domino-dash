@@ -12,7 +12,7 @@ interface SyncedGameState {
   currentPlayer: number;
 }
 
-export const useSyncedDominoGameState = (gameId: string, userId: string) => {
+export const useSyncedDominoGameState = (gameId: string, userId: string, ignoringSync = false) => {
   const { toast } = useToast();
   const [syncState, setSyncState] = useState<SyncedGameState>({
     isLoading: true,
@@ -27,6 +27,11 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
   const loadGameState = useCallback(async () => {
     if (!gameId || !userId) {
       console.log('Missing gameId or userId:', { gameId, userId });
+      return;
+    }
+    
+    if (ignoringSync) {
+      console.log('🚫 IGNORING LOAD GAME STATE - we are in the middle of an update');
       return;
     }
     
@@ -146,7 +151,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string) => {
         variant: "destructive"
       });
     }
-  }, [gameId, userId, toast]);
+  }, [gameId, userId, toast, ignoringSync]);
 
   // Update game state in database
   const updateGameState = useCallback(async (newGameState: any, newCurrentPlayer?: number) => {
