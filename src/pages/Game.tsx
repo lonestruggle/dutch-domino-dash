@@ -239,68 +239,59 @@ export default function Game() {
     console.log('🔥 DRAWING FROM BONEYARD - Current hand size:', dominoGameHook.gameState.playerHand.length);
     console.log('🔥 DRAWING FROM BONEYARD - Boneyard size:', dominoGameHook.gameState.boneyard.length);
     
-    // Set ignore flag to prevent sync during our update
-    setIgnoringSync(true);
-    
     // Get the domino that will be drawn BEFORE drawing
     const drawnDomino = (dbState as any).boneyard[(dbState as any).boneyard.length - 1];
     console.log('🎯 Drawing domino:', drawnDomino);
     
-    // Execute draw locally first
-    dominoGameHook.drawFromBoneyard();
+    // Block sync completely during the entire draw operation
+    setIgnoringSync(true);
     
-    // Wait for local state to update, then sync to database
-    setTimeout(async () => {
-      const currentState = dominoGameHook.gameState;
-      if (!currentState) {
-        console.log('❌ No current state after draw');
-        setIgnoringSync(false);
-        return;
-      }
+    try {
+      // Execute draw locally first
+      dominoGameHook.drawFromBoneyard();
       
-      console.log('🔥 AFTER LOCAL DRAW - Hand size:', currentState.playerHand.length);
-      console.log('🔥 AFTER LOCAL DRAW - Boneyard size:', currentState.boneyard.length);
+      // Create new complete game state for database using the database state as base
+      const newBoneyard = [...((dbState as any).boneyard || [])];
+      newBoneyard.pop(); // Remove last domino
       
-      // Create new complete game state for database
+      const newPlayerHands = [...((dbState as any).playerHands || [])];
+      newPlayerHands[currentPlayerPosition] = [...newPlayerHands[currentPlayerPosition], drawnDomino];
+      
       const newGameState = {
-        // Use current local state
-        board: currentState.board,
-        dominoes: currentState.dominoes,
-        boneyard: currentState.boneyard, // Updated boneyard (one less domino)
-        openEnds: currentState.openEnds,
-        forbiddens: currentState.forbiddens,
-        nextDominoId: currentState.nextDominoId,
-        spinnerId: currentState.spinnerId,
-        isGameOver: currentState.isGameOver,
-        
-        // Update player hands from database, then override current player
-        playerHands: [...((dbState as any).playerHands || [])],
+        board: dbState.board,
+        dominoes: dbState.dominoes,
+        boneyard: newBoneyard,
+        openEnds: dbState.openEnds,
+        forbiddens: dbState.forbiddens,
+        nextDominoId: dbState.nextDominoId,
+        spinnerId: dbState.spinnerId,
+        isGameOver: dbState.isGameOver,
+        playerHands: newPlayerHands,
         currentPlayer: currentPlayerTurn // KEEP SAME PLAYER - drawing doesn't end turn!
       };
-      
-      // Update current player's hand with new domino
-      newGameState.playerHands[currentPlayerPosition] = currentState.playerHand;
       
       console.log('💾 Saving draw to database:', {
         currentPlayer: currentPlayerTurn,
         stayingSamePlayer: true,
-        boneyardSize: currentState.boneyard.length,
-        handSize: currentState.playerHand.length,
-        drawnDomino,
-        newPlayerHand: newGameState.playerHands[currentPlayerPosition]
+        boneyardSize: newBoneyard.length,
+        handSize: newPlayerHands[currentPlayerPosition].length,
+        drawnDomino
       });
       
       // Save to database but DON'T change player turn
       await syncedGameHook.updateGameState(newGameState, currentPlayerTurn);
       
-      console.log('✅ Draw saved to database, local state should remain');
+      console.log('✅ Draw saved to database');
       
-      // Clear ignore flag after a delay to allow database update to propagate
+    } catch (error) {
+      console.error('❌ Error during draw:', error);
+    } finally {
+      // Re-enable sync after database update completes
       setTimeout(() => {
         setIgnoringSync(false);
         console.log('🔓 Re-enabling sync after draw');
-      }, 1000);
-    }, 100); // Reduced timeout
+      }, 500);
+    }
   }, [dominoGameHook, syncedGameHook, toast]);
 
   // Create combined hook for DominoGame component
