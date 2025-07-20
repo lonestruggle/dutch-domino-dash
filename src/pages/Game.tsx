@@ -251,14 +251,19 @@ export default function Game() {
     // Set ignore flag to prevent sync during our update
     setDrawInProgress(true);
     
-    try {
-      // Execute draw locally first
-      dominoGameHook.drawFromBoneyard();
-      
-      // Get the updated state immediately
+    // Get the domino that will be drawn BEFORE drawing
+    const drawnDomino = (dbState as any).boneyard[(dbState as any).boneyard.length - 1];
+    console.log('🎯 Drawing domino:', drawnDomino);
+    
+    // Execute draw locally first
+    dominoGameHook.drawFromBoneyard();
+    
+    // Wait for local state to update, then sync to database
+    setTimeout(async () => {
       const currentState = dominoGameHook.gameState;
       if (!currentState) {
         console.log('❌ No current state after draw');
+        setDrawInProgress(false);
         return;
       }
       
@@ -290,27 +295,21 @@ export default function Game() {
         stayingSamePlayer: true,
         boneyardSize: currentState.boneyard.length,
         handSize: currentState.playerHand.length,
+        drawnDomino,
         newPlayerHand: newGameState.playerHands[currentPlayerPosition]
       });
       
-      // Save to database BEFORE allowing sync again
+      // Save to database but DON'T change player turn
       await syncedGameHook.updateGameState(newGameState, currentPlayerTurn);
-      console.log('✅ Draw saved to database');
       
-    } catch (error) {
-      console.error('❌ Failed to update database after draw:', error);
-      toast({
-        title: "Error",
-        description: "Failed to sync your draw. Try again.",
-        variant: "destructive"
-      });
-    } finally {
-      // Only re-enable sync after database update is complete
+      console.log('✅ Draw saved to database, local state should remain');
+      
+      // Clear ignore flag after a longer delay to ensure all operations complete
       setTimeout(() => {
         setDrawInProgress(false);
         console.log('🔓 Re-enabling sync after draw');
-      }, 500); // Shorter delay since we wait for DB update
-    }
+      }, 2000); // Increased to 2 seconds
+    }, 50); // Reduced timeout to get state faster
   }, [dominoGameHook, syncedGameHook, toast]);
 
   // Create combined hook for DominoGame component
