@@ -336,6 +336,19 @@ export const useDominoGame = () => {
     return moves;
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
+  // Check if all players are blocked (no valid moves) and boneyard is empty
+  const checkBlockedGame = useCallback((playerHand: DominoData[], boneyard: DominoData[], openEnds: OpenEnd[]): boolean => {
+    // If boneyard is not empty, game can continue
+    if (boneyard.length > 0) return false;
+    
+    // Check if any domino in hand can be played
+    return !playerHand.some(domino => 
+      openEnds.some(end => 
+        domino.value1 === end.value || domino.value2 === end.value
+      )
+    );
+  }, []);
+
   const executeMove = useCallback((move: LegalMove) => {
     const { index, end, dominoData, flipped, orientation } = move;
     if (index === undefined) {
@@ -435,7 +448,8 @@ export const useDominoGame = () => {
       // Check for win condition - if player has no more dominoes
       const isGameWon = newPlayerHand.length === 0;
       
-      return {
+      // Check for blocked game condition
+      const newState = {
         ...prev,
         dominoes: { ...prev.dominoes, [id]: dominoState },
         board: newBoard,
@@ -444,8 +458,17 @@ export const useDominoGame = () => {
         nextDominoId: prev.nextDominoId + 1,
         isGameOver: isGameWon,
       };
+      
+      // If not won by empty hand, check if game is blocked
+      if (!isGameWon) {
+        const newOpenEnds = regenerateOpenEnds(newState);
+        const isBlocked = checkBlockedGame(newPlayerHand, prev.boneyard, newOpenEnds);
+        newState.isGameOver = isBlocked;
+      }
+      
+      return newState;
     });
-  }, []);
+  }, [regenerateOpenEnds, checkBlockedGame]);
 
   const drawFromBoneyard = useCallback(() => {
     console.log('🎯 LOCAL DRAW START - boneyard size:', gameStateRef.current.boneyard.length);
@@ -487,10 +510,16 @@ export const useDominoGame = () => {
         // Don't change current player - only change when a domino is actually played
       };
       
+      // After drawing, check if the game is now blocked
+      if (newBoneyard.length === 0) {
+        const isBlocked = checkBlockedGame(newPlayerHand, newBoneyard, openEnds);
+        newState.isGameOver = isBlocked;
+      }
+      
       console.log('✅ LOCAL DRAW COMPLETE - returning new state');
       return newState;
     });
-  }, []); // Remove dependencies to avoid recreation
+  }, [regenerateOpenEnds, checkBlockedGame]);
 
   const selectHandDomino = useCallback((index: number) => {
     setGameState(prev => ({
