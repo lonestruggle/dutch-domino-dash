@@ -56,6 +56,15 @@ export default function Game() {
       const dbState = syncedGameHook.syncState.gameState;
       const myPosition = syncedGameHook.syncState.playerPosition;
       
+      // Check if this is a meaningful change (not just a timestamp update)
+      const currentLocalState = dominoGameHook.gameState;
+      if (currentLocalState && 
+          currentLocalState.playerHand.length === (dbState as any).playerHands?.[myPosition]?.length &&
+          currentLocalState.boneyard.length === dbState.boneyard?.length) {
+        console.log('🔄 SKIPPING SYNC - no meaningful change detected');
+        return;
+      }
+      
       // ALWAYS sync the complete state from database
       // All players must see exactly the same board, boneyard, dominoes
       dominoGameHook.setGameState({
@@ -295,12 +304,12 @@ export default function Game() {
       
       console.log('✅ Draw saved to database, local state should remain');
       
-      // Clear ignore flag after a delay to allow database update to propagate
+      // Clear ignore flag after a longer delay to ensure all operations complete
       setTimeout(() => {
         setIgnoringSync(false);
         console.log('🔓 Re-enabling sync after draw');
-      }, 1000);
-    }, 100); // Reduced timeout
+      }, 2000); // Increased to 2 seconds
+    }, 50); // Reduced timeout to get state faster
   }, [dominoGameHook, syncedGameHook, toast]);
 
   // Create combined hook for DominoGame component
