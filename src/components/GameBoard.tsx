@@ -77,22 +77,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         style={{ width: boardSize, height: boardSize }}
       >
         {/* Render placed dominoes */}
-        {Object.entries(gameState.dominoes).map(([id, domino]) => (
-          <div
-            key={id}
-            className="absolute"
-            style={{
-              left: boardSize / 2 + domino.x * CELL_SIZE - CELL_SIZE,
-              top: boardSize / 2 + domino.y * CELL_SIZE - CELL_SIZE / 2,
-            }}
-          >
-            <DominoTile
-              data={domino.data}
-              orientation={domino.orientation}
-              flipped={domino.flipped}
-            />
-          </div>
-        ))}
+        {Object.entries(gameState.dominoes).map(([id, domino]) => {
+          const isHorizontal = domino.orientation === 'horizontal';
+          const dominoWidth = isHorizontal ? 2 : 1;
+          const dominoHeight = isHorizontal ? 1 : 2;
+          
+          return (
+            <div
+              key={id}
+              className="absolute"
+              style={{
+                left: boardSize / 2 + domino.x * CELL_SIZE - (dominoWidth * CELL_SIZE / 2),
+                top: boardSize / 2 + domino.y * CELL_SIZE - (dominoHeight * CELL_SIZE / 2),
+              }}
+            >
+              <DominoTile
+                data={domino.data}
+                orientation={domino.orientation}
+                flipped={domino.flipped}
+              />
+            </div>
+          );
+        })}
 
         {/* Render placement targets */}
         {legalMoves.map((move, index) => {
