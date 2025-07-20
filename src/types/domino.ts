@@ -1,3 +1,4 @@
+
 export interface DominoData {
   value1: number;
   value2: number;
@@ -43,4 +44,6 @@ export interface GameState {
   isGameOver: boolean;
   selectedHandIndex: number | null;
   currentPlayer?: number; // Add current player for multiplayer sync
+  playersPassed?: boolean[]; // Track which players have passed this round
+  consecutivePasses?: number; // Count consecutive passes
 }
