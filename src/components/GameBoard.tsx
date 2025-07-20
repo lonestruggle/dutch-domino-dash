@@ -14,9 +14,9 @@ interface GameBoardProps {
 }
 
 const CELL_SIZE = 48;
-const MIN_BOARD_SIZE = 600;
-const PADDING = 200;
-const SCROLL_PADDING = 150; // Extra padding for scroll calculations
+const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
+const PADDING = 400; // Increased padding for better scroll area
+const SCROLL_PADDING = 200; // Extra padding for scroll calculations
 
 export const GameBoard: React.FC<GameBoardProps> = ({
   gameState,
