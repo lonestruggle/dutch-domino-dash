@@ -444,15 +444,29 @@ export const useDominoGame = () => {
   }, []);
 
   const drawFromBoneyard = useCallback(() => {
-    if (gameState.isGameOver || gameState.boneyard.length === 0) return;
+    console.log('🎯 LOCAL DRAW START - boneyard size:', gameStateRef.current.boneyard.length);
+    console.log('🎯 LOCAL DRAW START - hand size:', gameStateRef.current.playerHand.length);
+    
+    if (gameStateRef.current.isGameOver || gameStateRef.current.boneyard.length === 0) {
+      console.log('❌ Cannot draw - game over or empty boneyard');
+      return;
+    }
 
     setGameState(prev => {
+      console.log('🔥 EXECUTING LOCAL DRAW STATE UPDATE');
+      console.log('🔥 Before draw - hand size:', prev.playerHand.length);
+      console.log('🔥 Before draw - boneyard size:', prev.boneyard.length);
+      
       // Draw a domino from the boneyard
-      const newPlayerHand = [...prev.playerHand, prev.boneyard[prev.boneyard.length - 1]];
+      const drawnDomino = prev.boneyard[prev.boneyard.length - 1];
+      const newPlayerHand = [...prev.playerHand, drawnDomino];
       const newBoneyard = prev.boneyard.slice(0, -1);
       
+      console.log('🎯 Drawn domino:', drawnDomino);
+      console.log('🔥 After draw - hand size:', newPlayerHand.length);
+      console.log('🔥 After draw - boneyard size:', newBoneyard.length);
+      
       // Check if the newly drawn domino can be played
-      const drawnDomino = prev.boneyard[prev.boneyard.length - 1];
       const openEnds = regenerateOpenEnds(prev);
       const canPlay = openEnds.some(end => 
         drawnDomino.value1 === end.value || drawnDomino.value2 === end.value
@@ -461,15 +475,18 @@ export const useDominoGame = () => {
       // If the drawn domino can be played, auto-select it
       const selectedIndex = canPlay ? newPlayerHand.length - 1 : prev.selectedHandIndex;
       
-      return {
+      const newState = {
         ...prev,
         playerHand: newPlayerHand,
         boneyard: newBoneyard,
         selectedHandIndex: selectedIndex,
         // Don't change current player - only change when a domino is actually played
       };
+      
+      console.log('✅ LOCAL DRAW COMPLETE - returning new state');
+      return newState;
     });
-  }, [gameState.isGameOver, gameState.boneyard.length]);
+  }, []); // Remove dependencies to avoid recreation
 
   const selectHandDomino = useCallback((index: number) => {
     setGameState(prev => ({
