@@ -13,7 +13,8 @@ interface GameBoardProps {
 }
 
 const CELL_SIZE = 48;
-const BOARD_SIZE = 1500;
+const MIN_BOARD_SIZE = 600;
+const PADDING = 200;
 
 export const GameBoard: React.FC<GameBoardProps> = ({
   gameState,
@@ -25,16 +26,43 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
+  // Calculate dynamic board size based on domino positions
+  const calculateBoardSize = () => {
+    if (Object.keys(gameState.dominoes).length === 0) {
+      return MIN_BOARD_SIZE;
+    }
+
+    let minX = 0, maxX = 0, minY = 0, maxY = 0;
+    
+    Object.values(gameState.dominoes).forEach(domino => {
+      const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
+      const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
+      
+      minX = Math.min(minX, domino.x);
+      maxX = Math.max(maxX, domino.x + dominoWidth - 1);
+      minY = Math.min(minY, domino.y);
+      maxY = Math.max(maxY, domino.y + dominoHeight - 1);
+    });
+
+    const requiredWidth = (maxX - minX + 1) * CELL_SIZE + PADDING * 2;
+    const requiredHeight = (maxY - minY + 1) * CELL_SIZE + PADDING * 2;
+    const requiredSize = Math.max(requiredWidth, requiredHeight, MIN_BOARD_SIZE);
+    
+    return Math.max(requiredSize, MIN_BOARD_SIZE);
+  };
+
+  const boardSize = calculateBoardSize();
+
   useEffect(() => {
     // Center view when game starts
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       containerRef.current.scrollTo({
-        left: BOARD_SIZE / 2 - 200,
-        top: BOARD_SIZE / 2 - 200,
+        left: boardSize / 2 - 200,
+        top: boardSize / 2 - 200,
         behavior: 'smooth'
       });
     }
-  }, [gameState.dominoes]);
+  }, [gameState.dominoes, boardSize]);
 
 
   return (
@@ -46,7 +74,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       <div 
         ref={boardRef}
         className="relative"
-        style={{ width: BOARD_SIZE, height: BOARD_SIZE }}
+        style={{ width: boardSize, height: boardSize }}
       >
         {/* Render placed dominoes */}
         {Object.entries(gameState.dominoes).map(([id, domino]) => (
@@ -54,8 +82,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             key={id}
             className="absolute"
             style={{
-              left: BOARD_SIZE / 2 + domino.x * CELL_SIZE,
-              top: BOARD_SIZE / 2 + domino.y * CELL_SIZE,
+              left: boardSize / 2 + domino.x * CELL_SIZE,
+              top: boardSize / 2 + domino.y * CELL_SIZE,
             }}
           >
             <DominoTile
@@ -94,8 +122,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               isDouble={isDouble}
               onClick={() => onMoveExecute(move)}
               style={{
-                left: BOARD_SIZE / 2 + (x + size[0] / 2) * CELL_SIZE,
-                top: BOARD_SIZE / 2 + (y + size[1] / 2) * CELL_SIZE,
+                left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
+                top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,
               }}
             />
           );
