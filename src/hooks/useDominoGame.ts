@@ -471,8 +471,8 @@ export const useDominoGame = () => {
       // If not won by empty hand, check if game is blocked
       if (!isGameWon) {
         const newOpenEnds = regenerateOpenEnds(newState);
-        // For single player, create array with just the player hand
-        const allPlayerHands = [newPlayerHand];
+        // Use all player hands if available (multiplayer), otherwise single player hand
+        const allPlayerHands = newState.playerHands || [newPlayerHand];
         const isBlocked = checkBlockedGame(allPlayerHands, prev.boneyard, newOpenEnds);
         newState.isGameOver = isBlocked;
       }
@@ -523,8 +523,8 @@ export const useDominoGame = () => {
       
       // After drawing, if boneyard is now empty, check if the game is blocked
       if (newBoneyard.length === 0) {
-        // For single player, create array with just the player hand
-        const allPlayerHands = [newPlayerHand];
+        // Use all player hands if available (multiplayer), otherwise single player hand
+        const allPlayerHands = newState.playerHands || [newPlayerHand];
         const isBlocked = checkBlockedGame(allPlayerHands, newBoneyard, openEnds);
         newState.isGameOver = isBlocked;
       }
