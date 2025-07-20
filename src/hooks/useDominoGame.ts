@@ -432,6 +432,9 @@ export const useDominoGame = () => {
         };
       });
 
+      // Check for win condition - if player has no more dominoes
+      const isGameWon = newPlayerHand.length === 0;
+      
       return {
         ...prev,
         dominoes: { ...prev.dominoes, [id]: dominoState },
@@ -439,6 +442,7 @@ export const useDominoGame = () => {
         playerHand: newPlayerHand,
         selectedHandIndex: null,
         nextDominoId: prev.nextDominoId + 1,
+        isGameOver: isGameWon,
       };
     });
   }, []);
