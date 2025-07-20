@@ -179,7 +179,7 @@ export default function Game() {
         forbiddens: dbState.forbiddens || {},
         nextDominoId: (dbState.nextDominoId || 0) + 1,
         spinnerId: dbState.spinnerId || (dominoData.value1 === dominoData.value2 ? dominoId : null),
-        isGameOver: dbState.isGameOver || false,
+        isGameOver: currentPlayerHand.length === 0, // Check for win condition
         
         // Update player hands with correct data
         playerHands: [...((dbState as any).playerHands || [])]
