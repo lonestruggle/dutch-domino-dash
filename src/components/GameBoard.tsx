@@ -12,8 +12,8 @@ interface GameBoardProps {
   hasDifferentNeighbor: (x: number, y: number) => boolean;
 }
 
-const CELL_SIZE = 36;
-const BOARD_SIZE = 1000;
+const CELL_SIZE = 48;
+const BOARD_SIZE = 1500;
 
 export const GameBoard: React.FC<GameBoardProps> = ({
   gameState,
@@ -40,7 +40,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-64 md:h-80 lg:h-96 game-board border-2 border-border rounded-lg overflow-auto mb-4"
+      className="relative w-full flex-1 game-board border-2 border-border rounded-lg overflow-auto mb-4"
       style={{ scrollBehavior: 'smooth' }}
     >
       <div 
