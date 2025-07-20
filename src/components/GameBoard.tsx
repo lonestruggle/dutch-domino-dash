@@ -82,8 +82,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             key={id}
             className="absolute"
             style={{
-              left: boardSize / 2 + domino.x * CELL_SIZE,
-              top: boardSize / 2 + domino.y * CELL_SIZE,
+              left: boardSize / 2 + domino.x * CELL_SIZE - CELL_SIZE,
+              top: boardSize / 2 + domino.y * CELL_SIZE - CELL_SIZE / 2,
             }}
           >
             <DominoTile
