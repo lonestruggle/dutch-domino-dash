@@ -5,7 +5,7 @@ import { Check } from 'lucide-react';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 import dominoTable3 from '@/assets/domino-table-3.webp';
-const curacaoFlagTable = '/lovable-uploads/c7e39ae4-84d3-4fb2-a05f-4ea95a7010d7.png';
+const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
 
 interface BackgroundOption {
   id: string;
