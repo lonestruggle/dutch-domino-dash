@@ -46,6 +46,7 @@ export type Database = {
       }
       games: {
         Row: {
+          background_choice: string | null
           created_at: string
           current_player_turn: number
           game_state: Json
@@ -56,6 +57,7 @@ export type Database = {
           winner_position: number | null
         }
         Insert: {
+          background_choice?: string | null
           created_at?: string
           current_player_turn?: number
           game_state: Json
@@ -66,6 +68,7 @@ export type Database = {
           winner_position?: number | null
         }
         Update: {
+          background_choice?: string | null
           created_at?: string
           current_player_turn?: number
           game_state?: Json

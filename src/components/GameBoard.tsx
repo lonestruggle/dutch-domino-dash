@@ -4,7 +4,9 @@ import { DominoTile } from './DominoTile';
 import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { cn } from '@/lib/utils';
-import dominoTableBg from '@/assets/domino-table-2.webp';
+import dominoTable1 from '@/assets/domino-table-1.webp';
+import dominoTable2 from '@/assets/domino-table-2.webp';
+import dominoTable3 from '@/assets/domino-table-3.webp';
 
 interface GameBoardProps {
   gameState: GameState;
@@ -12,6 +14,7 @@ interface GameBoardProps {
   onMoveExecute: (move: LegalMove) => void;
   onCenterView: () => void;
   hasDifferentNeighbor: (x: number, y: number) => boolean;
+  backgroundChoice?: string;
 }
 
 const CELL_SIZE = 48;
@@ -24,7 +27,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   legalMoves,
   onMoveExecute,
   onCenterView,
-  hasDifferentNeighbor
+  hasDifferentNeighbor,
+  backgroundChoice = 'domino-table-2'
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -130,6 +134,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const boardSize = calculateBoardSize();
 
+  // Get the background image based on the choice
+  const getBackgroundImage = () => {
+    switch (backgroundChoice) {
+      case 'domino-table-1':
+        return dominoTable1;
+      case 'domino-table-2':
+        return dominoTable2;
+      case 'domino-table-3':
+        return dominoTable3;
+      default:
+        return dominoTable2; // Default to table 2 (walnoot)
+    }
+  };
+
+  const backgroundImage = getBackgroundImage();
+
   // Auto-scroll when dominoes change or legal moves change
   useEffect(() => {
     // Small delay to ensure DOM is updated
@@ -160,7 +180,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       className="relative w-full flex-1 game-board border-2 border-border rounded-lg overflow-auto mb-4"
       style={{ 
         scrollBehavior: 'smooth',
-        backgroundImage: `url(${dominoTableBg})`,
+        backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
@@ -172,7 +192,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         style={{ 
           width: boardSize, 
           height: boardSize,
-          backgroundImage: `url(${dominoTableBg})`,
+          backgroundImage: `url(${backgroundImage})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'

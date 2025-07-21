@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Users, Play, LogOut, Copy } from 'lucide-react';
+import { BackgroundSelector } from '@/components/BackgroundSelector';
 
 interface LobbyPlayer {
   id: string;
@@ -32,6 +33,7 @@ export default function Lobby() {
   const { toast } = useToast();
   const [lobby, setLobby] = useState<LobbyDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedBackground, setSelectedBackground] = useState<string>('domino-table-2');
   
   console.log('Lobby params:', params);
   console.log('Lobby ID extracted:', lobbyId);
@@ -201,7 +203,8 @@ export default function Lobby() {
         .update({
           current_player_turn: starterPlayerIndex,
           game_state: initialGameState,
-          status: 'active'
+          status: 'active',
+          background_choice: selectedBackground
         })
         .eq('id', existingGame.id);
 
@@ -214,14 +217,15 @@ export default function Lobby() {
         return;
       }
     } else {
-      // Create new game
+    // Create new game
       const { error: createError } = await supabase
         .from('games')
         .insert({
           lobby_id: lobby.id,
           current_player_turn: starterPlayerIndex,
           game_state: initialGameState,
-          status: 'active'
+          status: 'active',
+          background_choice: selectedBackground
         });
 
       if (createError) {
@@ -402,46 +406,54 @@ export default function Lobby() {
                 Players: {lobby.players.length}/{lobby.max_players}
               </p>
               
-              <div className="space-y-2">
-                {playerSlots.map(({ position, player }) => (
-                  <div
-                    key={position}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
-                        {position + 1}
-                      </div>
-                      <span>
-                        {player ? (
-                          <>
-                            {player.username}
-                            {player.user_id === lobby.created_by && (
-                              <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                                Creator
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground">Waiting for player...</span>
-                        )}
-                      </span>
+            <div className="space-y-2">
+              {playerSlots.map(({ position, player }) => (
+                <div
+                  key={position}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                      {position + 1}
                     </div>
+                    <span>
+                      {player ? (
+                        <>
+                          {player.username}
+                          {player.user_id === lobby.created_by && (
+                            <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                              Creator
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">Waiting for player...</span>
+                      )}
+                    </span>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
+          </div>
 
-            {lobby.status === 'waiting' && (
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  {isLobbyCreator 
-                    ? "Waiting for players to join. Click 'Start Game' when ready!"
-                    : "Waiting for the lobby creator to start the game..."
-                  }
-                </p>
-              </div>
-            )}
+          {/* Background selector for lobby creator */}
+          {isLobbyCreator && lobby.status === 'waiting' && (
+            <BackgroundSelector
+              selectedBackground={selectedBackground}
+              onBackgroundChange={setSelectedBackground}
+            />
+          )}
+
+          {lobby.status === 'waiting' && (
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                {isLobbyCreator 
+                  ? "Waiting for players to join. Click 'Start Game' when ready!"
+                  : "Waiting for the lobby creator to start the game..."
+                }
+              </p>
+            </div>
+          )}
           </CardContent>
         </Card>
       </div>

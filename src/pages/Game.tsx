@@ -17,6 +17,7 @@ interface GameData {
   current_player_turn: number;
   game_state: any;
   winner_position: number | null;
+  background_choice?: string;
 }
 
 export default function Game() {
@@ -300,7 +301,8 @@ export default function Game() {
     executeMove: wrappedExecuteMove,
     drawFromBoneyard: wrappedDrawFromBoneyard,
     syncState: syncedGameHook.syncState,
-    startNewGame: syncedGameHook.startNewGame
+    startNewGame: syncedGameHook.startNewGame,
+    gameData: game
   };
 
   const fetchGame = async () => {

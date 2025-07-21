@@ -19,7 +19,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     drawFromBoneyard,
     startNewGame,
     hasDifferentNeighbor,
-    syncState
+    syncState,
+    gameData
   } = gameHook;
 
   if (syncState?.isLoading) {
@@ -95,6 +96,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           onMoveExecute={executeMove}
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}
+          backgroundChoice={gameData?.background_choice}
         />
 
         {/* Player Hand */}
