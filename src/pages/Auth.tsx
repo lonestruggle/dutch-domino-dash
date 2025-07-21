@@ -141,8 +141,28 @@ const Auth = () => {
       return;
     }
 
-    // If there's an invite code, validate it matches the email
-    if (inviteCode && inviteInfo && email !== inviteInfo.email) {
+    // Uitnodigingscode is verplicht
+    if (!inviteCode) {
+      toast({
+        title: "Error",
+        description: "Uitnodigingscode is verplicht om te registreren",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Valideer dat er geldige uitnodigingsinfo is
+    if (!inviteInfo) {
+      toast({
+        title: "Error",
+        description: "Ongeldige uitnodigingscode",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Email moet overeenkomen met uitnodiging
+    if (email !== inviteInfo.email) {
       toast({
         title: "Error",
         description: "Email moet overeenkomen met uitnodiging",
@@ -257,7 +277,7 @@ const Auth = () => {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Wegi Domino</CardTitle>
           <CardDescription>
-            Log in of maak een account aan om te spelen
+            Log in of registreer je via uitnodiging om te spelen
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -326,14 +346,14 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
-                {/* Show invite code field only if no valid invite */}
+                {/* Uitnodigingscode is altijd verplicht */}
                 {!inviteInfo && (
                   <div className="space-y-2">
-                    <Label htmlFor="invite-code">Uitnodigingscode (optioneel)</Label>
+                    <Label htmlFor="invite-code">Uitnodigingscode *</Label>
                     <Input
                       id="invite-code"
                       type="text"
-                      placeholder="Voer uitnodigingscode in"
+                      placeholder="Voer je uitnodigingscode in"
                       value={inviteCode}
                       onChange={(e) => {
                         const code = e.target.value;
@@ -345,7 +365,11 @@ const Auth = () => {
                           setInviteError('');
                         }
                       }}
+                      required
                     />
+                    <p className="text-sm text-muted-foreground">
+                      Je hebt een uitnodigingscode nodig om te registreren
+                    </p>
                   </div>
                 )}
                 
