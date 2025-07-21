@@ -88,6 +88,42 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          invited_email: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          invited_email: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          invited_email?: string
+          status?: string
+        }
+        Relationships: []
+      }
       lobbies: {
         Row: {
           created_at: string
@@ -197,6 +233,8 @@ export type Database = {
           games_played: number | null
           games_won: number | null
           id: string
+          invitation_code: string | null
+          invited_by: string | null
           status: string | null
           updated_at: string | null
           user_id: string
@@ -209,6 +247,8 @@ export type Database = {
           games_played?: number | null
           games_won?: number | null
           id?: string
+          invitation_code?: string | null
+          invited_by?: string | null
           status?: string | null
           updated_at?: string | null
           user_id: string
@@ -221,6 +261,8 @@ export type Database = {
           games_played?: number | null
           games_won?: number | null
           id?: string
+          invitation_code?: string | null
+          invited_by?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string

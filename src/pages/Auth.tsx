@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserCheck, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
@@ -16,9 +17,22 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteInfo, setInviteInfo] = useState<{ email: string; inviter: string } | null>(null);
+  const [inviteError, setInviteError] = useState('');
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  // Check for invite code in URL and validate it
+  useEffect(() => {
+    const inviteCodeFromUrl = searchParams.get('invite');
+    if (inviteCodeFromUrl) {
+      setInviteCode(inviteCodeFromUrl);
+      validateInviteCode(inviteCodeFromUrl);
+    }
+  }, [searchParams]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -27,6 +41,40 @@ const Auth = () => {
       navigate('/');
     }
   }, [user, navigate, authLoading]);
+
+  const validateInviteCode = async (code: string) => {
+    if (!code) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('invitations')
+        .select(`
+          invited_email,
+          status,
+          expires_at,
+          inviter:profiles!invited_by(username)
+        `)
+        .eq('code', code)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (error || !data) {
+        setInviteError('Ongeldige of verlopen uitnodigingscode');
+        return;
+      }
+
+      setInviteInfo({
+        email: data.invited_email,
+        inviter: (data as any).inviter?.username || 'Onbekend'
+      });
+      setEmail(data.invited_email); // Pre-fill email
+      setInviteError('');
+    } catch (error) {
+      console.error('Error validating invite code:', error);
+      setInviteError('Fout bij valideren van uitnodigingscode');
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,13 +129,23 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Attempting sign up with:', { email, username, passwordLength: password.length });
+    console.log('Attempting sign up with:', { email, username, passwordLength: password.length, inviteCode });
     
     if (!email || !password || !confirmPassword || !username) {
       console.log('Sign up failed: missing fields');
       toast({
         title: "Error",
         description: "Vul alle velden in",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // If there's an invite code, validate it matches the email
+    if (inviteCode && inviteInfo && email !== inviteInfo.email) {
+      toast({
+        title: "Error",
+        description: "Email moet overeenkomen met uitnodiging",
         variant: "destructive",
       });
       return;
@@ -128,18 +186,19 @@ const Auth = () => {
       const redirectUrl = `${window.location.origin}/`;
       console.log('Calling supabase.auth.signUp with redirectUrl:', redirectUrl);
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            username: username
+            username: username,
+            invitation_code: inviteCode || null
           }
         }
       });
 
-      console.log('Sign up result:', { error });
+      console.log('Sign up result:', { error, data });
 
       if (error) {
         console.log('Sign up error:', error);
@@ -149,16 +208,36 @@ const Auth = () => {
           variant: "destructive",
         });
       } else {
+        // If there was an invite code, mark the invitation as accepted
+        if (inviteCode && data.user) {
+          try {
+            await supabase
+              .from('invitations')
+              .update({
+                status: 'accepted',
+                accepted_by: data.user.id,
+                accepted_at: new Date().toISOString()
+              })
+              .eq('code', inviteCode);
+          } catch (inviteError) {
+            console.error('Error updating invitation:', inviteError);
+            // Don't fail the whole signup for this
+          }
+        }
+
         console.log('Sign up successful');
         toast({
           title: "Registratie succesvol!",
-          description: "Controleer je email om je account te bevestigen",
+          description: inviteCode 
+            ? "Account aangemaakt via uitnodiging! Controleer je email om te bevestigen."
+            : "Controleer je email om je account te bevestigen",
         });
         // Clear form
         setEmail('');
         setPassword('');
         setConfirmPassword('');
         setUsername('');
+        setInviteCode('');
       }
     } catch (error) {
       console.error('Sign up exception:', error);
@@ -182,6 +261,26 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Show invite info if present */}
+          {inviteInfo && (
+            <Alert className="mb-4 border-green-200 bg-green-50">
+              <UserCheck className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                Je bent uitgenodigd door <strong>{inviteInfo.inviter}</strong> voor {inviteInfo.email}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {/* Show invite error if present */}
+          {inviteError && (
+            <Alert className="mb-4 border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                {inviteError}
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Inloggen</TabsTrigger>
@@ -227,6 +326,29 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
+                {/* Show invite code field only if no valid invite */}
+                {!inviteInfo && (
+                  <div className="space-y-2">
+                    <Label htmlFor="invite-code">Uitnodigingscode (optioneel)</Label>
+                    <Input
+                      id="invite-code"
+                      type="text"
+                      placeholder="Voer uitnodigingscode in"
+                      value={inviteCode}
+                      onChange={(e) => {
+                        const code = e.target.value;
+                        setInviteCode(code);
+                        if (code.length >= 8) {
+                          validateInviteCode(code);
+                        } else {
+                          setInviteInfo(null);
+                          setInviteError('');
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   <Label htmlFor="signup-username">Gebruikersnaam</Label>
                   <Input
@@ -246,6 +368,7 @@ const Auth = () => {
                     placeholder="je@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={!!inviteInfo} // Disable if invite is valid
                     required
                   />
                 </div>

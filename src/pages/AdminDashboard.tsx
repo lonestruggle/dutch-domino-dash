@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar } from 'lucide-react';
+import { Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -47,6 +47,18 @@ interface ModerationAction {
   duration?: string;
 }
 
+interface Invitation {
+  id: string;
+  code: string;
+  invited_email: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+  accepted_at?: string;
+  inviter: { username: string };
+  accepter?: { username: string };
+}
+
 const AdminDashboard = () => {
   const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -55,6 +67,7 @@ const AdminDashboard = () => {
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [moderationAction, setModerationAction] = useState<ModerationAction>({
     user_id: '',
@@ -153,6 +166,22 @@ const AdminDashboard = () => {
 
       if (!usersError && usersData) {
         setUsers(usersData);
+      }
+
+      // Load invitations data (simplified query to avoid relation errors)
+      const { data: invitationsData, error: invitationsError } = await supabase
+        .from('invitations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!invitationsError && invitationsData) {
+        // Transform data to match interface
+        const transformedInvitations = invitationsData.map(inv => ({
+          ...inv,
+          inviter: { username: 'Laden...' },
+          accepter: inv.accepted_by ? { username: 'Laden...' } : undefined
+        }));
+        setInvitations(transformedInvitations as any);
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -281,7 +310,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Overzicht
@@ -297,6 +326,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="invitations" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Uitnodigingen
             </TabsTrigger>
           </TabsList>
 
@@ -477,6 +510,111 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="invitations">
+            <div className="space-y-6">
+              {/* Invitation Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Totaal Uitnodigingen</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{invitations.length}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Geaccepteerd</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      {invitations.filter(inv => inv.status === 'accepted').length}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">In Afwachting</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {invitations.filter(inv => inv.status === 'pending').length}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Verlopen</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600">
+                      {invitations.filter(inv => inv.status === 'expired').length}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Invitations List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Alle Uitnodigingen</CardTitle>
+                  <CardDescription>
+                    Overzicht van alle uitnodigingen in het systeem
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {invitations.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Geen uitnodigingen gevonden</p>
+                      </div>
+                    ) : (
+                      invitations.map((invitation) => (
+                        <div
+                          key={invitation.id}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{invitation.invited_email}</span>
+                              <Badge 
+                                variant={
+                                  invitation.status === 'accepted' ? 'default' : 
+                                  invitation.status === 'pending' ? 'secondary' : 
+                                  'destructive'
+                                }
+                              >
+                                {invitation.status === 'accepted' ? 'Geaccepteerd' :
+                                 invitation.status === 'pending' ? 'In Afwachting' :
+                                 'Verlopen'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              Code: {invitation.code} • 
+                              Uitgenodigd door: {(invitation as any).inviter?.username || 'Onbekend'} • 
+                              Verstuurd: {new Date(invitation.created_at).toLocaleDateString('nl-NL')}
+                            </p>
+                            {invitation.status === 'accepted' && invitation.accepted_at && (
+                              <p className="text-sm text-green-600">
+                                Geaccepteerd: {new Date(invitation.accepted_at).toLocaleDateString('nl-NL')} door {(invitation as any).accepter?.username || 'Onbekend'}
+                              </p>
+                            )}
+                            {invitation.status === 'pending' && (
+                              <p className="text-sm text-muted-foreground">
+                                Verloopt: {new Date(invitation.expires_at).toLocaleDateString('nl-NL')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
