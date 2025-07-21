@@ -49,7 +49,7 @@ const Auth = () => {
       // Use server-side validation function for security
       const { data, error } = await supabase.rpc('validate_invitation_code', {
         _code: code,
-        _email: '' // We don't have email yet during initial validation
+        _email: null // We don't validate email during initial code validation
       });
 
       if (error) {
@@ -74,15 +74,19 @@ const Auth = () => {
         .single();
 
       setInviteInfo({
-        email: validationResult.invited_email,
+        email: validationResult.invited_email || '', // Handle empty email
         inviter: inviterData?.username || 'Onbekend'
       });
-      setEmail(validationResult.invited_email); // Pre-fill email
-      setInviteError('');
+      
+      // Only pre-fill email if invitation has one
+      if (validationResult.invited_email) {
+        setEmail(validationResult.invited_email);
+      }
+      
       setInviteError('');
     } catch (error) {
-      console.error('Error validating invite code:', error);
-      setInviteError('Fout bij valideren van uitnodigingscode');
+      console.error('Exception validating invitation:', error);
+      setInviteError('Fout bij valideren uitnodigingscode');
     }
   };
 
@@ -171,8 +175,8 @@ const Auth = () => {
       return;
     }
 
-    // Email moet overeenkomen met uitnodiging
-    if (email !== inviteInfo.email) {
+    // Email moet overeenkomen met uitnodiging (alleen als uitnodiging een email heeft)
+    if (inviteInfo.email && email !== inviteInfo.email) {
       toast({
         title: "Error",
         description: "Email moet overeenkomen met uitnodiging",

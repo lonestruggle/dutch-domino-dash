@@ -372,7 +372,7 @@ export type Database = {
         Returns: boolean
       }
       validate_invitation_code: {
-        Args: { _code: string; _email: string }
+        Args: { _code: string; _email?: string }
         Returns: Json
       }
     }
