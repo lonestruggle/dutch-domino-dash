@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           created_at: string
@@ -123,15 +153,151 @@ export type Database = {
           },
         ]
       }
+      moderation_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          duration: unknown | null
+          expires_at: string | null
+          id: string
+          moderator_id: string
+          reason: string | null
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          duration?: unknown | null
+          expires_at?: string | null
+          id?: string
+          moderator_id: string
+          reason?: string | null
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          duration?: unknown | null
+          expires_at?: string | null
+          id?: string
+          moderator_id?: string
+          reason?: string | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          games_played: number | null
+          games_won: number | null
+          id: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          games_played?: number | null
+          games_won?: number | null
+          id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          games_played?: number | null
+          games_won?: number | null
+          id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      user_bans: {
+        Row: {
+          banned_by: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_permanent: boolean | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          banned_by: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_permanent?: boolean | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          banned_by?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_permanent?: boolean | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
+      is_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -258,6 +424,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
