@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 import dominoTable3 from '@/assets/domino-table-3.webp';
+import curacaoFlagTable from '@/assets/curacao-flag-table.png';
 
 interface GameBoardProps {
   gameState: GameState;
@@ -143,6 +144,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         return dominoTable2;
       case 'domino-table-3':
         return dominoTable3;
+      case 'curacao-flag-table':
+        return curacaoFlagTable;
       default:
         return dominoTable2; // Default to table 2 (walnoot)
     }

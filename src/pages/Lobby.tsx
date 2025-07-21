@@ -437,7 +437,7 @@ export default function Lobby() {
           </div>
 
           {/* Background selector for lobby creator */}
-          {isLobbyCreator && lobby.status === 'waiting' && (
+          {isLobbyCreator && (
             <BackgroundSelector
               selectedBackground={selectedBackground}
               onBackgroundChange={setSelectedBackground}
