@@ -48,12 +48,21 @@ export const useLobbies = () => {
   const createLobby = async (name: string, user: User, maxPlayers: number = 4) => {
     if (!user) return { error: 'Not authenticated' };
 
+    // Get username from profiles table
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('user_id', user.id)
+      .single();
+
+    const username = profile?.username || user.email || 'Unknown';
+
     const { data: lobby, error: lobbyError } = await supabase
       .from('lobbies')
       .insert({
         name,
         created_by: user.id,
-        created_by_username: user.email || 'Unknown',
+        created_by_username: username,
         max_players: maxPlayers
       })
       .select()
@@ -67,7 +76,7 @@ export const useLobbies = () => {
       .insert({
         lobby_id: lobby.id,
          user_id: user.id,
-         username: user.email || 'Player',
+         username: username,
         player_position: 0
       });
 
@@ -112,12 +121,21 @@ export const useLobbies = () => {
       return { error: 'Lobby is full' };
     }
 
+    // Get username from profiles table
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('user_id', user.id)
+      .single();
+
+    const username = profile?.username || user.email || 'Player';
+
     const { error } = await supabase
       .from('lobby_players')
       .insert({
         lobby_id: lobbyId,
          user_id: user.id,
-         username: user.email || 'Player',
+         username: username,
         player_position: nextPosition
       });
 
@@ -146,6 +164,41 @@ export const useLobbies = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const adminDeleteLobby = async (lobbyId: string, user: User) => {
+    if (!user) return { error: 'Not authenticated' };
+    
+    // Check if user is admin
+    const { data: adminRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (!adminRole) return { error: 'Not authorized - admin access required' };
+    
+    // First delete all lobby players
+    const { error: playersError } = await supabase
+      .from('lobby_players')
+      .delete()
+      .eq('lobby_id', lobbyId);
+
+    if (playersError) return { error: playersError };
+
+    // Then delete the lobby (no creator restriction for admins)
+    const { error: lobbyError } = await supabase
+      .from('lobbies')
+      .delete()
+      .eq('id', lobbyId);
+
+    if (lobbyError) return { error: lobbyError };
+
+    // Immediately update the local state
+    setLobbies(prevLobbies => prevLobbies.filter(lobby => lobby.id !== lobbyId));
+    
+    return { error: null };
+  };
 
   const deleteLobby = async (lobbyId: string, user: User) => {
     if (!user) return { error: 'Not authenticated' };
@@ -179,6 +232,7 @@ export const useLobbies = () => {
     createLobby,
     joinLobby,
     deleteLobby,
+    adminDeleteLobby,
     refetch: fetchLobbies
   };
 };

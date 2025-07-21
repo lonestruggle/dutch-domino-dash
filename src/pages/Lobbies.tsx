@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,9 +19,29 @@ export default function Lobbies() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
   const [username, setUsername] = useState('');
+  const [displayUsername, setDisplayUsername] = useState('');
   const [lobbyName, setLobbyName] = useState('');
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchUsername();
+    }
+  }, [user]);
+
+  const fetchUsername = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (data) {
+      setDisplayUsername(data.username);
+    }
+  };
 
 
   const handleCreateLobby = async () => {
@@ -120,7 +140,7 @@ export default function Lobbies() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold">Multiplayer Lobbies</h1>
-            <p className="text-muted-foreground">Welcome, {user?.email}!</p>
+            <p className="text-muted-foreground">Welcome, {displayUsername || user?.email}!</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate('/')}>

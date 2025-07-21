@@ -5,6 +5,7 @@ import { Check } from 'lucide-react';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 import dominoTable3 from '@/assets/domino-table-3.webp';
+import curacaoFlagTable from '@/assets/curacao-flag-table.png';
 
 interface BackgroundOption {
   id: string;
@@ -16,6 +17,7 @@ const backgroundOptions: BackgroundOption[] = [
   { id: 'domino-table-1', name: 'Mahonie Tafel', image: dominoTable1 },
   { id: 'domino-table-2', name: 'Walnoot Tafel', image: dominoTable2 },
   { id: 'domino-table-3', name: 'Eiken Tafel', image: dominoTable3 },
+  { id: 'curacao-flag-table', name: 'Antiliaanse Vlag', image: curacaoFlagTable },
 ];
 
 interface BackgroundSelectorProps {

@@ -59,6 +59,17 @@ interface Invitation {
   accepter?: { username: string };
 }
 
+interface Lobby {
+  id: string;
+  name: string;
+  created_by: string;
+  created_by_username: string;
+  max_players: number;
+  status: string;
+  created_at: string;
+  player_count: number;
+}
+
 const AdminDashboard = () => {
   const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -68,6 +79,7 @@ const AdminDashboard = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [moderationAction, setModerationAction] = useState<ModerationAction>({
     user_id: '',
@@ -183,6 +195,29 @@ const AdminDashboard = () => {
         }));
         setInvitations(transformedInvitations as any);
       }
+
+      // Load lobbies data
+      const { data: lobbiesData, error: lobbiesError } = await supabase
+        .from('lobbies')
+        .select(`
+          *,
+          lobby_players(count)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (!lobbiesError && lobbiesData) {
+        const lobbiesWithCount: Lobby[] = lobbiesData.map(lobby => ({
+          id: lobby.id,
+          name: lobby.name,
+          created_by: lobby.created_by,
+          created_by_username: lobby.created_by_username || 'Onbekend',
+          max_players: lobby.max_players,
+          status: lobby.status,
+          created_at: lobby.created_at,
+          player_count: lobby.lobby_players?.length || 0
+        }));
+        setLobbies(lobbiesWithCount);
+      }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     }
@@ -271,6 +306,55 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteLobby = async (lobbyId: string) => {
+    try {
+      // First delete all lobby players
+      const { error: playersError } = await supabase
+        .from('lobby_players')
+        .delete()
+        .eq('lobby_id', lobbyId);
+
+      if (playersError) {
+        toast({
+          title: "Error",
+          description: "Kon lobby spelers niet verwijderen",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Then delete the lobby
+      const { error: lobbyError } = await supabase
+        .from('lobbies')
+        .delete()
+        .eq('id', lobbyId);
+
+      if (lobbyError) {
+        toast({
+          title: "Error", 
+          description: "Kon lobby niet verwijderen",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setLobbies(prevLobbies => prevLobbies.filter(lobby => lobby.id !== lobbyId));
+      
+      toast({
+        title: "Succes",
+        description: "Lobby succesvol verwijderd",
+      });
+    } catch (error) {
+      console.error('Error deleting lobby:', error);
+      toast({
+        title: "Error",
+        description: "Er is iets misgegaan",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredUsers = users.filter(user =>
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -310,7 +394,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Overzicht
@@ -318,6 +402,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Gebruikers
+            </TabsTrigger>
+            <TabsTrigger value="lobbies" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Lobbies
             </TabsTrigger>
             <TabsTrigger value="moderation" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -423,6 +511,60 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="lobbies">
+            <Card>
+              <CardHeader>
+                <CardTitle>Lobby Beheer</CardTitle>
+                <CardDescription>
+                  Bekijk en beheer alle actieve lobbies
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {lobbies.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Geen lobbies gevonden</p>
+                    </div>
+                  ) : (
+                    lobbies.map((lobby) => (
+                      <div key={lobby.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
+                            <Users className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{lobby.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Gemaakt door: {lobby.created_by_username} • 
+                              {new Date(lobby.created_at).toLocaleDateString('nl-NL')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline">
+                            {lobby.player_count}/{lobby.max_players} spelers
+                          </Badge>
+                          <Badge variant={lobby.status === 'waiting' ? 'secondary' : 'default'}>
+                            {lobby.status === 'waiting' ? 'Wachtend' : 
+                             lobby.status === 'playing' ? 'Bezig' : 'Voltooid'}
+                          </Badge>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteLobby(lobby.id)}
+                          >
+                            <UserX className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -1,20 +1,41 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { supabase } from '@/integrations/supabase/client';
 import { Play, Users, Gamepad2, UserCircle, Crown, LogOut, LogIn } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
   const { user, signOut, isAuthenticated } = useAuth();
   const { trackPageView } = useAnalytics();
+  const [username, setUsername] = useState<string>('');
 
   useEffect(() => {
     trackPageView('home');
   }, [trackPageView]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUsername();
+    }
+  }, [user]);
+
+  const fetchUsername = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (data) {
+      setUsername(data.username);
+    }
+  };
 
   const handleSignOut = async () => {
     console.log('Signing out...');
@@ -56,10 +77,10 @@ export default function Home() {
               <div className="flex items-center gap-4">
                 {isAuthenticated && user ? (
                   <>
-                    <div className="flex items-center gap-2 text-white">
-                      <UserCircle className="h-5 w-5" />
-                      <span className="text-sm font-medium">Welkom, {user.email}</span>
-                    </div>
+                     <div className="flex items-center gap-2 text-white">
+                       <UserCircle className="h-5 w-5" />
+                       <span className="text-sm font-medium">Welkom, {username || user.email}</span>
+                     </div>
                     <Button variant="outline" onClick={() => navigate('/profile')} className="border-white/30 bg-white/10 text-white hover:bg-white/20">
                       <UserCircle className="mr-2 h-4 w-4" />
                       Profiel
