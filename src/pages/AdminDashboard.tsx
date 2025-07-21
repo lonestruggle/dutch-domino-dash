@@ -73,6 +73,8 @@ const AdminDashboard = () => {
   const checkAdminStatus = async () => {
     if (!user) return;
     
+    console.log('Checking admin status for user:', user.id);
+    
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -81,6 +83,8 @@ const AdminDashboard = () => {
         .eq('role', 'admin')
         .maybeSingle();
 
+      console.log('Admin query result:', { data, error });
+
       if (error && error.code !== 'PGRST116') {
         console.error('Error checking admin status:', error);
         navigate('/');
@@ -88,9 +92,11 @@ const AdminDashboard = () => {
       }
 
       if (data) {
+        console.log('User is admin, setting isAdmin to true');
         setIsAdmin(true);
         loadDashboardData();
       } else {
+        console.log('User is not admin, redirecting to home');
         toast({
           title: "Toegang geweigerd",
           description: "Je hebt geen admin rechten",
@@ -99,7 +105,7 @@ const AdminDashboard = () => {
         navigate('/');
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Exception in checkAdminStatus:', error);
       navigate('/');
     } finally {
       setLoading(false);

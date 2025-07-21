@@ -17,8 +17,12 @@ export default function Home() {
   }, [trackPageView]);
 
   const handleSignOut = async () => {
+    console.log('Signing out...');
     const { error } = await signOut();
-    if (!error) {
+    if (error) {
+      console.error('Sign out error:', error);
+    } else {
+      console.log('Sign out successful');
       navigate('/');
     }
   };
