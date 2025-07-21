@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useSimpleAuth } from '@/hooks/useSimpleAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { useLobbies } from '@/hooks/useLobbies';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +13,7 @@ import { Plus, Users, LogIn, Trash2 } from 'lucide-react';
 
 export default function Lobbies() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, signInWithUsername } = useSimpleAuth();
+  const { user, isAuthenticated } = useAuth();
   const { lobbies, loading, createLobby, joinLobby, deleteLobby } = useLobbies();
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -23,28 +23,6 @@ export default function Lobbies() {
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [creating, setCreating] = useState(false);
 
-  const handleSignIn = async () => {
-    if (!username.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a username",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const { error } = await signInWithUsername(username);
-    if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive"
-      });
-    } else {
-      setShowUsernameDialog(false);
-      setUsername('');
-    }
-  };
 
   const handleCreateLobby = async () => {
     if (!user) return;
@@ -117,31 +95,19 @@ export default function Lobbies() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-center">Welcome to Multiplayer</CardTitle>
+            <CardTitle className="text-center">Authentication Required</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">
-              Enter your username to join multiplayer lobbies
+              You need to log in to access multiplayer lobbies
             </p>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSignIn()}
-                />
-              </div>
-              <Button onClick={handleSignIn} className="w-full">
-                <LogIn className="h-4 w-4 mr-2" />
-                Join Multiplayer
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/')} className="w-full">
-                Back to Home
-              </Button>
-            </div>
+            <Button onClick={() => navigate('/auth')} className="w-full">
+              <LogIn className="h-4 w-4 mr-2" />
+              Go to Login
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/')} className="w-full">
+              Back to Home
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -154,7 +120,7 @@ export default function Lobbies() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold">Multiplayer Lobbies</h1>
-            <p className="text-muted-foreground">Welcome, {user?.username}!</p>
+            <p className="text-muted-foreground">Welcome, {user?.email}!</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate('/')}>

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSimpleAuth } from '@/hooks/useSimpleAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function Game() {
   const params = useParams();
   const gameId = params.gameId;
   const navigate = useNavigate();
-  const { user, isAuthenticated, loading: authLoading } = useSimpleAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);

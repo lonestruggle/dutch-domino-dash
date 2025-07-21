@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSimpleAuth } from '@/hooks/useSimpleAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Users, Play, LogOut, Copy } from 'lucide-react';
@@ -28,7 +28,7 @@ export default function Lobby() {
   const params = useParams();
   const lobbyId = params.lobbyId;
   const navigate = useNavigate();
-  const { user, isAuthenticated, loading: authLoading } = useSimpleAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [lobby, setLobby] = useState<LobbyDetails | null>(null);
   const [loading, setLoading] = useState(true);

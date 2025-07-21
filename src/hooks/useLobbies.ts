@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from './useSimpleAuth';
+import { User } from '@supabase/supabase-js';
 
 export interface Lobby {
   id: string;
@@ -53,7 +53,7 @@ export const useLobbies = () => {
       .insert({
         name,
         created_by: user.id,
-        created_by_username: user.username,
+        created_by_username: user.email || 'Unknown',
         max_players: maxPlayers
       })
       .select()
@@ -66,8 +66,8 @@ export const useLobbies = () => {
       .from('lobby_players')
       .insert({
         lobby_id: lobby.id,
-        user_id: user.id,
-        username: user.username,
+         user_id: user.id,
+         username: user.email || 'Player',
         player_position: 0
       });
 
@@ -116,8 +116,8 @@ export const useLobbies = () => {
       .from('lobby_players')
       .insert({
         lobby_id: lobbyId,
-        user_id: user.id,
-        username: user.username,
+         user_id: user.id,
+         username: user.email || 'Player',
         player_position: nextPosition
       });
 
