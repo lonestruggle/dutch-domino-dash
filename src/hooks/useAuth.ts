@@ -8,9 +8,12 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('useAuth: Setting up auth listener...');
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('useAuth: Auth state changed:', { event, sessionExists: !!session });
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -19,6 +22,7 @@ export const useAuth = () => {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('useAuth: Initial session check:', { sessionExists: !!session });
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -33,12 +37,22 @@ export const useAuth = () => {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
+    console.log('useAuth: Starting sign out...');
+    
+    try {
+      const { error } = await supabase.auth.signOut();
+      console.log('useAuth: Sign out API result:', { error });
+    } catch (error) {
+      console.error('useAuth: Sign out API exception:', error);
+    }
+    
     // Force clear local state regardless of server response
     // This handles expired/invalid sessions
+    console.log('useAuth: Forcing local state clear...');
     setSession(null);
     setUser(null);
-    return { error };
+    
+    return { error: null };
   };
 
   return {
