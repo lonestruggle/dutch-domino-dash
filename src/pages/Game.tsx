@@ -85,6 +85,28 @@ export default function Game() {
   const wrappedExecuteMove = useCallback(async (move: any) => {
     console.log('🎯 Move attempt:', move);
     
+    // Input validation - sanitize move data
+    if (!move || typeof move !== 'object') {
+      console.log('❌ Invalid move data');
+      toast({
+        title: "Invalid move",
+        description: "Move data is invalid",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate move structure
+    if (!move.end || typeof move.end.x !== 'number' || typeof move.end.y !== 'number') {
+      console.log('❌ Invalid move coordinates');
+      toast({
+        title: "Invalid move",
+        description: "Invalid move coordinates",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Check if it's the current player's turn
     const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
     const currentPlayerTurn = syncedGameHook.syncState.currentPlayer;
@@ -94,6 +116,44 @@ export default function Game() {
       toast({
         title: "Not your turn",
         description: "Wait for your turn to play",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Server-side validation via database function
+    try {
+      const { data: isValidMove, error } = await supabase
+        .rpc('validate_game_move', {
+          _game_id: game?.id,
+          _player_position: currentPlayerPosition,
+          _move_data: move
+        });
+
+      if (error) {
+        console.error('Move validation error:', error);
+        toast({
+          title: "Validation failed",
+          description: "Could not validate move",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!isValidMove) {
+        console.log('❌ Invalid move rejected by server');
+        toast({
+          title: "Invalid move",
+          description: "Move rejected by server validation",
+          variant: "destructive"
+        });
+        return;
+      }
+    } catch (validationError) {
+      console.error('Move validation exception:', validationError);
+      toast({
+        title: "Validation error",
+        description: "Could not validate move",
         variant: "destructive"
       });
       return;

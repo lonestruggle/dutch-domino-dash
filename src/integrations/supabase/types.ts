@@ -340,6 +340,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      validate_game_move: {
+        Args: { _game_id: string; _player_position: number; _move_data: Json }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
