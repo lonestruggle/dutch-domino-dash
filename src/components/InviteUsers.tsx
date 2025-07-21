@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Mail, Users, Copy, Check } from 'lucide-react';
+import { Users, Copy, Check, Link, Share } from 'lucide-react';
 
 interface Invitation {
   id: string;
@@ -19,22 +17,21 @@ interface Invitation {
 }
 
 export const InviteUsers = () => {
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const sendInvitation = async () => {
-    if (!user || !email.trim()) return;
+  const createInvitation = async () => {
+    if (!user) return;
 
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('invitations')
         .insert([{
-          invited_email: email.trim(),
+          invited_email: '', // No email required for link sharing
           invited_by: user.id
         }])
         .select()
@@ -42,18 +39,20 @@ export const InviteUsers = () => {
 
       if (error) throw error;
 
+      const inviteUrl = `${window.location.origin}/auth?invite=${data.code}`;
+      await navigator.clipboard.writeText(inviteUrl);
+      
       toast({
-        title: "Uitnodiging verzonden!",
-        description: `Uitnodiging naar ${email} is succesvol aangemaakt.`
+        title: "Uitnodigingslink aangemaakt!",
+        description: "De link is gekopieerd naar je klembord. Deel deze via WhatsApp of andere apps!"
       });
 
-      setEmail('');
       loadInvitations();
     } catch (error) {
-      console.error('Error sending invitation:', error);
+      console.error('Error creating invitation:', error);
       toast({
         title: "Fout",
-        description: "Kon uitnodiging niet versturen",
+        description: "Kon uitnodigingslink niet aanmaken",
         variant: "destructive"
       });
     } finally {
@@ -121,33 +120,25 @@ export const InviteUsers = () => {
 
   return (
     <div className="space-y-6">
-      {/* Send Invitation Card */}
+      {/* Create Invitation Link Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Nieuwe Uitnodiging Versturen
+            <Share className="h-5 w-5" />
+            Uitnodigingslink Maken
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="email">Email Adres</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="vriend@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendInvitation()}
-            />
-          </div>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Maak een uitnodigingslink die je kunt delen via WhatsApp, Telegram of andere apps.
+          </p>
           <Button 
-            onClick={sendInvitation}
-            disabled={loading || !email.trim()}
+            onClick={createInvitation}
+            disabled={loading}
             className="w-full"
           >
-            <Mail className="h-4 w-4 mr-2" />
-            {loading ? 'Versturen...' : 'Uitnodiging Versturen'}
+            <Link className="h-4 w-4 mr-2" />
+            {loading ? 'Link maken...' : 'Nieuwe Uitnodigingslink Maken'}
           </Button>
         </CardContent>
       </Card>
@@ -174,15 +165,15 @@ export const InviteUsers = () => {
                   className="flex items-center justify-between p-3 border rounded-lg"
                 >
                   <div>
-                    <p className="font-medium">{invitation.invited_email}</p>
+                    <p className="font-medium">Uitnodigingslink #{invitation.code}</p>
                     <p className="text-sm text-muted-foreground">
-                      Code: {invitation.code} • 
+                      Status: 
                       <span className={`ml-1 ${getStatusColor(invitation.status)}`}>
                         {getStatusText(invitation.status)}
                       </span>
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Verstuurd: {new Date(invitation.created_at).toLocaleDateString('nl-NL')}
+                      Aangemaakt: {new Date(invitation.created_at).toLocaleDateString('nl-NL')}
                     </p>
                   </div>
                   <div className="flex gap-2">
