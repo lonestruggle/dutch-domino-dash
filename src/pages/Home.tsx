@@ -21,10 +21,12 @@ export default function Home() {
     const { error } = await signOut();
     if (error) {
       console.error('Sign out error:', error);
-    } else {
-      console.log('Sign out successful');
-      navigate('/');
+      // Even if signOut fails, we still want to clear local state and redirect
+      // This handles cases where session is already expired/invalid
     }
+    // Always navigate to home after sign out attempt (success or failure)
+    console.log('Sign out completed, redirecting to home');
+    navigate('/');
   };
 
   return (
