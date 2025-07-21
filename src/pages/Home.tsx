@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { Play, Users, Gamepad2, UserCircle, Crown, LogOut, LogIn } from 'lucide-react';
-import dominoPlayersBg from '@/assets/domino-players-bg.jpg';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -34,7 +33,7 @@ export default function Home() {
     <div 
       className="min-h-screen relative overflow-hidden"
       style={{
-        backgroundImage: `url(${dominoPlayersBg})`,
+        backgroundImage: `url('/lovable-uploads/c7e39ae4-84d3-4fb2-a05f-4ea95a7010d7.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
