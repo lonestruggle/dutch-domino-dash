@@ -30,7 +30,10 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Attempting sign in with:', { email, passwordLength: password.length });
+    
     if (!email || !password) {
+      console.log('Sign in failed: missing email or password');
       toast({
         title: "Error",
         description: "Vul alle velden in",
@@ -41,18 +44,23 @@ const Auth = () => {
 
     setIsLoading(true);
     try {
+      console.log('Calling supabase.auth.signInWithPassword...');
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('Sign in result:', { error });
+
       if (error) {
+        console.log('Sign in error:', error);
         toast({
           title: "Inloggen mislukt",
           description: error.message,
           variant: "destructive",
         });
       } else {
+        console.log('Sign in successful, navigating to home');
         toast({
           title: "Welkom terug!",
           description: "Je bent succesvol ingelogd",
@@ -60,6 +68,7 @@ const Auth = () => {
         navigate('/');
       }
     } catch (error) {
+      console.error('Sign in exception:', error);
       toast({
         title: "Error",
         description: "Er is iets misgegaan",
@@ -72,7 +81,10 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Attempting sign up with:', { email, username, passwordLength: password.length });
+    
     if (!email || !password || !confirmPassword || !username) {
+      console.log('Sign up failed: missing fields');
       toast({
         title: "Error",
         description: "Vul alle velden in",
@@ -82,6 +94,7 @@ const Auth = () => {
     }
 
     if (password !== confirmPassword) {
+      console.log('Sign up failed: passwords do not match');
       toast({
         title: "Error",
         description: "Wachtwoorden komen niet overeen",
@@ -91,6 +104,7 @@ const Auth = () => {
     }
 
     if (password.length < 6) {
+      console.log('Sign up failed: password too short');
       toast({
         title: "Error",
         description: "Wachtwoord moet minstens 6 karakters zijn",
@@ -100,6 +114,7 @@ const Auth = () => {
     }
 
     if (username.length < 3) {
+      console.log('Sign up failed: username too short');
       toast({
         title: "Error",
         description: "Gebruikersnaam moet minstens 3 karakters zijn",
@@ -111,6 +126,7 @@ const Auth = () => {
     setIsLoading(true);
     try {
       const redirectUrl = `${window.location.origin}/`;
+      console.log('Calling supabase.auth.signUp with redirectUrl:', redirectUrl);
       
       const { error } = await supabase.auth.signUp({
         email,
@@ -123,13 +139,17 @@ const Auth = () => {
         }
       });
 
+      console.log('Sign up result:', { error });
+
       if (error) {
+        console.log('Sign up error:', error);
         toast({
           title: "Registratie mislukt",
           description: error.message,
           variant: "destructive",
         });
       } else {
+        console.log('Sign up successful');
         toast({
           title: "Registratie succesvol!",
           description: "Controleer je email om je account te bevestigen",
@@ -141,6 +161,7 @@ const Auth = () => {
         setUsername('');
       }
     } catch (error) {
+      console.error('Sign up exception:', error);
       toast({
         title: "Error",
         description: "Er is iets misgegaan",
