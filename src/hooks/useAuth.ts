@@ -47,10 +47,18 @@ export const useAuth = () => {
     }
     
     // Force clear local state regardless of server response
-    // This handles expired/invalid sessions
     console.log('useAuth: Forcing local state clear...');
     setSession(null);
     setUser(null);
+    
+    // Also clear browser storage manually to ensure complete logout
+    console.log('useAuth: Clearing browser storage...');
+    localStorage.removeItem('sb-zefmabelixpuaelpivjx-auth-token');
+    localStorage.clear(); // Clear all localStorage to be sure
+    
+    // Force a page reload to completely reset the app state
+    console.log('useAuth: Reloading page to complete logout...');
+    window.location.reload();
     
     return { error: null };
   };
