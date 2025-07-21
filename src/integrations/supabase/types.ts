@@ -44,6 +44,33 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_attempts: {
+        Row: {
+          attempt_type: string
+          created_at: string | null
+          email: string | null
+          id: string
+          ip_address: unknown
+          success: boolean | null
+        }
+        Insert: {
+          attempt_type: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          ip_address: unknown
+          success?: boolean | null
+        }
+        Update: {
+          attempt_type?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          ip_address?: unknown
+          success?: boolean | null
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           background_choice: string | null
@@ -343,6 +370,10 @@ export type Database = {
       validate_game_move: {
         Args: { _game_id: string; _player_position: number; _move_data: Json }
         Returns: boolean
+      }
+      validate_invitation_code: {
+        Args: { _code: string; _email: string }
+        Returns: Json
       }
     }
     Enums: {

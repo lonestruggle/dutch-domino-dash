@@ -46,29 +46,39 @@ const Auth = () => {
     if (!code) return;
 
     try {
-      const { data, error } = await supabase
-        .from('invitations')
-        .select(`
-          invited_email,
-          status,
-          expires_at,
-          inviter:profiles!invited_by(username)
-        `)
-        .eq('code', code)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString())
-        .single();
+      // Use server-side validation function for security
+      const { data, error } = await supabase.rpc('validate_invitation_code', {
+        _code: code,
+        _email: '' // We don't have email yet during initial validation
+      });
 
-      if (error || !data) {
-        setInviteError('Ongeldige of verlopen uitnodigingscode');
+      if (error) {
+        console.error('Invitation validation error:', error);
+        setInviteError('Fout bij valideren uitnodigingscode');
         return;
       }
 
+      // Type assertion for the RPC response
+      const validationResult = data as any;
+
+      if (!validationResult.valid) {
+        setInviteError(validationResult.error || 'Ongeldige uitnodigingscode');
+        return;
+      }
+
+      // Get inviter info for display
+      const { data: inviterData } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('user_id', validationResult.invited_by)
+        .single();
+
       setInviteInfo({
-        email: data.invited_email,
-        inviter: (data as any).inviter?.username || 'Onbekend'
+        email: validationResult.invited_email,
+        inviter: inviterData?.username || 'Onbekend'
       });
-      setEmail(data.invited_email); // Pre-fill email
+      setEmail(validationResult.invited_email); // Pre-fill email
+      setInviteError('');
       setInviteError('');
     } catch (error) {
       console.error('Error validating invite code:', error);
