@@ -32,7 +32,7 @@ interface UserProfile {
 }
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -45,12 +45,13 @@ const Profile = () => {
   });
 
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to load
     if (!user) {
       navigate('/auth');
       return;
     }
     loadProfile();
-  }, [user, navigate]);
+  }, [user, navigate, authLoading]);
 
   const loadProfile = async () => {
     if (!user) return;

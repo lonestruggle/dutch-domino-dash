@@ -16,16 +16,17 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   // Redirect if already logged in
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to load
     if (user) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, navigate, authLoading]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
