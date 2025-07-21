@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Users, Copy, Check, Link, Share } from 'lucide-react';
+import { Users, Copy, Check, Link, Share, Trash2, Clock } from 'lucide-react';
 
 interface Invitation {
   id: string;
@@ -20,8 +20,18 @@ export const InviteUsers = () => {
   const [loading, setLoading] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Update current time every minute for countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
 
   const createInvitation = async () => {
     if (!user) return;
@@ -95,12 +105,60 @@ export const InviteUsers = () => {
     }
   };
 
+  const deleteInvitation = async (invitationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('invitations')
+        .delete()
+        .eq('id', invitationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Uitnodiging verwijderd",
+        description: "De uitnodiging is succesvol verwijderd."
+      });
+
+      loadInvitations();
+    } catch (error) {
+      console.error('Error deleting invitation:', error);
+      toast({
+        title: "Fout",
+        description: "Kon uitnodiging niet verwijderen",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getTimeRemaining = (expiresAt: string) => {
+    const now = currentTime.getTime();
+    const expiry = new Date(expiresAt).getTime();
+    const diff = expiry - now;
+
+    if (diff <= 0) {
+      return 'Verlopen';
+    }
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours > 0) {
+      return `${hours}u ${minutes}m resterend`;
+    } else {
+      return `${minutes}m resterend`;
+    }
+  };
+
+  const isExpired = (expiresAt: string) => {
+    return new Date(expiresAt).getTime() <= currentTime.getTime();
+  };
+
   // Load invitations on mount
-  useState(() => {
+  useEffect(() => {
     if (user) {
       loadInvitations();
     }
-  });
+  }, [user]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -163,33 +221,56 @@ export const InviteUsers = () => {
                 <div
                   key={invitation.id}
                   className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium">Uitnodigingslink #{invitation.code}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Status: 
-                      <span className={`ml-1 ${getStatusColor(invitation.status)}`}>
-                        {getStatusText(invitation.status)}
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Aangemaakt: {new Date(invitation.created_at).toLocaleDateString('nl-NL')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyInviteLink(invitation.code)}
-                      disabled={invitation.status === 'expired'}
-                    >
-                      {copiedCode === invitation.code ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
+                 >
+                   <div className="flex-1">
+                     <p className="font-medium">Uitnodigingslink #{invitation.code}</p>
+                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                       <span>
+                         Status: 
+                         <span className={`ml-1 ${getStatusColor(invitation.status)}`}>
+                           {getStatusText(invitation.status)}
+                         </span>
+                       </span>
+                       <span className="flex items-center gap-1">
+                         <Clock className="h-3 w-3" />
+                         {isExpired(invitation.expires_at) ? (
+                           <span className="text-red-600">Verlopen</span>
+                         ) : (
+                           <span className="text-orange-600">{getTimeRemaining(invitation.expires_at)}</span>
+                         )}
+                       </span>
+                     </div>
+                     <p className="text-xs text-muted-foreground">
+                       Aangemaakt: {new Date(invitation.created_at).toLocaleDateString('nl-NL', {
+                         day: 'numeric',
+                         month: 'short',
+                         hour: '2-digit',
+                         minute: '2-digit'
+                       })}
+                     </p>
+                   </div>
+                   <div className="flex gap-2">
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={() => copyInviteLink(invitation.code)}
+                       disabled={isExpired(invitation.expires_at) || invitation.status === 'accepted'}
+                     >
+                       {copiedCode === invitation.code ? (
+                         <Check className="h-4 w-4" />
+                       ) : (
+                         <Copy className="h-4 w-4" />
+                       )}
+                     </Button>
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={() => deleteInvitation(invitation.id)}
+                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                     >
+                       <Trash2 className="h-4 w-4" />
+                     </Button>
+                   </div>
                 </div>
               ))}
             </div>
