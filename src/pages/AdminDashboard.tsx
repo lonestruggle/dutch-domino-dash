@@ -48,11 +48,11 @@ interface ModerationAction {
 }
 
 const AdminDashboard = () => {
-  const { user, session } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,12 +63,22 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
+    console.log('AdminDashboard useEffect - user:', user, 'authLoading:', authLoading);
+    
+    if (authLoading) {
+      console.log('Auth still loading, waiting...');
+      return;
+    }
+    
     if (!user) {
+      console.log('No user found, redirecting to auth');
       navigate('/auth');
       return;
     }
+    
+    console.log('User found, checking admin status');
     checkAdminStatus();
-  }, [user, navigate]);
+  }, [user, navigate, authLoading]);
 
   const checkAdminStatus = async () => {
     if (!user) return;
@@ -108,7 +118,7 @@ const AdminDashboard = () => {
       console.error('Exception in checkAdminStatus:', error);
       navigate('/');
     } finally {
-      setLoading(false);
+      setDashboardLoading(false);
     }
   };
 
@@ -236,7 +246,7 @@ const AdminDashboard = () => {
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) {
+  if (authLoading || dashboardLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 flex items-center justify-center">
         <Card>

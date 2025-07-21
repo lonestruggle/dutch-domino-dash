@@ -34,6 +34,10 @@ export const useAuth = () => {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
+    // Force clear local state regardless of server response
+    // This handles expired/invalid sessions
+    setSession(null);
+    setUser(null);
     return { error };
   };
 
