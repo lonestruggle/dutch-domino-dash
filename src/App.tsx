@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Lobbies from "./pages/Lobbies";
 import Lobby from "./pages/Lobby";
 import Game from "./pages/Game";
+import BackgroundPreview from "./pages/BackgroundPreview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/lobbies" element={<Lobbies />} />
           <Route path="/lobby/:lobbyId" element={<Lobby />} />
           <Route path="/game/:gameId" element={<Game />} />
+          <Route path="/background-preview" element={<BackgroundPreview />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
