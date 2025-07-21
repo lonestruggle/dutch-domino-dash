@@ -110,10 +110,11 @@ export default function Home() {
                   </p>
                   <Button 
                     onClick={() => navigate('/single-player')} 
-                    className="w-full bg-primary hover:bg-primary/80 text-white"
+                    className="w-full bg-gray-500 hover:bg-gray-500 text-white cursor-not-allowed"
                     size="lg"
+                    disabled
                   >
-                    Start Single Player
+                    Tijdelijk Buiten Gebruik
                   </Button>
                 </CardContent>
               </Card>
@@ -131,7 +132,7 @@ export default function Home() {
                   </p>
                   <Button 
                     onClick={() => navigate('/lobbies')} 
-                    className="w-full bg-secondary hover:bg-secondary/80 text-white"
+                    className="w-full bg-primary hover:bg-primary/80 text-white"
                     size="lg"
                   >
                     Join Multiplayer
