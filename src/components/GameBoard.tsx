@@ -4,6 +4,7 @@ import { DominoTile } from './DominoTile';
 import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { cn } from '@/lib/utils';
+import dominoTableBg from '@/assets/domino-table-2.webp';
 
 interface GameBoardProps {
   gameState: GameState;
@@ -157,12 +158,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     <div 
       ref={containerRef}
       className="relative w-full flex-1 game-board border-2 border-border rounded-lg overflow-auto mb-4"
-      style={{ scrollBehavior: 'smooth' }}
+      style={{ 
+        scrollBehavior: 'smooth',
+        backgroundImage: `url(${dominoTableBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
     >
       <div 
         ref={boardRef}
         className="relative"
-        style={{ width: boardSize, height: boardSize }}
+        style={{ 
+          width: boardSize, 
+          height: boardSize,
+          backgroundImage: `url(${dominoTableBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
       >
         {/* Render placed dominoes */}
         {Object.entries(gameState.dominoes).map(([id, domino]) => (
