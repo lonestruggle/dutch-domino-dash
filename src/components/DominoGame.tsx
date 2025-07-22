@@ -164,12 +164,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 onClick={passMove}
                 disabled={!shouldEnablePassButton}
                 variant={shouldEnablePassButton ? "destructive" : "outline"}
-                className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600" : ""}
+                className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
               >
-                {shouldEnablePassButton 
-                  ? "Pas (Geen zetten mogelijk)" 
-                  : "Pas (Niet beschikbaar)"
-                }
+                Pas
               </Button>
             </div>
             <div className="text-sm text-muted-foreground">
