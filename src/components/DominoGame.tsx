@@ -23,6 +23,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     gameData
   } = gameHook;
 
+  // Access the passMove function from Game.tsx
+  const passMove = gameHook.passMove || (() => {
+    console.warn('passMove function not available');
+  });
+
   if (syncState?.isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -43,6 +48,23 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Calculate legal moves for selected domino
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
+
+  // Check if player can pass (no legal moves for any domino + empty boneyard)
+  const canPass = isMyTurn && gameState?.boneyard?.length === 0;
+  let hasAnyLegalMoves = false;
+  
+  if (canPass && gameState?.playerHand) {
+    // Check if any domino in hand has legal moves
+    for (const domino of gameState.playerHand) {
+      const moves = findLegalMoves(domino);
+      if (moves.length > 0) {
+        hasAnyLegalMoves = true;
+        break;
+      }
+    }
+  }
+
+  const shouldShowPassButton = canPass && !hasAnyLegalMoves && !gameState?.isGameOver;
 
   // Add index to legal moves for executeMove
   const legalMovesWithIndex = legalMoves.map(move => ({
@@ -123,6 +145,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               >
                 Draw from Boneyard ({gameState?.boneyard?.length || 0})
               </Button>
+              {shouldShowPassButton && (
+                <Button 
+                  onClick={passMove}
+                  variant="destructive"
+                  className="bg-orange-500 hover:bg-orange-600"
+                >
+                  Pas (Geen zetten mogelijk)
+                </Button>
+              )}
             </div>
             <div className="text-sm text-muted-foreground">
               {gameState?.isGameOver ? (

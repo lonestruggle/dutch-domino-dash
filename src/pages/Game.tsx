@@ -408,6 +408,7 @@ export default function Game() {
     ...dominoGameHook,
     executeMove: wrappedExecuteMove,
     drawFromBoneyard: wrappedDrawFromBoneyard,
+    passMove, // Add passMove function
     syncState: syncedGameHook.syncState,
     startNewGame: syncedGameHook.startNewGame,
     gameData: game
