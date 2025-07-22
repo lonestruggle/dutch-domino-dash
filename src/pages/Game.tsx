@@ -398,6 +398,91 @@ export default function Game() {
     }
   }, [dominoGameHook, syncedGameHook, toast]);
 
+  // Hard slam wrapper function
+  const wrappedHardSlam = useCallback(async () => {
+    console.log('🎯 Hard Slam initiated!');
+    
+    // Execute hard slam locally first
+    dominoGameHook.hardSlam();
+    
+    try {
+      // Temporarily disable sync to prevent conflicts
+      setIgnoringSync(true);
+      
+      // Update hard slam usage in database
+      const currentPlayerData = syncedGameHook.syncState.allPlayers?.find(
+        p => p.position === (syncedGameHook.syncState.gameState as any)?.currentPlayer
+      );
+      
+      if (currentPlayerData) {
+        const { error: updateError } = await supabase
+          .from('lobby_players')
+          .update({ 
+            hard_slam_uses_remaining: Math.max(0, (currentPlayerData as any).hard_slam_uses_remaining - 1)
+          })
+          .eq('lobby_id', gameId)
+          .eq('player_position', (syncedGameHook.syncState.gameState as any)?.currentPlayer);
+          
+        if (updateError) {
+          console.error('Failed to update hard slam usage:', updateError);
+        }
+      }
+      
+      // Update the game state in database with new rotations
+      const currentGameState = dominoGameHook.gameState;
+      const newGameState = {
+        ...currentGameState,
+        dominoes: { ...currentGameState.dominoes }
+      };
+      
+      // Apply new random rotations
+      Object.keys(newGameState.dominoes).forEach(dominoId => {
+        newGameState.dominoes[dominoId] = {
+          ...newGameState.dominoes[dominoId],
+          rotation: (Math.random() - 0.5) * 16
+        };
+      });
+      
+      // Save updated game state to database
+      const { error: gameStateError } = await supabase
+        .from('games')
+        .update({ 
+          game_state: newGameState as any,
+          updated_at: new Date().toISOString()
+        })
+        .eq('lobby_id', gameId);
+        
+      if (gameStateError) {
+        console.error('Failed to save hard slam game state:', gameStateError);
+        toast({
+          title: "Hard Slam Error",
+          description: "Failed to sync hard slam effect",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Hard Slam!",
+          description: "All dominoes have been shaken up! 💥",
+          variant: "default"
+        });
+      }
+      
+      // Re-enable sync after a delay
+      setTimeout(() => {
+        setIgnoringSync(false);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Hard slam error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to execute hard slam",
+        variant: "destructive"
+      });
+      setIgnoringSync(false);
+    }
+  }, [dominoGameHook, syncedGameHook, gameId, toast]);
+
   // BOTS DISABLED TEMPORARILY
   console.log('🤖 Bots zijn tijdelijk uitgeschakeld');
 
@@ -407,6 +492,7 @@ export default function Game() {
     executeMove: wrappedExecuteMove,
     drawFromBoneyard: wrappedDrawFromBoneyard,
     passMove, // Add passMove function
+    hardSlam: wrappedHardSlam, // Add hard slam function
     syncState: syncedGameHook.syncState,
     startNewGame: syncedGameHook.startNewGame,
     gameData: game

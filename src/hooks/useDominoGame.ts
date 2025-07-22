@@ -577,5 +577,25 @@ export const useDominoGame = () => {
     resetGame,
     hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y),
     regenerateOpenEnds: (state?: GameState) => regenerateOpenEnds(state || gameStateRef.current),
+    hardSlam: () => {
+      // Apply hard slam effect - randomize all domino rotations
+      setGameState(prevState => {
+        const newDominoes = { ...prevState.dominoes };
+        
+        // Update rotations for all placed dominoes
+        Object.keys(newDominoes).forEach(dominoId => {
+          newDominoes[dominoId] = {
+            ...newDominoes[dominoId],
+            rotation: (Math.random() - 0.5) * 16 // New random rotation between -8 and +8 degrees
+          };
+        });
+        
+        return {
+          ...prevState,
+          dominoes: newDominoes,
+          hardSlamUsesRemaining: Math.max(0, (prevState.hardSlamUsesRemaining || 0) - 1)
+        };
+      });
+    },
   };
 };

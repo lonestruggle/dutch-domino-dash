@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
-  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star
+  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star, Zap
 } from 'lucide-react';
 import {
   Select,
@@ -73,6 +73,8 @@ interface Lobby {
   status: string;
   created_at: string;
   player_count: number;
+  hard_slam_enabled?: boolean;
+  hard_slam_uses_per_player?: number;
 }
 
 const AdminDashboard = () => {
@@ -238,7 +240,9 @@ const AdminDashboard = () => {
           max_players: lobby.max_players,
           status: lobby.status,
           created_at: lobby.created_at,
-          player_count: lobby.lobby_players?.length || 0
+          player_count: lobby.lobby_players?.length || 0,
+          hard_slam_enabled: lobby.hard_slam_enabled ?? true,
+          hard_slam_uses_per_player: lobby.hard_slam_uses_per_player ?? -1
         }));
         setLobbies(lobbiesWithCount);
       }
@@ -371,6 +375,48 @@ const AdminDashboard = () => {
       });
     } catch (error) {
       console.error('Error deleting lobby:', error);
+      toast({
+        title: "Error",
+        description: "Er is iets misgegaan",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateLobbyHardSlamSettings = async (lobbyId: string, enabled: boolean, usesPerPlayer: number) => {
+    try {
+      const { error } = await supabase
+        .from('lobbies')
+        .update({ 
+          hard_slam_enabled: enabled,
+          hard_slam_uses_per_player: usesPerPlayer
+        })
+        .eq('id', lobbyId);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Kon Hard Slam instellingen niet bijwerken",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setLobbies(prevLobbies => 
+        prevLobbies.map(lobby => 
+          lobby.id === lobbyId 
+            ? { ...lobby, hard_slam_enabled: enabled, hard_slam_uses_per_player: usesPerPlayer }
+            : lobby
+        )
+      );
+
+      toast({
+        title: "Succes",
+        description: "Hard Slam instellingen bijgewerkt",
+      });
+    } catch (error) {
+      console.error('Error updating lobby settings:', error);
       toast({
         title: "Error",
         description: "Er is iets misgegaan",
@@ -907,22 +953,36 @@ const AdminDashboard = () => {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline">
-                            {lobby.player_count}/{lobby.max_players} spelers
-                          </Badge>
-                          <Badge variant={lobby.status === 'waiting' ? 'secondary' : 'default'}>
-                            {lobby.status === 'waiting' ? 'Wachtend' : 
-                             lobby.status === 'playing' ? 'Bezig' : 'Voltooid'}
-                          </Badge>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteLobby(lobby.id)}
-                          >
-                            <UserX className="h-4 w-4" />
-                          </Button>
-                        </div>
+                         <div className="flex items-center space-x-2">
+                           <Badge variant="outline">
+                             {lobby.player_count}/{lobby.max_players} spelers
+                           </Badge>
+                           <Badge variant={lobby.status === 'waiting' ? 'secondary' : 'default'}>
+                             {lobby.status === 'waiting' ? 'Wachtend' : 
+                              lobby.status === 'playing' ? 'Bezig' : 'Voltooid'}
+                           </Badge>
+                           <Badge variant={lobby.hard_slam_enabled ? 'default' : 'destructive'}>
+                             <Zap className="h-3 w-3 mr-1" />
+                             {lobby.hard_slam_enabled ? 'Hard Slam ✓' : 'Hard Slam ✗'}
+                           </Badge>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => {
+                               const newEnabled = !lobby.hard_slam_enabled;
+                               handleUpdateLobbyHardSlamSettings(lobby.id, newEnabled, lobby.hard_slam_uses_per_player || -1);
+                             }}
+                           >
+                             <Zap className="h-4 w-4" />
+                           </Button>
+                           <Button
+                             variant="destructive"
+                             size="sm"
+                             onClick={() => handleDeleteLobby(lobby.id)}
+                           >
+                             <UserX className="h-4 w-4" />
+                           </Button>
+                         </div>
                       </div>
                     ))
                   )}

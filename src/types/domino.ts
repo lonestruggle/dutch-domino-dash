@@ -44,4 +44,5 @@ export interface GameState {
   isGameOver: boolean;
   selectedHandIndex: number | null;
   currentPlayer?: number; // Add current player for multiplayer sync
+  hardSlamUsesRemaining?: number; // Track hard slam uses for current player
 }

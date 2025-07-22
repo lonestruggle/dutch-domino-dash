@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Trophy, PartyPopper, Star } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Zap } from 'lucide-react';
 
 interface DominoGameProps {
   gameHook: any;
@@ -26,6 +26,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Access the passMove function from Game.tsx
   const passMove = gameHook.passMove || (() => {
     console.warn('passMove function not available');
+  });
+
+  // Access the hardSlam function from Game.tsx
+  const hardSlam = gameHook.hardSlam || (() => {
+    console.warn('hardSlam function not available');
   });
 
   if (syncState?.isLoading) {
@@ -86,6 +91,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     ...move,
     index: gameState?.selectedHandIndex
   }));
+
+  // Check if Hard Slam is available
+  const canUseHardSlam = isMyTurn && 
+    !gameState?.isGameOver && 
+    Object.keys(gameState?.dominoes || {}).length > 0; // At least one domino on board
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -167,6 +177,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
               >
                 Pas
+              </Button>
+              <Button 
+                onClick={hardSlam}
+                disabled={!canUseHardSlam}
+                variant="secondary"
+                className={canUseHardSlam ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" : ""}
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Hard Slam! 💥
               </Button>
             </div>
             <div className="text-sm text-muted-foreground">
