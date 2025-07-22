@@ -49,7 +49,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
 
-  // Enhanced pass logic with better debugging
+  // Enhanced pass logic - knop altijd zichtbaar, enabled wanneer speler kan passen
   let canPass = false;
   let hasAnyLegalMoves = false;
   
@@ -78,7 +78,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     });
   }
 
-  const shouldShowPassButton = canPass && !gameState?.isGameOver;
+  // Pas knop is altijd zichtbaar maar alleen enabled wanneer speler kan passen
+  const shouldEnablePassButton = canPass && isMyTurn && !gameState?.isGameOver;
 
   // Add index to legal moves for executeMove
   const legalMovesWithIndex = legalMoves.map(move => ({
@@ -159,15 +160,17 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               >
                 Draw from Boneyard ({gameState?.boneyard?.length || 0})
               </Button>
-              {shouldShowPassButton && (
-                <Button 
-                  onClick={passMove}
-                  variant="destructive"
-                  className="bg-orange-500 hover:bg-orange-600"
-                >
-                  Pas (Geen zetten mogelijk)
-                </Button>
-              )}
+              <Button 
+                onClick={passMove}
+                disabled={!shouldEnablePassButton}
+                variant={shouldEnablePassButton ? "destructive" : "outline"}
+                className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600" : ""}
+              >
+                {shouldEnablePassButton 
+                  ? "Pas (Geen zetten mogelijk)" 
+                  : "Pas (Niet beschikbaar)"
+                }
+              </Button>
             </div>
             <div className="text-sm text-muted-foreground">
               {gameState?.isGameOver ? (
