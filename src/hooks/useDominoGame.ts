@@ -190,6 +190,25 @@ export const useDominoGame = () => {
     const selectedIsDouble = isDouble(dominoData);
     const uniqueEnds: Record<string, boolean> = {};
     const currentState = gameStateRef.current;
+    
+    // EERSTE DOMINO: Als het bord leeg is, kan de eerste domino in het centrum geplaatst worden
+    if (Object.keys(currentState.dominoes).length === 0) {
+      const centerX = 0;
+      const centerY = 0;
+      const orientation = selectedIsDouble ? 'vertical' : 'horizontal';
+      
+      moves.push({
+        end: { x: centerX, y: centerY, value: dominoData.value1, fromDir: 'E' },
+        dominoData,
+        flipped: false,
+        orientation,
+        x: centerX,
+        y: centerY
+      });
+      
+      return moves;
+    }
+    
     const openEnds = regenerateOpenEnds(currentState);
 
     openEnds.forEach((end) => {
