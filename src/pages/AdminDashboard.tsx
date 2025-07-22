@@ -10,7 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail } from 'lucide-react';
+import { 
+  Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
+  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star
+} from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -38,6 +41,8 @@ interface UserProfile {
   games_won: number;
   created_at: string;
   updated_at: string;
+  user_roles?: { role: string }[];
+  email?: string;
 }
 
 interface ModerationAction {
@@ -86,6 +91,9 @@ const AdminDashboard = () => {
     action: 'warn',
     reason: '',
   });
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [selectedUserForRole, setSelectedUserForRole] = useState<string>('');
+  const [newRole, setNewRole] = useState<'user' | 'moderator' | 'admin'>('user');
 
   const checkAdminStatus = useCallback(async () => {
     if (!user) return;
@@ -178,7 +186,22 @@ const AdminDashboard = () => {
         .order('created_at', { ascending: false });
 
       if (!usersError && usersData) {
-        setUsers(usersData);
+        // Get user roles separately
+        const { data: rolesData } = await supabase
+          .from('user_roles')
+          .select('user_id, role');
+
+        // Combine users with their roles
+        const usersWithRoles = usersData.map(profile => {
+          const userRoles = rolesData?.filter(role => role.user_id === profile.user_id) || [];
+          return {
+            ...profile,
+            email: 'Email laden...', // Placeholder
+            user_roles: userRoles.map(r => ({ role: r.role }))
+          };
+        });
+
+        setUsers(usersWithRoles);
       }
 
       // Load invitations data (simplified query to avoid relation errors)
@@ -356,6 +379,106 @@ const AdminDashboard = () => {
     }
   };
 
+  // User management functions
+  const handleUpdateUserRole = async (userId: string, newRole: 'user' | 'moderator' | 'admin') => {
+    try {
+      // Remove existing roles
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      // Add new role
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: userId,
+          role: newRole,
+          assigned_by: user!.id
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Succes",
+        description: `Rol succesvol gewijzigd naar ${newRole}`,
+      });
+
+      // Refresh users data
+      loadDashboardData();
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      toast({
+        title: "Error",
+        description: "Kon rol niet wijzigen",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateUserProfile = async (userId: string, updates: Partial<UserProfile>) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succes",
+        description: "Profiel succesvol bijgewerkt",
+      });
+
+      // Refresh users data
+      loadDashboardData();
+      setEditingUser(null);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: "Kon profiel niet bijwerken",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleResetGameStats = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ games_played: 0, games_won: 0 })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succes",
+        description: "Game statistieken gereset",
+      });
+
+      // Refresh users data
+      loadDashboardData();
+    } catch (error) {
+      console.error('Error resetting game stats:', error);
+      toast({
+        title: "Error",
+        description: "Kon statistieken niet resetten",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getRoleBadge = (roles: { role: string }[]) => {
+    if (roles.some(r => r.role === 'admin')) {
+      return <Badge className="bg-red-100 text-red-800"><Crown className="h-3 w-3 mr-1" />Admin</Badge>;
+    }
+    if (roles.some(r => r.role === 'moderator')) {
+      return <Badge className="bg-blue-100 text-blue-800"><ShieldCheck className="h-3 w-3 mr-1" />Moderator</Badge>;
+    }
+    return <Badge variant="outline"><Users className="h-3 w-3 mr-1" />Gebruiker</Badge>;
+  };
+
   const filteredUsers = users.filter(user =>
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -473,48 +596,285 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gebruikers Beheer</CardTitle>
-                <CardDescription>
-                  Bekijk en beheer alle gebruikersaccounts
-                </CardDescription>
-                <div className="flex items-center space-x-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Zoek gebruikers..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="max-w-sm"
-                  />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {filteredUsers.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
-                          {user.username[0].toUpperCase()}
+            <div className="space-y-6">
+              {/* User Management Header */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Gebruikers Beheer
+                  </CardTitle>
+                  <CardDescription>
+                    Beheer gebruikersaccounts, rollen en profiel instellingen
+                  </CardDescription>
+                  <div className="flex items-center space-x-2">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Zoek gebruikers..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="max-w-sm"
+                    />
+                  </div>
+                </CardHeader>
+              </Card>
+
+              {/* Quick Role Assignment */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="h-5 w-5" />
+                    Snel Rol Toewijzen
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <Select
+                      value={selectedUserForRole}
+                      onValueChange={setSelectedUserForRole}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Selecteer gebruiker" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.map((user) => (
+                          <SelectItem key={user.user_id} value={user.user_id}>
+                            {user.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <Select
+                      value={newRole}
+                      onValueChange={(value: 'user' | 'moderator' | 'admin') => setNewRole(value)}
+                    >
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            Gebruiker
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="moderator">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="h-4 w-4" />
+                            Moderator
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="admin">
+                          <div className="flex items-center gap-2">
+                            <Crown className="h-4 w-4" />
+                            Admin
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button 
+                      onClick={() => selectedUserForRole && handleUpdateUserRole(selectedUserForRole, newRole)}
+                      disabled={!selectedUserForRole}
+                    >
+                      <Crown className="mr-2 h-4 w-4" />
+                      Rol Toewijzen
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Users List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Alle Gebruikers ({users.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {filteredUsers.map((user) => (
+                      <div key={user.id} className="p-4 border rounded-lg space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
+                              {user.username[0].toUpperCase()}
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-lg">{user.username}</p>
+                                {getRoleBadge(user.user_roles || [])}
+                              </div>
+                              <p className="text-sm text-muted-foreground">{user.email}</p>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                  {user.status}
+                                </span>
+                                <span>•</span>
+                                <span>Lid sinds: {new Date(user.created_at).toLocaleDateString('nl-NL')}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">
+                              {user.games_played} games
+                            </Badge>
+                            <Badge variant="secondary">  
+                              {user.games_won} gewonnen
+                            </Badge>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{user.username}</p>
-                          <p className="text-sm text-muted-foreground">{user.status}</p>
+
+                        {/* User Bio */}
+                        {user.bio && (
+                          <div className="px-4 py-2 bg-muted/50 rounded-md">
+                            <p className="text-sm text-muted-foreground">{user.bio}</p>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setEditingUser(user)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Profiel
+                            </Button>
+                            
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleResetGameStats(user.user_id)}
+                            >
+                              <RotateCcw className="h-4 w-4 mr-1" />
+                              Reset Stats
+                            </Button>
+                            
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                // TODO: Implement password reset
+                                toast({
+                                  title: "Functie komt binnenkort",
+                                  description: "Wachtwoord reset functie wordt nog ontwikkeld",
+                                });
+                              }}
+                            >
+                              <Key className="h-4 w-4 mr-1" />
+                              Reset Wachtwoord
+                            </Button>
+                          </div>
+
+                          <div className="flex gap-2">
+                            {user.user_roles?.some(r => r.role === 'admin') ? (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleUpdateUserRole(user.user_id, 'user')}
+                              >
+                                <UserMinus className="h-4 w-4 mr-1" />
+                                Degradeer
+                              </Button>
+                            ) : user.user_roles?.some(r => r.role === 'moderator') ? (
+                              <>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleUpdateUserRole(user.user_id, 'admin')}
+                                >
+                                  <Crown className="h-4 w-4 mr-1" />
+                                  Promoveer
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleUpdateUserRole(user.user_id, 'user')}
+                                >
+                                  <UserMinus className="h-4 w-4 mr-1" />
+                                  Degradeer
+                                </Button>
+                              </>
+                            ) : (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleUpdateUserRole(user.user_id, 'moderator')}
+                              >
+                                <ShieldCheck className="h-4 w-4 mr-1" />
+                                Maak Moderator
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline">
-                          {user.games_played} games
-                        </Badge>
-                        <Badge variant="outline">
-                          {user.games_won} gewonnen
-                        </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Edit User Dialog */}
+              {editingUser && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Edit className="h-5 w-5" />
+                      Profiel Bewerken: {editingUser.username}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Gebruikersnaam</Label>
+                        <Input
+                          value={editingUser.username}
+                          onChange={(e) => setEditingUser(prev => prev ? {...prev, username: e.target.value} : null)}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Status</Label>
+                        <Input
+                          value={editingUser.status}
+                          onChange={(e) => setEditingUser(prev => prev ? {...prev, status: e.target.value} : null)}
+                          placeholder="Beschikbaar, Bezig, Offline..."
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    
+                    <div className="space-y-2">
+                      <Label>Bio</Label>
+                      <Textarea
+                        value={editingUser.bio || ''}
+                        onChange={(e) => setEditingUser(prev => prev ? {...prev, bio: e.target.value} : null)}
+                        placeholder="Gebruiker bio..."
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-2 pt-4">
+                      <Button 
+                        onClick={() => handleUpdateUserProfile(editingUser.user_id, {
+                          username: editingUser.username,
+                          status: editingUser.status,
+                          bio: editingUser.bio
+                        })}
+                      >
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        Opslaan
+                      </Button>
+                      
+                      <Button variant="outline" onClick={() => setEditingUser(null)}>
+                        Annuleren
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="lobbies">
