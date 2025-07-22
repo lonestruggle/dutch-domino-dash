@@ -58,12 +58,29 @@ export default function Game() {
       const dbState = syncedGameHook.syncState.gameState;
       const myPosition = syncedGameHook.syncState.playerPosition;
       
+      // ROTATIE FIX: Behoud lokale rotaties bij sync
+      const currentLocalDominoes = dominoGameHook.gameState?.dominoes || {};
+      const dbDominoes = dbState.dominoes || {};
+      
+      // Merge dominostenen maar behoud lokale rotatie
+      const mergedDominoes: Record<string, any> = {};
+      for (const [id, dbDomino] of Object.entries(dbDominoes)) {
+        const localDomino = currentLocalDominoes[id];
+        mergedDominoes[id] = {
+          ...dbDomino,
+          // Behoud lokale rotatie als die er is, anders gebruik database rotatie
+          rotation: localDomino?.rotation !== undefined ? localDomino.rotation : (dbDomino as any)?.rotation
+        };
+      }
+      
+      console.log('🔄 SYNC: Merging dominoes with preserved rotations');
+      
       // ALWAYS sync the complete state from database
       // All players must see exactly the same board, boneyard, dominoes
       dominoGameHook.setGameState({
         // Shared state (must be identical for all players)
         board: dbState.board || {},
-        dominoes: dbState.dominoes || {},
+        dominoes: mergedDominoes, // Gebruik merged dominoes met behouden rotatie
         boneyard: dbState.boneyard || [],
         openEnds: dbState.openEnds || [],
         forbiddens: dbState.forbiddens || {},
