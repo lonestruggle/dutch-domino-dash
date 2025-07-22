@@ -6,11 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { supabase } from '@/integrations/supabase/client';
-import { Play, Users, Gamepad2, UserCircle, Crown, LogOut, LogIn, Trash2 } from 'lucide-react';
+import { Play, Users, Gamepad2, UserCircle, LogOut, LogIn } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { user, signOut, forceLogoutAll, clearChromeStorage, isAuthenticated, isChrome } = useAuth();
+  const { user, signOut, isAuthenticated } = useAuth();
   const { trackPageView } = useAnalytics();
   const [username, setUsername] = useState<string>('');
 
@@ -38,21 +38,11 @@ export default function Home() {
   };
 
   const handleSignOut = async () => {
-    console.log('Signing out...');
     const { error } = await signOut();
     if (error) {
       console.error('Sign out error:', error);
-      // Even if signOut fails, we still want to clear local state and redirect
-      // This handles cases where session is already expired/invalid
     }
-    // Always navigate to home after sign out attempt (success or failure)
-    console.log('Sign out completed, redirecting to home');
     navigate('/');
-  };
-
-  const handleForceLogoutAll = async () => {
-    console.log('Force logout all sessions...');
-    await forceLogoutAll();
   };
 
   return (
@@ -94,16 +84,6 @@ export default function Home() {
                       <LogOut className="mr-2 h-4 w-4" />
                       Uitloggen
                     </Button>
-                     <Button variant="destructive" onClick={handleForceLogoutAll} className="bg-red-600 hover:bg-red-700 text-white">
-                       <Trash2 className="mr-2 h-4 w-4" />
-                       Force Logout All
-                     </Button>
-                     {isChrome && (
-                       <Button variant="destructive" onClick={clearChromeStorage} className="bg-orange-600 hover:bg-orange-700 text-white">
-                         <Trash2 className="mr-2 h-4 w-4" />
-                         Clear Chrome Storage
-                       </Button>
-                     )}
                   </>
                 ) : (
                   <Button onClick={() => navigate('/auth')} className="bg-primary hover:bg-primary/80 text-white">
