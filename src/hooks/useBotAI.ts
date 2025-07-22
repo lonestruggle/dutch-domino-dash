@@ -110,10 +110,18 @@ export const useBotAI = () => {
     boneyardSize: number,
     executeMove: (move: LegalMove) => void,
     drawFromBoneyard: () => void,
+    passMove: () => void,
     config: BotAIConfig = { difficulty: 'medium', thinkingTime: 1000 }
   ) => {
     // Add thinking time for more realistic behavior
     await new Promise(resolve => setTimeout(resolve, config.thinkingTime));
+    
+    // If no legal moves and no boneyard, bot must pass
+    if (legalMoves.length === 0 && boneyardSize === 0) {
+      console.log('🤖 Bot is passing - no moves and no boneyard');
+      passMove();
+      return;
+    }
     
     if (shouldDrawFromBoneyard(hand, legalMoves, boneyardSize, config)) {
       drawFromBoneyard();
@@ -123,6 +131,9 @@ export const useBotAI = () => {
     const bestMove = calculateBestMove(hand, legalMoves, config);
     if (bestMove) {
       executeMove(bestMove);
+    } else if (boneyardSize === 0) {
+      // Fallback pass if no moves available
+      passMove();
     }
   }, [calculateBestMove, shouldDrawFromBoneyard]);
 
