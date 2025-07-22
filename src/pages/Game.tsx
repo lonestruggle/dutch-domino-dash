@@ -410,15 +410,63 @@ export default function Game() {
     executeMove: botExecuteMove,
     drawFromBoneyard: wrappedDrawFromBoneyard,
     findLegalMoves: (dominoData: any) => {
-      // CRITICAL: Bots must use EXACT same logic as human players including hasDifferentNeighbor!
+      // SOLUTION: Use the EXACT same findLegalMoves function as human players
       const dbState = syncedGameHook.syncState.gameState;
       if (!dbState) return [];
       
-      console.log('🤖 Bot using EXACT database open ends with hasDifferentNeighbor validation');
+      // EXACT COPY FROM useDominoGame.findLegalMoves with dbState as currentState
+      const moves: any[] = [];
+      const selectedIsDouble = dominoData.value1 === dominoData.value2;
+      const uniqueEnds: Record<string, boolean> = {};
+      const currentState = dbState; // Use database state as currentState
       
-      // CRITICAL: Add the hasDifferentNeighbor function that bots were missing!
+      // EXACT regenerateOpenEnds function from useDominoGame
+      const regenerateOpenEnds = (state: any) => {
+        const openEnds: any[] = [];
+        
+        for (const coord in state.board) {
+          const [x, y] = coord.split(',').map(Number);
+          const cell = state.board[coord];
+          const domino = state.dominoes[cell.dominoId];
+
+          const neighbors = {
+            N: [x, y - 1],
+            S: [x, y + 1],
+            W: [x - 1, y],
+            E: [x + 1, y],
+          };
+
+          for (const dir in neighbors) {
+            const [nx, ny] = neighbors[dir as keyof typeof neighbors];
+            if (state.board[`${nx},${ny}`]) continue;
+
+            const isDoubleValue = domino.data.value1 === domino.data.value2;
+            if (isDoubleValue) {
+              const isVertical = domino.orientation === 'vertical';
+              // Non-spinner doubles only connect perpendicular to their orientation
+              if (
+                (isVertical && (dir === 'N' || dir === 'S')) ||
+                (!isVertical && (dir === 'W' || dir === 'E'))
+              ) {
+                continue;
+              }
+            }
+
+            openEnds.push({
+              x: nx,
+              y: ny,
+              value: cell.value,
+              fromDir: dir,
+            });
+          }
+        }
+
+        return openEnds;
+      };
+      
+      // EXACT hasDifferentNeighbor function from useDominoGame
       const hasDifferentNeighbor = (x: number, y: number): boolean => {
-        const { board } = dbState;
+        const { board } = currentState;
         const neighbors = {
           N: [x, y - 1],
           S: [x, y + 1],
@@ -447,12 +495,7 @@ export default function Game() {
         return false;
       };
       
-      const moves: any[] = [];
-      const selectedIsDouble = dominoData.value1 === dominoData.value2;
-      const uniqueEnds: Record<string, boolean> = {};
-      
-      // Use EXACT same open ends from database - no regeneration!
-      const openEnds = dbState.openEnds || [];
+      const openEnds = regenerateOpenEnds(currentState);
 
       openEnds.forEach((end: any) => {
         if (uniqueEnds[`${end.x},${end.y}`]) {
@@ -482,16 +525,24 @@ export default function Game() {
               E: `${end.x + 2},${end.y}`,
             }[end.fromDir];
 
-            const toDomino = dbState.dominoes[dbState.board[toCellKey]?.dominoId];
-            const toDominoForward = dbState.dominoes[dbState.board[toCellKeyForward]?.dominoId];
-            const fromDomino = dbState.dominoes[dbState.board[fromCellKey]?.dominoId];
+            const toDomino = currentState.dominoes[currentState.board[toCellKey]?.dominoId];
+            const toDominoForward = currentState.dominoes[currentState.board[toCellKeyForward]?.dominoId];
+            const fromDomino = currentState.dominoes[currentState.board[fromCellKey]?.dominoId];
 
-            if (!fromDomino) return;
-            if (toDomino) return;
-            if (toDominoForward) return;
-            if (dbState.forbiddens?.[toCellKey]) return;
+            if (!fromDomino) {
+              return;
+            }
+            if (toDomino) {
+              return;
+            }
+            if (toDominoForward) {
+              return;
+            }
 
-            // CRITICAL: Add the missing hasDifferentNeighbor validation!
+            if (currentState.forbiddens[toCellKey]) {
+              return;
+            }
+
             if (hasDifferentNeighbor(end.x, end.y)) {
               return;
             }
@@ -499,6 +550,7 @@ export default function Game() {
             const orientation = end.fromDir === 'N' || end.fromDir === 'S' ? 'vertical' : 'horizontal';
 
             if (fromDomino.isSpinner && fromDomino) {
+              // Parallel Moves from double items are forbidden.
               if (moves.find(x => x.end.fromDir === end.fromDir && x.fromDomino === fromDomino)) {
                 return;
               }
@@ -536,6 +588,7 @@ export default function Game() {
             }
 
             moves.push({ end, dominoData, flipped: adjustedFlipped, orientation: finalOrientation, x, y, fromDomino });
+
             uniqueEnds[`${end.x},${end.y}`] = true;
           }
         };
@@ -544,7 +597,6 @@ export default function Game() {
         check(dominoData.value2, true);
       });
 
-      console.log('🤖 Bot found legal moves with hasDifferentNeighbor validation:', moves.length);
       return moves;
     },
     passMove,
