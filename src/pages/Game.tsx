@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react';
 import { DominoGame } from '@/components/DominoGame';
 import { useSyncedDominoGameState } from '@/hooks/useSyncedDominoGameState';
 import { useDominoGame } from '@/hooks/useDominoGame';
+import { useBotManager } from '@/hooks/useBotManager';
 
 interface GameData {
   id: string;
@@ -355,6 +356,22 @@ export default function Game() {
     }
   }, [dominoGameHook, syncedGameHook, toast]);
 
+  // Initialize bot manager for AI players
+  useBotManager({
+    currentPlayer: syncedGameHook.syncState.currentPlayer,
+    players: syncedGameHook.syncState.allPlayers.map(p => ({
+      player_position: p.position,
+      username: p.username,
+      is_bot: p.username.includes('Bot') || p.username.includes('Dave') || p.username.includes('Betty') || p.username.includes('Raja') || p.username.includes('Sam'),
+      bot_name: p.username.includes('Bot') || p.username.includes('Dave') || p.username.includes('Betty') || p.username.includes('Raja') || p.username.includes('Sam') ? p.username : null
+    })),
+    gameState: dominoGameHook.gameState,
+    executeMove: wrappedExecuteMove,
+    drawFromBoneyard: wrappedDrawFromBoneyard,
+    findLegalMoves: dominoGameHook.findLegalMoves,
+    isGameOver: dominoGameHook.gameState?.isGameOver || false
+  });
+
   // Create combined hook for DominoGame component
   const combinedGameHook = {
     ...dominoGameHook,
@@ -371,7 +388,7 @@ export default function Game() {
     const { data, error } = await supabase
       .from('games')
       .select('*')
-      .eq('lobby_id', gameId)
+      .eq('id', gameId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
