@@ -124,42 +124,46 @@ export default function Game() {
       return;
     }
 
-    // Server-side validation via database function
-    try {
-      const { data: isValidMove, error } = await supabase
-        .rpc('validate_game_move', {
-          _game_id: game?.id,
-          _player_position: currentPlayerTurn, // Use currentPlayerTurn instead of currentPlayerPosition for bots
-          _move_data: move
-        });
+    // Server-side validation via database function - skip for bots
+    if (!isBot) {
+      try {
+        const { data: isValidMove, error } = await supabase
+          .rpc('validate_game_move', {
+            _game_id: game?.id,
+            _player_position: currentPlayerPosition,
+            _move_data: move
+          });
 
-      if (error) {
-        console.error('Move validation error:', error);
+        if (error) {
+          console.error('Move validation error:', error);
+          toast({
+            title: "Validation failed",
+            description: "Could not validate move",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (!isValidMove) {
+          console.log('❌ Invalid move rejected by server');
+          toast({
+            title: "Invalid move",
+            description: "Move rejected by server validation",
+            variant: "destructive"
+          });
+          return;
+        }
+      } catch (validationError) {
+        console.error('Move validation exception:', validationError);
         toast({
-          title: "Validation failed",
+          title: "Validation error",
           description: "Could not validate move",
           variant: "destructive"
         });
         return;
       }
-
-      if (!isValidMove) {
-        console.log('❌ Invalid move rejected by server');
-        toast({
-          title: "Invalid move",
-          description: "Move rejected by server validation",
-          variant: "destructive"
-        });
-        return;
-      }
-    } catch (validationError) {
-      console.error('Move validation exception:', validationError);
-      toast({
-        title: "Validation error",
-        description: "Could not validate move",
-        variant: "destructive"
-      });
-      return;
+    } else {
+      console.log('🤖 Skipping server validation for bot move');
     }
     
     const dbState = syncedGameHook.syncState.gameState;
