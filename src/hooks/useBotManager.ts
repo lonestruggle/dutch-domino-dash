@@ -75,6 +75,14 @@ export const useBotManager = ({
       allLegalMoves = allLegalMoves.concat(moves);
     });
 
+    console.log(`🤖 Bot ${currentPlayerData.username} found ${allLegalMoves.length} legal moves`);
+    console.log('🤖 Legal moves:', allLegalMoves.map(m => ({ 
+      index: m.index, 
+      domino: botHand[m.index!], 
+      position: `${m.x},${m.y}`, 
+      direction: m.end.fromDir 
+    })));
+
     const boneyardSize = gameState.boneyard?.length || 0;
     const difficulty = getBotDifficulty(currentPlayerData.bot_name || currentPlayerData.username);
 
@@ -110,10 +118,10 @@ export const useBotManager = ({
     const currentPlayerData = players.find(p => p.player_position === currentPlayer);
     
     if (currentPlayerData?.is_bot) {
-      // Small delay to make the bot move feel more natural
+      // Longer delay to make bot moves feel more natural and reduce flicker
       const timer = setTimeout(() => {
         processBotTurn();
-      }, 500);
+      }, 1000); // Increased from 500ms to 1000ms
       
       return () => clearTimeout(timer);
     }

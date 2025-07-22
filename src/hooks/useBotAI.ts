@@ -130,7 +130,22 @@ export const useBotAI = () => {
     
     const bestMove = calculateBestMove(hand, legalMoves, config);
     if (bestMove) {
-      executeMove(bestMove);
+      // Extra validation before executing move
+      if (bestMove.index !== undefined && hand[bestMove.index]) {
+        console.log(`🤖 Bot executing move:`, {
+          domino: hand[bestMove.index],
+          position: `${bestMove.x},${bestMove.y}`,
+          direction: bestMove.end.fromDir,
+          orientation: bestMove.orientation,
+          flipped: bestMove.flipped
+        });
+        executeMove(bestMove);
+      } else {
+        console.error('❌ Bot move validation failed - invalid index or domino');
+        if (boneyardSize === 0) {
+          passMove();
+        }
+      }
     } else if (boneyardSize === 0) {
       // Fallback pass if no moves available
       passMove();
