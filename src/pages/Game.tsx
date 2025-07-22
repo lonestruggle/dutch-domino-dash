@@ -410,29 +410,80 @@ export default function Game() {
     executeMove: botExecuteMove,
     drawFromBoneyard: wrappedDrawFromBoneyard,
     findLegalMoves: (dominoData: any) => {
-      // CRITICAL: Bots need to use the EXACT same game state as human players
-      // Temporarily sync the local state with database state before calculating moves
+      // SOLUTION: Use a completely separate legal moves calculation that doesn't depend on local state
       const dbState = syncedGameHook.syncState.gameState;
       if (!dbState) return [];
       
-      // Temporarily update the local gameStateRef to match database
-      const originalState = dominoGameHook.gameState;
-      dominoGameHook.setGameState({
-        ...originalState,
-        board: dbState.board || {},
-        dominoes: dbState.dominoes || {},
-        openEnds: dbState.openEnds || [],
-        forbiddens: dbState.forbiddens || {},
-        boneyard: dbState.boneyard || [],
-        playerHands: (dbState as any).playerHands || []
+      console.log('🤖 Bot calculating legal moves with database state');
+      console.log('🤖 Database open ends:', dbState.openEnds);
+      
+      // Calculate legal moves directly using database state - same algorithm as useDominoGame
+      const moves: any[] = [];
+      const selectedIsDouble = dominoData.value1 === dominoData.value2;
+      const uniqueEnds: Record<string, boolean> = {};
+      
+      // Use open ends directly from database
+      const openEnds = dbState.openEnds || [];
+      
+      openEnds.forEach((end: any) => {
+        if (uniqueEnds[`${end.x},${end.y}`]) {
+          return;
+        }
+        uniqueEnds[`${end.x},${end.y}`] = true;
+
+        // Same matching logic as useDominoGame
+        const matchingValues = [];
+        if (dominoData.value1 === end.value) matchingValues.push(dominoData.value1);
+        if (dominoData.value2 === end.value) matchingValues.push(dominoData.value2);
+
+        matchingValues.forEach((matchingValue) => {
+          let flipped = dominoData.value2 === matchingValue;
+          let orientation = 'horizontal';
+          let { x, y } = end;
+
+          // Same placement logic as useDominoGame
+          if (end.fromDir === 'N' || end.fromDir === 'S') {
+            orientation = 'vertical';
+            if (end.fromDir === 'N') {
+              y -= 1;
+              flipped = !flipped;
+            }
+          } else {
+            if (end.fromDir === 'W') {
+              x -= 1;
+              flipped = !flipped;
+            }
+          }
+
+          // Check if placement is valid
+          const cells = orientation === 'horizontal' 
+            ? [[x, y], [x + 1, y]] 
+            : [[x, y], [x, y + 1]];
+          
+          let isValidPlacement = true;
+          for (const cell of cells) {
+            const cellKey = `${cell[0]},${cell[1]}`;
+            if (dbState.board[cellKey] || dbState.forbiddens?.[cellKey]) {
+              isValidPlacement = false;
+              break;
+            }
+          }
+
+          if (isValidPlacement) {
+            moves.push({
+              end,
+              dominoData,
+              flipped,
+              orientation,
+              x,
+              y
+            });
+          }
+        });
       });
       
-      // Now calculate legal moves with the updated state
-      const legalMoves = dominoGameHook.findLegalMoves(dominoData);
-      
-      console.log('🤖 Bot legal moves calculated with database state:', legalMoves.length);
-      
-      return legalMoves;
+      console.log('🤖 Bot found legal moves:', moves.length);
+      return moves;
     },
     passMove,
     isGameOver: dominoGameHook.gameState?.isGameOver || false
