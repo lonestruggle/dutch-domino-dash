@@ -462,9 +462,8 @@ export const useDominoGame = () => {
       const newPlayerHand = [...prev.playerHand];
       newPlayerHand.splice(index, 1);
 
-      // Genereer een vaste rotatie die zowel lokaal als in database gebruikt wordt
-      const dominoRotation = (Math.random() - 0.5) * 15; // Random rotation tussen -7.5 en +7.5 graden
-
+      // TIJDELIJKE OPLOSSING: Gebruik geen rotatie in lokale state
+      // Laat de database de rotatie bepalen om inconsistentie te voorkomen
       const dominoState: DominoState = {
         data: dominoData,
         x,
@@ -472,7 +471,7 @@ export const useDominoGame = () => {
         orientation,
         flipped: adjustedFlipped,
         isSpinner: isDouble(dominoData),
-        rotation: dominoRotation, // Gebruik dezelfde rotatie als database zal krijgen
+        rotation: 0, // Geen lokale rotatie - wordt bepaald door database sync
       };
 
       const pips = adjustedFlipped 
