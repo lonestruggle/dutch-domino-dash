@@ -414,10 +414,59 @@ export default function Game() {
       const dbState = syncedGameHook.syncState.gameState;
       if (!dbState) return [];
       
+      // CRITICAL: Use the SAME regenerateOpenEnds function as human players
+      // Instead of using dbState.openEnds, regenerate them from current board state
+      const regenerateOpenEnds = (state: any) => {
+        const openEnds: any[] = [];
+        
+        for (const coord in state.board) {
+          const [x, y] = coord.split(',').map(Number);
+          const cell = state.board[coord];
+          const domino = state.dominoes[cell.dominoId];
+
+          const neighbors = {
+            N: [x, y - 1],
+            S: [x, y + 1],
+            W: [x - 1, y],
+            E: [x + 1, y],
+          };
+
+          for (const dir in neighbors) {
+            const [nx, ny] = neighbors[dir as keyof typeof neighbors];
+            if (state.board[`${nx},${ny}`]) continue;
+
+            const isDouble = domino.data.value1 === domino.data.value2;
+            if (isDouble) {
+              const isVertical = domino.orientation === 'vertical';
+              // Non-spinner doubles only connect perpendicular to their orientation
+              if (
+                (isVertical && (dir === 'N' || dir === 'S')) ||
+                (!isVertical && (dir === 'W' || dir === 'E'))
+              ) {
+                continue;
+              }
+            }
+
+            openEnds.push({
+              x: nx,
+              y: ny,
+              value: cell.value,
+              fromDir: dir,
+            });
+          }
+        }
+
+        return openEnds;
+      };
+      
       const moves: any[] = [];
       const selectedIsDouble = dominoData.value1 === dominoData.value2;
       const uniqueEnds: Record<string, boolean> = {};
-      const openEnds = dbState.openEnds || [];
+      
+      // FIXED: Regenerate open ends from current board state - same as human players
+      const openEnds = regenerateOpenEnds(dbState);
+      
+      console.log('🤖 Bot using regenerated open ends:', openEnds.length);
 
       openEnds.forEach((end: any) => {
         if (uniqueEnds[`${end.x},${end.y}`]) {
@@ -504,6 +553,7 @@ export default function Game() {
         check(dominoData.value2, true);
       });
 
+      console.log('🤖 Bot found legal moves:', moves.length);
       return moves;
     },
     passMove,
