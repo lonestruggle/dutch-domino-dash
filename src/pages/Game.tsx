@@ -289,6 +289,24 @@ export default function Game() {
     return wrappedExecuteMove({ ...move, isBot: true });
   }, [wrappedExecuteMove]);
 
+  // Create pass function for bots
+  const passMove = useCallback(async () => {
+    console.log('🤖 Bot is passing turn');
+    const currentPlayerTurn = syncedGameHook.syncState.currentPlayer;
+    const nextPlayer = (currentPlayerTurn + 1) % syncedGameHook.syncState.allPlayers.length;
+    
+    const dbState = syncedGameHook.syncState.gameState;
+    if (!dbState) return;
+    
+    // Keep same game state but advance to next player
+    const newGameState = {
+      ...dbState,
+      currentPlayer: nextPlayer
+    };
+    
+    await syncedGameHook.updateGameState(newGameState, nextPlayer);
+  }, [syncedGameHook]);
+
   // Wrap drawFromBoneyard to also update database - SIMPLIFIED SYNC
   const wrappedDrawFromBoneyard = useCallback(async () => {
     const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
@@ -374,13 +392,14 @@ export default function Game() {
     players: syncedGameHook.syncState.allPlayers.map(p => ({
       player_position: p.position,
       username: p.username,
-      is_bot: p.username.includes('Bot') || p.username.includes('Dave') || p.username.includes('Betty') || p.username.includes('Raja') || p.username.includes('Sam'),
-      bot_name: p.username.includes('Bot') || p.username.includes('Dave') || p.username.includes('Betty') || p.username.includes('Raja') || p.username.includes('Sam') ? p.username : null
+      is_bot: p.username.includes('🤖') || p.username.includes('Bot') || p.username.includes('Dave') || p.username.includes('Betty') || p.username.includes('Raja') || p.username.includes('Sam'),
+      bot_name: p.username.includes('🤖') || p.username.includes('Bot') || p.username.includes('Dave') || p.username.includes('Betty') || p.username.includes('Raja') || p.username.includes('Sam') ? p.username : null
     })),
     gameState: dominoGameHook.gameState,
     executeMove: botExecuteMove,
     drawFromBoneyard: wrappedDrawFromBoneyard,
     findLegalMoves: dominoGameHook.findLegalMoves,
+    passMove,
     isGameOver: dominoGameHook.gameState?.isGameOver || false
   });
 

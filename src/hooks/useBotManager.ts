@@ -20,6 +20,7 @@ interface BotManagerProps {
   executeMove: (move: LegalMove) => void;
   drawFromBoneyard: () => void;
   findLegalMoves: (dominoData: DominoData) => LegalMove[];
+  passMove: () => void;
   isGameOver: boolean;
 }
 
@@ -30,6 +31,7 @@ export const useBotManager = ({
   executeMove,
   drawFromBoneyard,
   findLegalMoves,
+  passMove,
   isGameOver
 }: BotManagerProps) => {
   const { makeBotMove } = useBotAI();
@@ -83,11 +85,7 @@ export const useBotManager = ({
         boneyardSize,
         executeMove,
         drawFromBoneyard,
-        () => {
-          // Pass function - advance to next player
-          console.log(`🤖 Bot ${currentPlayerData.username} is passing`);
-          // This would need to be implemented in the game logic to advance turn
-        },
+        passMove,
         { difficulty, thinkingTime: 1500 } // 1.5 second thinking time
       );
     } catch (error) {
