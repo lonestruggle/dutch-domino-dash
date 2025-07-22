@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef } from 'react';
 import { GameState, DominoData, OpenEnd, LegalMove, DominoState } from '@/types/domino';
 
@@ -462,8 +461,10 @@ export const useDominoGame = () => {
       const newPlayerHand = [...prev.playerHand];
       newPlayerHand.splice(index, 1);
 
-      // TIJDELIJKE OPLOSSING: Gebruik geen rotatie in lokale state
-      // Laat de database de rotatie bepalen om inconsistentie te voorkomen
+      // ROTATIE FIX: Genereer rotatie hier in lokale state
+      // Deze rotatie wordt later ook gebruikt voor database synchronisatie
+      const dominoRotation = (Math.random() - 0.5) * 15; // Random rotation tussen -7.5 en +7.5 graden
+
       const dominoState: DominoState = {
         data: dominoData,
         x,
@@ -471,7 +472,7 @@ export const useDominoGame = () => {
         orientation,
         flipped: adjustedFlipped,
         isSpinner: isDouble(dominoData),
-        rotation: 0, // Geen lokale rotatie - wordt bepaald door database sync
+        rotation: dominoRotation, // Gebruik consistente rotatie
       };
 
       const pips = adjustedFlipped 
@@ -580,7 +581,7 @@ export const useDominoGame = () => {
         }, 1000);
         
       } else {
-        // Regular move without hard slam - gebruik rotatie uit database als die wordt gesynchroniseerd
+        // Regular move without hard slam
         newState = {
           ...prev,
           dominoes: finalDominoes,
