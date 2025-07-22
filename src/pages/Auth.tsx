@@ -106,9 +106,53 @@ const Auth = () => {
 
     setIsLoading(true);
     try {
+      let loginEmail = email;
+
+      // Check if input is username (doesn't contain @)
+      if (!email.includes('@')) {
+        console.log('Input appears to be username, looking up email...');
+        
+        // Get email from profiles table using username
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('username', email)
+          .single();
+
+        if (profileError || !profileData) {
+          console.log('Username not found:', profileError);
+          toast({
+            title: "Inloggen mislukt",
+            description: "Gebruikersnaam of wachtwoord is onjuist",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Get email from auth.users using RPC function or direct query won't work
+        // We need to use the email from the user metadata stored in profiles
+        // Let's modify this approach - we'll store email in profiles or use a different method
+
+        // For now, let's try a different approach - get user data via auth admin
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(profileData.user_id);
+        
+        if (userError || !userData.user?.email) {
+          console.log('Could not get user email:', userError);
+          toast({
+            title: "Inloggen mislukt",
+            description: "Er is een probleem opgetreden bij het inloggen",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        loginEmail = userData.user.email;
+        console.log('Found email for username:', loginEmail);
+      }
+
       console.log('Calling supabase.auth.signInWithPassword...');
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: loginEmail,
         password,
       });
 
@@ -118,7 +162,7 @@ const Auth = () => {
         console.log('Sign in error:', error);
         toast({
           title: "Inloggen mislukt",
-          description: error.message,
+          description: "Email/gebruikersnaam of wachtwoord is onjuist",
           variant: "destructive",
         });
       } else {
@@ -325,11 +369,11 @@ const Auth = () => {
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email of Gebruikersnaam</Label>
                   <Input
                     id="email"
-                    type="email"
-                    placeholder="je@email.com"
+                    type="text"
+                    placeholder="je@email.com of gebruikersnaam"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
