@@ -410,79 +410,100 @@ export default function Game() {
     executeMove: botExecuteMove,
     drawFromBoneyard: wrappedDrawFromBoneyard,
     findLegalMoves: (dominoData: any) => {
-      // SOLUTION: Use a completely separate legal moves calculation that doesn't depend on local state
+      // Use EXACT same logic as useDominoGame.findLegalMoves
       const dbState = syncedGameHook.syncState.gameState;
       if (!dbState) return [];
       
-      console.log('🤖 Bot calculating legal moves with database state');
-      console.log('🤖 Database open ends:', dbState.openEnds);
-      
-      // Calculate legal moves directly using database state - same algorithm as useDominoGame
       const moves: any[] = [];
       const selectedIsDouble = dominoData.value1 === dominoData.value2;
       const uniqueEnds: Record<string, boolean> = {};
-      
-      // Use open ends directly from database
       const openEnds = dbState.openEnds || [];
-      
+
       openEnds.forEach((end: any) => {
         if (uniqueEnds[`${end.x},${end.y}`]) {
           return;
         }
-        uniqueEnds[`${end.x},${end.y}`] = true;
 
-        // Same matching logic as useDominoGame
-        const matchingValues = [];
-        if (dominoData.value1 === end.value) matchingValues.push(dominoData.value1);
-        if (dominoData.value2 === end.value) matchingValues.push(dominoData.value2);
+        const check = (value: number, flipped: boolean) => {
+          if (end.value === value) {
+            const fromCellKey = {
+              N: `${end.x},${end.y + 1}`,
+              S: `${end.x},${end.y - 1}`,
+              W: `${end.x + 1},${end.y}`,
+              E: `${end.x - 1},${end.y}`,
+            }[end.fromDir];
 
-        matchingValues.forEach((matchingValue) => {
-          let flipped = dominoData.value2 === matchingValue;
-          let orientation = 'horizontal';
-          let { x, y } = end;
+            const toCellKey = {
+              N: `${end.x},${end.y - 1}`,
+              S: `${end.x},${end.y + 1}`,
+              W: `${end.x - 1},${end.y}`,
+              E: `${end.x + 1},${end.y}`,
+            }[end.fromDir];
 
-          // Same placement logic as useDominoGame
-          if (end.fromDir === 'N' || end.fromDir === 'S') {
-            orientation = 'vertical';
-            if (end.fromDir === 'N') {
-              y -= 1;
-              flipped = !flipped;
+            const toCellKeyForward = {
+              N: `${end.x},${end.y - 2}`,
+              S: `${end.x},${end.y + 2}`,
+              W: `${end.x - 2},${end.y}`,
+              E: `${end.x + 2},${end.y}`,
+            }[end.fromDir];
+
+            const toDomino = dbState.dominoes[dbState.board[toCellKey]?.dominoId];
+            const toDominoForward = dbState.dominoes[dbState.board[toCellKeyForward]?.dominoId];
+            const fromDomino = dbState.dominoes[dbState.board[fromCellKey]?.dominoId];
+
+            if (!fromDomino) return;
+            if (toDomino) return;
+            if (toDominoForward) return;
+            if (dbState.forbiddens?.[toCellKey]) return;
+
+            const orientation = end.fromDir === 'N' || end.fromDir === 'S' ? 'vertical' : 'horizontal';
+
+            if (fromDomino.isSpinner && fromDomino) {
+              if (moves.find(x => x.end.fromDir === end.fromDir && x.fromDomino === fromDomino)) {
+                return;
+              }
             }
-          } else {
-            if (end.fromDir === 'W') {
-              x -= 1;
-              flipped = !flipped;
-            }
-          }
 
-          // Check if placement is valid
-          const cells = orientation === 'horizontal' 
-            ? [[x, y], [x + 1, y]] 
-            : [[x, y], [x, y + 1]];
-          
-          let isValidPlacement = true;
-          for (const cell of cells) {
-            const cellKey = `${cell[0]},${cell[1]}`;
-            if (dbState.board[cellKey] || dbState.forbiddens?.[cellKey]) {
-              isValidPlacement = false;
-              break;
+            if (selectedIsDouble && fromDomino.orientation === 'horizontal' && (end.fromDir === 'N' || end.fromDir === 'S')) {
+              return;
             }
-          }
+            if (selectedIsDouble && fromDomino.orientation === 'vertical' && (end.fromDir === 'E' || end.fromDir === 'W')) {
+              return;
+            }
 
-          if (isValidPlacement) {
-            moves.push({
-              end,
-              dominoData,
-              flipped,
-              orientation,
-              x,
-              y
-            });
+            let { x, y } = end;
+            let adjustedFlipped = flipped;
+            let finalOrientation: 'horizontal' | 'vertical' = orientation;
+
+            // For doubles, flip the orientation like in original code
+            if (selectedIsDouble) {
+              finalOrientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
+            }
+
+            // Adjust position and flipping based on direction to ensure correct pip matching
+            if (finalOrientation === 'horizontal') {
+              if (end.fromDir === 'W') {
+                x -= 1; // Place to the left
+                // Don't flip for horizontal placement to the left
+              }
+              // For "E", no adjustment needed as it works fine
+            } else {
+              if (end.fromDir === 'N') {
+                y -= 1; // Place above
+                // Don't flip for vertical placement above
+              }
+              // For "S", no adjustment needed as it works fine
+            }
+
+            moves.push({ end, dominoData, flipped: adjustedFlipped, orientation: finalOrientation, x, y, fromDomino });
+            uniqueEnds[`${end.x},${end.y}`] = true;
           }
-        });
+        };
+
+        check(dominoData.value1, false);
+        check(dominoData.value2, true);
       });
-      
-      console.log('🤖 Bot found legal moves:', moves.length);
+
       return moves;
     },
     passMove,
