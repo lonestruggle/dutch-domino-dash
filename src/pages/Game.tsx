@@ -200,10 +200,16 @@ export default function Game() {
       // Build new domino and board state manually
       const dominoId = `d${dbState.nextDominoId || 0}`;
       
-      // BELANGRIJK: Haal de waarden direct uit de move over zonder aanpassingen
-      // Dit zorgt voor consistentie tussen lokale state en database
-      const { x, y } = move;
-      const adjustedFlipped = flipped;
+      // KRITIEKE FIX: Haal positie uit move maar pas flipped correct aan voor noord/west richtingen
+      let { x, y } = move;
+      const dir = end.fromDir;
+      
+      // Zorg dat de flipping consistent is met findLegalMoves in useDominoGame.ts
+      let adjustedFlipped = flipped;
+      if ((orientation === 'horizontal' && dir === 'W') || 
+          (orientation === 'vertical' && dir === 'N')) {
+        adjustedFlipped = !flipped;
+      }
       
       // Geen verdere aanpassingen aan flipped status nodig
       // We gebruiken de waarde die al in adjustedFlipped zit

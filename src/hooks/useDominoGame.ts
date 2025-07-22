@@ -303,7 +303,6 @@ export const useDominoGame = () => {
           }
 
           let { x, y } = end;
-          let adjustedFlipped = flipped;
           let finalOrientation: 'horizontal' | 'vertical' = orientation;
 
           // For doubles, flip the orientation like in original code
@@ -311,22 +310,28 @@ export const useDominoGame = () => {
             finalOrientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
           }
 
-          // Consistent adjustment of position based on direction
-          // Bij richtingen W (west) en N (noord) moeten we de positie aanpassen,
-          // maar de flipped status blijft ongewijzigd om consistentie te bewaren
+          // KRITIEKE FIX: Consistente positionering en flipping voor alle richtingen
           if (finalOrientation === 'horizontal') {
             if (end.fromDir === 'W') {
-              x -= 1; // Place to the left
+              x -= 1; // Plaats links
+              flipped = !flipped; // Belangrijk: Flip de steen voor westelijke richting
             }
-            // For "E", no adjustment needed as it works fine
-          } else {
+          } else { // vertical
             if (end.fromDir === 'N') {
-              y -= 1; // Place above
+              y -= 1; // Plaats boven
+              flipped = !flipped; // Belangrijk: Flip de steen voor noordelijke richting
             }
-            // For "S", no adjustment needed as it works fine
           }
 
-          moves.push({ end, dominoData, flipped: adjustedFlipped, orientation: finalOrientation, x, y, fromDomino });
+          moves.push({ 
+            end, 
+            dominoData, 
+            flipped, 
+            orientation: finalOrientation, 
+            x, 
+            y, 
+            fromDomino 
+          });
 
           uniqueEnds[`${end.x},${end.y}`] = true;
         }
