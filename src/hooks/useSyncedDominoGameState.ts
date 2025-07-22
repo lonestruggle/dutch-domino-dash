@@ -208,27 +208,23 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     
     const boneyard = fullSet.slice(playersCount * 7);
 
-    // Find starter domino (highest double or highest pip sum)
+    // Bepaal wie begint (hoogste dubbel of hoogste ogen)
     let starterPlayerIndex = 0;
-    let starterDominoIndex = -1;
-    let starterDomino = null;
     
-    // Look for highest double first
+    // Zoek hoogste dubbel eerst
     for (let i = 6; i >= 0; i--) {
       for (let p = 0; p < playersCount; p++) {
         const doubleIndex = playerHands[p].findIndex(d => d.value1 === i && d.value2 === i);
         if (doubleIndex > -1) {
           starterPlayerIndex = p;
-          starterDominoIndex = doubleIndex;
-          starterDomino = playerHands[p][doubleIndex];
           break;
         }
       }
-      if (starterDomino) break;
+      if (starterPlayerIndex !== 0) break;
     }
 
-    // If no double, find highest pip sum
-    if (!starterDomino) {
+    // Als geen dubbel, zoek hoogste ogen som
+    if (starterPlayerIndex === 0) {
       let highestPip = -1;
       for (let p = 0; p < playersCount; p++) {
         playerHands[p].forEach((d, i) => {
@@ -236,47 +232,21 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
           if (total > highestPip) {
             highestPip = total;
             starterPlayerIndex = p;
-            starterDominoIndex = i;
-            starterDomino = d;
           }
         });
       }
     }
-
-    // Remove starter domino from player's hand
-    if (starterDomino && starterDominoIndex > -1) {
-      playerHands[starterPlayerIndex].splice(starterDominoIndex, 1);
-    }
-
-    // Create initial game state with starter domino placed
-    const isDouble = starterDomino?.value1 === starterDomino?.value2;
-    const starterId = 'd0';
-    const orientation: 'vertical' | 'horizontal' = isDouble ? 'vertical' : 'horizontal';
     
+    // Start met leeg bord - speler moet zelf eerste steen kiezen
     const newGameState = {
-      dominoes: {
-        [starterId]: {
-          data: starterDomino,
-          x: 0,
-          y: 0,
-          orientation,
-          flipped: false,
-          isSpinner: isDouble,
-        }
-      },
-      board: isDouble ? {
-        '0,0': { dominoId: starterId, value: starterDomino.value1 },
-        '0,1': { dominoId: starterId, value: starterDomino.value2 }
-      } : {
-        '0,0': { dominoId: starterId, value: starterDomino.value1 },
-        '1,0': { dominoId: starterId, value: starterDomino.value2 }
-      },
+      dominoes: {},
+      board: {},
       playerHands,
       boneyard,
       openEnds: [],
       forbiddens: {},
-      nextDominoId: 1,
-      spinnerId: isDouble ? starterId : null,
+      nextDominoId: 0,
+      spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
       playerHand: playerHands[syncState.playerPosition] || []
