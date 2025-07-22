@@ -7,10 +7,23 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Chrome-specific fix: detect Chrome and add extra logging
+  const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+
   useEffect(() => {
     console.log('useAuth: Setting up auth listener...');
     console.log('useAuth: Current URL:', window.location.href);
     console.log('useAuth: User agent:', navigator.userAgent);
+    console.log('useAuth: Is Chrome:', isChrome);
+    console.log('useAuth: LocalStorage available:', !!window.localStorage);
+    console.log('useAuth: SessionStorage available:', !!window.sessionStorage);
+    
+    // Chrome-specific: check existing tokens in storage
+    if (isChrome) {
+      console.log('useAuth: Chrome detected - checking storage...');
+      const existingToken = localStorage.getItem('sb-auth-token');
+      console.log('useAuth: Existing token in localStorage:', !!existingToken);
+    }
     
     let mounted = true;
     
