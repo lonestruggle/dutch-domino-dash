@@ -32,6 +32,12 @@ export default function Game() {
 
   console.log('Game params:', params);
   console.log('Game ID extracted:', gameId);
+  console.log('Game ID type:', typeof gameId);
+
+  if (!gameId) {
+    console.error('No gameId found in params!');
+    return <div>Game ID missing</div>;
+  }
 
   // Initialize synced game state hook
   const syncedGameHook = useSyncedDominoGameState(
@@ -371,9 +377,7 @@ export default function Game() {
     const { data, error } = await supabase
       .from('games')
       .select('*')
-      .eq('lobby_id', gameId)
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .eq('id', gameId)  // Fixed: should be id, not lobby_id
       .maybeSingle();
 
     if (error) {
