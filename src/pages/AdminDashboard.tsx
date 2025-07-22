@@ -139,7 +139,7 @@ const AdminDashboard = () => {
     
     if (!user) {
       console.log('No user found, redirecting to auth');
-      navigate('/auth');
+      navigate('/auth?returnUrl=/admin');
       return;
     }
     

@@ -122,12 +122,13 @@ const Auth = () => {
           variant: "destructive",
         });
       } else {
-        console.log('Sign in successful, navigating to home');
+        console.log('Sign in successful, navigating to return URL or home');
+        const returnUrl = searchParams.get('returnUrl') || '/';
         toast({
           title: "Welkom terug!",
           description: "Je bent succesvol ingelogd",
         });
-        navigate('/');
+        navigate(returnUrl);
       }
     } catch (error) {
       console.error('Sign in exception:', error);
