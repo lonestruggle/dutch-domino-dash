@@ -202,16 +202,16 @@ export default function Game() {
       let { x, y } = end;
       let adjustedFlipped = flipped;
       
-      // Apply position adjustments (same as executeMove)
+      // Apply position adjustments (zonder flip) voor consistentie
       if (orientation === 'horizontal') {
         if (end.fromDir === 'W') {
           x -= 1;
-          adjustedFlipped = !flipped;
+          // BELANGRIJK: NIET FLIPPEN voor consistentie
         }
       } else {
         if (end.fromDir === 'N') {
           y -= 1;
-          adjustedFlipped = !flipped;
+          // BELANGRIJK: NIET FLIPPEN voor consistentie
         }
       }
       

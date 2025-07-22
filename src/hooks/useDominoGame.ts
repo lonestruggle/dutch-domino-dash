@@ -311,17 +311,17 @@ export const useDominoGame = () => {
             finalOrientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
           }
 
-          // Adjust position and flipping based on direction to ensure correct pip matching
+          // Adjust position based on direction to ensure correct pip matching
           if (finalOrientation === 'horizontal') {
             if (end.fromDir === 'W') {
               x -= 1; // Place to the left
-              // Don't flip for horizontal placement to the left
+              // BELANGRIJK: NIET FLIPPEN voor consistentie
             }
             // For "E", no adjustment needed as it works fine
           } else {
             if (end.fromDir === 'N') {
               y -= 1; // Place above
-              // Don't flip for vertical placement above
+              // BELANGRIJK: NIET FLIPPEN voor consistentie
             }
             // For "S", no adjustment needed as it works fine
           }
