@@ -406,10 +406,34 @@ export default function Game() {
       is_bot: p.username.includes('🤖') || p.username.includes('Bot') || p.username.includes('Dave') || p.username.includes('Betty') || p.username.includes('Raja') || p.username.includes('Sam'),
       bot_name: p.username.includes('🤖') || p.username.includes('Bot') || p.username.includes('Dave') || p.username.includes('Betty') || p.username.includes('Raja') || p.username.includes('Sam') ? p.username : null
     })),
-    gameState: dominoGameHook.gameState,
+    gameState: syncedGameHook.syncState.gameState, // Use SAME state as human players
     executeMove: botExecuteMove,
     drawFromBoneyard: wrappedDrawFromBoneyard,
-    findLegalMoves: dominoGameHook.findLegalMoves,
+    findLegalMoves: (dominoData: any) => {
+      // CRITICAL: Bots need to use the EXACT same game state as human players
+      // Temporarily sync the local state with database state before calculating moves
+      const dbState = syncedGameHook.syncState.gameState;
+      if (!dbState) return [];
+      
+      // Temporarily update the local gameStateRef to match database
+      const originalState = dominoGameHook.gameState;
+      dominoGameHook.setGameState({
+        ...originalState,
+        board: dbState.board || {},
+        dominoes: dbState.dominoes || {},
+        openEnds: dbState.openEnds || [],
+        forbiddens: dbState.forbiddens || {},
+        boneyard: dbState.boneyard || [],
+        playerHands: (dbState as any).playerHands || []
+      });
+      
+      // Now calculate legal moves with the updated state
+      const legalMoves = dominoGameHook.findLegalMoves(dominoData);
+      
+      console.log('🤖 Bot legal moves calculated with database state:', legalMoves.length);
+      
+      return legalMoves;
+    },
     passMove,
     isGameOver: dominoGameHook.gameState?.isGameOver || false
   });

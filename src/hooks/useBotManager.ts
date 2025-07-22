@@ -19,7 +19,7 @@ interface BotManagerProps {
   gameState: any;
   executeMove: (move: LegalMove) => void;
   drawFromBoneyard: () => void;
-  findLegalMoves: (dominoData: DominoData, externalState?: any) => LegalMove[];
+  findLegalMoves: (dominoData: DominoData) => LegalMove[];
   passMove: () => void;
   isGameOver: boolean;
 }
@@ -56,7 +56,7 @@ export const useBotManager = ({
     console.log(`🤖 Bot ${currentPlayerData.username} is thinking...`);
     console.log(`🤖 Current open ends in game state:`, gameState.openEnds);
 
-    // Get bot's hand
+    // Get bot's hand from gameState (same as human players)
     const botHand = gameState.playerHands?.[currentPlayer] || [];
     
     if (!botHand || botHand.length === 0) {
@@ -66,17 +66,23 @@ export const useBotManager = ({
 
     console.log(`🤖 Bot hand:`, botHand);
 
-    // Find all possible legal moves for all dominoes in hand
+    // EXACT SAME LOGIC AS HUMAN PLAYERS:
+    // Check each domino in hand individually and get its legal moves
     let allLegalMoves: LegalMove[] = [];
+    let hasAnyLegalMoves = false;
     
     botHand.forEach((domino: DominoData, index: number) => {
-      // Pass the current game state from database to findLegalMoves for accurate calculations
-      const moves = findLegalMoves(domino, gameState);
-      // Add the hand index to each move
-      moves.forEach(move => {
-        move.index = index;
-      });
-      allLegalMoves = allLegalMoves.concat(moves);
+      // Use EXACT same function as human players - no external state parameter
+      const moves = findLegalMoves(domino);
+      
+      if (moves.length > 0) {
+        hasAnyLegalMoves = true;
+        // Add the hand index to each move
+        moves.forEach(move => {
+          move.index = index;
+        });
+        allLegalMoves = allLegalMoves.concat(moves);
+      }
     });
 
     console.log(`🤖 Bot ${currentPlayerData.username} found ${allLegalMoves.length} legal moves`);
@@ -89,6 +95,13 @@ export const useBotManager = ({
 
     const boneyardSize = gameState.boneyard?.length || 0;
     const difficulty = getBotDifficulty(currentPlayerData.bot_name || currentPlayerData.username);
+
+    // Same pass logic as human players
+    if (!hasAnyLegalMoves && boneyardSize === 0) {
+      console.log('🤖 Bot must pass - no legal moves and no boneyard');
+      passMove();
+      return;
+    }
 
     try {
       await makeBotMove(

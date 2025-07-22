@@ -226,12 +226,12 @@ export const useDominoGame = () => {
     return false;
   }, []);
 
-  // EXACT COPY FROM YOUR ORIGINAL CODE - Modified to accept external state
-  const findLegalMoves = useCallback((dominoData: DominoData, externalState?: GameState): LegalMove[] => {
+  // EXACT COPY FROM YOUR ORIGINAL CODE
+  const findLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
     const moves: LegalMove[] = [];
     const selectedIsDouble = isDouble(dominoData);
     const uniqueEnds: Record<string, boolean> = {};
-    const currentState = externalState || gameStateRef.current;
+    const currentState = gameStateRef.current;
     const openEnds = regenerateOpenEnds(currentState);
 
     openEnds.forEach((end) => {
