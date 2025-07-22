@@ -366,6 +366,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_email_by_username: {
+        Args: { _username: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _user_id: string

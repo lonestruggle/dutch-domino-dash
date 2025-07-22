@@ -112,15 +112,13 @@ const Auth = () => {
       if (!email.includes('@')) {
         console.log('Input appears to be username, looking up email...');
         
-        // Get email from profiles table using username
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('username', email)
-          .single();
+        // Get email from database using the RPC function
+        const { data: foundEmail, error: lookupError } = await supabase.rpc('get_email_by_username', {
+          _username: email
+        });
 
-        if (profileError || !profileData) {
-          console.log('Username not found:', profileError);
+        if (lookupError || !foundEmail) {
+          console.log('Username not found:', lookupError);
           toast({
             title: "Inloggen mislukt",
             description: "Gebruikersnaam of wachtwoord is onjuist",
@@ -129,24 +127,7 @@ const Auth = () => {
           return;
         }
 
-        // Get email from auth.users using RPC function or direct query won't work
-        // We need to use the email from the user metadata stored in profiles
-        // Let's modify this approach - we'll store email in profiles or use a different method
-
-        // For now, let's try a different approach - get user data via auth admin
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(profileData.user_id);
-        
-        if (userError || !userData.user?.email) {
-          console.log('Could not get user email:', userError);
-          toast({
-            title: "Inloggen mislukt",
-            description: "Er is een probleem opgetreden bij het inloggen",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        loginEmail = userData.user.email;
+        loginEmail = foundEmail;
         console.log('Found email for username:', loginEmail);
       }
 
