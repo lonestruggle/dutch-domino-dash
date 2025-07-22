@@ -156,6 +156,8 @@ export type Database = {
           created_at: string
           created_by: string
           created_by_username: string | null
+          hard_slam_enabled: boolean | null
+          hard_slam_uses_per_player: number | null
           id: string
           max_players: number
           name: string
@@ -166,6 +168,8 @@ export type Database = {
           created_at?: string
           created_by: string
           created_by_username?: string | null
+          hard_slam_enabled?: boolean | null
+          hard_slam_uses_per_player?: number | null
           id?: string
           max_players?: number
           name: string
@@ -176,6 +180,8 @@ export type Database = {
           created_at?: string
           created_by?: string
           created_by_username?: string | null
+          hard_slam_enabled?: boolean | null
+          hard_slam_uses_per_player?: number | null
           id?: string
           max_players?: number
           name?: string
@@ -187,6 +193,7 @@ export type Database = {
       lobby_players: {
         Row: {
           bot_name: string | null
+          hard_slam_uses_remaining: number | null
           id: string
           is_bot: boolean | null
           joined_at: string
@@ -197,6 +204,7 @@ export type Database = {
         }
         Insert: {
           bot_name?: string | null
+          hard_slam_uses_remaining?: number | null
           id?: string
           is_bot?: boolean | null
           joined_at?: string
@@ -207,6 +215,7 @@ export type Database = {
         }
         Update: {
           bot_name?: string | null
+          hard_slam_uses_remaining?: number | null
           id?: string
           is_bot?: boolean | null
           joined_at?: string
