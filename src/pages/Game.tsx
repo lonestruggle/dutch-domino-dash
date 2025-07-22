@@ -225,7 +225,7 @@ export default function Game() {
         x, y, orientation,
         flipped: adjustedFlipped,
         isSpinner: dominoData.value1 === dominoData.value2,
-        rotation: (Math.random() - 0.5) * 16 // Random rotation between -8 and +8 degrees
+        rotation: (Math.random() - 0.5) * 15 // Random rotation between -7.5 and +7.5 degrees
       };
       
       // Add new board cells
@@ -402,12 +402,24 @@ export default function Game() {
   const wrappedHardSlam = useCallback(async () => {
     console.log('🎯 Hard Slam initiated!');
     
-    // Execute hard slam locally first
-    dominoGameHook.hardSlam();
-    
     try {
       // Temporarily disable sync to prevent conflicts
       setIgnoringSync(true);
+      
+      // Get current game state and apply hard slam immediately
+      const currentGameState = dominoGameHook.gameState;
+      if (!currentGameState || Object.keys(currentGameState.dominoes || {}).length === 0) {
+        toast({
+          title: "Hard Slam",
+          description: "Er zijn nog geen stenen op het bord om te schudden!",
+          variant: "destructive"
+        });
+        setIgnoringSync(false);
+        return;
+      }
+      
+      // Apply hard slam locally first for immediate visual feedback
+      dominoGameHook.hardSlam();
       
       // Update hard slam usage in database
       const currentPlayerData = syncedGameHook.syncState.allPlayers?.find(
@@ -428,18 +440,17 @@ export default function Game() {
         }
       }
       
-      // Update the game state in database with new rotations
-      const currentGameState = dominoGameHook.gameState;
+      // Build new domino state with updated rotations for database
       const newGameState = {
         ...currentGameState,
         dominoes: { ...currentGameState.dominoes }
       };
       
-      // Apply new random rotations
+      // Apply new random rotations to all placed dominoes
       Object.keys(newGameState.dominoes).forEach(dominoId => {
         newGameState.dominoes[dominoId] = {
           ...newGameState.dominoes[dominoId],
-          rotation: (Math.random() - 0.5) * 16
+          rotation: (Math.random() - 0.5) * 15 // Random rotation between -7.5 and +7.5 degrees
         };
       });
       

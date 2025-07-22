@@ -60,7 +60,7 @@ export const useDominoGame = () => {
       orientation,
       flipped,
       isSpinner: isDouble(data),
-      rotation: (Math.random() - 0.5) * 16, // Random rotation between -8 and +8 degrees
+      rotation: (Math.random() - 0.5) * 15, // Random rotation between -7.5 and +7.5 degrees
     };
 
     const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
@@ -131,7 +131,7 @@ export const useDominoGame = () => {
           orientation,
           flipped: false,
           isSpinner: isDouble(starter),
-          rotation: (Math.random() - 0.5) * 16, // Random rotation between -8 and +8 degrees
+          rotation: (Math.random() - 0.5) * 15, // Random rotation between -7.5 and +7.5 degrees
         }
       },
       board: orientation === 'horizontal' 
@@ -461,7 +461,7 @@ export const useDominoGame = () => {
         orientation,
         flipped: adjustedFlipped,
         isSpinner: isDouble(dominoData),
-        rotation: (Math.random() - 0.5) * 16, // Random rotation between -8 and +8 degrees
+        rotation: (Math.random() - 0.5) * 15, // Random rotation between -7.5 and +7.5 degrees
       };
 
       const pips = adjustedFlipped 
@@ -586,7 +586,7 @@ export const useDominoGame = () => {
         Object.keys(newDominoes).forEach(dominoId => {
           newDominoes[dominoId] = {
             ...newDominoes[dominoId],
-            rotation: (Math.random() - 0.5) * 16 // New random rotation between -8 and +8 degrees
+            rotation: (Math.random() - 0.5) * 15 // New random rotation between -7.5 and +7.5 degrees
           };
         });
         
