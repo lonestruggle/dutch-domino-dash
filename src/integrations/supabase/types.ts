@@ -362,6 +362,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_moderate: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       cleanup_expired_invitations: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -378,6 +382,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      is_moderator: {
         Args: { _user_id: string }
         Returns: boolean
       }
