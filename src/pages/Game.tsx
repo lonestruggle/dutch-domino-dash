@@ -388,7 +388,7 @@ export default function Game() {
     const { data, error } = await supabase
       .from('games')
       .select('*')
-      .eq('id', gameId)
+      .eq('lobby_id', gameId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
