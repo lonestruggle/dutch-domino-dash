@@ -228,6 +228,19 @@ export default function Game() {
         rotation: (Math.random() - 0.5) * 15 // Random rotation between -7.5 and +7.5 degrees
       };
       
+      // Apply Hard Slam effect if it was activated
+      if (dominoGameHook.gameState?.hardSlamNextMove) {
+        console.log('💥 Hard Slam effect - applying new rotations to all existing dominoes in database sync');
+        Object.keys(newDominoes).forEach(existingDominoId => {
+          if (existingDominoId !== dominoId) { // Don't change the newly placed domino
+            newDominoes[existingDominoId] = {
+              ...newDominoes[existingDominoId],
+              rotation: (Math.random() - 0.5) * 60 // Random rotation between -30 and +30 degrees
+            };
+          }
+        });
+      }
+      
       // Add new board cells
       const pips = adjustedFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
       const cells = orientation === 'horizontal' ? [[x, y], [x + 1, y]] : [[x, y], [x, y + 1]];
@@ -249,6 +262,8 @@ export default function Game() {
         nextDominoId: (dbState.nextDominoId || 0) + 1,
         spinnerId: dbState.spinnerId || (dominoData.value1 === dominoData.value2 ? dominoId : null),
         isGameOver: currentPlayerHand.length === 0, // Check for win condition
+        hardSlamNextMove: false, // Reset hard slam flag after applying
+        isHardSlamming: dominoGameHook.gameState?.hardSlamNextMove || false, // Copy slam animation state
         
         // Update player hands with correct data
         playerHands: [...((dbState as any).playerHands || [])]
