@@ -19,7 +19,7 @@ interface BotManagerProps {
   gameState: any;
   executeMove: (move: LegalMove) => void;
   drawFromBoneyard: () => void;
-  findLegalMoves: (dominoData: DominoData) => LegalMove[];
+  findLegalMoves: (dominoData: DominoData, externalState?: any) => LegalMove[];
   passMove: () => void;
   isGameOver: boolean;
 }
@@ -54,6 +54,7 @@ export const useBotManager = ({
     }
 
     console.log(`🤖 Bot ${currentPlayerData.username} is thinking...`);
+    console.log(`🤖 Current open ends in game state:`, gameState.openEnds);
 
     // Get bot's hand
     const botHand = gameState.playerHands?.[currentPlayer] || [];
@@ -63,11 +64,14 @@ export const useBotManager = ({
       return;
     }
 
+    console.log(`🤖 Bot hand:`, botHand);
+
     // Find all possible legal moves for all dominoes in hand
     let allLegalMoves: LegalMove[] = [];
     
     botHand.forEach((domino: DominoData, index: number) => {
-      const moves = findLegalMoves(domino);
+      // Pass the current game state from database to findLegalMoves for accurate calculations
+      const moves = findLegalMoves(domino, gameState);
       // Add the hand index to each move
       moves.forEach(move => {
         move.index = index;

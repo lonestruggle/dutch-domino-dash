@@ -256,10 +256,9 @@ export default function Game() {
       // Update current player's hand
       newGameState.playerHands[currentPlayerTurn] = currentPlayerHand;
       
-      // Calculate open ends after the move
-      const regenerateOpenEnds = dominoGameHook.regenerateOpenEnds;
-      if (regenerateOpenEnds) {
-        const calculatedOpenEnds = regenerateOpenEnds();
+      // Calculate open ends after the move using the NEW state
+      if (dominoGameHook.regenerateOpenEnds) {
+        const calculatedOpenEnds = dominoGameHook.regenerateOpenEnds(newGameState);
         newGameState.openEnds = calculatedOpenEnds;
         console.log('🎯 Calculated open ends after move:', calculatedOpenEnds.map(end => ({
           position: `${end.x},${end.y}`,
