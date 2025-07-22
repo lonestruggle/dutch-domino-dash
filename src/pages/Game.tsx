@@ -224,7 +224,8 @@ export default function Game() {
         data: dominoData,
         x, y, orientation,
         flipped: adjustedFlipped,
-        isSpinner: dominoData.value1 === dominoData.value2
+        isSpinner: dominoData.value1 === dominoData.value2,
+        rotation: (Math.random() - 0.5) * 16 // Random rotation between -8 and +8 degrees
       };
       
       // Add new board cells
