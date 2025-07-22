@@ -231,11 +231,48 @@ export default function Game() {
       // Apply Hard Slam effect if it was activated
       if (dominoGameHook.gameState?.hardSlamNextMove) {
         console.log('💥 Hard Slam effect - applying new rotations to all existing dominoes in database sync');
-        Object.keys(newDominoes).forEach(existingDominoId => {
+        
+        // Helper function to check if two dominoes overlap
+        const checkOverlap = (domino1: any, domino2: any) => {
+          const distance = Math.sqrt(Math.pow(domino1.x - domino2.x, 2) + Math.pow(domino1.y - domino2.y, 2));
+          return distance < 2.5; // Min distance in grid units
+        };
+        
+        const dominoIds = Object.keys(newDominoes).filter(id => id !== dominoId);
+        dominoIds.forEach((existingDominoId, index) => {
           if (existingDominoId !== dominoId) { // Don't change the newly placed domino
+            let attempts = 0;
+            let newRotation;
+            let hasOverlap;
+            
+            do {
+              newRotation = (Math.random() - 0.5) * 60; // Random rotation between -30 and +30 degrees
+              
+              // Create temp domino with new rotation
+              const tempDomino = {
+                ...newDominoes[existingDominoId],
+                rotation: newRotation
+              };
+              
+              // Check for overlaps with other dominoes
+              hasOverlap = false;
+              for (const otherId of dominoIds) {
+                if (otherId !== existingDominoId) {
+                  const otherDomino = newDominoes[otherId];
+                  if (checkOverlap(tempDomino, otherDomino)) {
+                    hasOverlap = true;
+                    break;
+                  }
+                }
+              }
+              
+              attempts++;
+            } while (hasOverlap && attempts < 8); // Max 8 attempts
+            
+            // Apply the rotation
             newDominoes[existingDominoId] = {
               ...newDominoes[existingDominoId],
-              rotation: (Math.random() - 0.5) * 60 // Random rotation between -30 and +30 degrees
+              rotation: hasOverlap ? (Math.random() - 0.5) * 30 : newRotation // Smaller rotation if still overlapping
             };
           }
         });

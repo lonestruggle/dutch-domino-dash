@@ -490,11 +490,55 @@ export const useDominoGame = () => {
       if (prev.hardSlamNextMove) {
         console.log('💥 HARD SLAM EFFECT - Starting shake animation and randomizing rotations!');
         
+        // Helper function to check if two dominoes overlap after rotation
+        const checkOverlap = (domino1: any, domino2: any) => {
+          // Simple bounding box check with rotation consideration
+          const size1 = domino1.orientation === 'horizontal' ? { w: 88, h: 44 } : { w: 44, h: 88 };
+          const size2 = domino2.orientation === 'horizontal' ? { w: 88, h: 44 } : { w: 44, h: 88 };
+          
+          // Add some padding to prevent tight overlaps
+          const padding = 10;
+          const distance = Math.sqrt(Math.pow(domino1.x - domino2.x, 2) + Math.pow(domino1.y - domino2.y, 2));
+          const minDistance = Math.max(size1.w + size2.w, size1.h + size2.h) / 2 + padding;
+          
+          return distance < minDistance / 48; // Convert to grid units
+        };
+        
         // Apply new random rotations to all existing dominoes (not the new one)
-        Object.keys(prev.dominoes).forEach(dominoId => {
+        const dominoIds = Object.keys(prev.dominoes);
+        dominoIds.forEach((dominoId, index) => {
+          let attempts = 0;
+          let newRotation;
+          let hasOverlap;
+          
+          do {
+            newRotation = (Math.random() - 0.5) * 60; // Random rotation between -30 and +30 degrees
+            
+            // Create temp domino with new rotation
+            const tempDomino = {
+              ...finalDominoes[dominoId],
+              rotation: newRotation
+            };
+            
+            // Check for overlaps with other dominoes
+            hasOverlap = false;
+            for (let i = 0; i < dominoIds.length; i++) {
+              if (i !== index && dominoIds[i] !== dominoId) {
+                const otherDomino = finalDominoes[dominoIds[i]];
+                if (checkOverlap(tempDomino, otherDomino)) {
+                  hasOverlap = true;
+                  break;
+                }
+              }
+            }
+            
+            attempts++;
+          } while (hasOverlap && attempts < 10); // Max 10 attempts to find non-overlapping rotation
+          
+          // Apply the rotation (even if it still overlaps after 10 attempts, use smaller rotation)
           finalDominoes[dominoId] = {
             ...finalDominoes[dominoId],
-            rotation: (Math.random() - 0.5) * 60 // Random rotation between -30 and +30 degrees
+            rotation: hasOverlap ? (Math.random() - 0.5) * 30 : newRotation // Smaller rotation if still overlapping
           };
         });
         
