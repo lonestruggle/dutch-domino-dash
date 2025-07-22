@@ -215,6 +215,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               data={domino.data}
               orientation={domino.orientation}
               flipped={domino.flipped}
+              rotation={domino.rotation}
             />
           </div>
         ))}

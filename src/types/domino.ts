@@ -10,6 +10,7 @@ export interface DominoState {
   orientation: 'horizontal' | 'vertical';
   flipped: boolean;
   isSpinner: boolean;
+  rotation?: number; // Small random rotation in degrees for natural placement
 }
 
 export interface OpenEnd {

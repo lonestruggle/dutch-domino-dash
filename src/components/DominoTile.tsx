@@ -10,6 +10,7 @@ interface DominoTileProps {
   onClick?: () => void;
   selected?: boolean;
   style?: React.CSSProperties;
+  rotation?: number;
 }
 
 const isDouble = (data: DominoData) => data.value1 === data.value2;
@@ -21,7 +22,8 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   className,
   onClick,
   selected = false,
-  style
+  style,
+  rotation = 0
 }) => {
   const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
   const double = isDouble(data);
@@ -44,7 +46,10 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         className
       )}
       onClick={onClick}
-      style={style}
+      style={{
+        ...style,
+        transform: `${style?.transform || ''} rotate(${rotation}deg)`.trim(),
+      }}
     >
       <div className={cn(
         'flex-1 relative flex items-center justify-center',
