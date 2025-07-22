@@ -211,13 +211,13 @@ export default function Game() {
       const newBoard = { ...dbState.board };
       const newDominoes = { ...dbState.dominoes };
       
-      // Add new domino
+      // Add new domino - gebruik een vaste rotatie voor consistentie
       newDominoes[dominoId] = {
         data: dominoData,
         x, y, orientation,
         flipped: adjustedFlipped,
         isSpinner: dominoData.value1 === dominoData.value2,
-        rotation: (Math.random() - 0.5) * 15 // Random rotation between -7.5 and +7.5 degrees
+        rotation: (Math.random() - 0.5) * 15 // Genereer hier de definitieve rotatie
       };
       
       // Apply Hard Slam effect if it was activated

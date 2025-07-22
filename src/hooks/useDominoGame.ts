@@ -469,7 +469,7 @@ export const useDominoGame = () => {
         orientation,
         flipped: adjustedFlipped,
         isSpinner: isDouble(dominoData),
-        rotation: (Math.random() - 0.5) * 15, // Random rotation between -7.5 and +7.5 degrees
+        rotation: 0, // Gebruik geen random rotatie in lokale state - wordt later door database overschreven
       };
 
       const pips = adjustedFlipped 
@@ -550,6 +550,12 @@ export const useDominoGame = () => {
           };
         });
         
+        // Geef nieuwe domino ook een rotatie om consistent te zijn
+        finalDominoes[id] = {
+          ...finalDominoes[id],
+          rotation: (Math.random() - 0.5) * 15 // Kleine rotatie voor nieuwe domino
+        };
+        
         // Create state with hard slam animation active
         newState = {
           ...prev,
@@ -572,7 +578,7 @@ export const useDominoGame = () => {
         }, 1000);
         
       } else {
-        // Regular move without hard slam
+        // Regular move without hard slam - gebruik rotatie uit database als die wordt gesynchroniseerd
         newState = {
           ...prev,
           dominoes: finalDominoes,
