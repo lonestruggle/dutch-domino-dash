@@ -485,8 +485,11 @@ export const useDominoGame = () => {
       
       // Apply Hard Slam effect if activated
       let finalDominoes = { ...prev.dominoes, [id]: dominoState };
+      let newState;
+      
       if (prev.hardSlamNextMove) {
-        console.log('💥 HARD SLAM EFFECT - Randomizing all domino rotations!');
+        console.log('💥 HARD SLAM EFFECT - Starting shake animation and randomizing rotations!');
+        
         // Apply new random rotations to all existing dominoes (not the new one)
         Object.keys(prev.dominoes).forEach(dominoId => {
           finalDominoes[dominoId] = {
@@ -494,19 +497,40 @@ export const useDominoGame = () => {
             rotation: (Math.random() - 0.5) * 30 // New random rotation between -15 and +15 degrees
           };
         });
+        
+        // Create state with hard slam animation active
+        newState = {
+          ...prev,
+          dominoes: finalDominoes,
+          board: newBoard,
+          playerHand: newPlayerHand,
+          selectedHandIndex: null,
+          nextDominoId: prev.nextDominoId + 1,
+          isGameOver: isGameWon,
+          hardSlamNextMove: false, // Reset hard slam flag
+          isHardSlamming: true, // Start shake animation
+        };
+        
+        // Stop the shake animation after 1 second
+        setTimeout(() => {
+          setGameState(currentState => ({
+            ...currentState,
+            isHardSlamming: false
+          }));
+        }, 1000);
+        
+      } else {
+        // Regular move without hard slam
+        newState = {
+          ...prev,
+          dominoes: finalDominoes,
+          board: newBoard,
+          playerHand: newPlayerHand,
+          selectedHandIndex: null,
+          nextDominoId: prev.nextDominoId + 1,
+          isGameOver: isGameWon,
+        };
       }
-      
-      // Check for blocked game condition
-      const newState = {
-        ...prev,
-        dominoes: finalDominoes,
-        board: newBoard,
-        playerHand: newPlayerHand,
-        selectedHandIndex: null,
-        nextDominoId: prev.nextDominoId + 1,
-        isGameOver: isGameWon,
-        hardSlamNextMove: false, // Reset hard slam flag after applying
-      };
       
       // Generate new open ends and check for blocked game
       const newOpenEnds = regenerateOpenEnds(newState);

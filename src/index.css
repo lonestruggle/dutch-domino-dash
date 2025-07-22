@@ -213,6 +213,24 @@
   .pip-pattern-6 .domino-pip:nth-child(4) { top: 50%; left: 66.6%; }
   .pip-pattern-6 .domino-pip:nth-child(5) { top: 75%; left: 33.3%; }
   .pip-pattern-6 .domino-pip:nth-child(6) { top: 75%; left: 66.6%; }
+
+  /* Hard Slam Shake Animation */
+  .hard-slam-shake {
+    animation: hardSlamShake 1s ease-in-out;
+  }
+
+  @keyframes hardSlamShake {
+    0%, 100% { transform: translate(0, 0) rotate(var(--domino-rotation, 0deg)); }
+    10% { transform: translate(-3px, -2px) rotate(calc(var(--domino-rotation, 0deg) + 5deg)); }
+    20% { transform: translate(4px, 1px) rotate(calc(var(--domino-rotation, 0deg) - 3deg)); }
+    30% { transform: translate(-2px, 3px) rotate(calc(var(--domino-rotation, 0deg) + 7deg)); }
+    40% { transform: translate(5px, -1px) rotate(calc(var(--domino-rotation, 0deg) - 4deg)); }
+    50% { transform: translate(-1px, 4px) rotate(calc(var(--domino-rotation, 0deg) + 6deg)); }
+    60% { transform: translate(3px, -3px) rotate(calc(var(--domino-rotation, 0deg) - 5deg)); }
+    70% { transform: translate(-4px, 2px) rotate(calc(var(--domino-rotation, 0deg) + 4deg)); }
+    80% { transform: translate(2px, -4px) rotate(calc(var(--domino-rotation, 0deg) - 6deg)); }
+    90% { transform: translate(-1px, 1px) rotate(calc(var(--domino-rotation, 0deg) + 2deg)); }
+  }
 }
 
 @layer base {

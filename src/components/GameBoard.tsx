@@ -216,6 +216,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               orientation={domino.orientation}
               flipped={domino.flipped}
               rotation={domino.rotation}
+              isShaking={gameState.isHardSlamming}
             />
           </div>
         ))}

@@ -46,4 +46,5 @@ export interface GameState {
   currentPlayer?: number; // Add current player for multiplayer sync
   hardSlamUsesRemaining?: number; // Track hard slam uses for current player
   hardSlamNextMove?: boolean; // Track if next move should be a hard slam
+  isHardSlamming?: boolean; // Track if hard slam animation is currently playing
 }

@@ -11,6 +11,7 @@ interface DominoTileProps {
   selected?: boolean;
   style?: React.CSSProperties;
   rotation?: number;
+  isShaking?: boolean;
 }
 
 const isDouble = (data: DominoData) => data.value1 === data.value2;
@@ -23,7 +24,8 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   onClick,
   selected = false,
   style,
-  rotation = 0
+  rotation = 0,
+  isShaking = false
 }) => {
   const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
   const double = isDouble(data);
@@ -43,13 +45,15 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         double && orientation === 'vertical' && 'transform -translate-y-6',
         double && orientation === 'horizontal' && 'transform -translate-x-6',
         selected && 'selected',
+        isShaking && 'hard-slam-shake',
         className
       )}
       onClick={onClick}
       style={{
         ...style,
         transform: `${style?.transform || ''} rotate(${rotation}deg)`.trim(),
-      }}
+        '--domino-rotation': `${rotation}deg`,
+      } as React.CSSProperties}
     >
       <div className={cn(
         'flex-1 relative flex items-center justify-center',
