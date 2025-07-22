@@ -410,17 +410,48 @@ export default function Game() {
     executeMove: botExecuteMove,
     drawFromBoneyard: wrappedDrawFromBoneyard,
     findLegalMoves: (dominoData: any) => {
-      // CRITICAL: Bots must use EXACT same open ends as human players - NO regeneration!
+      // CRITICAL: Bots must use EXACT same logic as human players including hasDifferentNeighbor!
       const dbState = syncedGameHook.syncState.gameState;
       if (!dbState) return [];
       
-      console.log('🤖 Bot using EXACT database open ends (no regeneration):', dbState.openEnds?.length);
+      console.log('🤖 Bot using EXACT database open ends with hasDifferentNeighbor validation');
+      
+      // CRITICAL: Add the hasDifferentNeighbor function that bots were missing!
+      const hasDifferentNeighbor = (x: number, y: number): boolean => {
+        const { board } = dbState;
+        const neighbors = {
+          N: [x, y - 1],
+          S: [x, y + 1],
+          W: [x - 1, y],
+          E: [x + 1, y],
+          NE: [x + 1, y - 1],
+          NW: [x - 1, y - 1],
+          SE: [x + 1, y + 1],
+          SW: [x - 1, y + 1]
+        };
+
+        let nCount = 0;
+
+        for (const direction in neighbors) {
+          const [nx, ny] = neighbors[direction as keyof typeof neighbors];
+          const neighborKey = `${nx},${ny}`;
+          if (board[neighborKey]) {
+            nCount += 1;
+          }
+        }
+
+        if (nCount > 3) {
+          return true;
+        }
+
+        return false;
+      };
       
       const moves: any[] = [];
       const selectedIsDouble = dominoData.value1 === dominoData.value2;
       const uniqueEnds: Record<string, boolean> = {};
       
-      // FIXED: Use EXACT same open ends from database - no regeneration!
+      // Use EXACT same open ends from database - no regeneration!
       const openEnds = dbState.openEnds || [];
 
       openEnds.forEach((end: any) => {
@@ -459,6 +490,11 @@ export default function Game() {
             if (toDomino) return;
             if (toDominoForward) return;
             if (dbState.forbiddens?.[toCellKey]) return;
+
+            // CRITICAL: Add the missing hasDifferentNeighbor validation!
+            if (hasDifferentNeighbor(end.x, end.y)) {
+              return;
+            }
 
             const orientation = end.fromDir === 'N' || end.fromDir === 'S' ? 'vertical' : 'horizontal';
 
@@ -508,7 +544,7 @@ export default function Game() {
         check(dominoData.value2, true);
       });
 
-      console.log('🤖 Bot found legal moves using database open ends:', moves.length);
+      console.log('🤖 Bot found legal moves with hasDifferentNeighbor validation:', moves.length);
       return moves;
     },
     passMove,
