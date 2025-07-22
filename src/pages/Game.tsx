@@ -243,7 +243,7 @@ export default function Game() {
         board: newBoard,
         dominoes: newDominoes,
         boneyard: dbState.boneyard || [],
-        openEnds: dbState.openEnds || [],
+        openEnds: [], // Will be calculated below
         forbiddens: dbState.forbiddens || {},
         nextDominoId: (dbState.nextDominoId || 0) + 1,
         spinnerId: dbState.spinnerId || (dominoData.value1 === dominoData.value2 ? dominoId : null),
@@ -255,6 +255,18 @@ export default function Game() {
       
       // Update current player's hand
       newGameState.playerHands[currentPlayerTurn] = currentPlayerHand;
+      
+      // Calculate open ends after the move
+      const regenerateOpenEnds = dominoGameHook.regenerateOpenEnds;
+      if (regenerateOpenEnds) {
+        const calculatedOpenEnds = regenerateOpenEnds();
+        newGameState.openEnds = calculatedOpenEnds;
+        console.log('🎯 Calculated open ends after move:', calculatedOpenEnds.map(end => ({
+          position: `${end.x},${end.y}`,
+          value: end.value,
+          direction: end.fromDir
+        })));
+      }
       
       // Next player
       const nextPlayer = (currentPlayerTurn + 1) % syncedGameHook.syncState.allPlayers.length;

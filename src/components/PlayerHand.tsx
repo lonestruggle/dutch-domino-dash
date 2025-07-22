@@ -11,7 +11,11 @@ interface PlayerHandProps {
 
 const isDouble = (data: DominoData) => data.value1 === data.value2;
 
-export const PlayerHand: React.FC<PlayerHandProps> = ({
+// Generate a stable key for each domino based on its values
+const getDominoKey = (domino: DominoData, index: number) => 
+  `${domino.value1}-${domino.value2}-${index}`;
+
+export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   hand,
   selectedIndex,
   onDominoSelect
@@ -25,7 +29,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
       <div className="flex flex-wrap justify-center gap-2 min-h-[64px] p-2">
         {hand.map((domino, index) => (
           <DominoTile
-            key={index}
+            key={getDominoKey(domino, index)} // More stable key
             data={domino}
             orientation={isDouble(domino) ? "vertical" : "horizontal"}
             selected={index === selectedIndex}
@@ -36,4 +40,4 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
       </div>
     </div>
   );
-};
+});
