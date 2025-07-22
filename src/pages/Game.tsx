@@ -211,19 +211,19 @@ export default function Game() {
       const newBoard = { ...dbState.board };
       const newDominoes = { ...dbState.dominoes };
       
-      // ROTATIE FIX: Gebruik rotatie uit database als die er is, anders genereer nieuwe
-      const existingDomino = dbState.dominoes?.[dominoId];
-      const dominoRotation = existingDomino?.rotation !== undefined ? existingDomino.rotation : (Math.random() - 0.5) * 15;
+      // ROTATIE FIX: Gebruik rotatie direct uit lokale state voor nieuwe domino
+      const localDomino = dominoGameHook.gameState?.dominoes?.[dominoId];
+      const dominoRotation = localDomino?.rotation !== undefined ? localDomino.rotation : (Math.random() - 0.5) * 15;
       
-      console.log(`🔥 SYNC: ${dominoId} - db rotation: ${existingDomino?.rotation}, using: ${dominoRotation}`);
+      console.log(`🔥 NEW DOMINO: ${dominoId} - local rotation: ${localDomino?.rotation}, using: ${dominoRotation}`);
       
-      // Add new domino - gebruik rotatie uit lokale state of genereer nieuwe
+      // Add new domino - gebruik rotatie uit lokale state
       newDominoes[dominoId] = {
         data: dominoData,
         x, y, orientation,
         flipped: adjustedFlipped,
         isSpinner: dominoData.value1 === dominoData.value2,
-        rotation: dominoRotation // Gebruik consistente rotatie
+        rotation: dominoRotation // Gebruik rotatie uit lokale state
       };
       
       // Apply Hard Slam effect if it was activated
