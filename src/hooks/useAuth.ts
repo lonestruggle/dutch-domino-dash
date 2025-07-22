@@ -42,25 +42,21 @@ export const useAuth = () => {
     try {
       const { error } = await supabase.auth.signOut();
       console.log('useAuth: Sign out API result:', { error });
+      
+      // Clear local state
+      setSession(null);
+      setUser(null);
+      
+      return { error };
     } catch (error) {
-      console.error('useAuth: Sign out API exception:', error);
+      console.error('useAuth: Sign out exception:', error);
+      
+      // Still clear local state on error
+      setSession(null);
+      setUser(null);
+      
+      return { error: null };
     }
-    
-    // Force clear local state regardless of server response
-    console.log('useAuth: Forcing local state clear...');
-    setSession(null);
-    setUser(null);
-    
-    // Also clear browser storage manually to ensure complete logout
-    console.log('useAuth: Clearing browser storage...');
-    localStorage.removeItem('sb-zefmabelixpuaelpivjx-auth-token');
-    localStorage.clear(); // Clear all localStorage to be sure
-    
-    // Force a page reload to completely reset the app state
-    console.log('useAuth: Reloading page to complete logout...');
-    window.location.reload();
-    
-    return { error: null };
   };
 
   return {
