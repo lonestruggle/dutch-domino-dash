@@ -10,7 +10,7 @@ import { Play, Users, Gamepad2, UserCircle, Crown, LogOut, LogIn, Trash2 } from 
 
 export default function Home() {
   const navigate = useNavigate();
-  const { user, signOut, forceLogoutAll, isAuthenticated } = useAuth();
+  const { user, signOut, forceLogoutAll, clearChromeStorage, isAuthenticated, isChrome } = useAuth();
   const { trackPageView } = useAnalytics();
   const [username, setUsername] = useState<string>('');
 
@@ -94,10 +94,16 @@ export default function Home() {
                       <LogOut className="mr-2 h-4 w-4" />
                       Uitloggen
                     </Button>
-                    <Button variant="destructive" onClick={handleForceLogoutAll} className="bg-red-600 hover:bg-red-700 text-white">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Force Logout All
-                    </Button>
+                     <Button variant="destructive" onClick={handleForceLogoutAll} className="bg-red-600 hover:bg-red-700 text-white">
+                       <Trash2 className="mr-2 h-4 w-4" />
+                       Force Logout All
+                     </Button>
+                     {isChrome && (
+                       <Button variant="destructive" onClick={clearChromeStorage} className="bg-orange-600 hover:bg-orange-700 text-white">
+                         <Trash2 className="mr-2 h-4 w-4" />
+                         Clear Chrome Storage
+                       </Button>
+                     )}
                   </>
                 ) : (
                   <Button onClick={() => navigate('/auth')} className="bg-primary hover:bg-primary/80 text-white">

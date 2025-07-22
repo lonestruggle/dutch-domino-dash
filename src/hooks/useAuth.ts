@@ -118,6 +118,22 @@ export const useAuth = () => {
     localStorage.clear();
     sessionStorage.clear();
     
+    // Chrome-specific: clear any residual auth data
+    if (isChrome) {
+      console.log('useAuth: Chrome detected - clearing all auth-related storage...');
+      // Clear specific Supabase keys that might be cached
+      const keysToRemove = [
+        'sb-auth-token',
+        'supabase.auth.token',
+        'sb-zefmabelixpuaelpivjx-auth-token',
+        'supabase-auth-token'
+      ];
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
+    }
+    
     // Clear state
     setSession(null);
     setUser(null);
@@ -133,6 +149,35 @@ export const useAuth = () => {
     window.location.reload();
   };
 
+  const clearChromeStorage = async () => {
+    console.log('useAuth: Clearing Chrome storage specifically...');
+    
+    if (isChrome) {
+      // Clear all possible Supabase auth keys
+      const authKeys = [
+        'sb-auth-token',
+        'supabase.auth.token', 
+        'sb-zefmabelixpuaelpivjx-auth-token',
+        'supabase-auth-token',
+        'supabase.session'
+      ];
+      
+      authKeys.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+        console.log(`Removed ${key} from storage`);
+      });
+      
+      // Also clear any cookies that might interfere
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+      
+      console.log('Chrome storage cleared, refreshing page...');
+      window.location.reload();
+    }
+  };
+
   return {
     user,
     session,
@@ -140,6 +185,8 @@ export const useAuth = () => {
     signInAnonymously,
     signOut,
     forceLogoutAll,
-    isAuthenticated: !!user
+    clearChromeStorage,
+    isAuthenticated: !!user,
+    isChrome
   };
 };
