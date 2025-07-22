@@ -200,16 +200,9 @@ export default function Game() {
       // Build new domino and board state manually
       const dominoId = `d${dbState.nextDominoId || 0}`;
       
-      // KRITIEKE FIX: Haal positie uit move maar pas flipped correct aan voor noord/west richtingen
-      let { x, y } = move;
-      const dir = end.fromDir;
-      
-      // Zorg dat de flipping consistent is met findLegalMoves in useDominoGame.ts
-      let adjustedFlipped = flipped;
-      if ((orientation === 'horizontal' && dir === 'W') || 
-          (orientation === 'vertical' && dir === 'N')) {
-        adjustedFlipped = !flipped;
-      }
+      // KRITIEKE FIX: Gebruik EXACT dezelfde flipped waarde als berekend in move
+      // Geen extra manipulatie hier om inconsistentie te voorkomen
+      const { x, y, flipped: adjustedFlipped } = move;
       
       // Geen verdere aanpassingen aan flipped status nodig
       // We gebruiken de waarde die al in adjustedFlipped zit
