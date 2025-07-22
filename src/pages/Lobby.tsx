@@ -5,15 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Play, LogOut, Copy } from 'lucide-react';
+import { Users, Play, LogOut, Copy, Plus, Minus, Bot } from 'lucide-react';
 import { BackgroundSelector } from '@/components/BackgroundSelector';
+import { useLobbies } from '@/hooks/useLobbies';
 
 interface LobbyPlayer {
   id: string;
-  user_id: string;
+  user_id: string | null;
   username: string;
   player_position: number;
   joined_at: string;
+  is_bot?: boolean;
+  bot_name?: string | null;
 }
 
 interface LobbyDetails {
@@ -31,6 +34,7 @@ export default function Lobby() {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { addBot, removeBot } = useLobbies();
   const [lobby, setLobby] = useState<LobbyDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedBackground, setSelectedBackground] = useState<string>('domino-table-2');
@@ -295,6 +299,42 @@ export default function Lobby() {
     }
   };
 
+  const handleAddBot = async () => {
+    if (!user || !lobbyId) return;
+    
+    const { error } = await addBot(lobbyId, user);
+    if (error) {
+      toast({
+        title: "Error",
+        description: typeof error === 'string' ? error : error.message || "Could not add bot",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Bot added to lobby!"
+      });
+    }
+  };
+
+  const handleRemoveBot = async (position: number) => {
+    if (!user || !lobbyId) return;
+    
+    const { error } = await removeBot(lobbyId, position, user);
+    if (error) {
+      toast({
+        title: "Error",
+        description: typeof error === 'string' ? error : error.message || "Could not remove bot",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Bot removed from lobby!"
+      });
+    }
+  };
+
   useEffect(() => {
     console.log('Lobby useEffect - authLoading:', authLoading, 'isAuthenticated:', isAuthenticated, 'user:', user);
     
@@ -418,19 +458,44 @@ export default function Lobby() {
                     </div>
                     <span>
                       {player ? (
-                        <>
-                          {player.username}
+                        <div className="flex items-center gap-2">
+                          <span>{player.username}</span>
+                          {player.is_bot && (
+                            <Bot className="h-4 w-4 text-muted-foreground" />
+                          )}
                           {player.user_id === lobby.created_by && (
-                            <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
                               Creator
                             </span>
                           )}
-                        </>
+                        </div>
                       ) : (
                         <span className="text-muted-foreground">Waiting for player...</span>
                       )}
                     </span>
                   </div>
+                  {isLobbyCreator && (
+                    <div>
+                      {player && player.is_bot ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleRemoveBot(position)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                      ) : !player ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleAddBot}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          <Bot className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

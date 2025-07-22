@@ -16,6 +16,15 @@ export const useLobbies = () => {
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const botNames = [
+    "Domino Dave 🤖",
+    "Robot Raja 🤖", 
+    "Bot Betty 🤖",
+    "AI Alex 🤖",
+    "Cyber Sam 🤖",
+    "Digital Dina 🤖"
+  ];
+
   const fetchLobbies = async () => {
     const { data, error } = await supabase
       .from('lobbies')
@@ -226,6 +235,96 @@ export const useLobbies = () => {
     return { error: null };
   };
 
+  const addBot = async (lobbyId: string, user: User) => {
+    if (!user) return { error: 'Not authenticated' };
+
+    // Check if user is lobby creator
+    const { data: lobby } = await supabase
+      .from('lobbies')
+      .select('created_by')
+      .eq('id', lobbyId)
+      .single();
+
+    if (!lobby || lobby.created_by !== user.id) {
+      return { error: 'Only lobby creator can add bots' };
+    }
+
+    // Get current players count and find next available position
+    const { data: players, error: playersError } = await supabase
+      .from('lobby_players')
+      .select('player_position')
+      .eq('lobby_id', lobbyId)
+      .order('player_position');
+
+    if (playersError) return { error: playersError };
+
+    // Find next available position
+    let nextPosition = 0;
+    const usedPositions = players?.map(p => p.player_position) || [];
+    while (usedPositions.includes(nextPosition) && nextPosition < 4) {
+      nextPosition++;
+    }
+
+    if (nextPosition >= 4) {
+      return { error: 'Lobby is full' };
+    }
+
+    // Get a random bot name that's not already used
+    const { data: existingBots } = await supabase
+      .from('lobby_players')
+      .select('bot_name')
+      .eq('lobby_id', lobbyId)
+      .eq('is_bot', true);
+
+    const usedBotNames = existingBots?.map(b => b.bot_name) || [];
+    const availableBotNames = botNames.filter(name => !usedBotNames.includes(name));
+    
+    if (availableBotNames.length === 0) {
+      return { error: 'No more bot names available' };
+    }
+
+    const selectedBotName = availableBotNames[Math.floor(Math.random() * availableBotNames.length)];
+
+    // Add bot to lobby
+    const { error } = await supabase
+      .from('lobby_players')
+      .insert({
+        lobby_id: lobbyId,
+        user_id: null,
+        username: selectedBotName,
+        bot_name: selectedBotName,
+        is_bot: true,
+        player_position: nextPosition
+      });
+
+    return { error };
+  };
+
+  const removeBot = async (lobbyId: string, botPosition: number, user: User) => {
+    if (!user) return { error: 'Not authenticated' };
+
+    // Check if user is lobby creator
+    const { data: lobby } = await supabase
+      .from('lobbies')
+      .select('created_by')
+      .eq('id', lobbyId)
+      .single();
+
+    if (!lobby || lobby.created_by !== user.id) {
+      return { error: 'Only lobby creator can remove bots' };
+    }
+
+    // Remove bot from lobby
+    const { error } = await supabase
+      .from('lobby_players')
+      .delete()
+      .eq('lobby_id', lobbyId)
+      .eq('player_position', botPosition)
+      .eq('is_bot', true);
+
+    return { error };
+  };
+
   return {
     lobbies,
     loading,
@@ -233,6 +332,8 @@ export const useLobbies = () => {
     joinLobby,
     deleteLobby,
     adminDeleteLobby,
+    addBot,
+    removeBot,
     refetch: fetchLobbies
   };
 };

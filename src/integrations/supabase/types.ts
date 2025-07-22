@@ -186,27 +186,33 @@ export type Database = {
       }
       lobby_players: {
         Row: {
+          bot_name: string | null
           id: string
+          is_bot: boolean | null
           joined_at: string
           lobby_id: string
           player_position: number
-          user_id: string
+          user_id: string | null
           username: string | null
         }
         Insert: {
+          bot_name?: string | null
           id?: string
+          is_bot?: boolean | null
           joined_at?: string
           lobby_id: string
           player_position: number
-          user_id: string
+          user_id?: string | null
           username?: string | null
         }
         Update: {
+          bot_name?: string | null
           id?: string
+          is_bot?: boolean | null
           joined_at?: string
           lobby_id?: string
           player_position?: number
-          user_id?: string
+          user_id?: string | null
           username?: string | null
         }
         Relationships: [
