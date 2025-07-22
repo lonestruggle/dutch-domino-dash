@@ -95,59 +95,16 @@ export const useDominoGame = () => {
     const playerHand = fullSet.slice(0, 7);
     const boneyard = fullSet.slice(7);
 
-    // Find highest double or highest total value
-    let starter: DominoData;
-    let starterIndex = -1;
-
-    // Look for highest double first
-    for (let i = 6; i >= 0; i--) {
-      starterIndex = playerHand.findIndex(d => d.value1 === i && d.value2 === i);
-      if (starterIndex > -1) break;
-    }
-
-    // If no double, find highest total value
-    if (starterIndex === -1) {
-      let highestPip = -1;
-      playerHand.forEach((d, i) => {
-        const total = d.value1 + d.value2;
-        if (total > highestPip) {
-          highestPip = total;
-          starterIndex = i;
-        }
-      });
-    }
-
-    starter = playerHand.splice(starterIndex, 1)[0];
-    const starterId = 'd0';
-    const orientation = isDouble(starter) ? 'vertical' : 'horizontal';
-
+    // Start with empty board - speler met hoogste dubbel mag zelf kiezen
     setGameState({
-      dominoes: {
-        [starterId]: {
-          data: starter,
-          x: 0,
-          y: 0,
-          orientation,
-          flipped: false,
-          isSpinner: isDouble(starter),
-          rotation: (Math.random() - 0.5) * 15, // Random rotation between -7.5 and +7.5 degrees
-        }
-      },
-      board: orientation === 'horizontal' 
-        ? {
-            '0,0': { dominoId: starterId, value: starter.value1 },
-            '1,0': { dominoId: starterId, value: starter.value2 }
-          }
-        : {
-            '0,0': { dominoId: starterId, value: starter.value1 },
-            '0,1': { dominoId: starterId, value: starter.value2 }
-          },
+      dominoes: {},
+      board: {},
       playerHand,
       boneyard,
       openEnds: [],
       forbiddens: {},
-      nextDominoId: 1,
-      spinnerId: isDouble(starter) ? starterId : null,
+      nextDominoId: 0,
+      spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
     });
