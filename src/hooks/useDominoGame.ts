@@ -491,9 +491,11 @@ export const useDominoGame = () => {
         isGameOver: isGameWon,
       };
       
-      // If not won by empty hand, check if game is blocked using the new board-based approach
+      // Generate new open ends and check for blocked game
+      const newOpenEnds = regenerateOpenEnds(newState);
+      newState.openEnds = newOpenEnds; // FIXED: Actually store the open ends in state
+      
       if (!isGameWon) {
-        const newOpenEnds = regenerateOpenEnds(newState);
         const isBlocked = checkBlockedGame(newOpenEnds, newBoard);
         newState.isGameOver = isBlocked;
       }
