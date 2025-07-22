@@ -9,11 +9,19 @@ export const useAuth = () => {
 
   useEffect(() => {
     console.log('useAuth: Setting up auth listener...');
+    console.log('useAuth: Current URL:', window.location.href);
+    console.log('useAuth: User agent:', navigator.userAgent);
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('useAuth: Auth state changed:', { event, sessionExists: !!session });
+        console.log('useAuth: Auth state changed:', { 
+          event, 
+          sessionExists: !!session,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email,
+          accessToken: !!session?.access_token
+        });
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -21,8 +29,13 @@ export const useAuth = () => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('useAuth: Initial session check:', { sessionExists: !!session });
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('useAuth: Initial session check:', { 
+        sessionExists: !!session, 
+        error,
+        userId: session?.user?.id,
+        userEmail: session?.user?.email 
+      });
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -32,7 +45,9 @@ export const useAuth = () => {
   }, []);
 
   const signInAnonymously = async () => {
-    const { error } = await supabase.auth.signInAnonymously();
+    console.log('useAuth: Attempting anonymous sign in...');
+    const { error, data } = await supabase.auth.signInAnonymously();
+    console.log('useAuth: Anonymous sign in result:', { error, sessionExists: !!data.session });
     return { error };
   };
 
@@ -42,21 +57,44 @@ export const useAuth = () => {
     try {
       const { error } = await supabase.auth.signOut();
       console.log('useAuth: Sign out API result:', { error });
-      
-      // Clear local state
-      setSession(null);
-      setUser(null);
-      
-      return { error };
     } catch (error) {
       console.error('useAuth: Sign out exception:', error);
-      
-      // Still clear local state on error
-      setSession(null);
-      setUser(null);
-      
-      return { error: null };
     }
+    
+    // Force clear everything
+    setSession(null);
+    setUser(null);
+    
+    // Clear all storage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Force reload to ensure clean state
+    window.location.reload();
+    
+    return { error: null };
+  };
+
+  const forceLogoutAll = async () => {
+    console.log('useAuth: Force logout all sessions...');
+    
+    // Clear all local storage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Clear state
+    setSession(null);
+    setUser(null);
+    
+    // Try to signout from server
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (error) {
+      console.log('Global signout failed, continuing...', error);
+    }
+    
+    // Force reload
+    window.location.reload();
   };
 
   return {
@@ -65,6 +103,7 @@ export const useAuth = () => {
     loading,
     signInAnonymously,
     signOut,
+    forceLogoutAll,
     isAuthenticated: !!user
   };
 };
