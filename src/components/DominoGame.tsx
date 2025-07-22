@@ -49,22 +49,36 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
 
-  // Check if player can pass (no legal moves for any domino + empty boneyard)
-  const canPass = isMyTurn && gameState?.boneyard?.length === 0;
+  // Enhanced pass logic with better debugging
+  let canPass = false;
   let hasAnyLegalMoves = false;
   
-  if (canPass && gameState?.playerHand) {
+  if (isMyTurn && gameState?.playerHand && gameState.playerHand.length > 0) {
+    console.log('🔍 Checking pass conditions for player...');
+    
     // Check if any domino in hand has legal moves
     for (const domino of gameState.playerHand) {
       const moves = findLegalMoves(domino);
+      console.log(`🔍 Domino ${domino.value1}|${domino.value2}: ${moves.length} moves`);
       if (moves.length > 0) {
         hasAnyLegalMoves = true;
         break;
       }
     }
+    
+    const boneyardEmpty = !gameState?.boneyard?.length || gameState.boneyard.length === 0;
+    canPass = !hasAnyLegalMoves && boneyardEmpty;
+    
+    console.log('🔍 Pass check result:', {
+      isMyTurn,
+      hasAnyLegalMoves,
+      boneyardEmpty,
+      boneyardSize: gameState?.boneyard?.length || 0,
+      canPass
+    });
   }
 
-  const shouldShowPassButton = canPass && !hasAnyLegalMoves && !gameState?.isGameOver;
+  const shouldShowPassButton = canPass && !gameState?.isGameOver;
 
   // Add index to legal moves for executeMove
   const legalMovesWithIndex = legalMoves.map(move => ({
