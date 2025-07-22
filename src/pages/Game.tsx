@@ -108,11 +108,13 @@ export default function Game() {
       return;
     }
 
-    // Check if it's the current player's turn
+    // Check if it's the current player's turn - only for human players
     const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
     const currentPlayerTurn = syncedGameHook.syncState.currentPlayer;
     
-    if (currentPlayerPosition !== currentPlayerTurn) {
+    // Only check turn for human players (not bots)
+    const isBot = move.isBot || false;
+    if (!isBot && currentPlayerPosition !== currentPlayerTurn) {
       console.log('❌ Not your turn!');
       toast({
         title: "Not your turn",
@@ -127,7 +129,7 @@ export default function Game() {
       const { data: isValidMove, error } = await supabase
         .rpc('validate_game_move', {
           _game_id: game?.id,
-          _player_position: currentPlayerPosition,
+          _player_position: currentPlayerTurn, // Use currentPlayerTurn instead of currentPlayerPosition for bots
           _move_data: move
         });
 
@@ -172,7 +174,7 @@ export default function Game() {
     // Add the selected hand index to the move
     const moveWithIndex = {
       ...move,
-      index: dominoGameHook.gameState.selectedHandIndex
+      index: move.index !== undefined ? move.index : dominoGameHook.gameState.selectedHandIndex
     };
     
     console.log('🎯 MOVE WITH INDEX:', { move: moveWithIndex, selectedIndex: dominoGameHook.gameState.selectedHandIndex });
@@ -186,7 +188,7 @@ export default function Game() {
       const handIndex = moveWithIndex.index;
       
       // Get current player's hand from database and remove played domino
-      const currentPlayerHand = [...((dbState as any).playerHands[currentPlayerPosition] || [])];
+      const currentPlayerHand = [...((dbState as any).playerHands[currentPlayerTurn] || [])];
       if (handIndex !== undefined && handIndex !== null && handIndex < currentPlayerHand.length) {
         currentPlayerHand.splice(handIndex, 1);
       }
@@ -248,7 +250,7 @@ export default function Game() {
       };
       
       // Update current player's hand
-      newGameState.playerHands[currentPlayerPosition] = currentPlayerHand;
+      newGameState.playerHands[currentPlayerTurn] = currentPlayerHand;
       
       // Next player
       const nextPlayer = (currentPlayerTurn + 1) % syncedGameHook.syncState.allPlayers.length;
@@ -276,6 +278,12 @@ export default function Game() {
       await syncedGameHook.updateGameState(newGameState, nextPlayer);
     }, 200);
   }, [dominoGameHook, syncedGameHook, toast]);
+
+  // Create bot-specific move function that doesn't check for human player turn
+  const botExecuteMove = useCallback(async (move: any) => {
+    console.log('🤖 Bot move attempt:', move);
+    return wrappedExecuteMove({ ...move, isBot: true });
+  }, [wrappedExecuteMove]);
 
   // Wrap drawFromBoneyard to also update database - SIMPLIFIED SYNC
   const wrappedDrawFromBoneyard = useCallback(async () => {
@@ -366,7 +374,7 @@ export default function Game() {
       bot_name: p.username.includes('Bot') || p.username.includes('Dave') || p.username.includes('Betty') || p.username.includes('Raja') || p.username.includes('Sam') ? p.username : null
     })),
     gameState: dominoGameHook.gameState,
-    executeMove: wrappedExecuteMove,
+    executeMove: botExecuteMove,
     drawFromBoneyard: wrappedDrawFromBoneyard,
     findLegalMoves: dominoGameHook.findLegalMoves,
     isGameOver: dominoGameHook.gameState?.isGameOver || false
