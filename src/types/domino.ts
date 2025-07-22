@@ -45,4 +45,5 @@ export interface GameState {
   selectedHandIndex: number | null;
   currentPlayer?: number; // Add current player for multiplayer sync
   hardSlamUsesRemaining?: number; // Track hard slam uses for current player
+  hardSlamNextMove?: boolean; // Track if next move should be a hard slam
 }

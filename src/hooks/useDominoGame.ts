@@ -483,15 +483,29 @@ export const useDominoGame = () => {
       // Check for win condition - if player has no more dominoes
       const isGameWon = newPlayerHand.length === 0;
       
+      // Apply Hard Slam effect if activated
+      let finalDominoes = { ...prev.dominoes, [id]: dominoState };
+      if (prev.hardSlamNextMove) {
+        console.log('💥 HARD SLAM EFFECT - Randomizing all domino rotations!');
+        // Apply new random rotations to all existing dominoes (not the new one)
+        Object.keys(prev.dominoes).forEach(dominoId => {
+          finalDominoes[dominoId] = {
+            ...finalDominoes[dominoId],
+            rotation: (Math.random() - 0.5) * 15 // New random rotation
+          };
+        });
+      }
+      
       // Check for blocked game condition
       const newState = {
         ...prev,
-        dominoes: { ...prev.dominoes, [id]: dominoState },
+        dominoes: finalDominoes,
         board: newBoard,
         playerHand: newPlayerHand,
         selectedHandIndex: null,
         nextDominoId: prev.nextDominoId + 1,
         isGameOver: isGameWon,
+        hardSlamNextMove: false, // Reset hard slam flag after applying
       };
       
       // Generate new open ends and check for blocked game
@@ -578,24 +592,12 @@ export const useDominoGame = () => {
     hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y),
     regenerateOpenEnds: (state?: GameState) => regenerateOpenEnds(state || gameStateRef.current),
     hardSlam: () => {
-      // Apply hard slam effect - randomize all domino rotations
-      setGameState(prevState => {
-        const newDominoes = { ...prevState.dominoes };
-        
-        // Update rotations for all placed dominoes
-        Object.keys(newDominoes).forEach(dominoId => {
-          newDominoes[dominoId] = {
-            ...newDominoes[dominoId],
-            rotation: (Math.random() - 0.5) * 15 // New random rotation between -7.5 and +7.5 degrees
-          };
-        });
-        
-        return {
-          ...prevState,
-          dominoes: newDominoes,
-          hardSlamUsesRemaining: Math.max(0, (prevState.hardSlamUsesRemaining || 0) - 1)
-        };
-      });
+      // Activate hard slam for next move (don't apply immediately)
+      setGameState(prevState => ({
+        ...prevState,
+        hardSlamNextMove: true,
+        hardSlamUsesRemaining: Math.max(0, (prevState.hardSlamUsesRemaining || 0) - 1)
+      }));
     },
   };
 };

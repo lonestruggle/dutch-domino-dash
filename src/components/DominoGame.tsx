@@ -96,6 +96,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const canUseHardSlam = isMyTurn && 
     !gameState?.isGameOver && 
     Object.keys(gameState?.dominoes || {}).length > 0; // At least one domino on board
+  
+  // Check if Hard Slam is activated for next move
+  const hardSlamActive = gameState?.hardSlamNextMove === true;
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -180,12 +183,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               </Button>
               <Button 
                 onClick={hardSlam}
-                disabled={!canUseHardSlam}
+                disabled={!canUseHardSlam || hardSlamActive}
                 variant="secondary"
-                className={canUseHardSlam ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" : ""}
+                className={
+                  hardSlamActive 
+                    ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
+                    : canUseHardSlam 
+                      ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" 
+                      : ""
+                }
               >
                 <Zap className="h-4 w-4 mr-2" />
-                Hard Slam! 💥
+                {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
               </Button>
             </div>
             <div className="text-sm text-muted-foreground">

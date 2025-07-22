@@ -400,27 +400,12 @@ export default function Game() {
 
   // Hard slam wrapper function
   const wrappedHardSlam = useCallback(async () => {
-    console.log('🎯 Hard Slam initiated!');
+    console.log('🎯 Hard Slam activated for next move!');
+    
+    // Just activate the flag - effect will happen on next domino placement
+    dominoGameHook.hardSlam();
     
     try {
-      // Temporarily disable sync to prevent conflicts
-      setIgnoringSync(true);
-      
-      // Get current game state and apply hard slam immediately
-      const currentGameState = dominoGameHook.gameState;
-      if (!currentGameState || Object.keys(currentGameState.dominoes || {}).length === 0) {
-        toast({
-          title: "Hard Slam",
-          description: "Er zijn nog geen stenen op het bord om te schudden!",
-          variant: "destructive"
-        });
-        setIgnoringSync(false);
-        return;
-      }
-      
-      // Apply hard slam locally first for immediate visual feedback
-      dominoGameHook.hardSlam();
-      
       // Update hard slam usage in database
       const currentPlayerData = syncedGameHook.syncState.allPlayers?.find(
         p => p.position === (syncedGameHook.syncState.gameState as any)?.currentPlayer
@@ -440,57 +425,19 @@ export default function Game() {
         }
       }
       
-      // Build new domino state with updated rotations for database
-      const newGameState = {
-        ...currentGameState,
-        dominoes: { ...currentGameState.dominoes }
-      };
-      
-      // Apply new random rotations to all placed dominoes
-      Object.keys(newGameState.dominoes).forEach(dominoId => {
-        newGameState.dominoes[dominoId] = {
-          ...newGameState.dominoes[dominoId],
-          rotation: (Math.random() - 0.5) * 15 // Random rotation between -7.5 and +7.5 degrees
-        };
+      toast({
+        title: "Hard Slam Activated! 💥",
+        description: "Your next domino placement will shake up all the stones!",
+        variant: "default"
       });
-      
-      // Save updated game state to database
-      const { error: gameStateError } = await supabase
-        .from('games')
-        .update({ 
-          game_state: newGameState as any,
-          updated_at: new Date().toISOString()
-        })
-        .eq('lobby_id', gameId);
-        
-      if (gameStateError) {
-        console.error('Failed to save hard slam game state:', gameStateError);
-        toast({
-          title: "Hard Slam Error",
-          description: "Failed to sync hard slam effect",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Hard Slam!",
-          description: "All dominoes have been shaken up! 💥",
-          variant: "default"
-        });
-      }
-      
-      // Re-enable sync after a delay
-      setTimeout(() => {
-        setIgnoringSync(false);
-      }, 1000);
       
     } catch (error) {
       console.error('Hard slam error:', error);
       toast({
         title: "Error",
-        description: "Failed to execute hard slam",
+        description: "Failed to activate hard slam",
         variant: "destructive"
       });
-      setIgnoringSync(false);
     }
   }, [dominoGameHook, syncedGameHook, gameId, toast]);
 
