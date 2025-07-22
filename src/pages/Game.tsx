@@ -211,9 +211,11 @@ export default function Game() {
       const newBoard = { ...dbState.board };
       const newDominoes = { ...dbState.dominoes };
       
-      // ROTATIE FIX: Gebruik rotatie uit lokale state als beschikbaar
-      const localDomino = dominoGameHook.gameState?.dominoes?.[dominoId];
-      const dominoRotation = localDomino?.rotation || (Math.random() - 0.5) * 15;
+      // ROTATIE FIX: Gebruik rotatie uit database als die er is, anders genereer nieuwe
+      const existingDomino = dbState.dominoes?.[dominoId];
+      const dominoRotation = existingDomino?.rotation !== undefined ? existingDomino.rotation : (Math.random() - 0.5) * 15;
+      
+      console.log(`🔥 SYNC: ${dominoId} - db rotation: ${existingDomino?.rotation}, using: ${dominoRotation}`);
       
       // Add new domino - gebruik rotatie uit lokale state of genereer nieuwe
       newDominoes[dominoId] = {
