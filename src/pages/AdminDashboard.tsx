@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -87,25 +87,7 @@ const AdminDashboard = () => {
     reason: '',
   });
 
-  useEffect(() => {
-    console.log('AdminDashboard useEffect - user:', user, 'authLoading:', authLoading);
-    
-    if (authLoading) {
-      console.log('Auth still loading, waiting...');
-      return;
-    }
-    
-    if (!user) {
-      console.log('No user found, redirecting to auth');
-      navigate('/auth');
-      return;
-    }
-    
-    console.log('User found, checking admin status');
-    checkAdminStatus();
-  }, [user, navigate, authLoading]);
-
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     if (!user) return;
     
     console.log('Checking admin status for user:', user.id);
@@ -145,9 +127,28 @@ const AdminDashboard = () => {
     } finally {
       setDashboardLoading(false);
     }
-  };
+  }, [user, navigate, toast]);
 
-  const loadDashboardData = async () => {
+  useEffect(() => {
+    console.log('AdminDashboard useEffect - user:', user, 'authLoading:', authLoading);
+    
+    if (authLoading) {
+      console.log('Auth still loading, waiting...');
+      return;
+    }
+    
+    if (!user) {
+      console.log('No user found, redirecting to auth');
+      navigate('/auth');
+      return;
+    }
+    
+    console.log('User found, checking admin status');
+    checkAdminStatus();
+  }, [user, navigate, authLoading, checkAdminStatus]);
+
+
+  const loadDashboardData = useCallback(async () => {
     try {
       // Load analytics data
       const { data: analyticsData, error: analyticsError } = await supabase
@@ -221,7 +222,7 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     }
-  };
+  }, []);
 
   const handleModerationAction = async () => {
     if (!moderationAction.user_id || !moderationAction.reason) {
