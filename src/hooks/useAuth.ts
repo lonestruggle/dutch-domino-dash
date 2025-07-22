@@ -12,9 +12,31 @@ export const useAuth = () => {
     console.log('useAuth: Current URL:', window.location.href);
     console.log('useAuth: User agent:', navigator.userAgent);
     
-    // Set up auth state listener FIRST
+    let mounted = true;
+    
+    // First get existing session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!mounted) return;
+      
+      console.log('useAuth: Initial session check:', { 
+        sessionExists: !!session, 
+        error,
+        userId: session?.user?.id,
+        userEmail: session?.user?.email 
+      });
+      
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+      }
+      setLoading(false);
+    });
+
+    // Then set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!mounted) return;
+        
         console.log('useAuth: Auth state changed:', { 
           event, 
           sessionExists: !!session,
@@ -22,26 +44,27 @@ export const useAuth = () => {
           userEmail: session?.user?.email,
           accessToken: !!session?.access_token
         });
-        setSession(session);
-        setUser(session?.user ?? null);
+        
+        // Only update state if there's actually a change
+        if (event === 'SIGNED_IN' && session) {
+          setSession(session);
+          setUser(session.user);
+        } else if (event === 'SIGNED_OUT' || !session) {
+          setSession(null);
+          setUser(null);
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          setSession(session);
+          setUser(session.user);
+        }
+        
         setLoading(false);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('useAuth: Initial session check:', { 
-        sessionExists: !!session, 
-        error,
-        userId: session?.user?.id,
-        userEmail: session?.user?.email 
-      });
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInAnonymously = async () => {
