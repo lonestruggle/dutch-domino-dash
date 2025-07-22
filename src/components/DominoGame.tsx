@@ -1,16 +1,19 @@
+import { useState } from 'react';
 import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Trophy, PartyPopper, Star, Zap } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Zap, Eye } from 'lucide-react';
 
 interface DominoGameProps {
   gameHook: any;
 }
 
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
+  const [showGameOverDialog, setShowGameOverDialog] = useState(true);
+  
   const {
     gameState,
     findLegalMoves,
@@ -197,9 +200,22 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
               </Button>
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground flex items-center">
               {gameState?.isGameOver ? (
-                <span className="font-semibold text-green-600">Game Over!</span>
+                <>
+                  <span className="font-semibold text-green-600 mr-2">Game Over!</span>
+                  {!showGameOverDialog && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setShowGameOverDialog(true)}
+                      className="text-xs py-1 h-7"
+                    >
+                      <Trophy className="h-3 w-3 mr-1" />
+                      Resultaat tonen
+                    </Button>
+                  )}
+                </>
               ) : (
                 <span>Game in progress...</span>
               )}
@@ -208,7 +224,12 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         </Card>
 
         {/* Game Over Dialog */}
-        <Dialog open={gameState?.isGameOver || false} onOpenChange={() => startNewGame()}>
+        <Dialog 
+          open={(gameState?.isGameOver && showGameOverDialog) || false} 
+          onOpenChange={(open) => {
+            if (!open) setShowGameOverDialog(false);
+          }}
+        >
           <DialogContent className={`sm:max-w-md text-center ${didIWin 
             ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300' 
             : 'bg-gradient-to-br from-red-50 to-gray-50 border-2 border-red-300'
@@ -289,17 +310,28 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </>
               )}
               
-              {/* Action Button */}
-              <Button 
-                onClick={startNewGame}
-                className={`w-full font-bold py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 ${
-                  didIWin 
-                    ? 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white' 
-                    : 'bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white'
-                }`}
-              >
-                🎮 Nieuw Spel Starten
-              </Button>
+              {/* Action Buttons */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Button 
+                  onClick={() => setShowGameOverDialog(false)}
+                  variant="outline"
+                  className="font-medium py-3 text-base flex items-center justify-center shadow hover:shadow-md transition-all"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Spel bekijken
+                </Button>
+                
+                <Button 
+                  onClick={startNewGame}
+                  className={`font-bold py-3 text-base shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 ${
+                    didIWin 
+                      ? 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white' 
+                      : 'bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white'
+                  }`}
+                >
+                  🎮 Nieuw Spel
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
