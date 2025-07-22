@@ -491,7 +491,7 @@ export const useDominoGame = () => {
         Object.keys(prev.dominoes).forEach(dominoId => {
           finalDominoes[dominoId] = {
             ...finalDominoes[dominoId],
-            rotation: (Math.random() - 0.5) * 15 // New random rotation
+            rotation: (Math.random() - 0.5) * 30 // New random rotation between -15 and +15 degrees
           };
         });
       }
