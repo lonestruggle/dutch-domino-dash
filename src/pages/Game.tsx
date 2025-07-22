@@ -199,21 +199,14 @@ export default function Game() {
       
       // Build new domino and board state manually
       const dominoId = `d${dbState.nextDominoId || 0}`;
-      let { x, y } = end;
-      let adjustedFlipped = flipped;
       
-      // Apply position adjustments (same as executeMove)
-      if (orientation === 'horizontal') {
-        if (end.fromDir === 'W') {
-          x -= 1;
-          adjustedFlipped = !flipped;
-        }
-      } else {
-        if (end.fromDir === 'N') {
-          y -= 1;
-          adjustedFlipped = !flipped;
-        }
-      }
+      // BELANGRIJK: Haal de waarden direct uit de move over zonder aanpassingen
+      // Dit zorgt voor consistentie tussen lokale state en database
+      const { x, y } = move;
+      const adjustedFlipped = flipped;
+      
+      // Geen verdere aanpassingen aan flipped status nodig
+      // We gebruiken de waarde die al in adjustedFlipped zit
       
       // Create new board state
       const newBoard = { ...dbState.board };

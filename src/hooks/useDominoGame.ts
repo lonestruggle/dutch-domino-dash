@@ -311,17 +311,17 @@ export const useDominoGame = () => {
             finalOrientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
           }
 
-          // Adjust position and flipping based on direction to ensure correct pip matching
+          // Consistent adjustment of position based on direction
+          // Bij richtingen W (west) en N (noord) moeten we de positie aanpassen,
+          // maar de flipped status blijft ongewijzigd om consistentie te bewaren
           if (finalOrientation === 'horizontal') {
             if (end.fromDir === 'W') {
               x -= 1; // Place to the left
-              // Don't flip for horizontal placement to the left
             }
             // For "E", no adjustment needed as it works fine
           } else {
             if (end.fromDir === 'N') {
               y -= 1; // Place above
-              // Don't flip for vertical placement above
             }
             // For "S", no adjustment needed as it works fine
           }
@@ -391,6 +391,9 @@ export const useDominoGame = () => {
 
     setGameState(prev => {
       const id = `d${prev.nextDominoId}`;
+      
+      // Gebruik de reeds berekende waarden uit move object zonder verdere aanpassingen
+      // De flipped waarde is reeds correct berekend in findLegalMoves
       const { x, y, flipped: adjustedFlipped } = move;
 
       // Use the pre-calculated position and flipped values from findLegalMoves
