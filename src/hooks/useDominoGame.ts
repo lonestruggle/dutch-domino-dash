@@ -122,6 +122,8 @@ export const useDominoGame = () => {
       
       if (!isDouble(domino.data)) {
         console.log('🔍 First non-double domino detected:', domino.data, 'at', domino.x, domino.y, 'orientation:', domino.orientation, 'flipped:', domino.flipped);
+        console.log('🔍 BOARD STATE DEBUG:', state.board);
+        console.log('🔍 DOMINOES STATE DEBUG:', state.dominoes);
         
         // Get the board positions to determine actual values
         const leftCellKey = `${domino.x},${domino.y}`;
@@ -130,6 +132,7 @@ export const useDominoGame = () => {
         const leftValue = state.board[leftCellKey]?.value;
         const rightValue = state.board[rightCellKey]?.value;
         
+        console.log('🔍 Board keys - left:', leftCellKey, 'right:', rightCellKey);
         console.log('🔍 Board values - left/top:', leftValue, 'right/bottom:', rightValue);
         
         if (domino.orientation === 'horizontal') {
