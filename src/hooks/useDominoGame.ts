@@ -290,8 +290,10 @@ export const useDominoGame = () => {
 
   // EXACT COPY FROM YOUR ORIGINAL CODE
   const findLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
+    console.log('🔍 FIND LEGAL MOVES called for domino:', dominoData);
     const moves: LegalMove[] = [];
     const selectedIsDouble = isDouble(dominoData);
+    console.log('🔍 Is this domino a double?', selectedIsDouble);
     const uniqueEnds: Record<string, boolean> = {};
     const currentState = gameStateRef.current;
     
