@@ -130,12 +130,19 @@ export const useDominoGame = () => {
         const [nx, ny] = neighbors[dir as keyof typeof neighbors];
         if (state.board[`${nx},${ny}`]) continue;
 
+        const isFirstDomino = Object.keys(state.dominoes).length === 1;
+        
+        // Voor de eerste steen (dubbel of niet): oost en west open ends
+        if (isFirstDomino && !isDouble(domino.data)) {
+          if (dir !== 'E' && dir !== 'W') {
+            continue;
+          }
+        }
         // Voor dubbele stenen: alleen perpendiculaire verbindingen
-        if (isDouble(domino.data)) {
+        else if (isDouble(domino.data)) {
           const isVertical = domino.orientation === 'vertical';
           // Voor non-spinner dubbels: alleen verbinden perpendiculair aan hun oriëntatie
           // Maar voor de EERSTE domino: altijd beide richtingen toestaan
-          const isFirstDomino = Object.keys(state.dominoes).length === 1;
           
           if (!isFirstDomino) {
             if (
