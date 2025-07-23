@@ -114,59 +114,6 @@ export const useDominoGame = () => {
   const regenerateOpenEnds = useCallback((state: GameState): OpenEnd[] => {
     const openEnds: OpenEnd[] = [];
     
-    // SPECIALE BEHANDELING VOOR EERSTE DOMINO
-    if (Object.keys(state.dominoes).length === 1) {
-      const dominoId = Object.keys(state.dominoes)[0];
-      const domino = state.dominoes[dominoId];
-      
-      if (domino.orientation === 'horizontal') {
-        // Horizontale domino: open ends links en rechts
-        const leftValue = domino.flipped ? domino.data.value2 : domino.data.value1;
-        const rightValue = domino.flipped ? domino.data.value1 : domino.data.value2;
-        
-        openEnds.push({
-          x: domino.x - 1, // Links van de domino
-          y: domino.y,
-          value: leftValue,
-          fromDir: 'E'
-        });
-        
-        openEnds.push({
-          x: domino.x + 2, // Rechts van de domino (domino neemt 2 posities in)
-          y: domino.y,
-          value: rightValue,
-          fromDir: 'W'
-        });
-      } else {
-        // Verticale domino: open ends boven en onder
-        const topValue = domino.flipped ? domino.data.value2 : domino.data.value1;
-        const bottomValue = domino.flipped ? domino.data.value1 : domino.data.value2;
-        
-        openEnds.push({
-          x: domino.x,
-          y: domino.y - 1, // Boven de domino
-          value: topValue,
-          fromDir: 'S'
-        });
-        
-        openEnds.push({
-          x: domino.x,
-          y: domino.y + 2, // Onder de domino (domino neemt 2 posities in)
-          value: bottomValue,
-          fromDir: 'N'
-        });
-      }
-      
-      console.log('🎯 EERSTE DOMINO OPEN ENDS:', openEnds.map(end => ({
-        position: `${end.x},${end.y}`,
-        value: end.value,
-        direction: end.fromDir
-      })));
-      
-      return openEnds;
-    }
-    
-    // NORMALE LOGICA VOOR MEERDERE DOMINOS
     for (const coord in state.board) {
       const [x, y] = coord.split(',').map(Number);
       const cell = state.board[coord];
@@ -186,11 +133,17 @@ export const useDominoGame = () => {
         // Voor dubbele stenen: alleen perpendiculaire verbindingen
         if (isDouble(domino.data)) {
           const isVertical = domino.orientation === 'vertical';
-          if (
-            (isVertical && (dir === 'N' || dir === 'S')) ||
-            (!isVertical && (dir === 'W' || dir === 'E'))
-          ) {
-            continue;
+          // Voor non-spinner dubbels: alleen verbinden perpendiculair aan hun oriëntatie
+          // Maar voor de EERSTE domino: altijd beide richtingen toestaan
+          const isFirstDomino = Object.keys(state.dominoes).length === 1;
+          
+          if (!isFirstDomino) {
+            if (
+              (isVertical && (dir === 'N' || dir === 'S')) ||
+              (!isVertical && (dir === 'W' || dir === 'E'))
+            ) {
+              continue;
+            }
           }
         }
 
