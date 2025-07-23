@@ -537,33 +537,39 @@ export const useDominoGame = () => {
         }
       } else {
         let dir = end.fromDir;
-        if (dir === 'N') {
-          prev.forbiddens[`${x - 1},${y + 2}`] = true;
-          prev.forbiddens[`${x + 1},${y + 2}`] = true;
-          prev.forbiddens[`${x - 1},${y + 1}`] = true;
-          prev.forbiddens[`${x + 1},${y + 1}`] = true;
-          prev.forbiddens[`${x},${y + 3}`] = true;
-        }
-        if (dir === 'S') {
-          prev.forbiddens[`${x - 1},${y - 1}`] = true;
-          prev.forbiddens[`${x + 1},${y - 1}`] = true;
-          prev.forbiddens[`${x - 1},${y}`] = true;
-          prev.forbiddens[`${x + 1},${y}`] = true;
-          prev.forbiddens[`${x},${y - 2}`] = true;
-        }
-        if (dir === 'W') {
-          prev.forbiddens[`${x + 2},${y + 1}`] = true;
-          prev.forbiddens[`${x + 2},${y - 1}`] = true;
-          prev.forbiddens[`${x + 1},${y + 1}`] = true;
-          prev.forbiddens[`${x + 1},${y - 1}`] = true;
-          if (`${x + 3},${y}` !== '1,0') prev.forbiddens[`${x + 3},${y}`] = true;
-        }
-        if (dir === 'E') {
-          prev.forbiddens[`${x - 1},${y - 1}`] = true;
-          prev.forbiddens[`${x - 1},${y + 1}`] = true;
-          prev.forbiddens[`${x},${y - 1}`] = true;
-          prev.forbiddens[`${x},${y + 1}`] = true;
-          if (`${x - 2},${y}` !== '-1,0') prev.forbiddens[`${x - 2},${y}`] = true;
+        
+        // ✅ CRITICAL FIX: Voor de eerste domino geen forbidden posities zetten!
+        const isFirstDomino = Object.keys(prev.dominoes).length === 0;
+        
+        if (!isFirstDomino) {
+          if (dir === 'N') {
+            prev.forbiddens[`${x - 1},${y + 2}`] = true;
+            prev.forbiddens[`${x + 1},${y + 2}`] = true;
+            prev.forbiddens[`${x - 1},${y + 1}`] = true;
+            prev.forbiddens[`${x + 1},${y + 1}`] = true;
+            prev.forbiddens[`${x},${y + 3}`] = true;
+          }
+          if (dir === 'S') {
+            prev.forbiddens[`${x - 1},${y - 1}`] = true;
+            prev.forbiddens[`${x + 1},${y - 1}`] = true;
+            prev.forbiddens[`${x - 1},${y}`] = true;
+            prev.forbiddens[`${x + 1},${y}`] = true;
+            prev.forbiddens[`${x},${y - 2}`] = true;
+          }
+          if (dir === 'W') {
+            prev.forbiddens[`${x + 2},${y + 1}`] = true;
+            prev.forbiddens[`${x + 2},${y - 1}`] = true;
+            prev.forbiddens[`${x + 1},${y + 1}`] = true;
+            prev.forbiddens[`${x + 1},${y - 1}`] = true;
+            if (`${x + 3},${y}` !== '1,0') prev.forbiddens[`${x + 3},${y}`] = true;
+          }
+          if (dir === 'E') {
+            prev.forbiddens[`${x - 1},${y - 1}`] = true;
+            prev.forbiddens[`${x - 1},${y + 1}`] = true;
+            prev.forbiddens[`${x},${y - 1}`] = true;
+            prev.forbiddens[`${x},${y + 1}`] = true;
+            if (`${x - 2},${y}` !== '-1,0') prev.forbiddens[`${x - 2},${y}`] = true;
+          }
         }
       }
 
