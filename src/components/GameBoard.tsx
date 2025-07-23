@@ -225,8 +225,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {legalMoves.map((move, index) => {
           const { end } = move;
           
-          if (hasDifferentNeighbor(end.x, end.y)) return null;
-          if (gameState.forbiddens[`${end.x},${end.y}`]) return null;
+          // ✅ FIXED: Remove double filtering - findLegalMoves already did all the checks
+          // if (hasDifferentNeighbor(end.x, end.y)) return null;
+          // if (gameState.forbiddens[`${end.x},${end.y}`]) return null;
 
           let { x, y } = end;
           const { orientation, dominoData } = move;
