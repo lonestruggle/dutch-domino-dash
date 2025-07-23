@@ -386,8 +386,8 @@ export default function Game() {
     await syncedGameHook.updateGameState(newGameState, nextPlayer);
   }, [syncedGameHook]);
 
-  // Simplified boneyard draw - just local for now
-  const wrappedDrawFromBoneyard = useCallback(() => {
+  // Boneyard draw with proper database sync
+  const wrappedDrawFromBoneyard = useCallback(async () => {
     const currentPlayerPosition = syncedGameHook.syncState.playerPosition;
     const currentPlayerTurn = syncedGameHook.syncState.currentPlayer;
     
@@ -401,14 +401,36 @@ export default function Game() {
       return;
     }
     
-    if (!dominoGameHook.gameState.boneyard?.length) {
+    const dbState = syncedGameHook.syncState.gameState;
+    if (!dbState || !(dbState as any).boneyard?.length) {
       console.log('❌ Boneyard is empty');
       return;
     }
     
-    // Just execute locally for now - no database sync
-    dominoGameHook.drawFromBoneyard();
-  }, [dominoGameHook, syncedGameHook.syncState, toast]);
+    // Get the domino that will be drawn
+    const drawnDomino = (dbState as any).boneyard[(dbState as any).boneyard.length - 1];
+    
+    // Update database immediately with new state
+    const newBoneyard = [...(dbState as any).boneyard];
+    newBoneyard.pop(); // Remove last domino
+    
+    const newPlayerHands = [...((dbState as any).playerHands || [])];
+    newPlayerHands[currentPlayerPosition] = [...newPlayerHands[currentPlayerPosition], drawnDomino];
+    
+    const newGameState = {
+      ...dbState,
+      boneyard: newBoneyard,
+      playerHands: newPlayerHands
+    };
+    
+    try {
+      // Save to database first
+      await syncedGameHook.updateGameState(newGameState, currentPlayerTurn);
+      console.log('✅ Draw saved to database');
+    } catch (error) {
+      console.error('❌ Error during draw:', error);
+    }
+  }, [syncedGameHook, toast]);
 
   // Hard slam wrapper function
   const wrappedHardSlam = useCallback(async () => {
