@@ -216,7 +216,7 @@
 
   /* Hard Slam Shake Animation */
   .hard-slam-shake {
-    animation: hardSlamShake 1s ease-in-out;
+    animation: hardSlamShake var(--shake-duration, 1s) ease-in-out;
   }
 
   @keyframes hardSlamShake {

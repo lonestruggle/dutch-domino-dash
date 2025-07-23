@@ -54,6 +54,7 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         ...style,
         transform: `${style?.transform || ''} rotate(${rotation}deg)`.trim(),
         '--domino-rotation': `${rotation}deg`,
+        '--shake-duration': `${1 + Math.random()}s`, // Random duration between 1-2 seconds
       } as React.CSSProperties}
     >
       <div className={cn(
