@@ -452,16 +452,24 @@ export default function Game() {
       // Save to database but DON'T change player turn
       await syncedGameHook.updateGameState(newGameState, currentPlayerTurn);
       
-      console.log('✅ Draw saved to database');
+      // Wait for database to actually commit the change before re-enabling sync
+      console.log('⏳ Waiting for database commit...');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second for DB commit
+      
+      // Verify the update actually went through by reading the database
+      try {
+        await syncedGameHook.loadGameState();
+        console.log('✅ Draw saved and verified in database');
+      } catch (error) {
+        console.error('❌ Failed to verify database update:', error);
+      }
       
     } catch (error) {
       console.error('❌ Error during draw:', error);
     } finally {
-      // Re-enable sync after database update completes
-      setTimeout(() => {
-        setIgnoringSync(false);
-        console.log('🔓 Re-enabling sync after draw');
-      }, 500);
+      // Re-enable sync after database update is verified
+      setIgnoringSync(false);
+      console.log('🔓 Re-enabling sync after draw completion');
     }
   }, [dominoGameHook, syncedGameHook, toast]);
 
