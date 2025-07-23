@@ -125,31 +125,37 @@ export const useDominoGame = () => {
       if (!isDouble(domino.data)) {
         // First non-double domino has two open ends
         if (domino.orientation === 'horizontal') {
-          // East and West ends
-          openEnds.push({
-            x: x + 1,
-            y: y,
-            value: domino.flipped ? domino.data.value1 : domino.data.value2,
-            fromDir: 'E',
-          });
+          // West end (links van eerste cel) en East end (rechts van tweede cel)
+          const leftCell = state.board[`${x},${y}`];
+          const rightCell = state.board[`${x+1},${y}`];
+          
           openEnds.push({
             x: x - 1,
             y: y,
-            value: domino.flipped ? domino.data.value2 : domino.data.value1,
+            value: leftCell.value,
             fromDir: 'W',
           });
+          openEnds.push({
+            x: x + 2,
+            y: y,
+            value: rightCell.value,
+            fromDir: 'E',
+          });
         } else {
-          // North and South ends
+          // North end (boven eerste cel) en South end (onder tweede cel)
+          const topCell = state.board[`${x},${y}`];
+          const bottomCell = state.board[`${x},${y+1}`];
+          
           openEnds.push({
             x: x,
             y: y - 1,
-            value: domino.flipped ? domino.data.value1 : domino.data.value2,
+            value: topCell.value,
             fromDir: 'N',
           });
           openEnds.push({
             x: x,
-            y: y + 1,
-            value: domino.flipped ? domino.data.value2 : domino.data.value1,
+            y: y + 2,
+            value: bottomCell.value,
             fromDir: 'S',
           });
         }
