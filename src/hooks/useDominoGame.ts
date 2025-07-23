@@ -378,7 +378,11 @@ export const useDominoGame = () => {
             return;
           }
 
-          if (hasDifferentNeighbor(end.x, end.y)) {
+          console.log(`🔍 Checking hasDifferentNeighbor for (${end.x}, ${end.y})`);
+          const hasDiffNeighbor = hasDifferentNeighbor(end.x, end.y);
+          console.log(`🔍 hasDifferentNeighbor result:`, hasDiffNeighbor);
+
+          if (hasDiffNeighbor) {
             console.log(`❌ Has different neighbor - rejected`);
             return;
           }
