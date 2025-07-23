@@ -89,6 +89,11 @@ export default function Game() {
         isGameOver: dbState.isGameOver || false,
         currentPlayer: dbState.currentPlayer || 0,
         
+        // Hard slam synchronization - all players see same hard slam state
+        hardSlamUsesRemaining: dbState.hardSlamUsesRemaining,
+        hardSlamNextMove: dbState.hardSlamNextMove,
+        isHardSlamming: dbState.isHardSlamming,
+        
         // Player specific data
         playerHand: (dbState as any).playerHands?.[myPosition] || [],
         playerHands: (dbState as any).playerHands || [],
@@ -314,8 +319,11 @@ export default function Game() {
         nextDominoId: (dbState.nextDominoId || 0) + 1,
         spinnerId: dbState.spinnerId || (dominoData.value1 === dominoData.value2 ? dominoId : null),
         isGameOver: currentPlayerHand.length === 0, // Check for win condition
+        
+        // Hard slam synchronization - sync all properties to database
+        hardSlamUsesRemaining: dominoGameHook.gameState?.hardSlamUsesRemaining,
         hardSlamNextMove: false, // Reset hard slam flag after applying
-        isHardSlamming: dominoGameHook.gameState?.hardSlamNextMove || false, // Copy slam animation state
+        isHardSlamming: dominoGameHook.gameState?.hardSlamNextMove || false, // Copy slam animation state to all players
         
         // Update player hands with correct data
         playerHands: [...((dbState as any).playerHands || [])]

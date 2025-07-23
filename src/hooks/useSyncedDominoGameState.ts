@@ -111,7 +111,11 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         spinnerId: gameState.spinnerId || null,
         isGameOver: gameState.isGameOver || false,
         selectedHandIndex: gameState.selectedHandIndex || null,
-        currentPlayer: gameData?.current_player_turn || 0 // ALWAYS use database column as source of truth
+        currentPlayer: gameData?.current_player_turn || 0, // ALWAYS use database column as source of truth
+        // Hard slam properties for synchronization
+        hardSlamUsesRemaining: gameState.hardSlamUsesRemaining,
+        hardSlamNextMove: gameState.hardSlamNextMove,
+        isHardSlamming: gameState.isHardSlamming
       } : null;
       
       console.log('🔍 LOADED FROM DATABASE:', {
