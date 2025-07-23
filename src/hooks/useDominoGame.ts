@@ -120,6 +120,9 @@ export const useDominoGame = () => {
       const dominoId = Object.keys(state.dominoes)[0];
       const domino = state.dominoes[dominoId];
       console.log('🔍 Eerste domino data:', domino);
+      console.log('🔍 domino.data:', domino.data);
+      console.log('🔍 domino.data.value1:', domino.data.value1);
+      console.log('🔍 domino.data.value2:', domino.data.value2);
       console.log('🔍 Is double?', isDouble(domino.data));
       
       if (!isDouble(domino.data)) {
