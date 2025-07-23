@@ -176,7 +176,7 @@
   
   .placement-target:hover {
     background: hsl(var(--selected-glow));
-    transform: scale(1.02);
+    transform: translate(-50%, -50%) scale(1.02);
   }
   
   .game-ui {
