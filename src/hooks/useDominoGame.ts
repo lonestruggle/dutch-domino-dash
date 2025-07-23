@@ -113,6 +113,49 @@ export const useDominoGame = () => {
   // EXACT COPY FROM YOUR ORIGINAL CODE
   const regenerateOpenEnds = useCallback((state: GameState): OpenEnd[] => {
     const openEnds: OpenEnd[] = [];
+    const boardCoords = Object.keys(state.board);
+    
+    // Special case: first non-double domino should have two open ends
+    if (boardCoords.length === 1) {
+      const coord = boardCoords[0];
+      const [x, y] = coord.split(',').map(Number);
+      const cell = state.board[coord];
+      const domino = state.dominoes[cell.dominoId];
+      
+      if (!isDouble(domino.data)) {
+        // First non-double domino has two open ends
+        if (domino.orientation === 'horizontal') {
+          // East and West ends
+          openEnds.push({
+            x: x + 1,
+            y: y,
+            value: domino.flipped ? domino.data.value1 : domino.data.value2,
+            fromDir: 'E',
+          });
+          openEnds.push({
+            x: x - 1,
+            y: y,
+            value: domino.flipped ? domino.data.value2 : domino.data.value1,
+            fromDir: 'W',
+          });
+        } else {
+          // North and South ends
+          openEnds.push({
+            x: x,
+            y: y - 1,
+            value: domino.flipped ? domino.data.value1 : domino.data.value2,
+            fromDir: 'N',
+          });
+          openEnds.push({
+            x: x,
+            y: y + 1,
+            value: domino.flipped ? domino.data.value2 : domino.data.value1,
+            fromDir: 'S',
+          });
+        }
+        return openEnds;
+      }
+    }
     
     for (const coord in state.board) {
       const [x, y] = coord.split(',').map(Number);
