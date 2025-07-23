@@ -307,14 +307,21 @@ export const useDominoGame = () => {
     }
     
     const openEnds = regenerateOpenEnds(currentState);
+    console.log('🔍 LEGAL MOVES DEBUG - Open ends:', openEnds);
+    console.log('🔍 LEGAL MOVES DEBUG - Domino data:', dominoData);
 
     openEnds.forEach((end) => {
       if (uniqueEnds[`${end.x},${end.y}`]) {
+        console.log('❌ Skipping duplicate end at:', end.x, end.y);
         return;
       }
 
       const check = (value: number, flipped: boolean) => {
+        console.log(`🔍 Checking end at (${end.x}, ${end.y}) with value ${end.value} against domino value ${value}, flipped: ${flipped}`);
+        
         if (end.value === value) {
+          console.log(`✅ Value match! Checking placement constraints...`);
+          
           const fromCellKey = {
             N: `${end.x},${end.y + 1}`,
             S: `${end.x},${end.y - 1}`,
@@ -340,21 +347,29 @@ export const useDominoGame = () => {
           const toDominoForward = currentState.dominoes[currentState.board[toCellKeyForward]?.dominoId];
           const fromDomino = currentState.dominoes[currentState.board[fromCellKey]?.dominoId];
 
+          console.log(`🔍 Keys - from: ${fromCellKey}, to: ${toCellKey}, forward: ${toCellKeyForward}`);
+          console.log(`🔍 Dominoes - from: ${!!fromDomino}, to: ${!!toDomino}, forward: ${!!toDominoForward}`);
+
           if (!fromDomino) {
+            console.log(`❌ No fromDomino - rejected`);
             return;
           }
           if (toDomino) {
+            console.log(`❌ toDomino exists - rejected`);
             return;
           }
           if (toDominoForward) {
+            console.log(`❌ toDominoForward exists - rejected`);
             return;
           }
 
           if (currentState.forbiddens[toCellKey]) {
+            console.log(`❌ Position forbidden - rejected`);
             return;
           }
 
           if (hasDifferentNeighbor(end.x, end.y)) {
+            console.log(`❌ Has different neighbor - rejected`);
             return;
           }
 
@@ -363,14 +378,17 @@ export const useDominoGame = () => {
           if (fromDomino.isSpinner && fromDomino) {
             // Parallel Moves from double items are forbidden.
             if (moves.find(x => x.end.fromDir === end.fromDir && x.fromDomino === fromDomino)) {
+              console.log(`❌ Parallel move from spinner - rejected`);
               return;
             }
           }
 
           if (selectedIsDouble && fromDomino.orientation === 'horizontal' && (end.fromDir === 'N' || end.fromDir === 'S')) {
+            console.log(`❌ Double constraint H/NS - rejected`);
             return;
           }
           if (selectedIsDouble && fromDomino.orientation === 'vertical' && (end.fromDir === 'E' || end.fromDir === 'W')) {
+            console.log(`❌ Double constraint V/EW - rejected`);
             return;
           }
 
@@ -395,6 +413,8 @@ export const useDominoGame = () => {
             }
           }
 
+          console.log(`✅ MOVE ACCEPTED! Final position: (${x}, ${y}), orientation: ${finalOrientation}, flipped: ${flipped}`);
+
           moves.push({ 
             end, 
             dominoData, 
@@ -406,6 +426,8 @@ export const useDominoGame = () => {
           });
 
           uniqueEnds[`${end.x},${end.y}`] = true;
+        } else {
+          console.log(`❌ Value mismatch: ${end.value} !== ${value}`);
         }
       };
 
