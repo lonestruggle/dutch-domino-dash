@@ -171,11 +171,14 @@ const Auth = () => {
     e.preventDefault();
     console.log('Attempting sign up with:', { email, username, passwordLength: password.length, inviteCode });
     
-    if (!email || !password || !confirmPassword || !username) {
-      console.log('Sign up failed: missing fields');
+    // Check required fields - email is optional for invitations without email
+    const emailRequired = inviteInfo && inviteInfo.email; // Only require email if invitation specifies one
+    
+    if (!password || !confirmPassword || !username || (emailRequired && !email)) {
+      console.log('Sign up failed: missing required fields');
       toast({
         title: "Error",
-        description: "Vul alle velden in",
+        description: emailRequired ? "Vul alle velden in" : "Vul gebruikersnaam, wachtwoord en bevestig wachtwoord in",
         variant: "destructive",
       });
       return;
@@ -424,18 +427,20 @@ const Auth = () => {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="je@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={!!inviteInfo} // Disable if invite is valid
-                    required
-                  />
-                </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="signup-email">
+                     Email {inviteInfo && inviteInfo.email ? '*' : '(optioneel)'}
+                   </Label>
+                   <Input
+                     id="signup-email"
+                     type="email"
+                     placeholder={inviteInfo && inviteInfo.email ? inviteInfo.email : "je@email.com (optioneel)"}
+                     value={email}
+                     onChange={(e) => setEmail(e.target.value)}
+                     disabled={!!(inviteInfo && inviteInfo.email)} // Disable if invite has specific email
+                     required={!!(inviteInfo && inviteInfo.email)} // Only required if invite specifies email
+                   />
+                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Wachtwoord</Label>
                   <Input
