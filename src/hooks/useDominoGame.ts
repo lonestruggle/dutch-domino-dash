@@ -259,8 +259,10 @@ export const useDominoGame = () => {
         return;
       }
 
+      let validMove: LegalMove | null = null;
+      
       const check = (value: number, flipped: boolean) => {
-        if (end.value === value) {
+        if (end.value === value && !validMove) { // Only check if we haven't found a valid move yet
           const fromCellKey = {
             N: `${end.x},${end.y + 1}`,
             S: `${end.x},${end.y - 1}`,
@@ -341,7 +343,8 @@ export const useDominoGame = () => {
             }
           }
 
-          moves.push({ 
+          // Store the valid move but don't add it yet
+          validMove = { 
             end, 
             dominoData, 
             flipped, 
@@ -349,14 +352,19 @@ export const useDominoGame = () => {
             x, 
             y, 
             fromDomino 
-          });
-
-          uniqueEnds[`${end.x},${end.y}`] = true;
+          };
         }
       };
 
+      // Try both values, but only add the first valid one
       check(dominoData.value1, false);
       check(dominoData.value2, true);
+      
+      // If we found a valid move, add it and mark the position as used
+      if (validMove) {
+        moves.push(validMove);
+        uniqueEnds[`${end.x},${end.y}`] = true;
+      }
     });
 
     return moves;
