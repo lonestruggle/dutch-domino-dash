@@ -121,87 +121,91 @@ export const useDominoGame = () => {
       const domino = state.dominoes[dominoId];
       
       if (!isDouble(domino.data)) {
-        console.log('🔍 First non-double domino detected:', domino.data, 'at', domino.x, domino.y, 'orientation:', domino.orientation);
+        console.log('🔍 First non-double domino detected:', domino.data, 'at', domino.x, domino.y, 'orientation:', domino.orientation, 'flipped:', domino.flipped);
         
-        // Get the values at each end of the domino
-        const pips = domino.flipped ? [domino.data.value2, domino.data.value1] : [domino.data.value1, domino.data.value2];
+        // Get the board positions to determine actual values
+        const leftCellKey = `${domino.x},${domino.y}`;
+        const rightCellKey = domino.orientation === 'horizontal' ? `${domino.x + 1},${domino.y}` : `${domino.x},${domino.y + 1}`;
+        
+        const leftValue = state.board[leftCellKey]?.value;
+        const rightValue = state.board[rightCellKey]?.value;
+        
+        console.log('🔍 Board values - left/top:', leftValue, 'right/bottom:', rightValue);
         
         if (domino.orientation === 'horizontal') {
-          // Horizontal domino: left cell has pips[0], right cell has pips[1]
-          // Four open ends: North and South from both cells, West from left cell, East from right cell
+          // Horizontal domino: left cell and right cell
           openEnds.push({
             x: domino.x - 1,
             y: domino.y,
-            value: pips[0], // Value from left cell
+            value: leftValue, // Value from left cell
             fromDir: 'W',
           });
           openEnds.push({
             x: domino.x + 2,
             y: domino.y,
-            value: pips[1], // Value from right cell
+            value: rightValue, // Value from right cell
             fromDir: 'E',
           });
           openEnds.push({
             x: domino.x,
             y: domino.y - 1,
-            value: pips[0], // Value from left cell
+            value: leftValue, // Value from left cell
             fromDir: 'N',
           });
           openEnds.push({
             x: domino.x + 1,
             y: domino.y - 1,
-            value: pips[1], // Value from right cell
+            value: rightValue, // Value from right cell
             fromDir: 'N',
           });
           openEnds.push({
             x: domino.x,
             y: domino.y + 1,
-            value: pips[0], // Value from left cell
+            value: leftValue, // Value from left cell
             fromDir: 'S',
           });
           openEnds.push({
             x: domino.x + 1,
             y: domino.y + 1,
-            value: pips[1], // Value from right cell
+            value: rightValue, // Value from right cell
             fromDir: 'S',
           });
         } else {
-          // Vertical domino: top cell has pips[0], bottom cell has pips[1]
-          // Four open ends: West and East from both cells, North from top cell, South from bottom cell
+          // Vertical domino: top cell and bottom cell
           openEnds.push({
             x: domino.x,
             y: domino.y - 1,
-            value: pips[0], // Value from top cell
+            value: leftValue, // Value from top cell
             fromDir: 'N',
           });
           openEnds.push({
             x: domino.x,
             y: domino.y + 2,
-            value: pips[1], // Value from bottom cell
+            value: rightValue, // Value from bottom cell
             fromDir: 'S',
           });
           openEnds.push({
             x: domino.x - 1,
             y: domino.y,
-            value: pips[0], // Value from top cell
+            value: leftValue, // Value from top cell
             fromDir: 'W',
           });
           openEnds.push({
             x: domino.x - 1,
             y: domino.y + 1,
-            value: pips[1], // Value from bottom cell
+            value: rightValue, // Value from bottom cell
             fromDir: 'W',
           });
           openEnds.push({
             x: domino.x + 1,
             y: domino.y,
-            value: pips[0], // Value from top cell
+            value: leftValue, // Value from top cell
             fromDir: 'E',
           });
           openEnds.push({
             x: domino.x + 1,
             y: domino.y + 1,
-            value: pips[1], // Value from bottom cell
+            value: rightValue, // Value from bottom cell
             fromDir: 'E',
           });
         }
