@@ -208,34 +208,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     
     const boneyard = fullSet.slice(playersCount * 7);
 
-    // Bepaal wie begint (hoogste dubbel of hoogste ogen)
+    // Het spel begint met een leeg bord - speler 1 mag beginnen
     let starterPlayerIndex = 0;
-    
-    // Zoek hoogste dubbel eerst
-    for (let i = 6; i >= 0; i--) {
-      for (let p = 0; p < playersCount; p++) {
-        const doubleIndex = playerHands[p].findIndex(d => d.value1 === i && d.value2 === i);
-        if (doubleIndex > -1) {
-          starterPlayerIndex = p;
-          break;
-        }
-      }
-      if (starterPlayerIndex !== 0) break;
-    }
-
-    // Als geen dubbel, zoek hoogste ogen som
-    if (starterPlayerIndex === 0) {
-      let highestPip = -1;
-      for (let p = 0; p < playersCount; p++) {
-        playerHands[p].forEach((d, i) => {
-          const total = d.value1 + d.value2;
-          if (total > highestPip) {
-            highestPip = total;
-            starterPlayerIndex = p;
-          }
-        });
-      }
-    }
     
     // Start met leeg bord - speler moet zelf eerste steen kiezen
     const newGameState = {
