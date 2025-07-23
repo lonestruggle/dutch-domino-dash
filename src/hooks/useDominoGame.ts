@@ -130,14 +130,20 @@ export const useDominoGame = () => {
         const [nx, ny] = neighbors[dir as keyof typeof neighbors];
         if (state.board[`${nx},${ny}`]) continue;
 
+        // Voor dubbele stenen: alleen perpendiculaire verbindingen
         if (isDouble(domino.data)) {
           const isVertical = domino.orientation === 'vertical';
-          // Non-spinner doubles only connect perpendicular to their orientation
-          if (
-            (isVertical && (dir === 'N' || dir === 'S')) ||
-            (!isVertical && (dir === 'W' || dir === 'E'))
-          ) {
-            continue;
+          // Voor non-spinner dubbels: alleen verbinden perpendiculair aan hun oriëntatie
+          // Maar voor de EERSTE domino: altijd beide richtingen toestaan
+          const isFirstDomino = Object.keys(state.dominoes).length === 1;
+          
+          if (!isFirstDomino) {
+            if (
+              (isVertical && (dir === 'N' || dir === 'S')) ||
+              (!isVertical && (dir === 'W' || dir === 'E'))
+            ) {
+              continue;
+            }
           }
         }
 
