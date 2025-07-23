@@ -373,6 +373,10 @@ export const useDominoGame = () => {
             return;
           }
 
+          console.log(`🔍 CONSTRAINT 4: Checking forbidden position ${toCellKey}`);
+          console.log(`🔍 CONSTRAINT 4: Current forbiddens:`, Object.keys(currentState.forbiddens));
+          console.log(`🔍 CONSTRAINT 4: Is ${toCellKey} forbidden?`, !!currentState.forbiddens[toCellKey]);
+
           if (currentState.forbiddens[toCellKey]) {
             console.log(`❌ CONSTRAINT 4 FAILED: Position ${toCellKey} forbidden - rejected`);
             return;
