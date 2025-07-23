@@ -113,55 +113,43 @@ export const useDominoGame = () => {
   // EXACT COPY FROM YOUR ORIGINAL CODE
   const regenerateOpenEnds = useCallback((state: GameState): OpenEnd[] => {
     const openEnds: OpenEnd[] = [];
+    const boardCoords = Object.keys(state.board);
     
     // Special case: first non-double domino should have two open ends
-    if (Object.keys(state.dominoes).length === 1) {
-      console.log('🔍 EERSTE DOMINO DETECTIE - aantal dominoes:', Object.keys(state.dominoes).length);
-      const dominoId = Object.keys(state.dominoes)[0];
-      const domino = state.dominoes[dominoId];
-      console.log('🔍 Eerste domino data:', domino);
-      console.log('🔍 domino.data:', domino.data);
-      console.log('🔍 domino.data.value1:', domino.data.value1);
-      console.log('🔍 domino.data.value2:', domino.data.value2);
-      console.log('🔍 Is double?', isDouble(domino.data));
+    if (boardCoords.length === 1) {
+      const coord = boardCoords[0];
+      const [x, y] = coord.split(',').map(Number);
+      const cell = state.board[coord];
+      const domino = state.dominoes[cell.dominoId];
       
       if (!isDouble(domino.data)) {
-        console.log('🎯 EERSTE NIET-DUBBELE DOMINO - twee open ends aanmaken');
-        const { x, y } = domino;
-        
         // First non-double domino has two open ends
         if (domino.orientation === 'horizontal') {
-          // West end (links van eerste cel) en East end (rechts van tweede cel)
-          const leftCell = state.board[`${x},${y}`];
-          const rightCell = state.board[`${x+1},${y}`];
-          
+          // East and West ends
+          openEnds.push({
+            x: x + 1,
+            y: y,
+            value: domino.flipped ? domino.data.value1 : domino.data.value2,
+            fromDir: 'E',
+          });
           openEnds.push({
             x: x - 1,
             y: y,
-            value: leftCell.value,
+            value: domino.flipped ? domino.data.value2 : domino.data.value1,
             fromDir: 'W',
           });
-          openEnds.push({
-            x: x + 2,
-            y: y,
-            value: rightCell.value,
-            fromDir: 'E',
-          });
         } else {
-          // North end (boven eerste cel) en South end (onder tweede cel)
-          const topCell = state.board[`${x},${y}`];
-          const bottomCell = state.board[`${x},${y+1}`];
-          
+          // North and South ends
           openEnds.push({
             x: x,
             y: y - 1,
-            value: topCell.value,
+            value: domino.flipped ? domino.data.value1 : domino.data.value2,
             fromDir: 'N',
           });
           openEnds.push({
             x: x,
-            y: y + 2,
-            value: bottomCell.value,
+            y: y + 1,
+            value: domino.flipped ? domino.data.value2 : domino.data.value1,
             fromDir: 'S',
           });
         }
