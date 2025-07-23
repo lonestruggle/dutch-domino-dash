@@ -115,44 +115,98 @@ export const useDominoGame = () => {
     const openEnds: OpenEnd[] = [];
     const boardCoords = Object.keys(state.board);
     
-    // Special case: first non-double domino should have two open ends
-    if (boardCoords.length === 1) {
-      const coord = boardCoords[0];
-      const [x, y] = coord.split(',').map(Number);
-      const cell = state.board[coord];
-      const domino = state.dominoes[cell.dominoId];
+    // Special case: first non-double domino should have FOUR open ends (one in each direction)
+    if (boardCoords.length === 2 && Object.keys(state.dominoes).length === 1) {
+      const dominoId = Object.keys(state.dominoes)[0];
+      const domino = state.dominoes[dominoId];
       
       if (!isDouble(domino.data)) {
-        // First non-double domino has two open ends
+        console.log('🔍 First non-double domino detected:', domino.data, 'at', domino.x, domino.y, 'orientation:', domino.orientation);
+        
+        // Get the values at each end of the domino
+        const pips = domino.flipped ? [domino.data.value2, domino.data.value1] : [domino.data.value1, domino.data.value2];
+        
         if (domino.orientation === 'horizontal') {
-          // East and West ends
+          // Horizontal domino: left cell has pips[0], right cell has pips[1]
+          // Four open ends: North and South from both cells, West from left cell, East from right cell
           openEnds.push({
-            x: x + 1,
-            y: y,
-            value: domino.flipped ? domino.data.value1 : domino.data.value2,
+            x: domino.x - 1,
+            y: domino.y,
+            value: pips[0], // Value from left cell
+            fromDir: 'W',
+          });
+          openEnds.push({
+            x: domino.x + 2,
+            y: domino.y,
+            value: pips[1], // Value from right cell
             fromDir: 'E',
           });
           openEnds.push({
-            x: x - 1,
-            y: y,
-            value: domino.flipped ? domino.data.value2 : domino.data.value1,
-            fromDir: 'W',
-          });
-        } else {
-          // North and South ends
-          openEnds.push({
-            x: x,
-            y: y - 1,
-            value: domino.flipped ? domino.data.value1 : domino.data.value2,
+            x: domino.x,
+            y: domino.y - 1,
+            value: pips[0], // Value from left cell
             fromDir: 'N',
           });
           openEnds.push({
-            x: x,
-            y: y + 1,
-            value: domino.flipped ? domino.data.value2 : domino.data.value1,
+            x: domino.x + 1,
+            y: domino.y - 1,
+            value: pips[1], // Value from right cell
+            fromDir: 'N',
+          });
+          openEnds.push({
+            x: domino.x,
+            y: domino.y + 1,
+            value: pips[0], // Value from left cell
             fromDir: 'S',
           });
+          openEnds.push({
+            x: domino.x + 1,
+            y: domino.y + 1,
+            value: pips[1], // Value from right cell
+            fromDir: 'S',
+          });
+        } else {
+          // Vertical domino: top cell has pips[0], bottom cell has pips[1]
+          // Four open ends: West and East from both cells, North from top cell, South from bottom cell
+          openEnds.push({
+            x: domino.x,
+            y: domino.y - 1,
+            value: pips[0], // Value from top cell
+            fromDir: 'N',
+          });
+          openEnds.push({
+            x: domino.x,
+            y: domino.y + 2,
+            value: pips[1], // Value from bottom cell
+            fromDir: 'S',
+          });
+          openEnds.push({
+            x: domino.x - 1,
+            y: domino.y,
+            value: pips[0], // Value from top cell
+            fromDir: 'W',
+          });
+          openEnds.push({
+            x: domino.x - 1,
+            y: domino.y + 1,
+            value: pips[1], // Value from bottom cell
+            fromDir: 'W',
+          });
+          openEnds.push({
+            x: domino.x + 1,
+            y: domino.y,
+            value: pips[0], // Value from top cell
+            fromDir: 'E',
+          });
+          openEnds.push({
+            x: domino.x + 1,
+            y: domino.y + 1,
+            value: pips[1], // Value from bottom cell
+            fromDir: 'E',
+          });
         }
+        
+        console.log('🔍 Generated', openEnds.length, 'open ends for first domino:', openEnds);
         return openEnds;
       }
     }
