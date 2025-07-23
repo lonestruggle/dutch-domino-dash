@@ -421,10 +421,7 @@ export const useDominoGame = () => {
 
       // Use the pre-calculated position and flipped values from findLegalMoves
 
-      // Voor de eerste domino: geen forbidden posities aanmaken
-      const isFirstDomino = Object.keys(prev.dominoes).length === 0;
-
-      if (isDouble(dominoData) && !isFirstDomino) {
+      if (isDouble(dominoData)) {
         if (end.fromDir === 'N' || end.fromDir === 'S') {
           if (end.fromDir === 'S') {
             prev.forbiddens[`${x + 1},${y - 1}`] = true;
@@ -444,7 +441,7 @@ export const useDominoGame = () => {
             prev.forbiddens[`${x + 1},${y - 1}`] = true;
           }
         }
-      } else if (!isFirstDomino) {
+      } else {
         let dir = end.fromDir;
         if (dir === 'N') {
           prev.forbiddens[`${x - 1},${y + 2}`] = true;
