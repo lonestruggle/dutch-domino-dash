@@ -361,29 +361,29 @@ export const useDominoGame = () => {
           console.log(`🔍 Dominoes - from: ${!!fromDomino}, to: ${!!toDomino}, forward: ${!!toDominoForward}`);
 
           if (!fromDomino) {
-            console.log(`❌ No fromDomino - rejected`);
+            console.log(`❌ CONSTRAINT 1 FAILED: No fromDomino at ${fromCellKey} - rejected`);
             return;
           }
           if (toDomino) {
-            console.log(`❌ toDomino exists - rejected`);
+            console.log(`❌ CONSTRAINT 2 FAILED: toDomino exists at ${toCellKey} - rejected`);
             return;
           }
           if (toDominoForward) {
-            console.log(`❌ toDominoForward exists - rejected`);
+            console.log(`❌ CONSTRAINT 3 FAILED: toDominoForward exists at ${toCellKeyForward} - rejected`);
             return;
           }
 
           if (currentState.forbiddens[toCellKey]) {
-            console.log(`❌ Position forbidden - rejected`);
+            console.log(`❌ CONSTRAINT 4 FAILED: Position ${toCellKey} forbidden - rejected`);
             return;
           }
 
-          console.log(`🔍 Checking hasDifferentNeighbor for (${end.x}, ${end.y})`);
+          console.log(`🔍 CONSTRAINT 5: Checking hasDifferentNeighbor for (${end.x}, ${end.y})`);
           const hasDiffNeighbor = hasDifferentNeighbor(end.x, end.y);
-          console.log(`🔍 hasDifferentNeighbor result:`, hasDiffNeighbor);
+          console.log(`🔍 CONSTRAINT 5 result:`, hasDiffNeighbor);
 
           if (hasDiffNeighbor) {
-            console.log(`❌ Has different neighbor - rejected`);
+            console.log(`❌ CONSTRAINT 5 FAILED: Has different neighbor at (${end.x}, ${end.y}) - rejected`);
             return;
           }
 
