@@ -115,105 +115,44 @@ export const useDominoGame = () => {
     const openEnds: OpenEnd[] = [];
     const boardCoords = Object.keys(state.board);
     
-    // Special case: first non-double domino should have FOUR open ends (one in each direction)
-    if (boardCoords.length === 2 && Object.keys(state.dominoes).length === 1) {
-      const dominoId = Object.keys(state.dominoes)[0];
-      const domino = state.dominoes[dominoId];
+    // Special case: first non-double domino should have two open ends
+    if (boardCoords.length === 1) {
+      const coord = boardCoords[0];
+      const [x, y] = coord.split(',').map(Number);
+      const cell = state.board[coord];
+      const domino = state.dominoes[cell.dominoId];
       
       if (!isDouble(domino.data)) {
-        console.log('🔍 First non-double domino detected:', domino.data, 'at', domino.x, domino.y, 'orientation:', domino.orientation, 'flipped:', domino.flipped);
-        console.log('🔍 BOARD STATE DEBUG:', state.board);
-        console.log('🔍 DOMINOES STATE DEBUG:', state.dominoes);
-        
-        // Get the board positions to determine actual values
-        const leftCellKey = `${domino.x},${domino.y}`;
-        const rightCellKey = domino.orientation === 'horizontal' ? `${domino.x + 1},${domino.y}` : `${domino.x},${domino.y + 1}`;
-        
-        const leftValue = state.board[leftCellKey]?.value;
-        const rightValue = state.board[rightCellKey]?.value;
-        
-        console.log('🔍 Board keys - left:', leftCellKey, 'right:', rightCellKey);
-        console.log('🔍 Board values - left/top:', leftValue, 'right/bottom:', rightValue);
-        
+        // First non-double domino has two open ends
         if (domino.orientation === 'horizontal') {
-          // Horizontal domino: left cell and right cell
+          // East and West ends
           openEnds.push({
-            x: domino.x - 1,
-            y: domino.y,
-            value: leftValue, // Value from left cell
-            fromDir: 'W',
-          });
-          openEnds.push({
-            x: domino.x + 2,
-            y: domino.y,
-            value: rightValue, // Value from right cell
+            x: x + 1,
+            y: y,
+            value: domino.flipped ? domino.data.value1 : domino.data.value2,
             fromDir: 'E',
           });
           openEnds.push({
-            x: domino.x,
-            y: domino.y - 1,
-            value: leftValue, // Value from left cell
-            fromDir: 'N',
-          });
-          openEnds.push({
-            x: domino.x + 1,
-            y: domino.y - 1,
-            value: rightValue, // Value from right cell
-            fromDir: 'N',
-          });
-          openEnds.push({
-            x: domino.x,
-            y: domino.y + 1,
-            value: leftValue, // Value from left cell
-            fromDir: 'S',
-          });
-          openEnds.push({
-            x: domino.x + 1,
-            y: domino.y + 1,
-            value: rightValue, // Value from right cell
-            fromDir: 'S',
+            x: x - 1,
+            y: y,
+            value: domino.flipped ? domino.data.value2 : domino.data.value1,
+            fromDir: 'W',
           });
         } else {
-          // Vertical domino: top cell and bottom cell
+          // North and South ends
           openEnds.push({
-            x: domino.x,
-            y: domino.y - 1,
-            value: leftValue, // Value from top cell
+            x: x,
+            y: y - 1,
+            value: domino.flipped ? domino.data.value1 : domino.data.value2,
             fromDir: 'N',
           });
           openEnds.push({
-            x: domino.x,
-            y: domino.y + 2,
-            value: rightValue, // Value from bottom cell
+            x: x,
+            y: y + 1,
+            value: domino.flipped ? domino.data.value2 : domino.data.value1,
             fromDir: 'S',
           });
-          openEnds.push({
-            x: domino.x - 1,
-            y: domino.y,
-            value: leftValue, // Value from top cell
-            fromDir: 'W',
-          });
-          openEnds.push({
-            x: domino.x - 1,
-            y: domino.y + 1,
-            value: rightValue, // Value from bottom cell
-            fromDir: 'W',
-          });
-          openEnds.push({
-            x: domino.x + 1,
-            y: domino.y,
-            value: leftValue, // Value from top cell
-            fromDir: 'E',
-          });
-          openEnds.push({
-            x: domino.x + 1,
-            y: domino.y + 1,
-            value: rightValue, // Value from bottom cell
-            fromDir: 'E',
-          });
         }
-        
-        console.log('🔍 Generated', openEnds.length, 'open ends for first domino:', openEnds);
         return openEnds;
       }
     }
@@ -290,11 +229,8 @@ export const useDominoGame = () => {
 
   // EXACT COPY FROM YOUR ORIGINAL CODE
   const findLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
-    console.log('🔍 FIND LEGAL MOVES called for domino:', dominoData);
-    console.log('🔍 Current playerHand:', gameStateRef.current.playerHand);
     const moves: LegalMove[] = [];
     const selectedIsDouble = isDouble(dominoData);
-    console.log('🔍 Is this domino a double?', selectedIsDouble);
     const uniqueEnds: Record<string, boolean> = {};
     const currentState = gameStateRef.current;
     
@@ -317,21 +253,14 @@ export const useDominoGame = () => {
     }
     
     const openEnds = regenerateOpenEnds(currentState);
-    console.log('🔍 LEGAL MOVES DEBUG - Open ends:', openEnds);
-    console.log('🔍 LEGAL MOVES DEBUG - Domino data:', dominoData);
 
     openEnds.forEach((end) => {
       if (uniqueEnds[`${end.x},${end.y}`]) {
-        console.log('❌ Skipping duplicate end at:', end.x, end.y);
         return;
       }
 
       const check = (value: number, flipped: boolean) => {
-        console.log(`🔍 Checking end at (${end.x}, ${end.y}) with value ${end.value} against domino value ${value}, flipped: ${flipped}`);
-        
         if (end.value === value) {
-          console.log(`✅ Value match! Checking placement constraints...`);
-          
           const fromCellKey = {
             N: `${end.x},${end.y + 1}`,
             S: `${end.x},${end.y - 1}`,
@@ -357,37 +286,21 @@ export const useDominoGame = () => {
           const toDominoForward = currentState.dominoes[currentState.board[toCellKeyForward]?.dominoId];
           const fromDomino = currentState.dominoes[currentState.board[fromCellKey]?.dominoId];
 
-          console.log(`🔍 Keys - from: ${fromCellKey}, to: ${toCellKey}, forward: ${toCellKeyForward}`);
-          console.log(`🔍 Dominoes - from: ${!!fromDomino}, to: ${!!toDomino}, forward: ${!!toDominoForward}`);
-
           if (!fromDomino) {
-            console.log(`❌ CONSTRAINT 1 FAILED: No fromDomino at ${fromCellKey} - rejected`);
             return;
           }
           if (toDomino) {
-            console.log(`❌ CONSTRAINT 2 FAILED: toDomino exists at ${toCellKey} - rejected`);
             return;
           }
           if (toDominoForward) {
-            console.log(`❌ CONSTRAINT 3 FAILED: toDominoForward exists at ${toCellKeyForward} - rejected`);
             return;
           }
-
-          console.log(`🔍 CONSTRAINT 4: Checking forbidden position ${toCellKey}`);
-          console.log(`🔍 CONSTRAINT 4: Current forbiddens:`, Object.keys(currentState.forbiddens));
-          console.log(`🔍 CONSTRAINT 4: Is ${toCellKey} forbidden?`, !!currentState.forbiddens[toCellKey]);
 
           if (currentState.forbiddens[toCellKey]) {
-            console.log(`❌ CONSTRAINT 4 FAILED: Position ${toCellKey} forbidden - rejected`);
             return;
           }
 
-          console.log(`🔍 CONSTRAINT 5: Checking hasDifferentNeighbor for (${end.x}, ${end.y})`);
-          const hasDiffNeighbor = hasDifferentNeighbor(end.x, end.y);
-          console.log(`🔍 CONSTRAINT 5 result:`, hasDiffNeighbor);
-
-          if (hasDiffNeighbor) {
-            console.log(`❌ CONSTRAINT 5 FAILED: Has different neighbor at (${end.x}, ${end.y}) - rejected`);
+          if (hasDifferentNeighbor(end.x, end.y)) {
             return;
           }
 
@@ -396,17 +309,14 @@ export const useDominoGame = () => {
           if (fromDomino.isSpinner && fromDomino) {
             // Parallel Moves from double items are forbidden.
             if (moves.find(x => x.end.fromDir === end.fromDir && x.fromDomino === fromDomino)) {
-              console.log(`❌ Parallel move from spinner - rejected`);
               return;
             }
           }
 
           if (selectedIsDouble && fromDomino.orientation === 'horizontal' && (end.fromDir === 'N' || end.fromDir === 'S')) {
-            console.log(`❌ Double constraint H/NS - rejected`);
             return;
           }
           if (selectedIsDouble && fromDomino.orientation === 'vertical' && (end.fromDir === 'E' || end.fromDir === 'W')) {
-            console.log(`❌ Double constraint V/EW - rejected`);
             return;
           }
 
@@ -431,8 +341,6 @@ export const useDominoGame = () => {
             }
           }
 
-          console.log(`✅ MOVE ACCEPTED! Final position: (${x}, ${y}), orientation: ${finalOrientation}, flipped: ${flipped}`);
-
           moves.push({ 
             end, 
             dominoData, 
@@ -444,8 +352,6 @@ export const useDominoGame = () => {
           });
 
           uniqueEnds[`${end.x},${end.y}`] = true;
-        } else {
-          console.log(`❌ Value mismatch: ${end.value} !== ${value}`);
         }
       };
 
@@ -537,39 +443,33 @@ export const useDominoGame = () => {
         }
       } else {
         let dir = end.fromDir;
-        
-        // ✅ CRITICAL FIX: Voor de eerste domino geen forbidden posities zetten!
-        const isFirstDomino = Object.keys(prev.dominoes).length === 0;
-        
-        if (!isFirstDomino) {
-          if (dir === 'N') {
-            prev.forbiddens[`${x - 1},${y + 2}`] = true;
-            prev.forbiddens[`${x + 1},${y + 2}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x},${y + 3}`] = true;
-          }
-          if (dir === 'S') {
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y}`] = true;
-            prev.forbiddens[`${x + 1},${y}`] = true;
-            prev.forbiddens[`${x},${y - 2}`] = true;
-          }
-          if (dir === 'W') {
-            prev.forbiddens[`${x + 2},${y + 1}`] = true;
-            prev.forbiddens[`${x + 2},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            if (`${x + 3},${y}` !== '1,0') prev.forbiddens[`${x + 3},${y}`] = true;
-          }
-          if (dir === 'E') {
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x},${y - 1}`] = true;
-            prev.forbiddens[`${x},${y + 1}`] = true;
-            if (`${x - 2},${y}` !== '-1,0') prev.forbiddens[`${x - 2},${y}`] = true;
-          }
+        if (dir === 'N') {
+          prev.forbiddens[`${x - 1},${y + 2}`] = true;
+          prev.forbiddens[`${x + 1},${y + 2}`] = true;
+          prev.forbiddens[`${x - 1},${y + 1}`] = true;
+          prev.forbiddens[`${x + 1},${y + 1}`] = true;
+          prev.forbiddens[`${x},${y + 3}`] = true;
+        }
+        if (dir === 'S') {
+          prev.forbiddens[`${x - 1},${y - 1}`] = true;
+          prev.forbiddens[`${x + 1},${y - 1}`] = true;
+          prev.forbiddens[`${x - 1},${y}`] = true;
+          prev.forbiddens[`${x + 1},${y}`] = true;
+          prev.forbiddens[`${x},${y - 2}`] = true;
+        }
+        if (dir === 'W') {
+          prev.forbiddens[`${x + 2},${y + 1}`] = true;
+          prev.forbiddens[`${x + 2},${y - 1}`] = true;
+          prev.forbiddens[`${x + 1},${y + 1}`] = true;
+          prev.forbiddens[`${x + 1},${y - 1}`] = true;
+          if (`${x + 3},${y}` !== '1,0') prev.forbiddens[`${x + 3},${y}`] = true;
+        }
+        if (dir === 'E') {
+          prev.forbiddens[`${x - 1},${y - 1}`] = true;
+          prev.forbiddens[`${x - 1},${y + 1}`] = true;
+          prev.forbiddens[`${x},${y - 1}`] = true;
+          prev.forbiddens[`${x},${y + 1}`] = true;
+          if (`${x - 2},${y}` !== '-1,0') prev.forbiddens[`${x - 2},${y}`] = true;
         }
       }
 

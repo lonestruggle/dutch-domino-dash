@@ -63,11 +63,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   
   if (isMyTurn && gameState?.playerHand && gameState.playerHand.length > 0) {
     console.log('🔍 Checking pass conditions for player...');
-    console.log('🔍 Player hand in DominoGame:', gameState.playerHand);
     
     // Check if any domino in hand has legal moves
     for (const domino of gameState.playerHand) {
-      console.log(`🔍 Testing domino ${domino.value1}|${domino.value2} for legal moves...`);
       const moves = findLegalMoves(domino);
       console.log(`🔍 Domino ${domino.value1}|${domino.value2}: ${moves.length} moves`);
       if (moves.length > 0) {
