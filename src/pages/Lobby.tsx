@@ -119,75 +119,28 @@ export default function Lobby() {
     
     const boneyard = fullSet.slice(playersCount * 7);
 
-    // Find starter domino (highest double or highest pip sum)
+    // Het spel begint met een leeg bord - zoek eerste menselijke speler
     let starterPlayerIndex = 0;
-    let starterDominoIndex = -1;
-    let starterDomino = null;
     
-    // Look for highest double first
-    for (let i = 6; i >= 0; i--) {
-      for (let p = 0; p < playersCount; p++) {
-        const doubleIndex = playerHands[p].findIndex(d => d.value1 === i && d.value2 === i);
-        if (doubleIndex > -1) {
-          starterPlayerIndex = p;
-          starterDominoIndex = doubleIndex;
-          starterDomino = playerHands[p][doubleIndex];
-          break;
-        }
-      }
-      if (starterDomino) break;
-    }
-
-    // If no double, find highest pip sum
-    if (!starterDomino) {
-      let highestPip = -1;
-      for (let p = 0; p < playersCount; p++) {
-        playerHands[p].forEach((d, i) => {
-          const total = d.value1 + d.value2;
-          if (total > highestPip) {
-            highestPip = total;
-            starterPlayerIndex = p;
-            starterDominoIndex = i;
-            starterDomino = d;
-          }
-        });
+    // Zoek de eerste menselijke speler (geen bot)
+    for (let i = 0; i < playersCount; i++) {
+      const player = lobby.players[i];
+      if (!player.is_bot) {
+        starterPlayerIndex = i;
+        break;
       }
     }
 
-    // Remove starter domino from player's hand
-    if (starterDomino && starterDominoIndex > -1) {
-      playerHands[starterPlayerIndex].splice(starterDominoIndex, 1);
-    }
-
-    // Create initial game state with starter domino placed
-    const isDouble = starterDomino?.value1 === starterDomino?.value2;
-    const starterId = 'd0';
-    const orientation = isDouble ? 'vertical' : 'horizontal';
-    
+    // Create initial game state met LEEG bord
     const initialGameState = {
-      dominoes: {
-        [starterId]: {
-          data: starterDomino,
-          x: 0,
-          y: 0,
-          orientation,
-          flipped: false,
-          isSpinner: isDouble,
-        }
-      },
-      board: isDouble ? {
-        '0,0': { dominoId: starterId, value: starterDomino.value1 },
-        '0,1': { dominoId: starterId, value: starterDomino.value2 }
-      } : {
-        '0,0': { dominoId: starterId, value: starterDomino.value1 },
-        '1,0': { dominoId: starterId, value: starterDomino.value2 }
-      },
+      dominoes: {}, // VOLLEDIG LEEG
+      board: {}, // VOLLEDIG LEEG
       playerHands,
       boneyard,
-      openEnds: [],
+      openEnds: [], // GEEN OPEN ENDS
       forbiddens: {},
-      nextDominoId: 1,
-      spinnerId: isDouble ? starterId : null,
+      nextDominoId: 0, // Start bij 0
+      spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
       currentPlayer: starterPlayerIndex
