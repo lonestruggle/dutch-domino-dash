@@ -7,7 +7,7 @@ interface SyncedGameState {
   isLoading: boolean;
   isHost: boolean;
   playerPosition: number;
-  allPlayers: Array<{ username: string; position: number }>;
+  allPlayers: Array<{ username: string; position: number; is_bot: boolean }>;
   gameState: GameState | null;
   currentPlayer: number;
 }
@@ -85,7 +85,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
 
       const allPlayers = allPlayersData?.map(p => ({
         username: p.username || 'Unknown',
-        position: p.player_position
+        position: p.player_position,
+        is_bot: p.is_bot || false
       })) || [];
 
       // Extract player's hand from game state
@@ -208,8 +209,17 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     
     const boneyard = fullSet.slice(playersCount * 7);
 
-    // Het spel begint met een leeg bord - speler 1 mag beginnen
+    // Het spel begint met een leeg bord - zoek eerste menselijke speler
     let starterPlayerIndex = 0;
+    
+    // Zoek de eerste menselijke speler (geen bot)
+    for (let i = 0; i < playersCount; i++) {
+      const player = syncState.allPlayers[i];
+      if (!player.is_bot) {
+        starterPlayerIndex = i;
+        break;
+      }
+    }
     
     // Start met leeg bord - speler moet zelf eerste steen kiezen
     const newGameState = {
