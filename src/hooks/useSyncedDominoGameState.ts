@@ -221,22 +221,34 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
       }
     }
     
-    // Start met leeg bord - speler moet zelf eerste steen kiezen
+    // Start met VOLLEDIG leeg bord - FORCE RESET
     const newGameState = {
-      dominoes: {},
-      board: {},
+      dominoes: {}, // VOLLEDIG LEEG
+      board: {}, // VOLLEDIG LEEG  
       playerHands,
       boneyard,
-      openEnds: [],
+      openEnds: [], // GEEN OPEN ENDS
       forbiddens: {},
-      nextDominoId: 0,
+      nextDominoId: 0, // Start bij 0
       spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
       playerHand: playerHands[syncState.playerPosition] || []
     };
 
+    console.log('🔥 FORCING EMPTY BOARD - startNewGame:', {
+      dominoes: Object.keys(newGameState.dominoes),
+      board: Object.keys(newGameState.board),
+      openEnds: newGameState.openEnds.length,
+      starterPlayer: starterPlayerIndex
+    });
+
     await updateGameState(newGameState, starterPlayerIndex);
+    
+    // FORCE herlaad van de game state na het opslaan
+    setTimeout(() => {
+      loadGameState();
+    }, 500);
   }, [gameId, syncState.isHost, syncState.allPlayers, syncState.playerPosition, updateGameState]);
 
   // Load initial game state and listen for updates
