@@ -687,9 +687,9 @@ export default function Game() {
   // BOTS DISABLED TEMPORARILY
   console.log('🤖 Bots zijn tijdelijk uitgeschakeld');
 
-  // Manual blocked game check
+  // Manual blocked game check - NEW LOGIC: Check if all dominoes of open end values are on table
   const manualBlockedCheck = useCallback(async () => {
-    if (!syncedGameHook.syncState.gameState || !dominoGameHook.findLegalMoves) {
+    if (!syncedGameHook.syncState.gameState) {
       toast({
         title: "Error",
         description: "Game state not ready",
@@ -698,58 +698,84 @@ export default function Game() {
       return;
     }
 
-    console.log('🔧 MANUAL BLOCKED CHECK - Starting comprehensive analysis');
+    console.log('🔧 MANUAL BLOCKED CHECK - Checking table-based blocking');
     
     const gameState = syncedGameHook.syncState.gameState;
     const allPlayers = syncedGameHook.syncState.allPlayers;
     const openEnds = gameState.openEnds || [];
     const boneyard = gameState.boneyard || [];
+    const placedDominoes = Object.values(gameState.dominoes || {});
     
-    // Check ALL players for any possible moves
-    let allPlayersBlocked = true;
-    let playersStatus = [];
+    console.log('🔧 Open ends:', openEnds.map(end => `${end.value} at ${end.x},${end.y}`));
+    console.log('🔧 Boneyard size:', boneyard.length);
     
-    for (let playerIndex = 0; playerIndex < allPlayers.length; playerIndex++) {
-      const playerHand = (gameState as any).playerHands?.[playerIndex] || [];
-      let playerCanPlay = false;
-      let moveCount = 0;
-      
-      for (const domino of playerHand) {
-        const legalMoves = dominoGameHook.findLegalMoves(domino);
-        moveCount += legalMoves.length;
-        if (legalMoves.length > 0) {
-          playerCanPlay = true;
+    // If boneyard is not empty, game cannot be blocked
+    if (boneyard.length > 0) {
+      toast({
+        title: "Spel Analyse",
+        description: `Boneyard heeft nog ${boneyard.length} stenen - spel niet geblokkeerd`,
+        variant: "default"
+      });
+      return;
+    }
+    
+    // Get unique values from open ends
+    const openEndValues = [...new Set(openEnds.map(end => end.value))];
+    console.log('🔧 Unique open end values:', openEndValues);
+    
+    // For each open end value, check if all dominoes containing that value are on the table
+    let gameIsBlocked = false;
+    
+    for (const value of openEndValues) {
+      // Generate all possible dominoes containing this value (0-6 for standard domino set)
+      const allDominoesWithValue = [];
+      for (let i = 0; i <= 6; i++) {
+        if (i <= value) {
+          allDominoesWithValue.push({ value1: i, value2: value });
+        } else {
+          allDominoesWithValue.push({ value1: value, value2: i });
         }
       }
       
-      playersStatus.push({
-        player: playerIndex,
-        name: allPlayers[playerIndex]?.username || `Player ${playerIndex}`,
-        canPlay: playerCanPlay,
-        handSize: playerHand.length,
-        totalMoves: moveCount
+      console.log(`🔧 All possible dominoes with value ${value}:`, allDominoesWithValue);
+      
+      // Check if all these dominoes are on the table
+      const allOnTable = allDominoesWithValue.every(neededDomino => {
+        return placedDominoes.some(placedDomino => 
+          (placedDomino.data.value1 === neededDomino.value1 && placedDomino.data.value2 === neededDomino.value2) ||
+          (placedDomino.data.value1 === neededDomino.value2 && placedDomino.data.value2 === neededDomino.value1)
+        );
       });
       
-      if (playerCanPlay) {
-        allPlayersBlocked = false;
+      console.log(`🔧 All dominoes with value ${value} on table:`, allOnTable);
+      
+      if (allOnTable) {
+        console.log(`🛑 BLOCKED: All dominoes with value ${value} are on table and it's an open end!`);
+        gameIsBlocked = true;
+        break;
       }
     }
     
-    console.log('🔧 Manual check - Players status:', playersStatus);
-    console.log('🔧 Manual check - Boneyard empty:', boneyard.length === 0);
-    console.log('🔧 Manual check - All players blocked:', allPlayersBlocked);
-    
-    if (allPlayersBlocked && boneyard.length === 0) {
-      console.log('🛑 MANUAL CHECK: Game is blocked - ending game');
+    if (gameIsBlocked) {
+      console.log('🛑 GAME IS BLOCKED - ending game');
       
       // Find winner by lowest hand count, then lowest sum
       let winner = 0;
-      let lowestCount = playersStatus[0].handSize;
-      let lowestSum = ((gameState as any).playerHands?.[0] || []).reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
+      let lowestCount = Infinity;
+      let lowestSum = Infinity;
+      let playersInfo = [];
       
-      for (let i = 1; i < playersStatus.length; i++) {
-        const handCount = playersStatus[i].handSize;
-        const handSum = ((gameState as any).playerHands?.[i] || []).reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
+      for (let i = 0; i < allPlayers.length; i++) {
+        const playerHand = (gameState as any).playerHands?.[i] || [];
+        const handCount = playerHand.length;
+        const handSum = playerHand.reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
+        
+        playersInfo.push({
+          player: i,
+          name: allPlayers[i]?.username || `Player ${i}`,
+          handSize: handCount,
+          handSum: handSum
+        });
         
         if (handCount < lowestCount || (handCount === lowestCount && handSum < lowestSum)) {
           winner = i;
@@ -758,7 +784,8 @@ export default function Game() {
         }
       }
       
-      const winnerName = playersStatus[winner].name;
+      console.log('🏆 Players final scores:', playersInfo);
+      const winnerName = playersInfo[winner].name;
       
       const newGameState = {
         ...gameState,
@@ -770,17 +797,17 @@ export default function Game() {
       
       toast({
         title: "Spel Geblokkeerd! 🛑",
-        description: `Alle spelers vastgelopen. Winnaar: ${winnerName} (${lowestCount} stenen)`,
+        description: `Alle stenen van open eind waarden liggen op tafel. Winnaar: ${winnerName} (${lowestCount} stenen, ${lowestSum} punten)`,
         variant: "default"
       });
     } else {
       toast({
         title: "Spel Analyse",
-        description: `Boneyard: ${boneyard.length} stenen. Spelers die kunnen spelen: ${playersStatus.filter(p => p.canPlay).length}`,
+        description: `Spel niet geblokkeerd - niet alle stenen van open eind waarden liggen op tafel`,
         variant: "default"
       });
     }
-  }, [syncedGameHook, dominoGameHook, toast]);
+  }, [syncedGameHook, toast]);
 
   // Create combined hook for DominoGame component
   const combinedGameHook = {
