@@ -45,13 +45,19 @@ serve(async (req) => {
       }
     });
 
-    console.log('Attempting to sign out user sessions...');
+    console.log('Attempting to invalidate user sessions by updating user...');
 
-    // Sign out all sessions for the user
-    const { error } = await supabaseAdmin.auth.admin.signOut(userId, 'global');
+    // Force logout by updating the user (this invalidates all sessions)
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      // Adding a timestamp to user metadata forces session refresh
+      user_metadata: {
+        force_logout_at: new Date().toISOString(),
+        admin_action: 'forced_logout'
+      }
+    });
 
     if (error) {
-      console.error('Error signing out user:', error);
+      console.error('Error updating user for logout:', error);
       return new Response(
         JSON.stringify({ error: 'Kon gebruiker niet uitloggen: ' + error.message }), 
         { 
