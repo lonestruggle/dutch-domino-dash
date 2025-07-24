@@ -540,6 +540,12 @@ const AdminDashboard = () => {
     }
 
     try {
+      console.log('Attempting password reset for:', {
+        userId: passwordResetUser.user_id,
+        username: passwordResetUser.username,
+        passwordLength: newPassword.length
+      });
+
       const { data, error } = await supabase.functions.invoke('reset-user-password', {
         body: {
           userId: passwordResetUser.user_id,
@@ -547,6 +553,8 @@ const AdminDashboard = () => {
           adminId: user!.id
         }
       });
+
+      console.log('Password reset response:', { data, error });
 
       if (error) {
         console.error('Error resetting password:', error);
@@ -558,9 +566,21 @@ const AdminDashboard = () => {
         return;
       }
 
+      if (data?.error) {
+        console.error('Function returned error:', data.error);
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Password reset successful:', data);
+      
       toast({
         title: "Succes",
-        description: `Wachtwoord succesvol gereset voor ${passwordResetUser.username}`,
+        description: `Wachtwoord succesvol gereset voor ${passwordResetUser.username}. Gebruiker kan nu inloggen met het nieuwe wachtwoord.`,
       });
 
       // Reset form

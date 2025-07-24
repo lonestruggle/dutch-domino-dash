@@ -68,9 +68,12 @@ serve(async (req) => {
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: newPassword,
       email_confirm: true,  // Force confirm the password change
+      phone_confirm: true,  // Also confirm phone if present
       user_metadata: {
         display_name: profileData?.username || 'User'
-      }
+      },
+      // Force password change to be immediately active
+      password_confirm: true
     });
 
     if (error) {
