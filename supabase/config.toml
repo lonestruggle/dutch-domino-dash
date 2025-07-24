@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.reset-user-password]
 verify_jwt = true
+
+[functions.sync-display-names]
+verify_jwt = true

@@ -383,6 +383,13 @@ export type Database = {
         Args: { _username: string }
         Returns: string
       }
+      get_users_without_display_name: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          username: string
+        }[]
+      }
       has_role: {
         Args: {
           _user_id: string

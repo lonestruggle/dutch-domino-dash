@@ -578,6 +578,35 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSyncDisplayNames = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-display-names');
+
+      if (error) {
+        console.error('Error syncing display names:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Kon display names niet syncen",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Succes",
+        description: data.message || "Display names succesvol gesynced",
+      });
+
+    } catch (error) {
+      console.error('Exception syncing display names:', error);
+      toast({
+        title: "Error",
+        description: "Er is een onverwachte fout opgetreden",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleResetGameStats = async (userId: string) => {
     try {
       const { error } = await supabase
@@ -728,6 +757,32 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+            
+            {/* Admin Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Admin Acties
+                </CardTitle>
+                <CardDescription>
+                  Systeem onderhoud en configuratie
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={handleSyncDisplayNames}
+                  className="flex items-center gap-2"
+                  variant="outline"
+                >
+                  <Users className="h-4 w-4" />
+                  Sync Display Names
+                </Button>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Synchroniseert gebruikersnamen naar Supabase auth display names
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="users">
