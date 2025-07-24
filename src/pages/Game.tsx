@@ -524,116 +524,156 @@ export default function Game() {
     }
   }, [dominoGameHook, syncedGameHook, gameId, toast]);
 
-  // Blocked game detection and auto-advance logic
+  // Enhanced blocked game detection with board-based checking
   useEffect(() => {
-    if (!syncedGameHook.syncState.gameState || syncedGameHook.syncState.isLoading) return;
-    
-    const gameState = syncedGameHook.syncState.gameState;
-    const currentPlayer = gameState.currentPlayer;
-    const isMyTurn = currentPlayer === syncedGameHook.syncState.playerPosition;
-    
-    // Only check for blocked game on the current player's turn
-    if (!isMyTurn) return;
-    
-    console.log('🔍 Checking for blocked game on turn:', currentPlayer);
-    
-    // Check if current player has any legal moves
-    let hasAnyLegalMoves = false;
-    if (gameState.playerHand && gameState.playerHand.length > 0) {
-      for (const domino of gameState.playerHand) {
-        const moves = dominoGameHook.findLegalMoves(domino);
-        if (moves.length > 0) {
-          hasAnyLegalMoves = true;
-          break;
+    const checkBlockedGame = async () => {
+      if (!syncedGameHook.syncState.gameState || syncedGameHook.syncState.isLoading) return;
+      
+      const gameState = syncedGameHook.syncState.gameState;
+      const currentPlayer = gameState.currentPlayer;
+      const isMyTurn = currentPlayer === syncedGameHook.syncState.playerPosition;
+      
+      // Only check for blocked game on the current player's turn
+      if (!isMyTurn) return;
+      
+      console.log('🔍 ENHANCED Checking for blocked game on turn:', currentPlayer);
+      
+      // Enhanced check: validate actual board state for blocked condition
+      const openEnds = gameState.openEnds || [];
+      const boneyardEmpty = !gameState.boneyard?.length || gameState.boneyard.length === 0;
+      
+      console.log('🔍 Enhanced blocked check - Open ends:', openEnds.map(end => `${end.value} at ${end.x},${end.y}`));
+      console.log('🔍 Enhanced blocked check - Boneyard empty:', boneyardEmpty);
+      
+      // Check if current player has any matching dominoes
+      let currentPlayerCanPlay = false;
+      if (gameState.playerHand && gameState.playerHand.length > 0) {
+        for (const domino of gameState.playerHand) {
+          // Check if domino has any value that matches open ends
+          for (const end of openEnds) {
+            if (domino.value1 === end.value || domino.value2 === end.value) {
+              const moves = dominoGameHook.findLegalMoves(domino);
+              console.log(`🔍 Domino ${domino.value1}|${domino.value2} matches end ${end.value}: ${moves.length} moves`);
+              if (moves.length > 0) {
+                currentPlayerCanPlay = true;
+                break;
+              }
+            }
+          }
+          if (currentPlayerCanPlay) break;
         }
       }
-    }
-    
-    const boneyardEmpty = !gameState.boneyard?.length || gameState.boneyard.length === 0;
-    const isBlocked = !hasAnyLegalMoves && boneyardEmpty;
-    
-    console.log('🔍 Blocked game check:', {
-      currentPlayer,
-      isMyTurn,
-      hasAnyLegalMoves,
-      boneyardEmpty,
-      isBlocked,
-      handSize: gameState.playerHand?.length || 0
-    });
-    
-    if (isBlocked) {
-      console.log('🚫 Player is blocked, checking if all players are blocked...');
       
-      // Check if ALL players are blocked
-      let allPlayersBlocked = true;
-      for (let playerIndex = 0; playerIndex < syncedGameHook.syncState.allPlayers.length; playerIndex++) {
-        const playerHand = (gameState as any).playerHands?.[playerIndex] || [];
+      const isCurrentPlayerBlocked = !currentPlayerCanPlay && boneyardEmpty;
+      
+      console.log('🔍 Enhanced blocked game check:', {
+        currentPlayer,
+        isMyTurn,
+        openEndsCount: openEnds.length,
+        boneyardEmpty,
+        currentPlayerCanPlay,
+        isCurrentPlayerBlocked,
+        handSize: gameState.playerHand?.length || 0
+      });
+      
+      // If current player can't play and boneyard is empty
+      if (isCurrentPlayerBlocked) {
+        console.log('🚫 Game appears blocked, performing comprehensive check...');
         
-        let playerHasLegalMoves = false;
-        for (const domino of playerHand) {
-          const moves = dominoGameHook.findLegalMoves(domino);
-          if (moves.length > 0) {
-            playerHasLegalMoves = true;
-            break;
+        // Check ALL players comprehensively
+        let allPlayersBlocked = true;
+        let playersStatus = [];
+        
+        for (let playerIndex = 0; playerIndex < syncedGameHook.syncState.allPlayers.length; playerIndex++) {
+          const playerHand = (gameState as any).playerHands?.[playerIndex] || [];
+          let playerCanPlay = false;
+          
+          // Check if this player has any domino that can be played
+          for (const domino of playerHand) {
+            for (const end of openEnds) {
+              if (domino.value1 === end.value || domino.value2 === end.value) {
+                const moves = dominoGameHook.findLegalMoves(domino);
+                if (moves.length > 0) {
+                  playerCanPlay = true;
+                  break;
+                }
+              }
+            }
+            if (playerCanPlay) break;
+          }
+          
+          playersStatus.push({
+            player: playerIndex,
+            name: syncedGameHook.syncState.allPlayers[playerIndex]?.username,
+            canPlay: playerCanPlay,
+            handSize: playerHand.length
+          });
+          
+          if (playerCanPlay) {
+            allPlayersBlocked = false;
           }
         }
         
-        if (playerHasLegalMoves) {
-          allPlayersBlocked = false;
-          break;
-        }
-      }
-      
-      console.log('🔍 All players blocked check:', allPlayersBlocked);
-      
-      if (allPlayersBlocked) {
-        console.log('🛑 ALL PLAYERS BLOCKED - ENDING GAME');
+        console.log('🔍 All players status:', playersStatus);
+        console.log('🔍 All players blocked:', allPlayersBlocked);
         
-        // End the game - declare winner based on who has fewest dominoes
-        let winnerPosition = 0;
-        let fewestDominoes = (gameState as any).playerHands?.[0]?.length || 0;
-        
-        for (let i = 1; i < syncedGameHook.syncState.allPlayers.length; i++) {
-          const handSize = (gameState as any).playerHands?.[i]?.length || 0;
-          if (handSize < fewestDominoes) {
-            fewestDominoes = handSize;
-            winnerPosition = i;
+        if (allPlayersBlocked) {
+          console.log('🛑 ALL PLAYERS BLOCKED - ENDING GAME');
+          
+          // End the game - declare winner based on who has fewest dominoes
+          let winnerPosition = 0;
+          let fewestDominoes = (gameState as any).playerHands?.[0]?.length || 100;
+          
+          for (let i = 0; i < syncedGameHook.syncState.allPlayers.length; i++) {
+            const handSize = (gameState as any).playerHands?.[i]?.length || 100;
+            if (handSize < fewestDominoes) {
+              fewestDominoes = handSize;
+              winnerPosition = i;
+            }
           }
+          
+          const winnerName = syncedGameHook.syncState.allPlayers[winnerPosition]?.username || 'Unknown';
+          
+          const newGameState = {
+            ...gameState,
+            isGameOver: true,
+            winner: winnerPosition
+          };
+          
+          console.log('🏆 Game ending - Winner:', winnerName, 'with', fewestDominoes, 'dominoes');
+          
+          await syncedGameHook.updateGameState(newGameState, currentPlayer);
+          
+          toast({
+            title: "Spel Geblokkeerd! 🛑",
+            description: `Alle spelers zitten vast. Winnaar: ${winnerName} (${fewestDominoes} stenen)`,
+            variant: "default"
+          });
+        } else if (isCurrentPlayerBlocked) {
+          console.log('⏭️ Current player blocked but others can play - auto-passing turn');
+          
+          // Auto-pass this player's turn since they're blocked
+          const nextPlayer = (currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
+          
+          const newGameState = {
+            ...gameState,
+            currentPlayer: nextPlayer
+          };
+          
+          await syncedGameHook.updateGameState(newGameState, nextPlayer);
+          
+          const nextPlayerName = syncedGameHook.syncState.allPlayers[nextPlayer]?.username || 'Unknown';
+          
+          toast({
+            title: "Beurt Overgeslagen ⏭️",
+            description: `Geen legale zetten mogelijk. ${nextPlayerName} is aan de beurt.`,
+            variant: "default"
+          });
         }
-        
-        const newGameState = {
-          ...gameState,
-          isGameOver: true,
-          winner: winnerPosition
-        };
-        
-        syncedGameHook.updateGameState(newGameState, currentPlayer);
-        
-        toast({
-          title: "Game Blocked!",
-          description: `All players are blocked. Winner: ${syncedGameHook.syncState.allPlayers[winnerPosition]?.username}`,
-          variant: "default"
-        });
-      } else {
-        console.log('⏭️ Current player blocked but others can play - auto-passing turn');
-        
-        // Auto-pass this player's turn since they're blocked
-        const nextPlayer = (currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
-        
-        const newGameState = {
-          ...gameState,
-          currentPlayer: nextPlayer
-        };
-        
-        syncedGameHook.updateGameState(newGameState, nextPlayer);
-        
-        toast({
-          title: "Turn Skipped",
-          description: "No legal moves available, automatically passing turn",
-          variant: "default"
-        });
       }
-    }
+    };
+    
+    checkBlockedGame();
   }, [
     syncedGameHook.syncState.gameState, 
     syncedGameHook.syncState.isLoading, 
