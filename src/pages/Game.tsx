@@ -615,8 +615,7 @@ export default function Game() {
           ...gameState,
           isGameOver: true,
           winner_position: winner,
-          // Clear current player hand if they're the winner for proper display
-          playerHand: syncedGameHook.syncState.playerPosition === winner ? [] : gameState.playerHand
+          gameEndReason: 'blocked' // Add flag to indicate blocked game
         };
         
         await syncedGameHook.updateGameState(newGameState, syncedGameHook.syncState.currentPlayer);
@@ -733,8 +732,7 @@ export default function Game() {
         ...gameState,
         isGameOver: true,
         winner_position: winner,
-        // Clear winner's hand for proper display in dialog
-        playerHand: syncedGameHook.syncState.playerPosition === winner ? [] : gameState.playerHand
+        gameEndReason: 'blocked' // Add flag to indicate blocked game
       };
       
       await syncedGameHook.updateGameState(newGameState, syncedGameHook.syncState.currentPlayer);

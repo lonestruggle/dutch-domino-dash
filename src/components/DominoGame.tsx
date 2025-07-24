@@ -56,9 +56,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     syncState?.playerPosition === gameState?.winner_position
   );
   
-  // Check if this was a blocked game (winner determined by points, not empty hand)
-  const isBlockedGame = gameState?.isGameOver && gameState?.winner_position !== undefined && 
-    gameState?.playerHand?.length > 0;
+  // Check if this was a blocked game using the gameEndReason flag
+  const isBlockedGame = gameState?.isGameOver && (gameState as any)?.gameEndReason === 'blocked';
   
   // Calculate legal moves for selected domino
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
