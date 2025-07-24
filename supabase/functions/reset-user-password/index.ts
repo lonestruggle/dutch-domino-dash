@@ -57,10 +57,20 @@ serve(async (req) => {
       }
     });
 
+    // Get user profile to update display name in auth
+    const { data: profileData } = await supabaseAdmin
+      .from('profiles')
+      .select('username')
+      .eq('user_id', userId)
+      .single();
+
     // Reset user password using admin API
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: newPassword,
-      email_confirm: true  // Force confirm the password change
+      email_confirm: true,  // Force confirm the password change
+      user_metadata: {
+        display_name: profileData?.username || 'User'
+      }
     });
 
     if (error) {
