@@ -187,17 +187,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
 
   // Start new game (updates database)
   const startNewGame = useCallback(async () => {
-    if (!gameId) return;
-    
-    // Allow any player to start a new game if the current game is over
-    if (!syncState.isHost && !syncState.gameState?.isGameOver) {
-      toast({
-        title: "Not allowed",
-        description: "Only the host can start a new game",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!gameId || !syncState.isHost) return;
 
     // Create full domino set and shuffle
     const fullSet = [];

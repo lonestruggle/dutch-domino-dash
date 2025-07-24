@@ -56,8 +56,23 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     syncState?.playerPosition === gameState?.winner_position
   );
   
-  // Check if this was a blocked game using the gameEndReason flag
-  const isBlockedGame = gameState?.isGameOver && (gameState as any)?.gameEndReason === 'blocked';
+  // Check if this was a blocked game - reliable detection:
+  // Blocked game = game over + all players still have dominoes + winner determined by points
+  const allPlayersHaveDominoes = gameState?.isGameOver && syncState?.allPlayers?.every((_, index) => {
+    const playerHand = (gameState as any)?.playerHands?.[index] || [];
+    return playerHand.length > 0;
+  });
+  
+  const isBlockedGame = gameState?.isGameOver && allPlayersHaveDominoes && gameState?.winner_position !== undefined;
+  
+  console.log('🔍 DominoGame - Blocked game detection:', {
+    isGameOver: gameState?.isGameOver,
+    allPlayersHaveDominoes: allPlayersHaveDominoes,
+    winnerPosition: gameState?.winner_position,
+    isBlockedGame: isBlockedGame,
+    didIWin: didIWin,
+    playerHands: (gameState as any)?.playerHands?.map((hand: any, i: number) => ({ player: i, handSize: hand?.length || 0 }))
+  });
   
   // Calculate legal moves for selected domino
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
