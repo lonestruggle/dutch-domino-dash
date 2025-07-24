@@ -709,16 +709,6 @@ export default function Game() {
     console.log('🔧 Open ends:', openEnds.map(end => `${end.value} at ${end.x},${end.y}`));
     console.log('🔧 Boneyard size:', boneyard.length);
     
-    // If boneyard is not empty, game cannot be blocked
-    if (boneyard.length > 0) {
-      toast({
-        title: "Spel Analyse",
-        description: `Boneyard heeft nog ${boneyard.length} stenen - spel niet geblokkeerd`,
-        variant: "default"
-      });
-      return;
-    }
-    
     // Get unique values from open ends
     const openEndValues = [...new Set(openEnds.map(end => end.value))];
     console.log('🔧 Unique open end values:', openEndValues);
