@@ -38,8 +38,9 @@ serve(async (req) => {
       );
     }
 
-    // Validate password strength
+    // Validate password strength (detailed check)
     if (newPassword.length < 6) {
+      console.error('Password too short:', newPassword.length);
       return new Response(
         JSON.stringify({ error: 'Wachtwoord moet minimaal 6 karakters lang zijn' }), 
         { 
@@ -48,6 +49,20 @@ serve(async (req) => {
         }
       );
     }
+
+    // Check if password contains at least one letter and one number (common requirement)
+    if (!/^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword)) {
+      console.error('Password does not meet complexity requirements');
+      return new Response(
+        JSON.stringify({ error: 'Wachtwoord moet minimaal één letter en één cijfer bevatten' }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log('Password validation passed. Length:', newPassword.length);
 
     // Create Supabase admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {

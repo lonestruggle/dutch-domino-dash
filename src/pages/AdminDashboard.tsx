@@ -501,12 +501,26 @@ const AdminDashboard = () => {
   };
 
   const generateSecurePassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+    // Generate a password that definitely meets Supabase requirements
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+    const numbers = '23456789';
+    const symbols = '!@#$%&*';
+    
     let password = '';
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    
+    // Ensure at least one of each type
+    password += letters.charAt(Math.floor(Math.random() * letters.length));
+    password += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    password += symbols.charAt(Math.floor(Math.random() * symbols.length));
+    
+    // Fill remaining positions
+    const allChars = letters + numbers + symbols;
+    for (let i = 3; i < 10; i++) {
+      password += allChars.charAt(Math.floor(Math.random() * allChars.length));
     }
-    return password;
+    
+    // Shuffle the password
+    return password.split('').sort(() => Math.random() - 0.5).join('');
   };
 
   const handleGeneratePassword = () => {
@@ -514,9 +528,17 @@ const AdminDashboard = () => {
     setNewPassword(generatedPassword);
     setShowGeneratedPassword(true);
     
+    console.log('Generated password for testing:', {
+      password: generatedPassword,
+      length: generatedPassword.length,
+      hasLetter: /[A-Za-z]/.test(generatedPassword),
+      hasNumber: /\d/.test(generatedPassword),
+      hasSymbol: /[!@#$%&*]/.test(generatedPassword)
+    });
+    
     toast({
-      title: "Wachtwoord gegenereerd",
-      description: "Er is een veilig wachtwoord gegenereerd",
+      title: "Sterk wachtwoord gegenereerd",
+      description: `Wachtwoord met ${generatedPassword.length} karakters (letters, cijfers en symbolen)`,
     });
   };
 
