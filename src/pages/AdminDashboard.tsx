@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
-  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star, Zap
+  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star, Zap, Copy
 } from 'lucide-react';
 import {
   Select,
@@ -21,6 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface AnalyticsData {
   total_page_views: number;
@@ -96,6 +104,9 @@ const AdminDashboard = () => {
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [selectedUserForRole, setSelectedUserForRole] = useState<string>('');
   const [newRole, setNewRole] = useState<'user' | 'moderator' | 'admin'>('user');
+  const [passwordResetUser, setPasswordResetUser] = useState<UserProfile | null>(null);
+  const [newPassword, setNewPassword] = useState<string>('');
+  const [showGeneratedPassword, setShowGeneratedPassword] = useState<boolean>(false);
 
   const checkAdminStatus = useCallback(async () => {
     if (!user) return;
@@ -489,6 +500,84 @@ const AdminDashboard = () => {
     }
   };
 
+  const generateSecurePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
+  const handleGeneratePassword = () => {
+    const generatedPassword = generateSecurePassword();
+    setNewPassword(generatedPassword);
+    setShowGeneratedPassword(true);
+    
+    toast({
+      title: "Wachtwoord gegenereerd",
+      description: "Er is een veilig wachtwoord gegenereerd",
+    });
+  };
+
+  const handleResetPassword = async () => {
+    if (!passwordResetUser || !newPassword.trim()) {
+      toast({
+        title: "Error",
+        description: "Selecteer een gebruiker en voer een wachtwoord in",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error", 
+        description: "Wachtwoord moet minimaal 6 karakters lang zijn",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: {
+          userId: passwordResetUser.user_id,
+          newPassword: newPassword,
+          adminId: user!.id
+        }
+      });
+
+      if (error) {
+        console.error('Error resetting password:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Kon wachtwoord niet resetten",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Succes",
+        description: `Wachtwoord succesvol gereset voor ${passwordResetUser.username}`,
+      });
+
+      // Reset form
+      setPasswordResetUser(null);
+      setNewPassword('');
+      setShowGeneratedPassword(false);
+
+    } catch (error) {
+      console.error('Exception resetting password:', error);
+      toast({
+        title: "Error",
+        description: "Er is een onverwachte fout opgetreden",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleResetGameStats = async (userId: string) => {
     try {
       const { error } = await supabase
@@ -802,13 +891,7 @@ const AdminDashboard = () => {
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => {
-                                // TODO: Implement password reset
-                                toast({
-                                  title: "Functie komt binnenkort",
-                                  description: "Wachtwoord reset functie wordt nog ontwikkeld",
-                                });
-                              }}
+                              onClick={() => setPasswordResetUser(user)}
                             >
                               <Key className="h-4 w-4 mr-1" />
                               Reset Wachtwoord
@@ -1180,6 +1263,76 @@ const AdminDashboard = () => {
             </div>
           </TabsContent>
         </Tabs>
+        
+        {/* Password Reset Dialog */}
+        <Dialog open={!!passwordResetUser} onOpenChange={() => setPasswordResetUser(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Wachtwoord Resetten voor {passwordResetUser?.username}
+              </DialogTitle>
+              <DialogDescription>
+                Kies een nieuw tijdelijk wachtwoord voor deze gebruiker. De gebruiker moet dit wachtwoord bij de volgende login wijzigen.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">Nieuw Wachtwoord (min. 6 karakters)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="newPassword"
+                    type={showGeneratedPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Voer nieuw wachtwoord in..."
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGeneratePassword}
+                    className="whitespace-nowrap"
+                  >
+                    <Star className="h-4 w-4 mr-1" />
+                    Genereer
+                  </Button>
+                </div>
+                {showGeneratedPassword && newPassword && (
+                  <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                    <span className="text-sm font-mono">{newPassword}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => navigator.clipboard.writeText(newPassword)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              {newPassword.length > 0 && newPassword.length < 6 && (
+                <p className="text-sm text-destructive">
+                  Wachtwoord moet minimaal 6 karakters lang zijn
+                </p>
+              )}
+            </div>
+            
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setPasswordResetUser(null)}>
+                Annuleren
+              </Button>
+              <Button 
+                onClick={handleResetPassword}
+                disabled={!newPassword || newPassword.length < 6}
+              >
+                <Key className="h-4 w-4 mr-1" />
+                Reset Wachtwoord
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
