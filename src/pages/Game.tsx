@@ -618,6 +618,8 @@ export default function Game() {
           gameEndReason: 'blocked' // Add flag to indicate blocked game
         };
         
+        console.log('🏆 AUTO BLOCKED - Setting game state:', newGameState);
+        
         await syncedGameHook.updateGameState(newGameState, syncedGameHook.syncState.currentPlayer);
         
         // Don't show toast - let the game over dialog handle it
