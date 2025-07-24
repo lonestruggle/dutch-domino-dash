@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.sync-display-names]
 verify_jwt = true
+
+[functions.force-logout]
+verify_jwt = true

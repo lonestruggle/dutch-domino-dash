@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
-  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star, Zap, Copy
+  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star, Zap, Copy, LogOut
 } from 'lucide-react';
 import {
   Select,
@@ -598,6 +598,56 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleForceLogout = async (userId: string, username: string) => {
+    try {
+      console.log('Forcing logout for user:', { userId, username });
+      
+      const { data, error } = await supabase.functions.invoke('force-logout', {
+        body: {
+          userId: userId,
+          adminId: user!.id
+        }
+      });
+
+      console.log('Force logout response:', { data, error });
+
+      if (error) {
+        console.error('Error forcing logout:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Kon gebruiker niet uitloggen",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.error) {
+        console.error('Function returned error:', data.error);
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Force logout successful:', data);
+      
+      toast({
+        title: "Succes",
+        description: `${username} is succesvol uitgelogd van alle sessies`,
+      });
+
+    } catch (error) {
+      console.error('Exception forcing logout:', error);
+      toast({
+        title: "Error", 
+        description: "Er is een onverwachte fout opgetreden",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSyncDisplayNames = async () => {
     try {
       console.log('Starting display name sync...');
@@ -978,6 +1028,15 @@ const AdminDashboard = () => {
                             >
                               <Key className="h-4 w-4 mr-1" />
                               Reset Wachtwoord
+                            </Button>
+                            
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleForceLogout(user.user_id, user.username)}
+                            >
+                              <LogOut className="h-4 w-4 mr-1" />
+                              Force Logout
                             </Button>
                           </div>
 
