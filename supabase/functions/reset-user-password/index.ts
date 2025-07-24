@@ -59,7 +59,8 @@ serve(async (req) => {
 
     // Reset user password using admin API
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      password: newPassword
+      password: newPassword,
+      email_confirm: true  // Force confirm the password change
     });
 
     if (error) {
