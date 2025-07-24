@@ -580,7 +580,13 @@ const AdminDashboard = () => {
 
   const handleSyncDisplayNames = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('sync-display-names');
+      console.log('Starting display name sync...');
+      
+      const { data, error } = await supabase.functions.invoke('sync-display-names', {
+        body: {}
+      });
+
+      console.log('Sync response:', { data, error });
 
       if (error) {
         console.error('Error syncing display names:', error);
@@ -592,16 +598,18 @@ const AdminDashboard = () => {
         return;
       }
 
+      console.log('Sync successful:', data);
+      
       toast({
         title: "Succes",
-        description: data.message || "Display names succesvol gesynced",
+        description: data?.message || "Display names succesvol gesynced",
       });
 
     } catch (error) {
       console.error('Exception syncing display names:', error);
       toast({
-        title: "Error",
-        description: "Er is een onverwachte fout opgetreden",
+        title: "Error", 
+        description: "Er is een onverwachte fout opgetreden bij het syncen",
         variant: "destructive",
       });
     }
