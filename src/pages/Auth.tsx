@@ -71,7 +71,7 @@ const Auth = () => {
         .from('profiles')
         .select('username')
         .eq('user_id', validationResult.invited_by)
-        .maybeSingle();
+        .single();
 
       setInviteInfo({
         email: validationResult.invited_email || '', // Handle empty email

@@ -31,7 +31,7 @@ export default function Home() {
       .from('profiles')
       .select('username')
       .eq('user_id', user.id)
-      .maybeSingle();
+      .single();
     
     if (data) {
       setUsername(data.username);

@@ -48,6 +48,11 @@ export const useAuth = () => {
     };
   }, []);
 
+  const signInAnonymously = async () => {
+    const { error, data } = await supabase.auth.signInAnonymously();
+    return { error };
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -61,6 +66,7 @@ export const useAuth = () => {
     user,
     session,
     loading,
+    signInAnonymously,
     signOut,
     isAuthenticated: !!user
   };
