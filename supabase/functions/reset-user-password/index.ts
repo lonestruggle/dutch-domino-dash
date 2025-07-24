@@ -64,17 +64,19 @@ serve(async (req) => {
       .eq('user_id', userId)
       .single();
 
-    // Reset user password using admin API
+    console.log('About to reset password for user:', userId);
+
+    // Reset user password using admin API - simplified approach
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: newPassword,
-      email_confirm: true,  // Force confirm the password change
-      phone_confirm: true,  // Also confirm phone if present
+      email_confirm: true,
       user_metadata: {
-        display_name: profileData?.username || 'User'
-      },
-      // Force password change to be immediately active
-      password_confirm: true
+        display_name: profileData?.username || 'User',
+        password_reset_at: new Date().toISOString()
+      }
     });
+
+    console.log('Password reset API response:', { data: data ? 'user object received' : 'no data', error });
 
     if (error) {
       console.error('Error resetting password:', error);
