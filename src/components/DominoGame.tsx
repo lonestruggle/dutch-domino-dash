@@ -50,8 +50,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const isMyTurn = gameState?.currentPlayer === syncState?.playerPosition;
   const currentPlayerName = syncState?.allPlayers?.find(p => p.position === gameState?.currentPlayer)?.username || 'Unknown';
   
-  // Determine if current player won (has empty hand)
-  const didIWin = gameState?.isGameOver && gameState?.playerHand?.length === 0;
+  // Determine if current player won (has empty hand OR is winner from blocked game)
+  const didIWin = gameState?.isGameOver && (
+    gameState?.playerHand?.length === 0 || 
+    syncState?.playerPosition === gameState?.winner_position
+  );
+  
+  // Check if this was a blocked game (winner determined by points, not empty hand)
+  const isBlockedGame = gameState?.isGameOver && gameState?.winner_position !== undefined && 
+    gameState?.playerHand?.length > 0;
   
   // Calculate legal moves for selected domino
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
@@ -269,15 +276,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     <PartyPopper className="w-12 h-12 text-purple-500 animate-pulse" />
                   </div>
                   
-                  {/* Winner Message */}
-                  <div className="bg-white/70 rounded-lg p-4 border border-yellow-200">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                      🎉 Je hebt gewonnen! 🎉
-                    </h3>
-                    <p className="text-gray-600">
-                      Je hebt alle dominostenen succesvol gespeeld!
-                    </p>
-                  </div>
+                   {/* Winner Message */}
+                   <div className="bg-white/70 rounded-lg p-4 border border-yellow-200">
+                     <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                       🎉 Je hebt gewonnen! 🎉
+                     </h3>
+                     <p className="text-gray-600">
+                       {isBlockedGame 
+                         ? "Spel geblokkeerd! Je hebt gewonnen met de minste punten!" 
+                         : "Je hebt alle dominostenen succesvol gespeeld!"
+                       }
+                     </p>
+                   </div>
                   
                   {/* Decorative elements */}
                   <div className="flex justify-center space-x-8 text-2xl">
@@ -295,18 +305,21 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     <span className="text-6xl animate-pulse delay-500">😔</span>
                   </div>
                   
-                  {/* Loser Message */}
-                  <div className="bg-white/70 rounded-lg p-4 border border-red-200">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                      Je hebt verloren!
-                    </h3>
-                    <p className="text-gray-600">
-                      Een andere speler heeft alle stenen als eerste gespeeld.
-                    </p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Veel succes volgende keer! 🍀
-                    </p>
-                  </div>
+                   {/* Loser Message */}
+                   <div className="bg-white/70 rounded-lg p-4 border border-red-200">
+                     <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                       Je hebt verloren!
+                     </h3>
+                     <p className="text-gray-600">
+                       {isBlockedGame 
+                         ? "Spel geblokkeerd! Een andere speler had minder punten." 
+                         : "Een andere speler heeft alle stenen als eerste gespeeld."
+                       }
+                     </p>
+                     <p className="text-sm text-gray-500 mt-2">
+                       Veel succes volgende keer! 🍀
+                     </p>
+                   </div>
                   
                   {/* Decorative elements */}
                   <div className="flex justify-center space-x-8 text-2xl">

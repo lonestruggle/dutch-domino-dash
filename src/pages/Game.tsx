@@ -614,16 +614,15 @@ export default function Game() {
         const newGameState = {
           ...gameState,
           isGameOver: true,
-          winner_position: winner
+          winner_position: winner,
+          // Clear current player hand if they're the winner for proper display
+          playerHand: syncedGameHook.syncState.playerPosition === winner ? [] : gameState.playerHand
         };
         
         await syncedGameHook.updateGameState(newGameState, syncedGameHook.syncState.currentPlayer);
         
-        toast({
-          title: "Spel Geblokkeerd! 🛑",
-          description: `Alle stenen van open eind waarden liggen op tafel. Winnaar: ${winnerName} (${lowestCount} stenen, ${lowestSum} punten)`,
-          variant: "default"
-        });
+        // Don't show toast - let the game over dialog handle it
+        console.log(`🏆 Game blocked - Winner: ${winnerName} with ${lowestSum} points (${lowestCount} tiles)`);
       }
     };
     
@@ -733,16 +732,15 @@ export default function Game() {
       const newGameState = {
         ...gameState,
         isGameOver: true,
-        winner_position: winner
+        winner_position: winner,
+        // Clear winner's hand for proper display in dialog
+        playerHand: syncedGameHook.syncState.playerPosition === winner ? [] : gameState.playerHand
       };
       
       await syncedGameHook.updateGameState(newGameState, syncedGameHook.syncState.currentPlayer);
       
-      toast({
-        title: "Spel Geblokkeerd! 🛑",
-        description: `Alle stenen van open eind waarden liggen op tafel. Winnaar: ${winnerName} (${lowestCount} stenen, ${lowestSum} punten)`,
-        variant: "default"
-      });
+      // Don't show toast - let the game over dialog handle it
+      console.log(`🔧 Manual check - Game blocked, Winner: ${winnerName} with ${lowestSum} points (${lowestCount} tiles)`);
     } else {
       toast({
         title: "Spel Analyse",
