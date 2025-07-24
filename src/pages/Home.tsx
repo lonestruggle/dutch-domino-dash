@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { supabase } from '@/integrations/supabase/client';
-import { Play, Users, Gamepad2, UserCircle, LogOut, LogIn } from 'lucide-react';
+import { Play, Users, UserCircle, LogOut, LogIn } from 'lucide-react';
+import { DominoIcon } from '@/components/DominoIcon';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ export default function Home() {
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Gamepad2 className="h-8 w-8 text-white" />
+                <DominoIcon className="h-8 w-8 text-white" size={32} />
                 <span className="font-bold text-xl text-white">Wegi Domino</span>
               </div>
               
@@ -101,7 +102,7 @@ export default function Home() {
           <div className="w-full max-w-2xl">
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-2 mb-4">
-                <Gamepad2 className="h-12 w-12 text-white" />
+                <DominoIcon className="h-12 w-12 text-white" size={48} />
                 <h1 className="text-4xl font-bold text-white drop-shadow-2xl">Domino Game</h1>
               </div>
               <p className="text-lg text-white/90 drop-shadow-lg">
