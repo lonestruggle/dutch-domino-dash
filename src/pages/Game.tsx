@@ -524,6 +524,126 @@ export default function Game() {
     }
   }, [dominoGameHook, syncedGameHook, gameId, toast]);
 
+  // Blocked game detection and auto-advance logic
+  useEffect(() => {
+    if (!syncedGameHook.syncState.gameState || syncedGameHook.syncState.isLoading) return;
+    
+    const gameState = syncedGameHook.syncState.gameState;
+    const currentPlayer = gameState.currentPlayer;
+    const isMyTurn = currentPlayer === syncedGameHook.syncState.playerPosition;
+    
+    // Only check for blocked game on the current player's turn
+    if (!isMyTurn) return;
+    
+    console.log('🔍 Checking for blocked game on turn:', currentPlayer);
+    
+    // Check if current player has any legal moves
+    let hasAnyLegalMoves = false;
+    if (gameState.playerHand && gameState.playerHand.length > 0) {
+      for (const domino of gameState.playerHand) {
+        const moves = dominoGameHook.findLegalMoves(domino);
+        if (moves.length > 0) {
+          hasAnyLegalMoves = true;
+          break;
+        }
+      }
+    }
+    
+    const boneyardEmpty = !gameState.boneyard?.length || gameState.boneyard.length === 0;
+    const isBlocked = !hasAnyLegalMoves && boneyardEmpty;
+    
+    console.log('🔍 Blocked game check:', {
+      currentPlayer,
+      isMyTurn,
+      hasAnyLegalMoves,
+      boneyardEmpty,
+      isBlocked,
+      handSize: gameState.playerHand?.length || 0
+    });
+    
+    if (isBlocked) {
+      console.log('🚫 Player is blocked, checking if all players are blocked...');
+      
+      // Check if ALL players are blocked
+      let allPlayersBlocked = true;
+      for (let playerIndex = 0; playerIndex < syncedGameHook.syncState.allPlayers.length; playerIndex++) {
+        const playerHand = (gameState as any).playerHands?.[playerIndex] || [];
+        
+        let playerHasLegalMoves = false;
+        for (const domino of playerHand) {
+          const moves = dominoGameHook.findLegalMoves(domino);
+          if (moves.length > 0) {
+            playerHasLegalMoves = true;
+            break;
+          }
+        }
+        
+        if (playerHasLegalMoves) {
+          allPlayersBlocked = false;
+          break;
+        }
+      }
+      
+      console.log('🔍 All players blocked check:', allPlayersBlocked);
+      
+      if (allPlayersBlocked) {
+        console.log('🛑 ALL PLAYERS BLOCKED - ENDING GAME');
+        
+        // End the game - declare winner based on who has fewest dominoes
+        let winnerPosition = 0;
+        let fewestDominoes = (gameState as any).playerHands?.[0]?.length || 0;
+        
+        for (let i = 1; i < syncedGameHook.syncState.allPlayers.length; i++) {
+          const handSize = (gameState as any).playerHands?.[i]?.length || 0;
+          if (handSize < fewestDominoes) {
+            fewestDominoes = handSize;
+            winnerPosition = i;
+          }
+        }
+        
+        const newGameState = {
+          ...gameState,
+          isGameOver: true,
+          winner: winnerPosition
+        };
+        
+        syncedGameHook.updateGameState(newGameState, currentPlayer);
+        
+        toast({
+          title: "Game Blocked!",
+          description: `All players are blocked. Winner: ${syncedGameHook.syncState.allPlayers[winnerPosition]?.username}`,
+          variant: "default"
+        });
+      } else {
+        console.log('⏭️ Current player blocked but others can play - auto-passing turn');
+        
+        // Auto-pass this player's turn since they're blocked
+        const nextPlayer = (currentPlayer + 1) % syncedGameHook.syncState.allPlayers.length;
+        
+        const newGameState = {
+          ...gameState,
+          currentPlayer: nextPlayer
+        };
+        
+        syncedGameHook.updateGameState(newGameState, nextPlayer);
+        
+        toast({
+          title: "Turn Skipped",
+          description: "No legal moves available, automatically passing turn",
+          variant: "default"
+        });
+      }
+    }
+  }, [
+    syncedGameHook.syncState.gameState, 
+    syncedGameHook.syncState.isLoading, 
+    syncedGameHook.syncState.playerPosition,
+    syncedGameHook.syncState.allPlayers,
+    dominoGameHook.findLegalMoves,
+    syncedGameHook.updateGameState,
+    toast
+  ]);
+
   // BOTS DISABLED TEMPORARILY
   console.log('🤖 Bots zijn tijdelijk uitgeschakeld');
 
