@@ -687,6 +687,101 @@ export default function Game() {
   // BOTS DISABLED TEMPORARILY
   console.log('🤖 Bots zijn tijdelijk uitgeschakeld');
 
+  // Manual blocked game check
+  const manualBlockedCheck = useCallback(async () => {
+    if (!syncedGameHook.syncState.gameState || !dominoGameHook.findLegalMoves) {
+      toast({
+        title: "Error",
+        description: "Game state not ready",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('🔧 MANUAL BLOCKED CHECK - Starting comprehensive analysis');
+    
+    const gameState = syncedGameHook.syncState.gameState;
+    const allPlayers = syncedGameHook.syncState.allPlayers;
+    const openEnds = gameState.openEnds || [];
+    const boneyard = gameState.boneyard || [];
+    
+    // Check ALL players for any possible moves
+    let allPlayersBlocked = true;
+    let playersStatus = [];
+    
+    for (let playerIndex = 0; playerIndex < allPlayers.length; playerIndex++) {
+      const playerHand = (gameState as any).playerHands?.[playerIndex] || [];
+      let playerCanPlay = false;
+      let moveCount = 0;
+      
+      for (const domino of playerHand) {
+        const legalMoves = dominoGameHook.findLegalMoves(domino);
+        moveCount += legalMoves.length;
+        if (legalMoves.length > 0) {
+          playerCanPlay = true;
+        }
+      }
+      
+      playersStatus.push({
+        player: playerIndex,
+        name: allPlayers[playerIndex]?.username || `Player ${playerIndex}`,
+        canPlay: playerCanPlay,
+        handSize: playerHand.length,
+        totalMoves: moveCount
+      });
+      
+      if (playerCanPlay) {
+        allPlayersBlocked = false;
+      }
+    }
+    
+    console.log('🔧 Manual check - Players status:', playersStatus);
+    console.log('🔧 Manual check - Boneyard empty:', boneyard.length === 0);
+    console.log('🔧 Manual check - All players blocked:', allPlayersBlocked);
+    
+    if (allPlayersBlocked && boneyard.length === 0) {
+      console.log('🛑 MANUAL CHECK: Game is blocked - ending game');
+      
+      // Find winner by lowest hand count, then lowest sum
+      let winner = 0;
+      let lowestCount = playersStatus[0].handSize;
+      let lowestSum = ((gameState as any).playerHands?.[0] || []).reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
+      
+      for (let i = 1; i < playersStatus.length; i++) {
+        const handCount = playersStatus[i].handSize;
+        const handSum = ((gameState as any).playerHands?.[i] || []).reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
+        
+        if (handCount < lowestCount || (handCount === lowestCount && handSum < lowestSum)) {
+          winner = i;
+          lowestCount = handCount;
+          lowestSum = handSum;
+        }
+      }
+      
+      const winnerName = playersStatus[winner].name;
+      
+      const newGameState = {
+        ...gameState,
+        isGameOver: true,
+        winner_position: winner
+      };
+      
+      await syncedGameHook.updateGameState(newGameState, syncedGameHook.syncState.currentPlayer);
+      
+      toast({
+        title: "Spel Geblokkeerd! 🛑",
+        description: `Alle spelers vastgelopen. Winnaar: ${winnerName} (${lowestCount} stenen)`,
+        variant: "default"
+      });
+    } else {
+      toast({
+        title: "Spel Analyse",
+        description: `Boneyard: ${boneyard.length} stenen. Spelers die kunnen spelen: ${playersStatus.filter(p => p.canPlay).length}`,
+        variant: "default"
+      });
+    }
+  }, [syncedGameHook, dominoGameHook, toast]);
+
   // Create combined hook for DominoGame component
   const combinedGameHook = {
     ...dominoGameHook,
@@ -696,7 +791,8 @@ export default function Game() {
     hardSlam: wrappedHardSlam, // Add hard slam function
     syncState: syncedGameHook.syncState,
     startNewGame: syncedGameHook.startNewGame,
-    gameData: game
+    gameData: game,
+    manualBlockedCheck // Add manual blocked check function
   };
 
   const fetchGame = async () => {

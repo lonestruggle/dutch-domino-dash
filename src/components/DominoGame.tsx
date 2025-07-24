@@ -199,6 +199,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 <Zap className="h-4 w-4 mr-2" />
                 {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
               </Button>
+              <Button 
+                onClick={() => gameHook.manualBlockedCheck?.()}
+                variant="outline"
+                className="bg-slate-100 hover:bg-slate-200"
+              >
+                🔧 Check Blocked
+              </Button>
             </div>
             <div className="text-sm text-muted-foreground flex items-center">
               {gameState?.isGameOver ? (
