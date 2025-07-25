@@ -219,9 +219,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         isMobile ? "w-screen -mx-4" : "w-full"
       )}
       style={{ 
-        height: isMobile ? 'calc(100vh - 280px)' : '60vh',
-        minHeight: isMobile ? '200px' : '400px',
-        maxHeight: isMobile ? 'calc(100vh - 200px)' : '600px',
+        height: isMobile ? 'calc(100vh - 200px)' : '60vh',
+        minHeight: isMobile ? '300px' : '400px',
+        maxHeight: isMobile ? 'calc(100vh - 180px)' : '600px',
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',

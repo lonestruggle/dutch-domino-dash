@@ -23,8 +23,14 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
 }) => {
   const isMobile = useIsMobile();
   return (
-    <div className="game-ui p-6">
-      <h2 className="text-lg font-semibold mb-4 text-center text-ui-text">
+    <div className={cn(
+      "game-ui",
+      isMobile ? "p-2" : "p-6"
+    )}>
+      <h2 className={cn(
+        "font-semibold text-center text-ui-text",
+        isMobile ? "text-sm mb-2" : "text-lg mb-4"
+      )}>
         Jouw Hand
       </h2>
       
