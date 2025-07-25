@@ -43,7 +43,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
     
     // Use the full container size minus some padding
-    const padding = isMobile ? 20 : 40;
+    const padding = isMobile ? 8 : 40;
     return {
       width: containerSize.width - padding,
       height: containerSize.height - padding
