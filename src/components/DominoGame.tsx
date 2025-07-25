@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GameBoard } from '@/components/GameBoard';
+import { SquareGameBoard } from '@/components/SquareGameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -164,7 +164,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
         {/* Game Board - Takes Available Space */}
         <div className="flex-1 min-h-0 relative">
-          <GameBoard 
+          <SquareGameBoard 
             gameState={gameState}
             legalMoves={legalMovesWithIndex}
             onMoveExecute={executeMove}
