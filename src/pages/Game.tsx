@@ -524,7 +524,7 @@ export default function Game() {
     }
   }, [dominoGameHook, syncedGameHook, gameId, toast]);
 
-  // Automatic blocked game detection - NEW LOGIC: Check if all dominoes of open end values are on table
+  // Automatic blocked game detection - IMPROVED LOGIC: Check if ANY player can make a move
   useEffect(() => {
     const checkBlockedGame = async () => {
       if (!syncedGameHook.syncState.gameState || syncedGameHook.syncState.isLoading) return;
@@ -539,46 +539,41 @@ export default function Game() {
       console.log('🔍 AUTO Checking for blocked game on turn:', currentPlayer);
       
       const openEnds = gameState.openEnds || [];
-      const placedDominoes = Object.values(gameState.dominoes || {});
+      const allPlayers = syncedGameHook.syncState.allPlayers;
       
       console.log('🔍 Auto check - Open ends:', openEnds.map(end => `${end.value} at ${end.x},${end.y}`));
       
-      // Get unique values from open ends
-      const openEndValues = [...new Set(openEnds.map(end => end.value))];
-      console.log('🔍 Auto check - Unique open end values:', openEndValues);
-      
-      // For each open end value, check if all dominoes containing that value are on the table
-      let gameIsBlocked = false;
-      
-      for (const value of openEndValues) {
-        // Generate all possible dominoes containing this value (0-6 for standard domino set)
-        const allDominoesWithValue = [];
-        for (let i = 0; i <= 6; i++) {
-          if (i <= value) {
-            allDominoesWithValue.push({ value1: i, value2: value });
-          } else {
-            allDominoesWithValue.push({ value1: value, value2: i });
-          }
-        }
-        
-        // Check if all these dominoes are on the table
-        const allOnTable = allDominoesWithValue.every(neededDomino => {
-          return placedDominoes.some(placedDomino => 
-            (placedDomino.data.value1 === neededDomino.value1 && placedDomino.data.value2 === neededDomino.value2) ||
-            (placedDomino.data.value1 === neededDomino.value2 && placedDomino.data.value2 === neededDomino.value1)
-          );
-        });
-        
-        console.log(`🔍 Auto check - All dominoes with value ${value} on table:`, allOnTable);
-        
-        if (allOnTable) {
-          console.log(`🛑 AUTO BLOCKED: All dominoes with value ${value} are on table and it's an open end!`);
-          gameIsBlocked = true;
-          break;
-        }
+      if (openEnds.length === 0) {
+        console.log('🛑 AUTO BLOCKED: No open ends available');
+        return; // This should not happen in normal gameplay
       }
       
-      if (gameIsBlocked) {
+      // Check if ANY player can make a move
+      let anyPlayerCanMove = false;
+      
+      for (let playerIndex = 0; playerIndex < allPlayers.length; playerIndex++) {
+        const playerHand = (gameState as any).playerHands?.[playerIndex] || [];
+        
+        console.log(`🔍 Checking player ${playerIndex} hand:`, playerHand);
+        
+        // Check if this player has any domino that can connect to any open end
+        for (const domino of playerHand) {
+          for (const openEnd of openEnds) {
+            if (domino.value1 === openEnd.value || domino.value2 === openEnd.value) {
+              console.log(`✅ Player ${playerIndex} can play ${domino.value1}-${domino.value2} on end ${openEnd.value}`);
+              anyPlayerCanMove = true;
+              break;
+            }
+          }
+          if (anyPlayerCanMove) break;
+        }
+        if (anyPlayerCanMove) break;
+      }
+      
+      if (!anyPlayerCanMove) {
+        console.log('🛑 AUTO BLOCKED: No player can make a move');
+        
+        // Game is blocked - end the game
         console.log('🛑 AUTO GAME IS BLOCKED - ending game');
         
         // Find winner by lowest hand count, then lowest sum
