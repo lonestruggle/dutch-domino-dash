@@ -213,16 +213,54 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     
     const boneyard = fullSet.slice(playersCount * 7);
 
-    // Het spel begint met een leeg bord - zoek eerste menselijke speler
+    // Bepaal wie mag beginnen volgens domino regels
     let starterPlayerIndex = 0;
     
-    // Zoek de eerste menselijke speler (geen bot)
-    for (let i = 0; i < playersCount; i++) {
-      const player = syncState.allPlayers[i];
-      if (!player.is_bot) {
-        starterPlayerIndex = i;
-        break;
+    // Helper functie om te checken of een speler een specifieke domino heeft
+    const hasDoubleValue = (playerHand: any[], value: number) => {
+      return playerHand.some(domino => domino.value1 === value && domino.value2 === value);
+    };
+    
+    const hasHighestNonDouble = (playerHand: any[], value1: number, value2: number) => {
+      return playerHand.some(domino => 
+        (domino.value1 === value1 && domino.value2 === value2) ||
+        (domino.value1 === value2 && domino.value2 === value1)
+      );
+    };
+    
+    // Stap 1: Zoek naar dubbele stenen van hoog naar laag (6|6, 5|5, 4|4, 3|3, 2|2, 1|1, 0|0)
+    let foundStarter = false;
+    for (let doubleValue = 6; doubleValue >= 0 && !foundStarter; doubleValue--) {
+      for (let i = 0; i < playersCount; i++) {
+        if (hasDoubleValue(playerHands[i], doubleValue)) {
+          starterPlayerIndex = i;
+          foundStarter = true;
+          console.log(`🎯 Speler ${i} begint met dubbel ${doubleValue}`);
+          break;
+        }
       }
+    }
+    
+    // Stap 2: Als niemand een dubbele heeft, zoek naar hoogste enkele steen
+    if (!foundStarter) {
+      // Zoek van hoog naar laag: 6|5, 6|4, 6|3, 6|2, 6|1, 6|0, dan 5|4, 5|3, etc.
+      for (let high = 6; high >= 0 && !foundStarter; high--) {
+        for (let low = high - 1; low >= 0 && !foundStarter; low--) {
+          for (let i = 0; i < playersCount; i++) {
+            if (hasHighestNonDouble(playerHands[i], high, low)) {
+              starterPlayerIndex = i;
+              foundStarter = true;
+              console.log(`🎯 Speler ${i} begint met hoogste steen ${high}|${low}`);
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Fallback: als er iets misgaat, begin gewoon met eerste speler
+    if (!foundStarter) {
+      console.log('🎯 Fallback: Speler 0 begint');
     }
     
     // Start met VOLLEDIG leeg bord - FORCE RESET
