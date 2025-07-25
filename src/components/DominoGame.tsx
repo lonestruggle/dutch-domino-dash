@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SquareGameBoard } from '@/components/SquareGameBoard';
+import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -126,11 +126,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mobile-first responsive layout */}
-      <div className="flex flex-col h-screen md:min-h-screen overflow-hidden md:overflow-auto">
+      {/* Desktop & Mobile layout - always ensure buttons are visible */}
+      <div className="flex flex-col min-h-screen">
         
         {/* Compact Header */}
-        <div className="flex-shrink-0 p-2 md:p-4 bg-card border-b">
+        <div className="flex-shrink-0 p-3 md:p-4 bg-card border-b">
           <div className="flex items-center justify-between text-sm md:text-base">
             <div className="flex items-center space-x-2">
               <h2 className="text-lg md:text-2xl font-bold truncate">Domino</h2>
@@ -164,7 +164,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
         {/* Game Board - Takes Available Space */}
         <div className="flex-1 min-h-0 relative">
-          <SquareGameBoard 
+          <GameBoard 
             gameState={gameState}
             legalMoves={legalMovesWithIndex}
             onMoveExecute={executeMove}
