@@ -30,8 +30,9 @@ export const SquareGameBoard: React.FC<SquareGameBoardProps> = ({
   
   // Fixed table dimensions - vierkante tafel
   const TABLE_SIZE = 600;
-  const CELL_SIZE = 32; // Smaller cells for mobile fit
-  const GRID_SIZE = 18; // 18x18 grid fits nicely in 600px
+  const CELL_SIZE = 24; // Smaller cells to fit more dominoes
+  const GRID_SIZE = 25; // Larger grid for more space
+  const CENTER_OFFSET = Math.floor(GRID_SIZE / 2);
   
   // Calculate scale to fit container
   useEffect(() => {
@@ -57,8 +58,8 @@ export const SquareGameBoard: React.FC<SquareGameBoardProps> = ({
 
   // Convert world coordinates to table coordinates
   const worldToTable = (x: number, y: number) => {
-    const tableX = (GRID_SIZE / 2) + x;
-    const tableY = (GRID_SIZE / 2) + y;
+    const tableX = CENTER_OFFSET + x;
+    const tableY = CENTER_OFFSET + y;
     return { x: tableX, y: tableY };
   };
 
@@ -206,8 +207,8 @@ export const SquareGameBoard: React.FC<SquareGameBoardProps> = ({
         <div 
           className="absolute w-2 h-2 bg-primary/30 rounded-full"
           style={{
-            left: (GRID_SIZE / 2) * CELL_SIZE - 4,
-            top: (GRID_SIZE / 2) * CELL_SIZE - 4
+            left: CENTER_OFFSET * CELL_SIZE - 1,
+            top: CENTER_OFFSET * CELL_SIZE - 1
           }}
         />
       </div>
