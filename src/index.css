@@ -254,10 +254,12 @@
   
   /* Optimize mobile viewport */
   body {
-    overflow: hidden;
-    position: fixed;
+    /* Remove fixed positioning that might hide content */
+    overflow: auto;
+    position: relative;
     width: 100%;
-    height: 100vh;
+    height: auto;
+    min-height: 100vh;
   }
   
   /* Custom scrollbar for mobile */

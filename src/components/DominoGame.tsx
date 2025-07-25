@@ -126,11 +126,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mobile-optimized layout */}
-      <div className="flex flex-col h-screen max-h-screen overflow-hidden">
+      {/* Desktop & Mobile layout - always ensure buttons are visible */}
+      <div className="flex flex-col min-h-screen">
         
-        {/* Compact Header for Mobile */}
-        <div className="flex-shrink-0 p-2 md:p-4 bg-card border-b">
+        {/* Compact Header */}
+        <div className="flex-shrink-0 p-3 md:p-4 bg-card border-b">
           <div className="flex items-center justify-between text-sm md:text-base">
             <div className="flex items-center space-x-2">
               <h2 className="text-lg md:text-2xl font-bold truncate">Domino</h2>
