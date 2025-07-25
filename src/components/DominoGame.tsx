@@ -183,14 +183,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           />
         </div>
 
-        {/* Game Actions - Compact Bottom Bar */}
-        <div className="flex-shrink-0 p-2 md:p-4 bg-card border-t">
-          <div className="flex flex-wrap gap-1 md:gap-2 justify-center">
+        {/* Game Actions - Better Sized Bottom Bar */}
+        <div className="flex-shrink-0 p-3 md:p-4 bg-card border-t">
+          <div className="flex flex-wrap gap-2 justify-center">
             <Button 
               onClick={startNewGame}
               variant="default"
-              size="sm"
-              className="text-xs md:text-sm"
+              size="default"
+              className="text-sm font-semibold px-4 py-2"
             >
               Nieuw Spel
             </Button>
@@ -198,8 +198,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               onClick={drawFromBoneyard}
               disabled={!gameState?.boneyard?.length}
               variant="outline"
-              size="sm"
-              className="text-xs md:text-sm"
+              size="default"
+              className="text-sm font-semibold px-4 py-2"
             >
               Trek ({gameState?.boneyard?.length || 0})
             </Button>
@@ -207,8 +207,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               onClick={passMove}
               disabled={!shouldEnablePassButton}
               variant={shouldEnablePassButton ? "destructive" : "outline"}
-              size="sm"
-              className={`text-xs md:text-sm ${shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
+              size="default"
+              className={`text-sm font-semibold px-4 py-2 ${shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
             >
               Pas
             </Button>
@@ -216,8 +216,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               onClick={hardSlam}
               disabled={!canUseHardSlam || hardSlamActive}
               variant="secondary"
-              size="sm"
-              className={`text-xs md:text-sm ${
+              size="default"
+              className={`text-sm font-semibold px-4 py-2 ${
                 hardSlamActive 
                   ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
                   : canUseHardSlam 
@@ -226,13 +226,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               }`}
             >
               <Zap className="h-4 w-4 mr-2" />
-              {hardSlamActive ? "Ready! 🔥" : "Hard Slam! 💥"}
+              {hardSlamActive ? "Klaar! 🔥" : "Hard Slaan! 💥"}
             </Button>
             <Button 
               onClick={() => gameHook.manualBlockedCheck?.()}
               variant="outline"
-              size="sm"
-              className="text-xs md:text-sm bg-slate-100 hover:bg-slate-200"
+              size="default"
+              className="text-sm font-semibold px-4 py-2 bg-slate-100 hover:bg-slate-200"
             >
               🔧 Check
             </Button>
