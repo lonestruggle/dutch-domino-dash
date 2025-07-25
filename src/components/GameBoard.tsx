@@ -185,7 +185,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             style={{
               left: domino.x * CELL_SIZE + viewTransform.translateX,
               top: domino.y * CELL_SIZE + viewTransform.translateY,
-              transform: 'translate(-50%, -50%)',
             }}
           >
             <DominoTile
@@ -228,6 +227,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               style={{
                 left: (x + size[0] / 2) * CELL_SIZE + viewTransform.translateX,
                 top: (y + size[1] / 2) * CELL_SIZE + viewTransform.translateY,
+                transform: 'translate(-50%, -50%)',
               }}
             />
           );

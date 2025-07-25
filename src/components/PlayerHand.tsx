@@ -2,6 +2,7 @@ import React from 'react';
 import { DominoTile } from './DominoTile';
 import { DominoData } from '@/types/domino';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PlayerHandProps {
   hand: DominoData[];
@@ -20,13 +21,17 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   selectedIndex,
   onDominoSelect
 }) => {
+  const isMobile = useIsMobile();
   return (
     <div className="game-ui p-6">
       <h2 className="text-lg font-semibold mb-4 text-center text-ui-text">
         Jouw Hand
       </h2>
       
-      <div className="flex flex-wrap justify-center gap-2 min-h-[64px] p-2">
+      <div className={cn(
+        "flex flex-wrap justify-center min-h-[64px] p-2",
+        isMobile ? "gap-1" : "gap-2"
+      )}>
         {hand.map((domino, index) => (
           <DominoTile
             key={getDominoKey(domino, index)} // More stable key
@@ -34,7 +39,10 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             orientation={isDouble(domino) ? "vertical" : "horizontal"}
             selected={index === selectedIndex}
             onClick={() => onDominoSelect(index)}
-            className="relative m-1 hover:scale-105 transition-transform"
+            className={cn(
+              "relative hover:scale-105 transition-transform",
+              isMobile ? "m-0.5" : "m-1"
+            )}
           />
         ))}
       </div>
