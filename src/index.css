@@ -159,8 +159,8 @@
   
   .domino-pip {
     background: hsl(var(--domino-pip));
-    width: var(--pip-size, 7px);
-    height: var(--pip-size, 7px);
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     position: absolute;
     transform: translate(-50%, -50%);

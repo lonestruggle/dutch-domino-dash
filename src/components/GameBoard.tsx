@@ -1,10 +1,9 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { DominoTile } from './DominoTile';
 import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 import dominoTable3 from '@/assets/domino-table-3.webp';
@@ -19,9 +18,10 @@ interface GameBoardProps {
   backgroundChoice?: string;
 }
 
-// Responsive cell sizes
-const DESKTOP_CELL_SIZE = 48;
-const MOBILE_CELL_SIZE = 32;
+const CELL_SIZE = 48;
+const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
+const PADDING = 400; // Increased padding for better scroll area
+const SCROLL_PADDING = 200; // Extra padding for scroll calculations
 
 export const GameBoard: React.FC<GameBoardProps> = ({
   gameState,
@@ -33,163 +33,107 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  
-  // Calculate board size to fit the container perfectly
+
+  // Calculate dynamic board size based on domino positions
   const calculateBoardSize = () => {
-    if (!containerSize.width || !containerSize.height) {
-      return { width: 800, height: 600 };
+    if (Object.keys(gameState.dominoes).length === 0) {
+      return MIN_BOARD_SIZE;
     }
+
+    let minX = 0, maxX = 0, minY = 0, maxY = 0;
     
-    // Use the full container size minus some padding
-    const padding = isMobile ? 8 : 40;
+    Object.values(gameState.dominoes).forEach(domino => {
+      const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
+      const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
+      
+      minX = Math.min(minX, domino.x);
+      maxX = Math.max(maxX, domino.x + dominoWidth - 1);
+      minY = Math.min(minY, domino.y);
+      maxY = Math.max(maxY, domino.y + dominoHeight - 1);
+    });
+
+    const requiredWidth = (maxX - minX + 1) * CELL_SIZE + PADDING * 2;
+    const requiredHeight = (maxY - minY + 1) * CELL_SIZE + PADDING * 2;
+    const requiredSize = Math.max(requiredWidth, requiredHeight, MIN_BOARD_SIZE);
+    
+    return Math.max(requiredSize, MIN_BOARD_SIZE);
+  };
+
+  // Calculate optimal viewport center based on all dominoes and legal moves
+  const calculateOptimalViewport = () => {
+    if (!containerRef.current) return null;
+
+    const dominoes = Object.values(gameState.dominoes);
+    if (dominoes.length === 0) return null;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    
+    // Include placed dominoes
+    dominoes.forEach(domino => {
+      const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
+      const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
+      
+      minX = Math.min(minX, domino.x);
+      maxX = Math.max(maxX, domino.x + dominoWidth - 1);
+      minY = Math.min(minY, domino.y);
+      maxY = Math.max(maxY, domino.y + dominoHeight - 1);
+    });
+
+    // Include legal move positions for better viewport planning
+    legalMoves.forEach(move => {
+      const { end } = move;
+      let { x, y } = end;
+      const { orientation } = move;
+      
+      // Adjust position based on direction (same logic as in render)
+      if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
+      if (orientation === "vertical" && end.fromDir === "N") y -= 1;
+
+      const width = orientation === "horizontal" ? 2 : 1;
+      const height = orientation === "vertical" ? 2 : 1;
+      
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x + width - 1);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y + height - 1);
+    });
+
+    // Calculate center point with extra padding
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const boardSize = calculateBoardSize();
+    
+    // Convert grid coordinates to pixel coordinates
+    const pixelCenterX = boardSize / 2 + centerX * CELL_SIZE;
+    const pixelCenterY = boardSize / 2 + centerY * CELL_SIZE;
+    
+    // Calculate optimal scroll position (center the viewport on the content center)
+    const optimalScrollX = pixelCenterX - containerRect.width / 2;
+    const optimalScrollY = pixelCenterY - containerRect.height / 2;
+    
     return {
-      width: containerSize.width - padding,
-      height: containerSize.height - padding
+      scrollLeft: Math.max(0, optimalScrollX),
+      scrollTop: Math.max(0, optimalScrollY)
     };
   };
 
-  // Calculate dynamic cell size based on content bounds
-  const calculateDynamicCellSize = () => {
-    const dominoes = Object.values(gameState.dominoes);
-    if (dominoes.length === 0) {
-      return isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;
-    }
-
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  // Auto-scroll to optimal viewport
+  const autoScroll = () => {
+    if (!containerRef.current) return;
     
-    // Include placed dominoes
-    dominoes.forEach(domino => {
-      const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
-      const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
-      
-      minX = Math.min(minX, domino.x);
-      maxX = Math.max(maxX, domino.x + dominoWidth - 1);
-      minY = Math.min(minY, domino.y);
-      maxY = Math.max(maxY, domino.y + dominoHeight - 1);
+    const viewport = calculateOptimalViewport();
+    if (!viewport) return;
+
+    containerRef.current.scrollTo({
+      left: viewport.scrollLeft,
+      top: viewport.scrollTop,
+      behavior: 'smooth'
     });
-
-    // Include legal move positions
-    legalMoves.forEach(move => {
-      const { end } = move;
-      let { x, y } = end;
-      const { orientation } = move;
-      
-      if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
-      if (orientation === "vertical" && end.fromDir === "N") y -= 1;
-
-      const width = orientation === "horizontal" ? 2 : 1;
-      const height = orientation === "vertical" ? 2 : 1;
-      
-      minX = Math.min(minX, x);
-      maxX = Math.max(maxX, x + width - 1);
-      minY = Math.min(minY, y);
-      maxY = Math.max(maxY, y + height - 1);
-    });
-
-    const boardSize = calculateBoardSize();
-    const baseCellSize = isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;
-    
-    // Calculate content dimensions
-    const contentWidth = (maxX - minX + 1) * baseCellSize;
-    const contentHeight = (maxY - minY + 1) * baseCellSize;
-    
-    // Calculate scale factors to fit content in board
-    const scaleX = boardSize.width / contentWidth;
-    const scaleY = boardSize.height / contentHeight;
-    const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
-    
-    // Apply minimum and maximum scale limits
-    const minScale = isMobile ? 0.6 : 0.7;
-    const maxScale = 0.25; // Maximum 4x smaller (1/4 = 0.25)
-    const finalScale = Math.max(Math.min(scale, 1), Math.max(maxScale, minScale));
-    
-    return Math.floor(baseCellSize * finalScale);
-  };
-
-  const CELL_SIZE = calculateDynamicCellSize();
-
-  // Calculate view transform to center dominoes in the container
-  const calculateViewTransform = () => {
-    const dominoes = Object.values(gameState.dominoes);
-    if (dominoes.length === 0) {
-      return { translateX: 0, translateY: 0 };
-    }
-
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    
-    // Include placed dominoes
-    dominoes.forEach(domino => {
-      const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
-      const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
-      
-      minX = Math.min(minX, domino.x);
-      maxX = Math.max(maxX, domino.x + dominoWidth - 1);
-      minY = Math.min(minY, domino.y);
-      maxY = Math.max(maxY, domino.y + dominoHeight - 1);
-    });
-
-    // Include legal move positions for better centering
-    legalMoves.forEach(move => {
-      const { end } = move;
-      let { x, y } = end;
-      const { orientation } = move;
-      
-      if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
-      if (orientation === "vertical" && end.fromDir === "N") y -= 1;
-
-      const width = orientation === "horizontal" ? 2 : 1;
-      const height = orientation === "vertical" ? 2 : 1;
-      
-      minX = Math.min(minX, x);
-      maxX = Math.max(maxX, x + width - 1);
-      minY = Math.min(minY, y);
-      maxY = Math.max(maxY, y + height - 1);
-    });
-
-    // Calculate the center of all game content
-    const contentCenterX = (minX + maxX) / 2 * CELL_SIZE;
-    const contentCenterY = (minY + maxY) / 2 * CELL_SIZE;
-    
-    const boardSize = calculateBoardSize();
-    
-    // Center the content within the board
-    const translateX = (boardSize.width / 2) - contentCenterX;
-    const translateY = (boardSize.height / 2) - contentCenterY;
-    
-    return { translateX, translateY };
   };
 
   const boardSize = calculateBoardSize();
-  const viewTransform = calculateViewTransform();
-  
-  // Track container size changes
-  useEffect(() => {
-    const updateContainerSize = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setContainerSize({ width: rect.width, height: rect.height });
-      }
-    };
-    
-    updateContainerSize();
-    window.addEventListener('resize', updateContainerSize);
-    
-    // Use ResizeObserver for more accurate tracking
-    let resizeObserver: ResizeObserver;
-    if (containerRef.current) {
-      resizeObserver = new ResizeObserver(updateContainerSize);
-      resizeObserver.observe(containerRef.current);
-    }
-    
-    return () => {
-      window.removeEventListener('resize', updateContainerSize);
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-    };
-  }, []);
 
   // Get the background image based on the choice
   const getBackgroundImage = () => {
@@ -209,19 +153,36 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const backgroundImage = getBackgroundImage();
 
-  // No need for auto-scroll anymore since everything fits on screen
+  // Auto-scroll when dominoes change or legal moves change
+  useEffect(() => {
+    // Small delay to ensure DOM is updated
+    const timer = setTimeout(() => {
+      autoScroll();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [gameState.dominoes, legalMoves]);
+
+  // Initial center when game starts
+  useEffect(() => {
+    if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
+      // For the first domino, center it properly
+      setTimeout(() => {
+        containerRef.current?.scrollTo({
+          left: boardSize / 2 - 200,
+          top: boardSize / 2 - 200,
+          behavior: 'smooth'
+        });
+      }, 100);
+    }
+  }, [gameState.dominoes, boardSize]);
 
   return (
     <div 
       ref={containerRef}
-      className={cn(
-        "relative game-board border-2 border-border rounded-lg overflow-hidden mb-4",
-        isMobile ? "w-screen -mx-4" : "w-full"
-      )}
+      className="relative w-full flex-1 game-board border-2 border-border rounded-lg overflow-auto mb-4"
       style={{ 
-        height: isMobile ? 'calc(100vh - 320px)' : '60vh',
-        minHeight: isMobile ? '250px' : '400px',
-        maxHeight: isMobile ? 'calc(100vh - 300px)' : '600px',
+        scrollBehavior: 'smooth',
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -230,8 +191,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     >
       <div 
         ref={boardRef}
-        className="relative w-full h-full"
+        className="relative"
         style={{ 
+          width: boardSize, 
+          height: boardSize,
           backgroundImage: `url(${backgroundImage})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
@@ -244,8 +207,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             key={id}
             className="absolute"
             style={{
-              left: domino.x * CELL_SIZE + viewTransform.translateX,
-              top: domino.y * CELL_SIZE + viewTransform.translateY,
+              left: boardSize / 2 + domino.x * CELL_SIZE,
+              top: boardSize / 2 + domino.y * CELL_SIZE,
             }}
           >
             <DominoTile
@@ -254,7 +217,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               flipped={domino.flipped}
               rotation={domino.rotation || 0}
               isShaking={gameState.isHardSlamming}
-              cellSize={CELL_SIZE}
             />
           </div>
         ))}
@@ -286,11 +248,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               orientation={orientation}
               isDouble={isDouble}
               onClick={() => onMoveExecute(move)}
-              cellSize={CELL_SIZE}
               style={{
-                left: (x + size[0] / 2) * CELL_SIZE + viewTransform.translateX,
-                top: (y + size[1] / 2) * CELL_SIZE + viewTransform.translateY,
-                transform: 'translate(-50%, -50%)',
+                left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
+                top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,
               }}
             />
           );

@@ -1,7 +1,6 @@
 import React from 'react';
 import { DominoData } from '@/types/domino';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DominoTileProps {
   data: DominoData;
@@ -13,7 +12,6 @@ interface DominoTileProps {
   style?: React.CSSProperties;
   rotation?: number;
   isShaking?: boolean;
-  cellSize?: number;
 }
 
 const isDouble = (data: DominoData) => data.value1 === data.value2;
@@ -27,21 +25,11 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   selected = false,
   style,
   rotation = 0,
-  isShaking = false,
-  cellSize
+  isShaking = false
 }) => {
-  const isMobile = useIsMobile();
   console.log(`🎯 DominoTile render - rotation: ${rotation}, data: ${data.value1}|${data.value2}`);
   const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
   const double = isDouble(data);
-  
-  // Dynamic domino sizes based on cellSize or fallback to responsive defaults
-  const baseCellSize = cellSize || (isMobile ? 32 : 48);
-  const dominoWidth = baseCellSize * 1.8;
-  const dominoHeight = baseCellSize * 0.9;
-  
-  // Calculate pip size based on cell size
-  const pipSize = Math.max(baseCellSize * 0.15, 3);
 
   const renderPips = (count: number) => {
     if (count === 0) return null;
@@ -54,20 +42,19 @@ export const DominoTile: React.FC<DominoTileProps> = ({
     <div
       className={cn(
         'domino-tile cursor-pointer flex relative',
+        orientation === 'vertical' ? 'flex-col w-11 h-[88px]' : 'w-[88px] h-11',
+        double && orientation === 'vertical' && 'transform -translate-y-6',
+        double && orientation === 'horizontal' && 'transform -translate-x-6',
         selected && 'selected',
         isShaking && 'hard-slam-shake',
         className
       )}
       onClick={onClick}
       style={{
-        width: orientation === 'vertical' ? dominoHeight : dominoWidth,
-        height: orientation === 'vertical' ? dominoWidth : dominoHeight,
+        ...style,
         transform: `${style?.transform || ''} rotate(${rotation}deg)`.trim(),
         '--domino-rotation': `${rotation}deg`,
-        '--shake-duration': `${1 + Math.random()}s`,
-        '--pip-size': `${pipSize}px`,
-        flexDirection: orientation === 'vertical' ? 'column' : 'row',
-        ...style,
+        '--shake-duration': `${1 + Math.random()}s`, // Random duration between 1-2 seconds
       } as React.CSSProperties}
     >
       <div className={cn(

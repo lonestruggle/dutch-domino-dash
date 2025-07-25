@@ -1,6 +1,5 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PlacementTargetProps {
   x: number;
@@ -11,7 +10,6 @@ interface PlacementTargetProps {
   isDouble: boolean;
   onClick: () => void;
   style?: React.CSSProperties;
-  cellSize?: number;
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -22,11 +20,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   orientation,
   isDouble,
   onClick,
-  style,
-  cellSize
+  style
 }) => {
-  const isMobile = useIsMobile();
-  const CELL_SIZE = cellSize || (isMobile ? 32 : 48);
+  const CELL_SIZE = 48;
   
   return (
     <div
@@ -36,8 +32,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         isDouble && orientation === 'horizontal' && '-ml-6'
       )}
       style={{
-        width: `${CELL_SIZE * width - 4}px`,
-        height: `${CELL_SIZE * height - 4}px`,
+        width: `calc(var(--cell-size) * ${width} - 4px)`,
+        height: `calc(var(--cell-size) * ${height} - 4px)`,
         ...style
       }}
       onClick={(e) => {
