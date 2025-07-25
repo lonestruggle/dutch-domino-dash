@@ -1,6 +1,7 @@
 import React from 'react';
 import { DominoData } from '@/types/domino';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DominoTileProps {
   data: DominoData;
@@ -27,9 +28,14 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   rotation = 0,
   isShaking = false
 }) => {
+  const isMobile = useIsMobile();
   console.log(`🎯 DominoTile render - rotation: ${rotation}, data: ${data.value1}|${data.value2}`);
   const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
   const double = isDouble(data);
+  
+  // Responsive domino sizes
+  const dominoWidth = isMobile ? 58 : 88;  // 32px * 1.8 vs 48px * 1.8
+  const dominoHeight = isMobile ? 29 : 44; // 32px * 0.9 vs 48px * 0.9
 
   const renderPips = (count: number) => {
     if (count === 0) return null;
@@ -42,19 +48,19 @@ export const DominoTile: React.FC<DominoTileProps> = ({
     <div
       className={cn(
         'domino-tile cursor-pointer flex relative',
-        orientation === 'vertical' ? 'flex-col w-11 h-[88px]' : 'w-[88px] h-11',
-        double && orientation === 'vertical' && 'transform -translate-y-6',
-        double && orientation === 'horizontal' && 'transform -translate-x-6',
         selected && 'selected',
         isShaking && 'hard-slam-shake',
         className
       )}
       onClick={onClick}
       style={{
-        ...style,
+        width: orientation === 'vertical' ? dominoHeight : dominoWidth,
+        height: orientation === 'vertical' ? dominoWidth : dominoHeight,
         transform: `${style?.transform || ''} rotate(${rotation}deg)`.trim(),
         '--domino-rotation': `${rotation}deg`,
-        '--shake-duration': `${1 + Math.random()}s`, // Random duration between 1-2 seconds
+        '--shake-duration': `${1 + Math.random()}s`,
+        flexDirection: orientation === 'vertical' ? 'column' : 'row',
+        ...style,
       } as React.CSSProperties}
     >
       <div className={cn(
