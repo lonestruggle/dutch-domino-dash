@@ -237,58 +237,8 @@
   * {
     @apply border-border;
   }
-}
 
-/* Mobile-specific optimizations */
-@media (max-width: 768px) {
-  .game-board-container {
-    /* Optimize mobile scrolling */
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-  }
-  
-  /* Smaller cell size for mobile */
-  :root {
-    --cell-size: 36px;
-  }
-  
-  /* Optimize mobile viewport */
   body {
-    /* Remove fixed positioning that might hide content */
-    overflow: auto;
-    position: relative;
-    width: 100%;
-    height: auto;
-    min-height: 100vh;
+    @apply bg-background text-foreground;
   }
-  
-  /* Custom scrollbar for mobile */
-  .scrollbar-thin {
-    scrollbar-width: thin;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: hsl(var(--board-green));
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(var(--board-green-dark));
-    border-radius: 3px;
-  }
-}
-
-/* Shake animation for hard slam */
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-  20%, 40%, 60%, 80% { transform: translateX(2px); }
-}
-
-.animate-shake {
-  animation: shake 0.5s ease-in-out;
 }
