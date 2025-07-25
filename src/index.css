@@ -236,6 +236,7 @@
 @layer base {
   * {
     @apply border-border;
+  }
 }
 
 /* Mobile-specific optimizations */
