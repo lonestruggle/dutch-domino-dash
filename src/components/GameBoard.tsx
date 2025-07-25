@@ -36,6 +36,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   
+  // Calculate board size to fit the container perfectly
+  const calculateBoardSize = () => {
+    if (!containerSize.width || !containerSize.height) {
+      return { width: 800, height: 600 };
+    }
+    
+    // Use the full container size minus some padding
+    const padding = isMobile ? 20 : 40;
+    return {
+      width: containerSize.width - padding,
+      height: containerSize.height - padding
+    };
+  };
+
   // Calculate dynamic cell size based on content bounds
   const calculateDynamicCellSize = () => {
     const dominoes = Object.values(gameState.dominoes);
@@ -94,20 +108,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   const CELL_SIZE = calculateDynamicCellSize();
-
-  // Calculate board size to fit the container perfectly
-  const calculateBoardSize = () => {
-    if (!containerSize.width || !containerSize.height) {
-      return { width: 800, height: 600 };
-    }
-    
-    // Use the full container size minus some padding
-    const padding = isMobile ? 20 : 40;
-    return {
-      width: containerSize.width - padding,
-      height: containerSize.height - padding
-    };
-  };
 
   // Calculate view transform to center dominoes in the container
   const calculateViewTransform = () => {
