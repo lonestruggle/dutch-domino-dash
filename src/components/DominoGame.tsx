@@ -125,131 +125,140 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const hardSlamActive = gameState?.hardSlamNextMove === true;
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Game Status */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h2 className="text-2xl font-bold">Domino Game</h2>
-              <Badge variant={isMyTurn ? "default" : "secondary"}>
-                {isMyTurn ? "Your Turn" : `${currentPlayerName}'s Turn`}
+    <div className="min-h-screen bg-background">
+      {/* Mobile-optimized layout */}
+      <div className="flex flex-col h-screen max-h-screen overflow-hidden">
+        
+        {/* Compact Header for Mobile */}
+        <div className="flex-shrink-0 p-2 md:p-4 bg-card border-b">
+          <div className="flex items-center justify-between text-sm md:text-base">
+            <div className="flex items-center space-x-2">
+              <h2 className="text-lg md:text-2xl font-bold truncate">Domino</h2>
+              <Badge variant={isMyTurn ? "default" : "secondary"} className="text-xs">
+                {isMyTurn ? "Jouw Beurt" : `${currentPlayerName}`}
               </Badge>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">
-                Boneyard: {gameState?.boneyard?.length || 0} tiles
-              </span>
+            <div className="text-xs md:text-sm text-muted-foreground">
+              Boneyard: {gameState?.boneyard?.length || 0}
             </div>
           </div>
-        </Card>
+        </div>
 
-        {/* Players List */}
-        <Card className="p-4">
-          <h3 className="font-semibold mb-3">Players</h3>
-          <div className="flex flex-wrap gap-2">
+        {/* Players List - Compact Mobile Version */}
+        <div className="flex-shrink-0 p-2 md:p-4 bg-card/50 border-b">
+          <div className="flex flex-wrap gap-1 md:gap-2">
             {syncState?.allPlayers?.map((player: any) => (
               <Badge 
                 key={player.position} 
                 variant={player.position === gameState?.currentPlayer ? "default" : "outline"}
-                className="flex items-center space-x-2"
+                className="text-xs flex items-center space-x-1"
               >
-                <span>{player.username}</span>
-                <span className="text-xs opacity-75">
-                  ({gameState?.playerHands?.[player.position]?.length || 0} tiles)
+                <span className="truncate max-w-[60px] md:max-w-none">{player.username}</span>
+                <span className="opacity-75">
+                  ({gameState?.playerHands?.[player.position]?.length || 0})
                 </span>
               </Badge>
             ))}
           </div>
-        </Card>
+        </div>
 
-        {/* Game Board */}
-        <GameBoard 
-          gameState={gameState}
-          legalMoves={legalMovesWithIndex}
-          onMoveExecute={executeMove}
-          onCenterView={() => {}}
-          hasDifferentNeighbor={hasDifferentNeighbor}
-          backgroundChoice={gameData?.background_choice}
-        />
+        {/* Game Board - Takes Available Space */}
+        <div className="flex-1 min-h-0 relative">
+          <GameBoard 
+            gameState={gameState}
+            legalMoves={legalMovesWithIndex}
+            onMoveExecute={executeMove}
+            onCenterView={() => {}}
+            hasDifferentNeighbor={hasDifferentNeighbor}
+            backgroundChoice={gameData?.background_choice}
+          />
+        </div>
 
-        {/* Player Hand */}
-        <PlayerHand
-          hand={gameState?.playerHand || []}
-          selectedIndex={gameState?.selectedHandIndex}
-          onDominoSelect={selectHandDomino}
-        />
+        {/* Player Hand - Fixed at Bottom */}
+        <div className="flex-shrink-0 bg-card border-t">
+          <PlayerHand
+            hand={gameState?.playerHand || []}
+            selectedIndex={gameState?.selectedHandIndex}
+            onDominoSelect={selectHandDomino}
+          />
+        </div>
 
-        {/* Game Actions */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex space-x-2">
-              <Button 
-                onClick={startNewGame}
-                variant="default"
-              >
-                Start New Game
-              </Button>
-              <Button 
-                onClick={drawFromBoneyard}
-                disabled={!gameState?.boneyard?.length}
-                variant="outline"
-              >
-                Draw from Boneyard ({gameState?.boneyard?.length || 0})
-              </Button>
-              <Button 
-                onClick={passMove}
-                disabled={!shouldEnablePassButton}
-                variant={shouldEnablePassButton ? "destructive" : "outline"}
-                className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
-              >
-                Pas
-              </Button>
-              <Button 
-                onClick={hardSlam}
-                disabled={!canUseHardSlam || hardSlamActive}
-                variant="secondary"
-                className={
-                  hardSlamActive 
-                    ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
-                    : canUseHardSlam 
-                      ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" 
-                      : ""
-                }
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
-              </Button>
-              <Button 
-                onClick={() => gameHook.manualBlockedCheck?.()}
-                variant="outline"
-                className="bg-slate-100 hover:bg-slate-200"
-              >
-                🔧 Check Blocked
-              </Button>
-            </div>
-            <div className="text-sm text-muted-foreground flex items-center">
-              {gameState?.isGameOver ? (
-                <>
-                  <span className="font-semibold text-green-600 mr-2">Game Over!</span>
-                  {!showGameOverDialog && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => setShowGameOverDialog(true)}
-                      className="text-xs py-1 h-7"
-                    >
-                      <Trophy className="h-3 w-3 mr-1" />
-                      Resultaat tonen
-                    </Button>
-                  )}
-                </>
-              ) : (
-                <span>Game in progress...</span>
-              )}
-            </div>
+        {/* Game Actions - Compact Bottom Bar */}
+        <div className="flex-shrink-0 p-2 md:p-4 bg-card border-t">
+          <div className="flex flex-wrap gap-1 md:gap-2 justify-center">
+            <Button 
+              onClick={startNewGame}
+              variant="default"
+              size="sm"
+              className="text-xs md:text-sm"
+            >
+              Nieuw Spel
+            </Button>
+            <Button 
+              onClick={drawFromBoneyard}
+              disabled={!gameState?.boneyard?.length}
+              variant="outline"
+              size="sm"
+              className="text-xs md:text-sm"
+            >
+              Trek ({gameState?.boneyard?.length || 0})
+            </Button>
+            <Button 
+              onClick={passMove}
+              disabled={!shouldEnablePassButton}
+              variant={shouldEnablePassButton ? "destructive" : "outline"}
+              size="sm"
+              className={`text-xs md:text-sm ${shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
+            >
+              Pas
+            </Button>
+            <Button 
+              onClick={hardSlam}
+              disabled={!canUseHardSlam || hardSlamActive}
+              variant="secondary"
+              size="sm"
+              className={`text-xs md:text-sm ${
+                hardSlamActive 
+                  ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
+                  : canUseHardSlam 
+                    ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" 
+                    : ""
+              }`}
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              {hardSlamActive ? "Ready! 🔥" : "Hard Slam! 💥"}
+            </Button>
+            <Button 
+              onClick={() => gameHook.manualBlockedCheck?.()}
+              variant="outline"
+              size="sm"
+              className="text-xs md:text-sm bg-slate-100 hover:bg-slate-200"
+            >
+              🔧 Check
+            </Button>
           </div>
-        </Card>
+          
+          <div className="text-xs md:text-sm text-muted-foreground flex items-center justify-center mt-2">
+            {gameState?.isGameOver ? (
+              <>
+                <span className="font-semibold text-green-600 mr-2">Game Over!</span>
+                {!showGameOverDialog && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setShowGameOverDialog(true)}
+                    className="text-xs py-1 h-7"
+                  >
+                    <Trophy className="h-3 w-3 mr-1" />
+                    Resultaat
+                  </Button>
+                )}
+              </>
+            ) : (
+              <span>Spel bezig...</span>
+            )}
+          </div>
+        </div>
 
         {/* Game Over Dialog */}
         <Dialog 

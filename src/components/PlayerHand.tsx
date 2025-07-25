@@ -21,21 +21,26 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   onDominoSelect
 }) => {
   return (
-    <div className="game-ui p-6">
-      <h2 className="text-lg font-semibold mb-4 text-center text-ui-text">
+    <div className="p-2 md:p-4">
+      <h2 className="text-sm md:text-lg font-semibold mb-2 text-center text-ui-text">
         Jouw Hand
       </h2>
       
-      <div className="flex flex-wrap justify-center gap-2 min-h-[64px] p-2">
+      {/* Mobile-optimized hand layout */}
+      <div className="flex flex-wrap justify-center gap-1 md:gap-2 min-h-[50px] md:min-h-[64px] max-h-[120px] md:max-h-none overflow-y-auto">
         {hand.map((domino, index) => (
-          <DominoTile
-            key={getDominoKey(domino, index)} // More stable key
-            data={domino}
-            orientation={isDouble(domino) ? "vertical" : "horizontal"}
-            selected={index === selectedIndex}
-            onClick={() => onDominoSelect(index)}
-            className="relative m-1 hover:scale-105 transition-transform"
-          />
+          <div key={getDominoKey(domino, index)} className="flex-shrink-0">
+            <DominoTile
+              data={domino}
+              orientation={isDouble(domino) ? "vertical" : "horizontal"}
+              selected={index === selectedIndex}
+              onClick={() => onDominoSelect(index)}
+              className={`relative hover:scale-105 transition-transform ${
+                // Smaller dominoes on mobile
+                'scale-75 md:scale-100'
+              }`}
+            />
+          </div>
         ))}
       </div>
     </div>
