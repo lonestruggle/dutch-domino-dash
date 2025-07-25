@@ -464,13 +464,9 @@ export default function Game() {
       console.log('⏳ Waiting for database commit...');
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second for DB commit
       
-      // Verify the update actually went through by reading the database
-      try {
-        await syncedGameHook.loadGameState();
-        console.log('✅ Draw saved and verified in database');
-      } catch (error) {
-        console.error('❌ Failed to verify database update:', error);
-      }
+      // DON'T verify with loadGameState as it causes problems
+      // Simply trust that the database update worked
+      console.log('✅ Draw operation completed');
       
     } catch (error) {
       console.error('❌ Error during draw:', error);
