@@ -159,8 +159,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       ref={containerRef}
       className="relative w-full game-board border-2 border-border rounded-lg overflow-hidden mb-4"
       style={{ 
-        height: isMobile ? '50vh' : '60vh',
-        minHeight: isMobile ? '300px' : '400px',
+        height: isMobile ? '35vh' : '60vh',
+        minHeight: isMobile ? '250px' : '400px',
+        maxHeight: isMobile ? '350px' : '600px',
+        aspectRatio: isMobile ? '1.2 / 1' : 'auto',
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
