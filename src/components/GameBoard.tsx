@@ -100,9 +100,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const scaleY = boardSize.height / contentHeight;
     const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
     
-    // Apply minimum scale to keep dominoes readable
+    // Apply minimum and maximum scale limits
     const minScale = isMobile ? 0.6 : 0.7;
-    const finalScale = Math.max(scale, minScale);
+    const maxScale = 0.25; // Maximum 4x smaller (1/4 = 0.25)
+    const finalScale = Math.max(Math.min(scale, 1), Math.max(maxScale, minScale));
     
     return Math.floor(baseCellSize * finalScale);
   };
