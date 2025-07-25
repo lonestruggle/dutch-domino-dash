@@ -11,6 +11,7 @@ interface PlacementTargetProps {
   isDouble: boolean;
   onClick: () => void;
   style?: React.CSSProperties;
+  cellSize?: number;
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -21,10 +22,11 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   orientation,
   isDouble,
   onClick,
-  style
+  style,
+  cellSize
 }) => {
   const isMobile = useIsMobile();
-  const CELL_SIZE = isMobile ? 32 : 48;
+  const CELL_SIZE = cellSize || (isMobile ? 32 : 48);
   
   return (
     <div

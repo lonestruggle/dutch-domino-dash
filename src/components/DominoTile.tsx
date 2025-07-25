@@ -13,6 +13,7 @@ interface DominoTileProps {
   style?: React.CSSProperties;
   rotation?: number;
   isShaking?: boolean;
+  cellSize?: number;
 }
 
 const isDouble = (data: DominoData) => data.value1 === data.value2;
@@ -26,16 +27,21 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   selected = false,
   style,
   rotation = 0,
-  isShaking = false
+  isShaking = false,
+  cellSize
 }) => {
   const isMobile = useIsMobile();
   console.log(`🎯 DominoTile render - rotation: ${rotation}, data: ${data.value1}|${data.value2}`);
   const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
   const double = isDouble(data);
   
-  // Responsive domino sizes
-  const dominoWidth = isMobile ? 58 : 88;  // 32px * 1.8 vs 48px * 1.8
-  const dominoHeight = isMobile ? 29 : 44; // 32px * 0.9 vs 48px * 0.9
+  // Dynamic domino sizes based on cellSize or fallback to responsive defaults
+  const baseCellSize = cellSize || (isMobile ? 32 : 48);
+  const dominoWidth = baseCellSize * 1.8;
+  const dominoHeight = baseCellSize * 0.9;
+  
+  // Calculate pip size based on cell size
+  const pipSize = Math.max(baseCellSize * 0.15, 3);
 
   const renderPips = (count: number) => {
     if (count === 0) return null;
@@ -59,6 +65,7 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         transform: `${style?.transform || ''} rotate(${rotation}deg)`.trim(),
         '--domino-rotation': `${rotation}deg`,
         '--shake-duration': `${1 + Math.random()}s`,
+        '--pip-size': `${pipSize}px`,
         flexDirection: orientation === 'vertical' ? 'column' : 'row',
         ...style,
       } as React.CSSProperties}

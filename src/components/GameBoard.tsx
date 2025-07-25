@@ -36,8 +36,64 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   
-  // Responsive cell size
-  const CELL_SIZE = isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;
+  // Calculate dynamic cell size based on content bounds
+  const calculateDynamicCellSize = () => {
+    const dominoes = Object.values(gameState.dominoes);
+    if (dominoes.length === 0) {
+      return isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;
+    }
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    
+    // Include placed dominoes
+    dominoes.forEach(domino => {
+      const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
+      const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
+      
+      minX = Math.min(minX, domino.x);
+      maxX = Math.max(maxX, domino.x + dominoWidth - 1);
+      minY = Math.min(minY, domino.y);
+      maxY = Math.max(maxY, domino.y + dominoHeight - 1);
+    });
+
+    // Include legal move positions
+    legalMoves.forEach(move => {
+      const { end } = move;
+      let { x, y } = end;
+      const { orientation } = move;
+      
+      if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
+      if (orientation === "vertical" && end.fromDir === "N") y -= 1;
+
+      const width = orientation === "horizontal" ? 2 : 1;
+      const height = orientation === "vertical" ? 2 : 1;
+      
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x + width - 1);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y + height - 1);
+    });
+
+    const boardSize = calculateBoardSize();
+    const baseCellSize = isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;
+    
+    // Calculate content dimensions
+    const contentWidth = (maxX - minX + 1) * baseCellSize;
+    const contentHeight = (maxY - minY + 1) * baseCellSize;
+    
+    // Calculate scale factors to fit content in board
+    const scaleX = boardSize.width / contentWidth;
+    const scaleY = boardSize.height / contentHeight;
+    const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+    
+    // Apply minimum scale to keep dominoes readable
+    const minScale = isMobile ? 0.6 : 0.7;
+    const finalScale = Math.max(scale, minScale);
+    
+    return Math.floor(baseCellSize * finalScale);
+  };
+
+  const CELL_SIZE = calculateDynamicCellSize();
 
   // Calculate board size to fit the container perfectly
   const calculateBoardSize = () => {
@@ -195,6 +251,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               flipped={domino.flipped}
               rotation={domino.rotation || 0}
               isShaking={gameState.isHardSlamming}
+              cellSize={CELL_SIZE}
             />
           </div>
         ))}
@@ -226,6 +283,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               orientation={orientation}
               isDouble={isDouble}
               onClick={() => onMoveExecute(move)}
+              cellSize={CELL_SIZE}
               style={{
                 left: (x + size[0] / 2) * CELL_SIZE + viewTransform.translateX,
                 top: (y + size[1] / 2) * CELL_SIZE + viewTransform.translateY,

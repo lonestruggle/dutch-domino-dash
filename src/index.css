@@ -159,19 +159,11 @@
   
   .domino-pip {
     background: hsl(var(--domino-pip));
-    width: 7px;
-    height: 7px;
+    width: var(--pip-size, 7px);
+    height: var(--pip-size, 7px);
     border-radius: 50%;
     position: absolute;
     transform: translate(-50%, -50%);
-  }
-  
-  /* Smaller pips for mobile */
-  @media (max-width: 767px) {
-    .domino-pip {
-      width: 5px;
-      height: 5px;
-    }
   }
   
   .placement-target {
