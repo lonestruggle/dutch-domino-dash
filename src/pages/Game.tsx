@@ -543,8 +543,15 @@ export default function Game() {
       
       console.log('🔍 Auto check - Open ends:', openEnds.map(end => `${end.value} at ${end.x},${end.y}`));
       
+      // Check if there are dominoes on the board - if not, we're still at the start
+      const dominoesOnBoard = Object.keys(gameState.dominoes || {}).length;
+      if (dominoesOnBoard === 0) {
+        console.log('🎯 No dominoes on board yet - game just started');
+        return; // Game just started, not blocked
+      }
+      
       if (openEnds.length === 0) {
-        console.log('🛑 AUTO BLOCKED: No open ends available');
+        console.log('🛑 AUTO BLOCKED: No open ends available but dominoes are on board');
         return; // This should not happen in normal gameplay
       }
       
