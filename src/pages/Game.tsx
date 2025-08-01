@@ -555,9 +555,14 @@ export default function Game() {
         return; // This should not happen in normal gameplay
       }
       
-      // Check if ANY player can make a move
+      // Check if ANY player OR boneyard can make a move
       let anyPlayerCanMove = false;
       
+      // Extract required values from open ends
+      const requiredValues = new Set(openEnds.map(end => end.value));
+      console.log('🔍 Required values for matching:', Array.from(requiredValues));
+      
+      // Check all player hands
       for (let playerIndex = 0; playerIndex < allPlayers.length; playerIndex++) {
         const playerHand = (gameState as any).playerHands?.[playerIndex] || [];
         
@@ -565,16 +570,27 @@ export default function Game() {
         
         // Check if this player has any domino that can connect to any open end
         for (const domino of playerHand) {
-          for (const openEnd of openEnds) {
-            if (domino.value1 === openEnd.value || domino.value2 === openEnd.value) {
-              console.log(`✅ Player ${playerIndex} can play ${domino.value1}-${domino.value2} on end ${openEnd.value}`);
-              anyPlayerCanMove = true;
-              break;
-            }
+          if (requiredValues.has(domino.value1) || requiredValues.has(domino.value2)) {
+            console.log(`✅ Player ${playerIndex} can play ${domino.value1}-${domino.value2} on open ends`);
+            anyPlayerCanMove = true;
+            break;
           }
-          if (anyPlayerCanMove) break;
         }
         if (anyPlayerCanMove) break;
+      }
+      
+      // If no player can move, check boneyard
+      if (!anyPlayerCanMove) {
+        const boneyard = gameState.boneyard || [];
+        console.log('🔍 Checking boneyard:', boneyard.length, 'tiles');
+        
+        for (const domino of boneyard) {
+          if (requiredValues.has(domino.value1) || requiredValues.has(domino.value2)) {
+            console.log(`✅ Boneyard has matching domino: ${domino.value1}-${domino.value2}`);
+            anyPlayerCanMove = true;
+            break;
+          }
+        }
       }
       
       if (!anyPlayerCanMove) {

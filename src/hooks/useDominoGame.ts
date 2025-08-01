@@ -370,28 +370,46 @@ export const useDominoGame = () => {
     return moves;
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
-  // IMPROVED BLOCKED GAME CHECK - HAND-BASED: Check if current player can make a move
-  const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, currentPlayerHand: DominoData[]): boolean => {
-    console.log('🔍 CHECKING BLOCKED GAME - Hand-based approach');
+  // BLOCKED GAME CHECK: Check if ANY player or boneyard can make a move
+  const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
+    console.log('🔍 CHECKING BLOCKED GAME - Complete game state approach');
     console.log('🔍 Open ends:', openEnds);
-    console.log('🔍 Current player hand:', currentPlayerHand);
+    console.log('🔍 All player hands:', allPlayerHands.map((hand, i) => `Player ${i}: ${hand.length} tiles`));
+    console.log('🔍 Boneyard:', boneyard.length, 'tiles');
     
     if (openEnds.length === 0) {
       console.log('❌ No open ends - game is blocked');
       return true;
     }
 
-    // Check if current player has any domino that can connect to any open end
-    for (const domino of currentPlayerHand) {
-      for (const openEnd of openEnds) {
-        if (domino.value1 === openEnd.value || domino.value2 === openEnd.value) {
-          console.log(`✅ Player can play ${domino.value1}-${domino.value2} on end ${openEnd.value} - game can continue`);
-          return false;
-        }
+    // Extract the required values from open ends
+    const requiredValues = new Set(openEnds.map(end => end.value));
+    console.log('🔍 Required values for matching:', Array.from(requiredValues));
+
+    // Check if ANY player has a matching domino
+    for (let playerIndex = 0; playerIndex < allPlayerHands.length; playerIndex++) {
+      const playerHand = allPlayerHands[playerIndex];
+      const hasMatchingDomino = playerHand.some(domino => {
+        return requiredValues.has(domino.value1) || requiredValues.has(domino.value2);
+      });
+      
+      if (hasMatchingDomino) {
+        console.log(`✅ Game NOT blocked - Player ${playerIndex} has matching domino`);
+        return false;
       }
     }
-    
-    console.log('❌ Player cannot make any move - game is blocked');
+
+    // Check if boneyard has any matching dominoes
+    const boneyardHasMatching = boneyard.some(domino => {
+      return requiredValues.has(domino.value1) || requiredValues.has(domino.value2);
+    });
+
+    if (boneyardHasMatching) {
+      console.log('✅ Game NOT blocked - Boneyard has matching domino');
+      return false;
+    }
+
+    console.log('❌ Game is BLOCKED - No player hands or boneyard have matching dominoes');
     return true;
   }, []);
 
@@ -611,7 +629,9 @@ export const useDominoGame = () => {
       newState.openEnds = newOpenEnds; // FIXED: Actually store the open ends in state
       
       if (!isGameWon) {
-        const isBlocked = checkBlockedGame(newOpenEnds, newBoard, newPlayerHand);
+        // For single player mode, create array with just the player hand
+        const allHands = newState.playerHands || [newPlayerHand];
+        const isBlocked = checkBlockedGame(newOpenEnds, newBoard, allHands, newState.boneyard);
         newState.isGameOver = isBlocked;
       }
       
@@ -659,11 +679,10 @@ export const useDominoGame = () => {
         // Don't change current player - only change when a domino is actually played
       };
       
-      // After drawing, if boneyard is now empty, check if the game is blocked
-      if (newBoneyard.length === 0) {
-        const isBlocked = checkBlockedGame(openEnds, prev.board, newPlayerHand);
-        newState.isGameOver = isBlocked;
-      }
+      // After drawing, check if the game is blocked (no boneyard left and no valid moves)
+      const allHands = prev.playerHands || [newPlayerHand];
+      const isBlocked = checkBlockedGame(openEnds, prev.board, allHands, newBoneyard);
+      newState.isGameOver = isBlocked;
       
       console.log('✅ LOCAL DRAW COMPLETE - returning new state');
       return newState;
