@@ -371,6 +371,17 @@ export const useDominoGame = () => {
             return;
           }
 
+          // For doubles, also check if the second position would be forbidden
+          if (selectedIsDouble) {
+            const orientation = end.fromDir === 'N' || end.fromDir === 'S' ? 'vertical' : 'horizontal';
+            const secondCellKey = orientation === 'horizontal' ? 
+              `${end.x + 1},${end.y}` : 
+              `${end.x},${end.y + 1}`;
+            if (currentState.forbiddens[secondCellKey]) {
+              return;
+            }
+          }
+
           if (hasDifferentNeighbor(end.x, end.y)) {
             return;
           }
