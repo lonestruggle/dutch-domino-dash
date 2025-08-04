@@ -373,11 +373,35 @@ export const useDominoGame = () => {
 
           // For doubles, also check if the second position would be forbidden
           if (selectedIsDouble) {
-            const orientation = end.fromDir === 'N' || end.fromDir === 'S' ? 'vertical' : 'horizontal';
-            const secondCellKey = orientation === 'horizontal' ? 
-              `${end.x + 1},${end.y}` : 
-              `${end.x},${end.y + 1}`;
-            if (currentState.forbiddens[secondCellKey]) {
+            const tempOrientation = end.fromDir === 'N' || end.fromDir === 'S' ? 'vertical' : 'horizontal';
+            let tempFinalOrientation = tempOrientation;
+            
+            // For doubles, flip the orientation like in original code
+            if (selectedIsDouble) {
+              tempFinalOrientation = tempOrientation === 'horizontal' ? 'vertical' : 'horizontal';
+            }
+            
+            let tempX = end.x;
+            let tempY = end.y;
+            
+            // Calculate final position for double 
+            if (tempFinalOrientation === 'horizontal') {
+              if (end.fromDir === 'W') {
+                tempX -= 1;
+              }
+            } else { // vertical
+              if (end.fromDir === 'N') {
+                tempY -= 1;
+              }
+            }
+            
+            // Check both cells the double would occupy
+            const firstCellKey = `${tempX},${tempY}`;
+            const secondCellKey = tempFinalOrientation === 'horizontal' ? 
+              `${tempX + 1},${tempY}` : 
+              `${tempX},${tempY + 1}`;
+              
+            if (currentState.forbiddens[firstCellKey] || currentState.forbiddens[secondCellKey]) {
               return;
             }
           }
