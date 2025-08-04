@@ -159,6 +159,13 @@ export default function Game() {
   const manualBlockedCheck = useCallback(() => {
     if (!gameState) return;
     
+    // IMPORTANT: If board is empty, game cannot be blocked
+    const boardHasDominoes = gameState.board && Object.keys(gameState.board).length > 0;
+    if (!boardHasDominoes) {
+      console.log('✅ Board is empty - game cannot be blocked');
+      return;
+    }
+    
     const openEnds = gameHook.regenerateOpenEnds(gameState);
     if (openEnds.length === 0) {
       console.log('❌ No open ends - game should be blocked');
