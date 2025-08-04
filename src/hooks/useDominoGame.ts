@@ -371,6 +371,29 @@ export const useDominoGame = () => {
             return;
           }
 
+          // Check if the move would be too close to existing doubles
+          const checkTooCloseToDoubles = (checkX: number, checkY: number) => {
+            for (const dominoId in currentState.dominoes) {
+              const domino = currentState.dominoes[dominoId];
+              if (domino.isSpinner) { // This is a double
+                const doubleX = domino.x;
+                const doubleY = domino.y;
+                
+                // Check if the move is in the forbidden zone around this double
+                const distance = Math.abs(checkX - doubleX) + Math.abs(checkY - doubleY);
+                if (distance <= 2) { // Within 2 cells of the double
+                  return true;
+                }
+              }
+            }
+            return false;
+          };
+
+          // Check if this move is too close to any existing doubles
+          if (checkTooCloseToDoubles(end.x, end.y)) {
+            return;
+          }
+
           // For doubles, also check if the second position would be forbidden
           if (selectedIsDouble) {
             const tempOrientation = end.fromDir === 'N' || end.fromDir === 'S' ? 'vertical' : 'horizontal';
