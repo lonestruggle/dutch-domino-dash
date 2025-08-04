@@ -533,8 +533,8 @@ export default function Game() {
       const currentPlayer = gameState.currentPlayer;
       const isMyTurn = currentPlayer === syncedGameHook.syncState.playerPosition;
       
-      // Only check for blocked game on the current player's turn
-      if (!isMyTurn) return;
+      // Check for blocked game regardless of whose turn it is
+      // Any player can detect and end a blocked game
       
       console.log('🔍 AUTO Checking for blocked game on turn:', currentPlayer);
       
