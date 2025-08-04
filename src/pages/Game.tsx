@@ -51,78 +51,61 @@ export default function Game() {
       }
       
       // NIEUWE BLOCKED GAME REGELS
-      // Blokkering in Domino – Definitieve Regels
-      // Een domino-spel is geblokkeerd als:
-      // Geen enkele steen in de spelershanden OF in de boneyard past op de open ends.
+      // Het spel is geblokkeerd als alle open ends hetzelfde getal vereisen 
+      // EN alle 7 stenen van dat getal al op tafel liggen
       
       const requiredValues = new Set(openEnds.map(end => end.value));
       console.log('🔍 Required values for matching (open ends):', Array.from(requiredValues));
       
-      // 1. Doorzoek alle spelershanden: zit er een steen die past op de open ends?
-      const allPlayerHands = syncState.allPlayers.map((_, index) => 
-        gameState.playerHands?.[index] || []
-      );
-      
-      console.log('🔍 Checking player hands for matching tiles...');
-      const somePlayerCanPlay = allPlayerHands.some((hand, playerIndex) => {
-        const canPlay = hand.some(domino => 
-          requiredValues.has(domino.value1) || requiredValues.has(domino.value2)
-        );
-        if (canPlay) {
-          console.log(`✅ Player ${playerIndex} can play - game continues`);
+      // Check if all open ends require the same value
+      if (requiredValues.size === 1) {
+        const requiredValue = Array.from(requiredValues)[0];
+        console.log(`🔍 All open ends require value: ${requiredValue}`);
+        
+        // Count how many tiles with this value are already on the board
+        let tilesOnBoard = 0;
+        Object.values(gameState.dominoes).forEach(domino => {
+          if (domino.data.value1 === requiredValue) tilesOnBoard++;
+          if (domino.data.value2 === requiredValue) tilesOnBoard++;
+        });
+        
+        console.log(`🔍 Tiles with value ${requiredValue} on board: ${tilesOnBoard}/7`);
+        
+        // If all 7 tiles of this value are on the board, the game is blocked
+        if (tilesOnBoard >= 7) {
+          console.log('❌ GAME IS BLOCKED - All tiles of required value are on board');
+          
+          // Calculate points for all players to determine winner
+          const allPlayerHands = syncState.allPlayers.map((_, index) => 
+            gameState.playerHands?.[index] || []
+          );
+          
+          const playerPoints = allPlayerHands.map(hand => 
+            hand.reduce((sum, domino) => sum + domino.value1 + domino.value2, 0)
+          );
+          
+          console.log('🏆 Player points for blocked game:', playerPoints);
+          
+          // Find player with minimum points
+          const minPoints = Math.min(...playerPoints);
+          const winnerPosition = playerPoints.findIndex(points => points === minPoints);
+          
+          console.log('🏆 Winner position:', winnerPosition, 'with', minPoints, 'points');
+          
+          // Automatically end the game when blocked
+          const updatedGameState = {
+            ...gameState,
+            isGameOver: true,
+            winner_position: winnerPosition,
+            gameEndReason: 'blocked'
+          };
+          setGameState(updatedGameState);
+          updateGameState(updatedGameState);
+          return;
         }
-        return canPlay;
-      });
-      
-      if (somePlayerCanPlay) {
-        console.log('✅ At least one player can play - game continues');
-        return;
       }
       
-      // 2. Doorzoek de boneyard: zit daar een steen die past op de open ends?
-      console.log('🔍 Checking boneyard for matching tiles...');
-      const boneyardHasMatching = gameState.boneyard?.some(domino => {
-        const matches = requiredValues.has(domino.value1) || requiredValues.has(domino.value2);
-        if (matches) {
-          console.log(`✅ Boneyard has matching tile: [${domino.value1}|${domino.value2}] - game continues`);
-        }
-        return matches;
-      });
-      
-      if (boneyardHasMatching) {
-        console.log('✅ Boneyard has matching tiles - players can draw - game continues');
-        return;
-      }
-      
-      // 3. Als niets past bij de open ends in zowel handen als boneyard → spel is geblokkeerd
-      console.log('❌ GAME IS BLOCKED - No matching tiles in player hands or boneyard');
-      console.log('🔍 Final verification:');
-      console.log('   - Open ends require values:', Array.from(requiredValues));
-      console.log('   - Player hands:', allPlayerHands.map((hand, i) => `Player ${i}: ${hand.length} tiles`));
-      console.log('   - Boneyard:', gameState.boneyard?.length || 0, 'tiles');
-      
-      // Calculate points for all players to determine winner
-      const playerPoints = allPlayerHands.map(hand => 
-        hand.reduce((sum, domino) => sum + domino.value1 + domino.value2, 0)
-      );
-      
-      console.log('🏆 Player points for blocked game:', playerPoints);
-      
-      // Find player with minimum points
-      const minPoints = Math.min(...playerPoints);
-      const winnerPosition = playerPoints.findIndex(points => points === minPoints);
-      
-      console.log('🏆 Winner position:', winnerPosition, 'with', minPoints, 'points');
-      
-      // Automatically end the game when blocked
-      const updatedGameState = {
-        ...gameState,
-        isGameOver: true,
-        winner_position: winnerPosition,
-        gameEndReason: 'blocked'
-      };
-      setGameState(updatedGameState);
-      updateGameState(updatedGameState);
+      console.log('✅ Game not blocked - either different values required or not all tiles used');
       
     }, 100); // Small delay to ensure state consistency
     
