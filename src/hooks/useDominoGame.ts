@@ -537,41 +537,57 @@ export const useDominoGame = () => {
       
       if (!isFirstDomino) {
         if (isDouble(dominoData)) {
-          // Expanded forbidden logic for doubles - more comprehensive protection
+          // Mark the double domino positions themselves as forbidden first
+          prev.forbiddens[`${x},${y}`] = true;
+          if (orientation === 'horizontal') {
+            prev.forbiddens[`${x + 1},${y}`] = true;
+          } else {
+            prev.forbiddens[`${x},${y + 1}`] = true;
+          }
+          
+          // Then add comprehensive forbidden positions around it
           let dir = end.fromDir;
           if (dir === 'N') {
-            // Comprehensive forbidden positions for North direction
+            // Forbidden positions around North direction for doubles
             prev.forbiddens[`${x - 1},${y + 2}`] = true;
             prev.forbiddens[`${x + 1},${y + 2}`] = true;
             prev.forbiddens[`${x - 1},${y + 1}`] = true;
             prev.forbiddens[`${x + 1},${y + 1}`] = true;
+            prev.forbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
+            prev.forbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
             prev.forbiddens[`${x},${y + 3}`] = true;
             prev.forbiddens[`${x},${y + 2}`] = true;
           }
           if (dir === 'S') {
-            // Comprehensive forbidden positions for South direction
+            // Forbidden positions around South direction for doubles
             prev.forbiddens[`${x - 1},${y - 1}`] = true;
             prev.forbiddens[`${x + 1},${y - 1}`] = true;
             prev.forbiddens[`${x - 1},${y - 2}`] = true;
             prev.forbiddens[`${x + 1},${y - 2}`] = true;
+            prev.forbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
+            prev.forbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
             prev.forbiddens[`${x},${y - 2}`] = true;
             prev.forbiddens[`${x},${y - 3}`] = true;
           }
           if (dir === 'E') {
-            // Comprehensive forbidden positions for East direction
+            // Forbidden positions around East direction for doubles
             prev.forbiddens[`${x - 1},${y + 1}`] = true;
             prev.forbiddens[`${x - 1},${y - 1}`] = true;
             prev.forbiddens[`${x - 2},${y + 1}`] = true;
             prev.forbiddens[`${x - 2},${y - 1}`] = true;
+            prev.forbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
+            prev.forbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
             prev.forbiddens[`${x - 2},${y}`] = true;
             prev.forbiddens[`${x - 3},${y}`] = true;
           }
           if (dir === 'W') {
-            // Comprehensive forbidden positions for West direction
+            // Forbidden positions around West direction for doubles
             prev.forbiddens[`${x + 1},${y + 1}`] = true;
             prev.forbiddens[`${x + 1},${y - 1}`] = true;
             prev.forbiddens[`${x + 2},${y + 1}`] = true;
             prev.forbiddens[`${x + 2},${y - 1}`] = true;
+            prev.forbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
+            prev.forbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
             prev.forbiddens[`${x + 2},${y}`] = true;
             prev.forbiddens[`${x + 3},${y}`] = true;
           }
