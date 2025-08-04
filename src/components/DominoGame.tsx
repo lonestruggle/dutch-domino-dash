@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
@@ -14,7 +14,6 @@ interface DominoGameProps {
 
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
-  const [showGameOverDialog, setShowGameOverDialog] = useState(true);
   
   const {
     gameState,
@@ -27,6 +26,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     syncState,
     gameData
   } = gameHook;
+
+  const [showGameOverDialog, setShowGameOverDialog] = useState(false);
+  
+  // Show dialog when game becomes over
+  useEffect(() => {
+    if (gameState?.isGameOver) {
+      setShowGameOverDialog(true);
+    }
+  }, [gameState?.isGameOver]);
 
   // Access the passMove function from Game.tsx
   const passMove = gameHook.passMove || (() => {
