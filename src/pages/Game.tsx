@@ -53,6 +53,7 @@ export default function Game() {
       // NIEUWE BLOCKED GAME REGELS
       // Het spel is geblokkeerd als alle open ends hetzelfde getal vereisen 
       // EN alle 7 stenen van dat getal al op tafel liggen
+      // Van elk getal (0,1,2,3,4,5,6) zijn er precies 7 stenen in een domino set
       
       const requiredValues = new Set(openEnds.map(end => end.value));
       console.log('🔍 Required values for matching (open ends):', Array.from(requiredValues));
@@ -63,6 +64,7 @@ export default function Game() {
         console.log(`🔍 All open ends require value: ${requiredValue}`);
         
         // Count how many different domino tiles with this value are on the board
+        // For example, for value "3" there are 7 tiles: [0|3], [1|3], [2|3], [3|3], [3|4], [3|5], [3|6]
         const tilesWithValue = new Set();
         Object.values(gameState.dominoes).forEach(domino => {
           if (domino.data.value1 === requiredValue || domino.data.value2 === requiredValue) {
