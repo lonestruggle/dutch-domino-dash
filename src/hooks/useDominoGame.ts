@@ -814,6 +814,19 @@ export const useDominoGame = () => {
     resetGame,
     hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y),
     regenerateOpenEnds: (state?: GameState) => regenerateOpenEnds(state || gameStateRef.current),
+    manualBlockedCheck: () => {
+      const currentState = gameStateRef.current;
+      const openEnds = regenerateOpenEnds(currentState);
+      const allHands = currentState.playerHands || [currentState.playerHand];
+      const isBlocked = checkBlockedGame(openEnds, currentState.board, allHands, currentState.boneyard);
+      
+      console.log('🔧 MANUAL BLOCKED CHECK:', isBlocked ? 'BLOCKED' : 'NOT BLOCKED');
+      
+      setGameState(prev => ({
+        ...prev,
+        isGameOver: isBlocked
+      }));
+    },
     hardSlam: () => {
       // Activate hard slam for next move (don't apply immediately)
       setGameState(prevState => ({
