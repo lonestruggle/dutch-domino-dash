@@ -706,8 +706,10 @@ export const useDominoGame = () => {
       };
       
       // After drawing, check if the game is blocked (no boneyard left and no valid moves)
+      // BUT ONLY if there are actually dominoes on the board (game has started)
+      const boardHasDominoes = Object.keys(prev.board).length > 0;
       const allHands = prev.playerHands || [newPlayerHand];
-      const isBlocked = checkBlockedGame(openEnds, prev.board, allHands, newBoneyard);
+      const isBlocked = boardHasDominoes && checkBlockedGame(openEnds, prev.board, allHands, newBoneyard);
       newState.isGameOver = isBlocked;
       
       console.log('✅ LOCAL DRAW COMPLETE - returning new state');
