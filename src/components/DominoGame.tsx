@@ -29,7 +29,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   
-  // Show dialog when game becomes over
+  // Show dialog when game becomes over - moved after destructuring
   useEffect(() => {
     if (gameState?.isGameOver) {
       setShowGameOverDialog(true);
