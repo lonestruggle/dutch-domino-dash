@@ -68,14 +68,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   
   // Check if this was a blocked game - reliable detection:
   // Blocked game = game over + all players still have dominoes + winner determined by points
+  // IMPORTANT: Only check for blocked game if there are actually dominoes on the board
+  const boardHasDominoes = gameState?.board && Object.keys(gameState.board).length > 0;
+  
   const allPlayersHaveDominoes = gameState?.isGameOver && syncState?.allPlayers?.every((_, index) => {
     const playerHand = (gameState as any)?.playerHands?.[index] || [];
     return playerHand.length > 0;
   });
   
-  const isBlockedGame = gameState?.isGameOver && allPlayersHaveDominoes && gameState?.winner_position !== undefined;
+  const isBlockedGame = boardHasDominoes && gameState?.isGameOver && allPlayersHaveDominoes && gameState?.winner_position !== undefined;
   
   console.log('🔍 DominoGame - Blocked game detection:', {
+    boardHasDominoes: boardHasDominoes,
     isGameOver: gameState?.isGameOver,
     allPlayersHaveDominoes: allPlayersHaveDominoes,
     winnerPosition: gameState?.winner_position,
