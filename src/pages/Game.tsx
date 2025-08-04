@@ -71,8 +71,39 @@ export default function Game() {
             // Create unique identifier for each domino type
             const dominoKey = `${Math.min(domino.data.value1, domino.data.value2)}|${Math.max(domino.data.value1, domino.data.value2)}`;
             tilesWithValue.add(dominoKey);
+            console.log(`🔍 Found tile with value ${requiredValue}: ${domino.data.value1}|${domino.data.value2} -> key: ${dominoKey}`);
           }
         });
+        
+        console.log(`🔍 All tiles with value ${requiredValue} on board:`, Array.from(tilesWithValue));
+        console.log(`🔍 Count: ${tilesWithValue.size} (need 7 for blocked game)`);
+        
+        // Extra check: also count what's still in hands and boneyard
+        const allPlayerHands = gameState.playerHands || [gameState.playerHand];
+        const remainingTilesWithValue = new Set();
+        
+        // Check all player hands
+        allPlayerHands.forEach((hand, playerIndex) => {
+          hand.forEach(domino => {
+            if (domino.value1 === requiredValue || domino.value2 === requiredValue) {
+              const tileKey = `${Math.min(domino.value1, domino.value2)}|${Math.max(domino.value1, domino.value2)}`;
+              remainingTilesWithValue.add(tileKey);
+              console.log(`🔍 Player ${playerIndex} has tile with value ${requiredValue}: ${domino.value1}|${domino.value2}`);
+            }
+          });
+        });
+        
+        // Check boneyard
+        gameState.boneyard.forEach(domino => {
+          if (domino.value1 === requiredValue || domino.value2 === requiredValue) {
+            const tileKey = `${Math.min(domino.value1, domino.value2)}|${Math.max(domino.value1, domino.value2)}`;
+            remainingTilesWithValue.add(tileKey);
+            console.log(`🔍 Boneyard has tile with value ${requiredValue}: ${domino.value1}|${domino.value2}`);
+          }
+        });
+        
+        console.log(`🔍 Remaining tiles with value ${requiredValue} in hands/boneyard:`, Array.from(remainingTilesWithValue));
+        console.log(`🔍 Total unique tile types with value ${requiredValue}: ${tilesWithValue.size + remainingTilesWithValue.size}`);
         
         console.log(`🔍 Different domino types with value ${requiredValue} on board: ${tilesWithValue.size}/7`);
         console.log('🔍 Domino types on board:', Array.from(tilesWithValue));
