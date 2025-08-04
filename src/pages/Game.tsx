@@ -62,17 +62,21 @@ export default function Game() {
         const requiredValue = Array.from(requiredValues)[0];
         console.log(`🔍 All open ends require value: ${requiredValue}`);
         
-        // Count how many tiles with this value are already on the board
-        let tilesOnBoard = 0;
+        // Count how many different domino tiles with this value are on the board
+        const tilesWithValue = new Set();
         Object.values(gameState.dominoes).forEach(domino => {
-          if (domino.data.value1 === requiredValue) tilesOnBoard++;
-          if (domino.data.value2 === requiredValue) tilesOnBoard++;
+          if (domino.data.value1 === requiredValue || domino.data.value2 === requiredValue) {
+            // Create unique identifier for each domino type
+            const dominoKey = `${Math.min(domino.data.value1, domino.data.value2)}|${Math.max(domino.data.value1, domino.data.value2)}`;
+            tilesWithValue.add(dominoKey);
+          }
         });
         
-        console.log(`🔍 Tiles with value ${requiredValue} on board: ${tilesOnBoard}/7`);
+        console.log(`🔍 Different domino types with value ${requiredValue} on board: ${tilesWithValue.size}/7`);
+        console.log('🔍 Domino types on board:', Array.from(tilesWithValue));
         
         // If all 7 tiles of this value are on the board, the game is blocked
-        if (tilesOnBoard >= 7) {
+        if (tilesWithValue.size >= 7) {
           console.log('❌ GAME IS BLOCKED - All tiles of required value are on board');
           
           // Calculate points for all players to determine winner
