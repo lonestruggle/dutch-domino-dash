@@ -445,6 +445,13 @@ export const useDominoGame = () => {
     console.log('🔍 All player hands:', allPlayerHands.map((hand, i) => `Player ${i}: ${hand.length} tiles`));
     console.log('🔍 Boneyard:', boneyard.length, 'tiles');
     
+    // IMPORTANT: If board is empty, game cannot be blocked
+    const boardHasDominoes = Object.keys(board).length > 0;
+    if (!boardHasDominoes) {
+      console.log('✅ Board is empty - game cannot be blocked');
+      return false;
+    }
+    
     // Check all players' hands for legal moves
     for (let playerIndex = 0; playerIndex < allPlayerHands.length; playerIndex++) {
       const hand = allPlayerHands[playerIndex];
