@@ -110,10 +110,18 @@ export const useDominoGame = () => {
     });
   }, [resetGame]);
 
-  // EXACT COPY FROM YOUR ORIGINAL CODE
   const regenerateOpenEnds = useCallback((state: GameState): OpenEnd[] => {
+    console.log('🔍 REGENERATE OPEN ENDS - Starting calculation');
+    console.log('🔍 Total dominoes on board:', Object.keys(state.dominoes).length);
+    console.log('🔍 Board cells:', Object.keys(state.board).length);
+    
     const openEnds: OpenEnd[] = [];
     const boardCoords = Object.keys(state.board);
+    
+    // Log all dominoes on board
+    Object.values(state.dominoes).forEach(domino => {
+      console.log(`🔍 Domino on board: ${domino.data.value1}|${domino.data.value2} at (${domino.x},${domino.y}) ${domino.orientation} flipped:${domino.flipped}`);
+    });
     
     // Special case: first non-double domino should have two open ends
     if (boardCoords.length === 1) {
@@ -121,6 +129,8 @@ export const useDominoGame = () => {
       const [x, y] = coord.split(',').map(Number);
       const cell = state.board[coord];
       const domino = state.dominoes[cell.dominoId];
+      
+      console.log(`🔍 Single domino case: ${domino.data.value1}|${domino.data.value2}`);
       
       if (!isDouble(domino.data)) {
         // First non-double domino has two open ends
@@ -153,14 +163,18 @@ export const useDominoGame = () => {
             fromDir: 'S',
           });
         }
+        console.log(`🔍 Single domino open ends:`, openEnds);
         return openEnds;
       }
     }
     
+    // Process each cell on the board
     for (const coord in state.board) {
       const [x, y] = coord.split(',').map(Number);
       const cell = state.board[coord];
       const domino = state.dominoes[cell.dominoId];
+
+      console.log(`🔍 Processing cell (${x},${y}) with value ${cell.value} from domino ${domino.data.value1}|${domino.data.value2}`);
 
       const neighbors = {
         N: [x, y - 1],
@@ -171,19 +185,30 @@ export const useDominoGame = () => {
 
       for (const dir in neighbors) {
         const [nx, ny] = neighbors[dir as keyof typeof neighbors];
-        if (state.board[`${nx},${ny}`]) continue;
+        const neighborKey = `${nx},${ny}`;
+        
+        // Skip if neighbor position is occupied
+        if (state.board[neighborKey]) {
+          console.log(`🔍   Direction ${dir} -> (${nx},${ny}) OCCUPIED`);
+          continue;
+        }
 
+        // Check double domino connection rules
         if (isDouble(domino.data)) {
           const isVertical = domino.orientation === 'vertical';
+          console.log(`🔍   Double domino ${domino.data.value1}|${domino.data.value2} orientation: ${domino.orientation}`);
+          
           // Non-spinner doubles only connect perpendicular to their orientation
           if (
             (isVertical && (dir === 'N' || dir === 'S')) ||
             (!isVertical && (dir === 'W' || dir === 'E'))
           ) {
+            console.log(`🔍   Direction ${dir} BLOCKED by double orientation rule`);
             continue;
           }
         }
 
+        console.log(`🔍   Direction ${dir} -> (${nx},${ny}) OPEN END with value ${cell.value}`);
         openEnds.push({
           x: nx,
           y: ny,
@@ -193,6 +218,7 @@ export const useDominoGame = () => {
       }
     }
 
+    console.log('🔍 FINAL OPEN ENDS:', openEnds.map(end => `(${end.x},${end.y}) value:${end.value} from:${end.fromDir}`));
     return openEnds;
   }, []);
 
