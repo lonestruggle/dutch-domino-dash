@@ -32,12 +32,18 @@ export default function Game() {
 
     // Small delay to ensure all state updates are complete
     const timeoutId = setTimeout(() => {
-      console.log('🔍 AUTO Checking for blocked game');
+      console.log('🔍 AUTO Checking for blocked game - CURRENT STATE');
+      console.log('🔍 Game state at time of check:', {
+        totalDominoes: Object.keys(gameState.dominoes).length,
+        totalBoardCells: Object.keys(gameState.board).length,
+        isGameOver: gameState.isGameOver
+      });
       
-      const openEnds = gameHook.regenerateOpenEnds(gameState);
-      console.log('🔍 Open ends for blocked check:', openEnds);
+      // Use the CURRENT game state (not a stale reference)
+      const currentOpenEnds = gameHook.regenerateOpenEnds(gameState);
+      console.log('🔍 CURRENT Open ends for blocked check:', currentOpenEnds.map(end => `value:${end.value} at (${end.x},${end.y})`));
       
-      if (openEnds.length === 0) {
+      if (currentOpenEnds.length === 0) {
         console.log('❌ No open ends - game should be blocked');
         // Automatically end the game when blocked
         const updatedGameState = {
@@ -55,7 +61,7 @@ export default function Game() {
       // EN alle 7 stenen van dat getal al op tafel liggen
       // Van elk getal (0,1,2,3,4,5,6) zijn er precies 7 stenen in een domino set
       
-      const requiredValues = new Set(openEnds.map(end => end.value));
+      const requiredValues = new Set(currentOpenEnds.map(end => end.value));
       console.log('🔍 Required values for matching (open ends):', Array.from(requiredValues));
       
       // Check if all open ends require the same value
