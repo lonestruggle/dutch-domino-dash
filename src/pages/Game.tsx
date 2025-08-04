@@ -50,36 +50,56 @@ export default function Game() {
         return;
       }
       
-      const requiredValues = new Set(openEnds.map(end => end.value));
-      console.log('🔍 Required values for matching:', Array.from(requiredValues));
+      // NIEUWE BLOCKED GAME REGELS
+      // Blokkering in Domino – Definitieve Regels
+      // Een domino-spel is geblokkeerd als:
+      // Geen enkele steen in de spelershanden OF in de boneyard past op de open ends.
       
-      // Check all player hands
+      const requiredValues = new Set(openEnds.map(end => end.value));
+      console.log('🔍 Required values for matching (open ends):', Array.from(requiredValues));
+      
+      // 1. Doorzoek alle spelershanden: zit er een steen die past op de open ends?
       const allPlayerHands = syncState.allPlayers.map((_, index) => 
         gameState.playerHands?.[index] || []
       );
       
-      const somePlayerCanPlay = allPlayerHands.some(hand => 
-        hand.some(domino => 
+      console.log('🔍 Checking player hands for matching tiles...');
+      const somePlayerCanPlay = allPlayerHands.some((hand, playerIndex) => {
+        const canPlay = hand.some(domino => 
           requiredValues.has(domino.value1) || requiredValues.has(domino.value2)
-        )
-      );
+        );
+        if (canPlay) {
+          console.log(`✅ Player ${playerIndex} can play - game continues`);
+        }
+        return canPlay;
+      });
       
       if (somePlayerCanPlay) {
-        console.log('✅ Some player can play - game continues');
+        console.log('✅ At least one player can play - game continues');
         return;
       }
       
-      // Check boneyard
-      const boneyardHasMatching = gameState.boneyard?.some(domino => 
-        requiredValues.has(domino.value1) || requiredValues.has(domino.value2)
-      );
+      // 2. Doorzoek de boneyard: zit daar een steen die past op de open ends?
+      console.log('🔍 Checking boneyard for matching tiles...');
+      const boneyardHasMatching = gameState.boneyard?.some(domino => {
+        const matches = requiredValues.has(domino.value1) || requiredValues.has(domino.value2);
+        if (matches) {
+          console.log(`✅ Boneyard has matching tile: [${domino.value1}|${domino.value2}] - game continues`);
+        }
+        return matches;
+      });
       
       if (boneyardHasMatching) {
-        console.log('✅ Boneyard has matching tiles - game continues');
+        console.log('✅ Boneyard has matching tiles - players can draw - game continues');
         return;
       }
       
-      console.log('❌ GAME IS BLOCKED - Automatically ending game');
+      // 3. Als niets past bij de open ends in zowel handen als boneyard → spel is geblokkeerd
+      console.log('❌ GAME IS BLOCKED - No matching tiles in player hands or boneyard');
+      console.log('🔍 Final verification:');
+      console.log('   - Open ends require values:', Array.from(requiredValues));
+      console.log('   - Player hands:', allPlayerHands.map((hand, i) => `Player ${i}: ${hand.length} tiles`));
+      console.log('   - Boneyard:', gameState.boneyard?.length || 0, 'tiles');
       
       // Calculate points for all players to determine winner
       const playerPoints = allPlayerHands.map(hand => 
