@@ -433,51 +433,42 @@ export const useDominoGame = () => {
     return moves;
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
-  // BLOCKED GAME CHECK: Adapted from findLegalMoves logic
+  // BLOCKED GAME CHECK: Use findLegalMoves to determine if any moves are possible
   const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
-    console.log('🔍 CHECKING BLOCKED GAME - Using findLegalMoves logic approach');
-    console.log('🔍 Open ends received:', openEnds);
+    console.log('🔍 CHECKING BLOCKED GAME - Using findLegalMoves for each tile');
     console.log('🔍 All player hands:', allPlayerHands.map((hand, i) => `Player ${i}: ${hand.length} tiles`));
     console.log('🔍 Boneyard:', boneyard.length, 'tiles');
     
-    if (openEnds.length === 0) {
-      console.log('❌ No open ends - game is blocked');
-      return true;
-    }
-
-    // There should only be 2 open ends in a proper domino game
-    if (openEnds.length !== 2) {
-      console.log(`⚠️ Expected 2 open ends but got ${openEnds.length} - continuing with analysis`);
-    }
-
-    // Extract the required values from open ends
-    const requiredValues = openEnds.map(end => end.value);
-    console.log('🔍 Required values from open ends:', requiredValues);
-
-    // Check if all open ends require the same value
-    const uniqueValues = new Set(requiredValues);
-    if (uniqueValues.size === 1) {
-      const requiredValue = requiredValues[0];
-      console.log(`🔍 All open ends require value: ${requiredValue}`);
+    // Check all players' hands for legal moves
+    for (let playerIndex = 0; playerIndex < allPlayerHands.length; playerIndex++) {
+      const hand = allPlayerHands[playerIndex];
+      console.log(`🔍 Checking Player ${playerIndex} hand:`, hand);
       
-      // Count how many tiles with this value are already on the board
-      let tilesOnBoard = 0;
-      Object.values(board).forEach(cell => {
-        if (cell.value === requiredValue) {
-          tilesOnBoard++;
+      for (let tileIndex = 0; tileIndex < hand.length; tileIndex++) {
+        const tile = hand[tileIndex];
+        const legalMoves = findLegalMoves(tile);
+        
+        if (legalMoves.length > 0) {
+          console.log(`✅ Player ${playerIndex} can place tile [${tile.value1}|${tile.value2}] - ${legalMoves.length} legal moves found`);
+          return false; // Game is NOT blocked
         }
-      });
-      
-      console.log(`🔍 Tiles with value ${requiredValue} on board: ${tilesOnBoard}/7`);
-      
-      // If all 7 tiles of this value are on the board, game is blocked
-      if (tilesOnBoard >= 7) {
-        console.log(`❌ Game is BLOCKED - All 7 tiles with value ${requiredValue} are on the board`);
-        return true;
       }
-    } else {
-      console.log('🔍 Open ends require different values:', Array.from(uniqueValues));
     }
+    
+    // Check boneyard tiles for legal moves
+    console.log('🔍 Checking boneyard for legal moves...');
+    for (let boneIndex = 0; boneIndex < boneyard.length; boneIndex++) {
+      const tile = boneyard[boneIndex];
+      const legalMoves = findLegalMoves(tile);
+      
+      if (legalMoves.length > 0) {
+        console.log(`✅ Boneyard tile [${tile.value1}|${tile.value2}] has legal moves - ${legalMoves.length} found`);
+        return false; // Game is NOT blocked
+      }
+    }
+    
+    console.log('❌ NO LEGAL MOVES FOUND - Game is BLOCKED');
+    return true; // Game is blocked
 
     // Check if ANY player has a matching domino using findLegalMoves logic
     for (let playerIndex = 0; playerIndex < allPlayerHands.length; playerIndex++) {
