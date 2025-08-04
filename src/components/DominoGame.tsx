@@ -29,12 +29,16 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   
-  // Show dialog when game becomes over - moved after destructuring
+  // Show dialog when game becomes over - but prevent multiple triggers
   useEffect(() => {
-    if (gameState?.isGameOver) {
-      setShowGameOverDialog(true);
+    if (gameState?.isGameOver && !showGameOverDialog) {
+      // Small delay to ensure all state updates are complete
+      const timeoutId = setTimeout(() => {
+        setShowGameOverDialog(true);
+      }, 100);
+      return () => clearTimeout(timeoutId);
     }
-  }, [gameState?.isGameOver]);
+  }, [gameState?.isGameOver, showGameOverDialog]);
 
   // Access the passMove function from Game.tsx
   const passMove = gameHook.passMove || (() => {
@@ -85,6 +89,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     winnerPosition: gameState?.winner_position,
     isBlockedGame: isBlockedGame,
     didIWin: didIWin,
+    playerHandLength: gameState?.playerHand?.length,
+    playerPosition: syncState?.playerPosition,
+    showGameOverDialog: showGameOverDialog,
     playerHands: (gameState as any)?.playerHands?.map((hand: any, i: number) => ({ player: i, handSize: hand?.length || 0 }))
   });
   
