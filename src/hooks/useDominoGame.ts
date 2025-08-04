@@ -209,10 +209,47 @@ export const useDominoGame = () => {
         }
 
         console.log(`🔍   Direction ${dir} -> (${nx},${ny}) OPEN END with value ${cell.value}`);
+        
+        // CRITICAL FIX: We need to determine which VALUE is at the EDGE of this cell
+        // The cell.value shows what's IN this cell, but we need the value that connects OUTWARD
+        const dominoData = domino.data;
+        const isHorizontal = domino.orientation === 'horizontal';
+        const isFlipped = domino.flipped;
+        
+        let edgeValue = cell.value; // Default to cell value, but we might need to adjust
+        
+        // For non-double dominoes, we need to figure out which value faces which direction
+        if (!isDouble(dominoData)) {
+          // Determine which value of the domino faces which direction
+          const [leftTopValue, rightBottomValue] = isFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
+          
+          if (isHorizontal) {
+            // Horizontal domino: left side has leftTopValue, right side has rightBottomValue
+            const isLeftCell = coord === `${domino.x},${domino.y}`;
+            const isRightCell = coord === `${domino.x + 1},${domino.y}`;
+            
+            if (dir === 'W' && isLeftCell) edgeValue = leftTopValue;
+            else if (dir === 'E' && isRightCell) edgeValue = rightBottomValue;
+            else if (dir === 'W' && isRightCell) edgeValue = rightBottomValue; // From right cell looking west
+            else if (dir === 'E' && isLeftCell) edgeValue = rightBottomValue; // From left cell looking east
+          } else {
+            // Vertical domino: top has leftTopValue, bottom has rightBottomValue
+            const isTopCell = coord === `${domino.x},${domino.y}`;
+            const isBottomCell = coord === `${domino.x},${domino.y + 1}`;
+            
+            if (dir === 'N' && isTopCell) edgeValue = leftTopValue;
+            else if (dir === 'S' && isBottomCell) edgeValue = rightBottomValue;
+            else if (dir === 'N' && isBottomCell) edgeValue = rightBottomValue; // From bottom cell looking north
+            else if (dir === 'S' && isTopCell) edgeValue = rightBottomValue; // From top cell looking south
+          }
+        }
+        
+        console.log(`🔍   CORRECTED EDGE VALUE: ${edgeValue} (was ${cell.value})`);
+        
         openEnds.push({
           x: nx,
           y: ny,
-          value: cell.value,
+          value: edgeValue,
           fromDir: dir as 'N' | 'S' | 'E' | 'W',
         });
       }
