@@ -367,8 +367,7 @@ export const useDominoGame = () => {
             return;
           }
 
-          // Only check forbidden for doubles being placed, not for connecting to existing dominoes
-          if (selectedIsDouble && currentState.forbiddens[toCellKey]) {
+          if (currentState.forbiddens[toCellKey]) {
             return;
           }
 
