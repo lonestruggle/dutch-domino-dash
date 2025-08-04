@@ -1,17 +1,19 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Trophy, PartyPopper, Star, Zap, Eye } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft } from 'lucide-react';
 
 interface DominoGameProps {
   gameHook: any;
 }
 
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
+  const navigate = useNavigate();
   const [showGameOverDialog, setShowGameOverDialog] = useState(true);
   
   const {
@@ -184,6 +186,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex space-x-2">
+              <Button 
+                onClick={() => navigate('/lobbies')}
+                variant="outline"
+                className="flex items-center space-x-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Lobby</span>
+              </Button>
               <Button 
                 onClick={startNewGame}
                 variant="default"

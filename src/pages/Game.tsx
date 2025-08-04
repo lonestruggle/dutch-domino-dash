@@ -10,7 +10,7 @@ export default function Game() {
   const { user } = useAuth();
   
   // Use the existing synced game state hook
-  const { syncState, updateGameState } = useSyncedDominoGameState(gameId || '', user?.id || '');
+  const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
   
   // Use the domino game hook
   const gameHook = useDominoGame();
@@ -164,7 +164,15 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DominoGame gameHook={{...gameHook, manualBlockedCheck}} />
+      <DominoGame 
+        gameHook={{
+          ...gameHook, 
+          manualBlockedCheck,
+          startNewGame: syncedStartNewGame,
+          syncState,
+          gameData: { background_choice: null }
+        }} 
+      />
     </div>
   );
 }
