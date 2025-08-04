@@ -28,17 +28,26 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   } = gameHook;
 
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
+  const [hasShownDialog, setHasShownDialog] = useState(false);
   
+  // Reset dialog shown flag when game starts new
+  useEffect(() => {
+    if (!gameState?.isGameOver && hasShownDialog) {
+      setHasShownDialog(false);
+    }
+  }, [gameState?.isGameOver, hasShownDialog]);
+
   // Show dialog when game becomes over - but prevent multiple triggers
   useEffect(() => {
-    if (gameState?.isGameOver && !showGameOverDialog) {
+    if (gameState?.isGameOver && !hasShownDialog) {
       // Small delay to ensure all state updates are complete
       const timeoutId = setTimeout(() => {
         setShowGameOverDialog(true);
+        setHasShownDialog(true);
       }, 100);
       return () => clearTimeout(timeoutId);
     }
-  }, [gameState?.isGameOver, showGameOverDialog]);
+  }, [gameState?.isGameOver, hasShownDialog]);
 
   // Access the passMove function from Game.tsx
   const passMove = gameHook.passMove || (() => {
