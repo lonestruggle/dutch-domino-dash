@@ -111,23 +111,31 @@ export const useDominoGame = () => {
   }, [resetGame]);
 
   const regenerateOpenEnds = useCallback((state: GameState): OpenEnd[] => {
-    console.log('🔍 REGENERATE OPEN ENDS - Finding chain ends');
+    console.log('🔍 REGENERATE OPEN ENDS - Starting calculation');
     console.log('🔍 Total dominoes on board:', Object.keys(state.dominoes).length);
+    console.log('🔍 Board cells:', Object.keys(state.board).length);
     
     const openEnds: OpenEnd[] = [];
     const boardCoords = Object.keys(state.board);
     
-    // Special case: single domino
+    // Log all dominoes on board
+    Object.values(state.dominoes).forEach(domino => {
+      console.log(`🔍 Domino on board: ${domino.data.value1}|${domino.data.value2} at (${domino.x},${domino.y}) ${domino.orientation} flipped:${domino.flipped}`);
+    });
+    
+    // Special case: first non-double domino should have two open ends
     if (boardCoords.length === 1) {
       const coord = boardCoords[0];
       const [x, y] = coord.split(',').map(Number);
       const cell = state.board[coord];
       const domino = state.dominoes[cell.dominoId];
       
-      console.log(`🔍 Single domino: ${domino.data.value1}|${domino.data.value2}`);
+      console.log(`🔍 Single domino case: ${domino.data.value1}|${domino.data.value2}`);
       
       if (!isDouble(domino.data)) {
+        // First non-double domino has two open ends
         if (domino.orientation === 'horizontal') {
+          // East and West ends
           openEnds.push({
             x: x + 1,
             y: y,
@@ -141,6 +149,7 @@ export const useDominoGame = () => {
             fromDir: 'W',
           });
         } else {
+          // North and South ends
           openEnds.push({
             x: x,
             y: y - 1,
@@ -159,98 +168,94 @@ export const useDominoGame = () => {
       }
     }
     
-    // Find chain ends: cells that have only 1 connection to other dominoes
+    // Process each cell on the board
     for (const coord in state.board) {
       const [x, y] = coord.split(',').map(Number);
       const cell = state.board[coord];
       const domino = state.dominoes[cell.dominoId];
-      
-      // Count how many neighboring cells are occupied by other dominoes
+
+      console.log(`🔍 Processing cell (${x},${y}) with value ${cell.value} from domino ${domino.data.value1}|${domino.data.value2}`);
+
       const neighbors = {
         N: [x, y - 1],
-        S: [x, y + 1], 
+        S: [x, y + 1],
         W: [x - 1, y],
         E: [x + 1, y],
       };
-      
-      let connectedDirections: string[] = [];
-      let freeDirections: string[] = [];
-      
+
       for (const dir in neighbors) {
         const [nx, ny] = neighbors[dir as keyof typeof neighbors];
         const neighborKey = `${nx},${ny}`;
         
+        // Skip if neighbor position is occupied
         if (state.board[neighborKey]) {
-          // Check if this neighboring cell belongs to a different domino
-          const neighborCell = state.board[neighborKey];
-          if (neighborCell.dominoId !== cell.dominoId) {
-            connectedDirections.push(dir);
-          }
-        } else {
-          freeDirections.push(dir);
+          console.log(`🔍   Direction ${dir} -> (${nx},${ny}) OCCUPIED`);
+          continue;
         }
-      }
-      
-      console.log(`🔍 Cell (${x},${y}) from domino ${domino.data.value1}|${domino.data.value2}: ${connectedDirections.length} connections, ${freeDirections.length} free directions`);
-      
-      // Chain end = cell with exactly 1 connection to other dominoes
-      if (connectedDirections.length === 1) {
-        console.log(`🔍 Found chain end at (${x},${y})`);
+
+        // Check double domino connection rules
+        if (isDouble(domino.data)) {
+          const isVertical = domino.orientation === 'vertical';
+          console.log(`🔍   Double domino ${domino.data.value1}|${domino.data.value2} orientation: ${domino.orientation}`);
+          
+          // Non-spinner doubles only connect perpendicular to their orientation
+          if (
+            (isVertical && (dir === 'N' || dir === 'S')) ||
+            (!isVertical && (dir === 'W' || dir === 'E'))
+          ) {
+            console.log(`🔍   Direction ${dir} BLOCKED by double orientation rule`);
+            continue;
+          }
+        }
+
+        console.log(`🔍   Direction ${dir} -> (${nx},${ny}) OPEN END with value ${cell.value}`);
         
-        // Find the free direction that forms the actual open end
-        for (const dir of freeDirections) {
-          // Apply double domino orientation rules
-          if (isDouble(domino.data)) {
-            const isVertical = domino.orientation === 'vertical';
-            if (
-              (isVertical && (dir === 'N' || dir === 'S')) ||
-              (!isVertical && (dir === 'W' || dir === 'E'))
-            ) {
-              console.log(`🔍   Direction ${dir} BLOCKED by double orientation rule`);
-              continue;
-            }
-          }
+        // CRITICAL FIX: We need to determine which VALUE is at the EDGE of this cell
+        // The cell.value shows what's IN this cell, but we need the value that connects OUTWARD
+        const dominoData = domino.data;
+        const isHorizontal = domino.orientation === 'horizontal';
+        const isFlipped = domino.flipped;
+        
+        let edgeValue = cell.value; // Default to cell value, but we might need to adjust
+        
+        // For non-double dominoes, we need to figure out which value faces which direction
+        if (!isDouble(dominoData)) {
+          // Determine which value of the domino faces which direction
+          const [leftTopValue, rightBottomValue] = isFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
           
-          // Calculate the correct edge value for this direction
-          const [nx, ny] = neighbors[dir as keyof typeof neighbors];
-          let edgeValue = cell.value;
-          
-          // For non-double dominoes, determine which value faces outward
-          if (!isDouble(domino.data)) {
-            const isHorizontal = domino.orientation === 'horizontal';
-            const isFlipped = domino.flipped;
-            const [leftTopValue, rightBottomValue] = isFlipped ? 
-              [domino.data.value2, domino.data.value1] : 
-              [domino.data.value1, domino.data.value2];
+          if (isHorizontal) {
+            // Horizontal domino: left side has leftTopValue, right side has rightBottomValue
+            const isLeftCell = coord === `${domino.x},${domino.y}`;
+            const isRightCell = coord === `${domino.x + 1},${domino.y}`;
             
-            if (isHorizontal) {
-              const isLeftCell = coord === `${domino.x},${domino.y}`;
-              if (dir === 'W' && isLeftCell) edgeValue = leftTopValue;
-              else if (dir === 'E' && !isLeftCell) edgeValue = rightBottomValue;
-              else if (dir === 'W' && !isLeftCell) edgeValue = rightBottomValue;
-              else if (dir === 'E' && isLeftCell) edgeValue = rightBottomValue;
-            } else {
-              const isTopCell = coord === `${domino.x},${domino.y}`;
-              if (dir === 'N' && isTopCell) edgeValue = leftTopValue;
-              else if (dir === 'S' && !isTopCell) edgeValue = rightBottomValue;
-              else if (dir === 'N' && !isTopCell) edgeValue = rightBottomValue;
-              else if (dir === 'S' && isTopCell) edgeValue = rightBottomValue;
-            }
+            if (dir === 'W' && isLeftCell) edgeValue = leftTopValue;
+            else if (dir === 'E' && isRightCell) edgeValue = rightBottomValue;
+            else if (dir === 'W' && isRightCell) edgeValue = rightBottomValue; // From right cell looking west
+            else if (dir === 'E' && isLeftCell) edgeValue = rightBottomValue; // From left cell looking east
+          } else {
+            // Vertical domino: top has leftTopValue, bottom has rightBottomValue
+            const isTopCell = coord === `${domino.x},${domino.y}`;
+            const isBottomCell = coord === `${domino.x},${domino.y + 1}`;
+            
+            if (dir === 'N' && isTopCell) edgeValue = leftTopValue;
+            else if (dir === 'S' && isBottomCell) edgeValue = rightBottomValue;
+            else if (dir === 'N' && isBottomCell) edgeValue = rightBottomValue; // From bottom cell looking north
+            else if (dir === 'S' && isTopCell) edgeValue = rightBottomValue; // From top cell looking south
           }
-          
-          console.log(`🔍   Open end: (${nx},${ny}) value:${edgeValue} from:${dir}`);
-          
-          openEnds.push({
-            x: nx,
-            y: ny,
-            value: edgeValue,
-            fromDir: dir as 'N' | 'S' | 'E' | 'W',
-          });
         }
+        
+        console.log(`🔍   CORRECTED EDGE VALUE: ${edgeValue} (was ${cell.value})`);
+        
+        openEnds.push({
+          x: nx,
+          y: ny,
+          value: edgeValue,
+          fromDir: dir as 'N' | 'S' | 'E' | 'W',
+        });
       }
     }
-    
-    console.log('🔍 FINAL OPEN ENDS:', openEnds.length, openEnds);
+
+    console.log('🔍 FINAL OPEN ENDS:', openEnds.map(end => `(${end.x},${end.y}) value:${end.value} from:${end.fromDir}`));
     return openEnds;
   }, []);
 
