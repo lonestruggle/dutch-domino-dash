@@ -433,10 +433,10 @@ export const useDominoGame = () => {
     return moves;
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
-  // BLOCKED GAME CHECK: Check if ANY player or boneyard can make a move
+  // BLOCKED GAME CHECK: Adapted from findLegalMoves logic
   const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
-    console.log('🔍 CHECKING BLOCKED GAME - Complete game state approach');
-    console.log('🔍 Open ends:', openEnds);
+    console.log('🔍 CHECKING BLOCKED GAME - Using findLegalMoves logic approach');
+    console.log('🔍 Open ends received:', openEnds);
     console.log('🔍 All player hands:', allPlayerHands.map((hand, i) => `Player ${i}: ${hand.length} tiles`));
     console.log('🔍 Boneyard:', boneyard.length, 'tiles');
     
@@ -445,31 +445,68 @@ export const useDominoGame = () => {
       return true;
     }
 
-    // Extract the required values from open ends
-    const requiredValues = new Set(openEnds.map(end => end.value));
-    console.log('🔍 Required values for matching:', Array.from(requiredValues));
+    // There should only be 2 open ends in a proper domino game
+    if (openEnds.length !== 2) {
+      console.log(`⚠️ Expected 2 open ends but got ${openEnds.length} - continuing with analysis`);
+    }
 
-    // Check if ANY player has a matching domino
-    for (let playerIndex = 0; playerIndex < allPlayerHands.length; playerIndex++) {
-      const playerHand = allPlayerHands[playerIndex];
-      const hasMatchingDomino = playerHand.some(domino => {
-        return requiredValues.has(domino.value1) || requiredValues.has(domino.value2);
+    // Extract the required values from open ends
+    const requiredValues = openEnds.map(end => end.value);
+    console.log('🔍 Required values from open ends:', requiredValues);
+
+    // Check if all open ends require the same value
+    const uniqueValues = new Set(requiredValues);
+    if (uniqueValues.size === 1) {
+      const requiredValue = requiredValues[0];
+      console.log(`🔍 All open ends require value: ${requiredValue}`);
+      
+      // Count how many tiles with this value are already on the board
+      let tilesOnBoard = 0;
+      Object.values(board).forEach(cell => {
+        if (cell.value === requiredValue) {
+          tilesOnBoard++;
+        }
       });
       
-      if (hasMatchingDomino) {
-        console.log(`✅ Game NOT blocked - Player ${playerIndex} has matching domino`);
-        return false;
+      console.log(`🔍 Tiles with value ${requiredValue} on board: ${tilesOnBoard}/7`);
+      
+      // If all 7 tiles of this value are on the board, game is blocked
+      if (tilesOnBoard >= 7) {
+        console.log(`❌ Game is BLOCKED - All 7 tiles with value ${requiredValue} are on the board`);
+        return true;
+      }
+    } else {
+      console.log('🔍 Open ends require different values:', Array.from(uniqueValues));
+    }
+
+    // Check if ANY player has a matching domino using findLegalMoves logic
+    for (let playerIndex = 0; playerIndex < allPlayerHands.length; playerIndex++) {
+      const playerHand = allPlayerHands[playerIndex];
+      
+      for (const domino of playerHand) {
+        // Use the same logic as findLegalMoves to check if this domino can be placed
+        const foundValidMove = openEnds.some(end => {
+          // Check if domino matches this open end (same logic as findLegalMoves)
+          return (end.value === domino.value1) || (end.value === domino.value2);
+        });
+        
+        if (foundValidMove) {
+          console.log(`✅ Game NOT blocked - Player ${playerIndex} has matching domino ${domino.value1}|${domino.value2}`);
+          return false;
+        }
       }
     }
 
-    // Check if boneyard has any matching dominoes
-    const boneyardHasMatching = boneyard.some(domino => {
-      return requiredValues.has(domino.value1) || requiredValues.has(domino.value2);
-    });
-
-    if (boneyardHasMatching) {
-      console.log('✅ Game NOT blocked - Boneyard has matching domino');
-      return false;
+    // Check if boneyard has any matching dominoes using same logic
+    for (const domino of boneyard) {
+      const foundValidMove = openEnds.some(end => {
+        return (end.value === domino.value1) || (end.value === domino.value2);
+      });
+      
+      if (foundValidMove) {
+        console.log(`✅ Game NOT blocked - Boneyard has matching domino ${domino.value1}|${domino.value2}`);
+        return false;
+      }
     }
 
     console.log('❌ Game is BLOCKED - No player hands or boneyard have matching dominoes');
