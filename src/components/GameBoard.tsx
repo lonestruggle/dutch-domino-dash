@@ -41,10 +41,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
 
   // Calculate dynamic board size based on domino positions
-  // Calculate optimal scale based on domino positions and available space
   const calculateOptimalScale = () => {
     if (!containerRef.current || Object.keys(gameState.dominoes).length === 0) {
-      return isMobile ? 0.9 : MAX_SCALE;
+      return isMobile ? 1.2 : MAX_SCALE; // Verhoogd voor mobiel zodat center zichtbaar is
     }
 
     const containerRect = containerRef.current.getBoundingClientRect();
