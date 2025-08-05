@@ -35,7 +35,7 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         'placement-target absolute z-10 transform -translate-x-1/2 -translate-y-1/2',
         isDouble && orientation === 'vertical' && '-mt-6',
         isDouble && orientation === 'horizontal' && '-ml-6',
-        isMobile && 'cursor-pointer active:bg-opacity-80 !scale-[0.7] transform',
+        isMobile && 'cursor-pointer active:bg-opacity-80',
         className
       )}
       style={{
