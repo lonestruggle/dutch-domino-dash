@@ -837,6 +837,52 @@ export const useDominoGame = () => {
     }));
   }, []);
 
+  // New function to draw a specific domino from boneyard by index
+  const drawSpecificFromBoneyard = useCallback((index: number) => {
+    console.log('🎯 DRAW SPECIFIC START - index:', index, 'boneyard size:', gameStateRef.current.boneyard.length);
+    
+    if (gameStateRef.current.isGameOver || gameStateRef.current.boneyard.length === 0 || index >= gameStateRef.current.boneyard.length) {
+      console.log('❌ Cannot draw specific - invalid conditions');
+      return;
+    }
+
+    setGameState(prev => {
+      // Draw the specific domino from the boneyard
+      const drawnDomino = prev.boneyard[index];
+      const newPlayerHand = [...prev.playerHand, drawnDomino];
+      const newBoneyard = prev.boneyard.filter((_, i) => i !== index);
+      
+      console.log('🎯 Drawn specific domino:', drawnDomino);
+      
+      // Check if the newly drawn domino can be played
+      const openEnds = regenerateOpenEnds(prev);
+      const canPlay = openEnds.some(end => 
+        drawnDomino.value1 === end.value || drawnDomino.value2 === end.value
+      );
+      
+      // If the drawn domino can be played, auto-select it
+      const selectedIndex = canPlay ? newPlayerHand.length - 1 : prev.selectedHandIndex;
+      
+      const newState = {
+        ...prev,
+        playerHand: newPlayerHand,
+        boneyard: newBoneyard,
+        selectedHandIndex: selectedIndex,
+      };
+      
+      // Check if the game is blocked
+      const boardHasDominoes = Object.keys(prev.board).length > 0;
+      const allHands = prev.playerHands || [newPlayerHand];
+      const isBlocked = boardHasDominoes && checkBlockedGame(openEnds, prev.board, allHands, newBoneyard);
+      if (isBlocked) {
+        console.log('🔄 Game is blocked after drawing from boneyard');
+        newState.isGameOver = isBlocked;
+      }
+      
+      return newState;
+    });
+  }, [regenerateOpenEnds, checkBlockedGame]);
+
   return {
     gameState,
     setGameState,
@@ -845,6 +891,7 @@ export const useDominoGame = () => {
     findLegalMoves,
     executeMove,
     drawFromBoneyard,
+    drawSpecificFromBoneyard,
     selectHandDomino,
     resetGame,
     hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y),

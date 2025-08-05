@@ -172,15 +172,17 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Handle boneyard stone pick
   const handleBoneyardPick = (index: number) => {
     if (gameState?.boneyard && gameState.boneyard[index]) {
-      drawFromBoneyard();
+      gameHook.drawSpecificFromBoneyard(index);
       setShowBoneyardDialog(false);
       setPreviewDomino(null);
     }
   };
 
-  // Handle preview click to hide it
+  // Handle preview click to pick the stone directly
   const handlePreviewClick = () => {
-    setPreviewDomino(null);
+    if (previewDomino) {
+      handleBoneyardPick(previewDomino.index);
+    }
   };
 
   return (
@@ -379,22 +381,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                        orientation="horizontal"
                        flipped={false}
                        className="w-48 h-24 transform scale-100" // 4x larger than normal
-                     />
-                     <div className="text-center mt-4 space-y-2">
-                       <div className="text-sm text-gray-600">
-                         Klik om deze steen te nemen
-                       </div>
-                       <Button 
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           handleBoneyardPick(previewDomino.index);
-                         }}
-                         className="w-full"
-                       >
-                         Neem deze steen
-                       </Button>
-                     </div>
-                   </div>
+                      />
+                      <div className="text-center mt-2 text-sm text-gray-600">
+                        Klik om deze steen te nemen
+                      </div>
+                    </div>
                 </div>
               )}
             </div>
