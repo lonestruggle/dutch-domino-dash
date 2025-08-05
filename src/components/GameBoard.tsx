@@ -63,17 +63,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       maxY = Math.max(maxY, domino.y + dominoHeight - 1);
     });
 
-    // Add padding for future moves
-    const extraPadding = 4; // cells for future expansion
-    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * CELL_SIZE;
-    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * CELL_SIZE;
+    // More generous padding to keep dominoes well visible
+    const safetyMargin = isMobile ? 6 : 8; // cells for safe viewing area
+    const requiredWidth = (maxX - minX + 1 + safetyMargin * 2) * CELL_SIZE;
+    const requiredHeight = (maxY - minY + 1 + safetyMargin * 2) * CELL_SIZE;
 
-    // Calculate scale needed to fit
-    const scaleX = availableWidth / requiredWidth;
-    const scaleY = availableHeight / requiredHeight;
+    // Calculate scale needed to fit with safety margin
+    const scaleX = (availableWidth * 0.9) / requiredWidth; // Use 90% of available space
+    const scaleY = (availableHeight * 0.9) / requiredHeight;
     const optimalScale = Math.min(scaleX, scaleY, MAX_SCALE);
 
-    // Clamp to minimum scale
+    // Ensure minimum readable size
     return Math.max(optimalScale, MIN_SCALE);
   };
 
@@ -203,7 +203,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     if (!containerRef.current || Object.keys(gameState.dominoes).length <= 1) return;
     
-    // Only auto-scroll if dominoes are getting close to viewport edges
+    // Less aggressive auto-scrolling - only when really needed
     const containerRect = containerRef.current.getBoundingClientRect();
     const viewport = calculateOptimalViewport();
     if (!viewport) return;
@@ -211,9 +211,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const currentScrollX = containerRef.current.scrollLeft;
     const currentScrollY = containerRef.current.scrollTop;
     
-    // Check if we need to scroll (content is going out of view)
-    const needsScrollX = Math.abs(currentScrollX - viewport.scrollLeft) > containerRect.width * 0.3;
-    const needsScrollY = Math.abs(currentScrollY - viewport.scrollTop) > containerRect.height * 0.3;
+    // Only scroll if content is really going out of view (50% threshold)
+    const needsScrollX = Math.abs(currentScrollX - viewport.scrollLeft) > containerRect.width * 0.5;
+    const needsScrollY = Math.abs(currentScrollY - viewport.scrollTop) > containerRect.height * 0.5;
     
     if (needsScrollX || needsScrollY) {
       const timer = setTimeout(() => {
@@ -222,7 +222,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           top: viewport.scrollTop,
           behavior: 'smooth'
         });
-      }, 100);
+      }, 200);
       return () => clearTimeout(timer);
     }
   }, [gameState.dominoes]);
