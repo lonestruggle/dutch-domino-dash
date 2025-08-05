@@ -303,20 +303,23 @@ export const useDominoGame = () => {
     const uniqueEnds: Record<string, boolean> = {};
     const currentState = gameStateRef.current;
     
-    // EERSTE DOMINO: Als het bord leeg is, kan de eerste domino in het centrum geplaatst worden
+    // EERSTE DOMINO: Als het bord leeg is, kan de eerste domino overal geplaatst worden
     if (Object.keys(currentState.dominoes).length === 0) {
-      const centerX = 0;
-      const centerY = 0;
       const orientation = selectedIsDouble ? 'vertical' : 'horizontal';
       
-      moves.push({
-        end: { x: centerX, y: centerY, value: dominoData.value1, fromDir: 'E' },
-        dominoData,
-        flipped: false,
-        orientation,
-        x: centerX,
-        y: centerY
-      });
+      // Maak een grid van mogelijke posities rond het zichtbare gebied
+      for (let x = -10; x <= 10; x += 2) {
+        for (let y = -10; y <= 10; y += 2) {
+          moves.push({
+            end: { x: x, y: y, value: dominoData.value1, fromDir: 'E' },
+            dominoData,
+            flipped: false,
+            orientation,
+            x: x,
+            y: y
+          });
+        }
+      }
       
       return moves;
     }
