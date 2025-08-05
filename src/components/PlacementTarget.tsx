@@ -1,4 +1,5 @@
 import React from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 interface PlacementTargetProps {
@@ -10,6 +11,7 @@ interface PlacementTargetProps {
   isDouble: boolean;
   onClick: () => void;
   style?: React.CSSProperties;
+  className?: string;
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -20,16 +22,21 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   orientation,
   isDouble,
   onClick,
-  style
+  style,
+  className
 }) => {
+  const isMobile = useIsMobile();
   const CELL_SIZE = 48;
+  const MOBILE_CELL_SIZE = 36;
   
   return (
     <div
       className={cn(
         'placement-target absolute z-10 transform -translate-x-1/2 -translate-y-1/2',
         isDouble && orientation === 'vertical' && '-mt-6',
-        isDouble && orientation === 'horizontal' && '-ml-6'
+        isDouble && orientation === 'horizontal' && '-ml-6',
+        isMobile && 'cursor-pointer active:bg-opacity-80',
+        className
       )}
       style={{
         width: `calc(var(--cell-size) * ${width} - 4px)`,
@@ -40,6 +47,7 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         e.stopPropagation();
         onClick();
       }}
+      onTouchStart={isMobile ? (e) => e.stopPropagation() : undefined}
     />
   );
 };

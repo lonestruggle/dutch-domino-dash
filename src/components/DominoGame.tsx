@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
 
 interface DominoGameProps {
   gameHook: any;
@@ -16,6 +17,7 @@ interface DominoGameProps {
 
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   const {
     gameState,
@@ -34,6 +36,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [showBoneyardDialog, setShowBoneyardDialog] = useState(false);
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   // Reset dialog shown flag when game starts new
   useEffect(() => {
@@ -186,48 +189,88 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Game Status */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h2 className="text-2xl font-bold">Domino Game</h2>
-              <Badge variant={isMyTurn ? "default" : "secondary"}>
+    <div className="min-h-screen bg-background p-2 md:p-4">
+      <div className="max-w-6xl mx-auto space-y-3 md:space-y-6">
+        {/* Mobile Header - Compact */}
+        {isMobile ? (
+          <Card className="p-3">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold">Domino Game</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="p-2"
+              >
+                {showMobileMenu ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <Badge variant={isMyTurn ? "default" : "secondary"} className="text-xs">
                 {isMyTurn ? "Your Turn" : `${currentPlayerName}'s Turn`}
               </Badge>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground">
-                Boneyard: {gameState?.boneyard?.length || 0} tiles
+              <span className="text-xs text-muted-foreground">
+                Boneyard: {gameState?.boneyard?.length || 0}
               </span>
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  checked={boneyardViewEnabled}
-                  onCheckedChange={setBoneyardViewEnabled}
-                  id="boneyard-view"
-                />
-                <label htmlFor="boneyard-view" className="text-sm text-muted-foreground">
-                  Boneyard view
-                </label>
+            </div>
+            {/* Mobile Menu */}
+            {showMobileMenu && (
+              <div className="mt-3 pt-3 border-t space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="mobile-boneyard-view" className="text-sm text-muted-foreground">
+                    Boneyard view
+                  </label>
+                  <Switch 
+                    checked={boneyardViewEnabled}
+                    onCheckedChange={setBoneyardViewEnabled}
+                    id="mobile-boneyard-view"
+                  />
+                </div>
+              </div>
+            )}
+          </Card>
+        ) : (
+          /* Desktop Header */
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <h2 className="text-2xl font-bold">Domino Game</h2>
+                <Badge variant={isMyTurn ? "default" : "secondary"}>
+                  {isMyTurn ? "Your Turn" : `${currentPlayerName}'s Turn`}
+                </Badge>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-muted-foreground">
+                  Boneyard: {gameState?.boneyard?.length || 0} tiles
+                </span>
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    checked={boneyardViewEnabled}
+                    onCheckedChange={setBoneyardViewEnabled}
+                    id="boneyard-view"
+                  />
+                  <label htmlFor="boneyard-view" className="text-sm text-muted-foreground">
+                    Boneyard view
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
         {/* Players List */}
-        <Card className="p-4">
-          <h3 className="font-semibold mb-3">Players</h3>
+        <Card className={isMobile ? "p-3" : "p-4"}>
+          <h3 className={`font-semibold mb-3 ${isMobile ? "text-sm" : ""}`}>Players</h3>
           <div className="flex flex-wrap gap-2">
             {syncState?.allPlayers?.map((player: any) => (
               <Badge 
                 key={player.position} 
                 variant={player.position === gameState?.currentPlayer ? "default" : "outline"}
-                className="flex items-center space-x-2"
+                className={`flex items-center space-x-1 ${isMobile ? "text-xs" : ""}`}
               >
                 <span>{player.username}</span>
                 <span className="text-xs opacity-75">
-                  ({gameState?.playerHands?.[player.position]?.length || 0} tiles)
+                  ({gameState?.playerHands?.[player.position]?.length || 0})
                 </span>
               </Badge>
             ))}
@@ -252,84 +295,164 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         />
 
         {/* Game Actions */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex space-x-2">
-              <Button 
-                onClick={() => navigate('/lobbies')}
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span>Back to Lobby</span>
-              </Button>
-              <Button 
-                onClick={startNewGame}
-                variant="default"
-              >
-                Start New Game
-              </Button>
-              <Button 
-                onClick={boneyardViewEnabled ? () => setShowBoneyardDialog(true) : drawFromBoneyard}
-                disabled={!gameState?.boneyard?.length}
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
-                {boneyardViewEnabled && <Grid3X3 className="h-4 w-4" />}
-                <span>Draw from Boneyard ({gameState?.boneyard?.length || 0})</span>
-              </Button>
-              <Button 
-                onClick={passMove}
-                disabled={!shouldEnablePassButton}
-                variant={shouldEnablePassButton ? "destructive" : "outline"}
-                className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
-              >
-                Pas
-              </Button>
-              <Button 
-                onClick={hardSlam}
-                disabled={!canUseHardSlam || hardSlamActive}
-                variant="secondary"
-                className={
-                  hardSlamActive 
-                    ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
-                    : canUseHardSlam 
-                      ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" 
-                      : ""
-                }
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
-              </Button>
-              <Button 
-                onClick={() => gameHook.manualBlockedCheck?.()}
-                variant="outline"
-                className="bg-slate-100 hover:bg-slate-200"
-              >
-                🔧 Check Blocked
-              </Button>
-            </div>
-            <div className="text-sm text-muted-foreground flex items-center">
-              {gameState?.isGameOver ? (
-                <>
-                  <span className="font-semibold text-green-600 mr-2">Game Over!</span>
+        <Card className={isMobile ? "p-3" : "p-4"}>
+          {isMobile ? (
+            /* Mobile Actions - Stacked Layout */
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  onClick={() => navigate('/lobbies')}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center justify-center"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Lobby</span>
+                </Button>
+                <Button 
+                  onClick={startNewGame}
+                  variant="default"
+                  size="sm"
+                  className="text-xs"
+                >
+                  Nieuw Spel
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  onClick={boneyardViewEnabled ? () => setShowBoneyardDialog(true) : drawFromBoneyard}
+                  disabled={!gameState?.boneyard?.length}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  Boneyard ({gameState?.boneyard?.length || 0})
+                </Button>
+                <Button 
+                  onClick={passMove}
+                  disabled={!shouldEnablePassButton}
+                  variant={shouldEnablePassButton ? "destructive" : "outline"}
+                  size="sm"
+                  className={`text-xs ${shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
+                >
+                  Pas
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <Button 
+                  onClick={hardSlam}
+                  disabled={!canUseHardSlam || hardSlamActive}
+                  variant="secondary"
+                  size="sm"
+                  className={`text-xs ${
+                    hardSlamActive 
+                      ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
+                      : canUseHardSlam 
+                        ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" 
+                        : ""
+                  }`}
+                >
+                  <Zap className="h-3 w-3 mr-1" />
+                  {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
+                </Button>
+              </div>
+              {gameState?.isGameOver && (
+                <div className="text-center">
+                  <span className="text-sm font-semibold text-green-600 block mb-2">Game Over!</span>
                   {!showGameOverDialog && (
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={() => setShowGameOverDialog(true)}
-                      className="text-xs py-1 h-7"
+                      className="text-xs"
                     >
                       <Trophy className="h-3 w-3 mr-1" />
                       Resultaat tonen
                     </Button>
                   )}
-                </>
-              ) : (
-                <span>Game in progress...</span>
+                </div>
               )}
             </div>
-          </div>
+          ) : (
+            /* Desktop Actions - Horizontal Layout */
+            <div className="flex items-center justify-between">
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={() => navigate('/lobbies')}
+                  variant="outline"
+                  className="flex items-center space-x-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Back to Lobby</span>
+                </Button>
+                <Button 
+                  onClick={startNewGame}
+                  variant="default"
+                >
+                  Start New Game
+                </Button>
+                <Button 
+                  onClick={boneyardViewEnabled ? () => setShowBoneyardDialog(true) : drawFromBoneyard}
+                  disabled={!gameState?.boneyard?.length}
+                  variant="outline"
+                  className="flex items-center space-x-2"
+                >
+                  {boneyardViewEnabled && <Grid3X3 className="h-4 w-4" />}
+                  <span>Draw from Boneyard ({gameState?.boneyard?.length || 0})</span>
+                </Button>
+                <Button 
+                  onClick={passMove}
+                  disabled={!shouldEnablePassButton}
+                  variant={shouldEnablePassButton ? "destructive" : "outline"}
+                  className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
+                >
+                  Pas
+                </Button>
+                <Button 
+                  onClick={hardSlam}
+                  disabled={!canUseHardSlam || hardSlamActive}
+                  variant="secondary"
+                  className={
+                    hardSlamActive 
+                      ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
+                      : canUseHardSlam 
+                        ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" 
+                        : ""
+                  }
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
+                </Button>
+                <Button 
+                  onClick={() => gameHook.manualBlockedCheck?.()}
+                  variant="outline"
+                  className="bg-slate-100 hover:bg-slate-200"
+                >
+                  🔧 Check Blocked
+                </Button>
+              </div>
+              <div className="text-sm text-muted-foreground flex items-center">
+                {gameState?.isGameOver ? (
+                  <>
+                    <span className="font-semibold text-green-600 mr-2">Game Over!</span>
+                    {!showGameOverDialog && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setShowGameOverDialog(true)}
+                        className="text-xs py-1 h-7"
+                      >
+                        <Trophy className="h-3 w-3 mr-1" />
+                        Resultaat tonen
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <span>Game in progress...</span>
+                )}
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* Boneyard Dialog */}
@@ -339,11 +462,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             if (!open) setShowBoneyardDialog(false);
           }}
         >
-          <DialogContent className="sm:max-w-2xl">
+          <DialogContent className={isMobile ? "max-w-[95vw] max-h-[85vh]" : "sm:max-w-2xl"}>
             <DialogHeader>
-              <DialogTitle className="text-center">Kies een steen uit de boneyard</DialogTitle>
+              <DialogTitle className={`text-center ${isMobile ? "text-base" : ""}`}>
+                Kies een steen uit de boneyard
+              </DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-6 gap-3 p-4 bg-green-100 rounded-lg min-h-[300px] relative">
+            <div className={`grid ${isMobile ? "grid-cols-4" : "grid-cols-6"} gap-3 p-4 bg-green-100 rounded-lg ${isMobile ? "min-h-[250px]" : "min-h-[300px]"} relative overflow-auto`}>
               {gameState?.boneyard?.map((domino, index) => {
                 // Random positioning within grid cell
                 const randomX = Math.random() * 20 - 10; // -10 to 10

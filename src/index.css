@@ -137,6 +137,9 @@
   .game-board {
     background: var(--felt-gradient);
     box-shadow: var(--shadow-inset);
+    /* Mobile optimizations */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
   
   .domino-tile {
@@ -145,6 +148,10 @@
     border-radius: var(--domino-radius);
     box-shadow: var(--shadow-domino);
     transition: var(--transition-smooth);
+    /* Mobile touch optimizations */
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
   
   .domino-tile:hover {
@@ -172,6 +179,9 @@
     border-radius: var(--domino-radius);
     transition: var(--transition-smooth);
     cursor: pointer;
+    /* Mobile touch optimizations */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   
   .placement-target:hover {
@@ -230,6 +240,29 @@
     70% { transform: translate(-4px, 2px) rotate(calc(var(--domino-rotation, 0deg) + 4deg)); }
     80% { transform: translate(2px, -4px) rotate(calc(var(--domino-rotation, 0deg) - 6deg)); }
     90% { transform: translate(-1px, 1px) rotate(calc(var(--domino-rotation, 0deg) + 2deg)); }
+  }
+
+  /* Mobile-specific styles */
+  @media (max-width: 768px) {
+    .placement-target:active {
+      background: hsl(var(--selected-glow));
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+    
+    .domino-tile:active {
+      transform: scale(0.95);
+    }
+    
+    /* Larger touch targets for mobile */
+    .placement-target {
+      min-width: 44px;
+      min-height: 44px;
+    }
+    
+    /* Better mobile scrolling */
+    .game-board {
+      overscroll-behavior: contain;
+    }
   }
 }
 
