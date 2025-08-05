@@ -198,17 +198,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const backgroundImage = getBackgroundImage();
 
-  // Auto-scroll alleen voor de eerste domino
-  useEffect(() => {
-    // Alleen auto-scroll voor de eerste domino, daarna handmatige controle
-    if (Object.keys(gameState.dominoes).length <= 1) {
-      const timer = setTimeout(() => {
-        autoScroll();
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }
-  }, [gameState.dominoes, legalMoves, dynamicScale]);
+  // Geen auto-scroll - houd alles in beeld zoals een echte tafel
+  // useEffect is verwijderd om camera-beweging te voorkomen
 
   // Initial center when game starts
   useEffect(() => {
