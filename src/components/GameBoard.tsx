@@ -199,29 +199,47 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const backgroundImage = getBackgroundImage();
 
-  // Auto-scroll when dominoes change or legal moves change
+  // Auto-scroll only when necessary (when content goes out of view)
   useEffect(() => {
-    // Small delay to ensure DOM is updated
-    const timer = setTimeout(() => {
-      autoScroll();
-    }, 100);
+    if (!containerRef.current || Object.keys(gameState.dominoes).length <= 1) return;
+    
+    // Only auto-scroll if dominoes are getting close to viewport edges
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const viewport = calculateOptimalViewport();
+    if (!viewport) return;
 
-    return () => clearTimeout(timer);
-  }, [gameState.dominoes, legalMoves, dynamicScale]);
+    const currentScrollX = containerRef.current.scrollLeft;
+    const currentScrollY = containerRef.current.scrollTop;
+    
+    // Check if we need to scroll (content is going out of view)
+    const needsScrollX = Math.abs(currentScrollX - viewport.scrollLeft) > containerRect.width * 0.3;
+    const needsScrollY = Math.abs(currentScrollY - viewport.scrollTop) > containerRect.height * 0.3;
+    
+    if (needsScrollX || needsScrollY) {
+      const timer = setTimeout(() => {
+        containerRef.current?.scrollTo({
+          left: viewport.scrollLeft,
+          top: viewport.scrollTop,
+          behavior: 'smooth'
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.dominoes]);
 
-  // Initial center when game starts
+  // Initial center when game starts - only for first domino
   useEffect(() => {
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       // For the first domino, center it properly
       setTimeout(() => {
         containerRef.current?.scrollTo({
-          left: boardSize / 2 - 200,
-          top: boardSize / 2 - 200,
+          left: boardSize / 2 - (containerRef.current?.getBoundingClientRect().width || 400) / 2,
+          top: boardSize / 2 - (containerRef.current?.getBoundingClientRect().height || 300) / 2,
           behavior: 'smooth'
         });
       }, 100);
     }
-  }, [gameState.dominoes, boardSize]);
+  }, [Object.keys(gameState.dominoes).length === 1 ? gameState.dominoes : null, boardSize]);
 
   return (
     <div 
