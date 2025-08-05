@@ -198,8 +198,61 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const backgroundImage = getBackgroundImage();
 
-  // Geen auto-scroll - houd alles in beeld zoals een echte tafel
-  // useEffect is verwijderd om camera-beweging te voorkomen
+  // Auto-center wanneer stenen of legal moves te dicht bij de rand komen
+  useEffect(() => {
+    if (!containerRef.current || Object.keys(gameState.dominoes).length === 0) return;
+    
+    const checkIfRecenterNeeded = () => {
+      const containerRect = containerRef.current!.getBoundingClientRect();
+      const currentScale = dynamicScale;
+      const boardSize = calculateBoardSize();
+      
+      // Controleer alle dominostenen
+      const dominoes = Object.values(gameState.dominoes);
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      
+      dominoes.forEach(domino => {
+        const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
+        const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
+        
+        minX = Math.min(minX, domino.x);
+        maxX = Math.max(maxX, domino.x + dominoWidth - 1);
+        minY = Math.min(minY, domino.y);
+        maxY = Math.max(maxY, domino.y + dominoHeight - 1);
+      });
+      
+      // Voeg legal moves toe aan de grenzen
+      legalMoves.forEach(move => {
+        minX = Math.min(minX, move.x);
+        maxX = Math.max(maxX, move.x + 1);
+        minY = Math.min(minY, move.y);
+        maxY = Math.max(maxY, move.y + 1);
+      });
+      
+      // Bereken het centrum van alle content
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      
+      // Converteer naar pixel coördinaten
+      const pixelCenterX = boardSize / 2 + centerX * CELL_SIZE * currentScale;
+      const pixelCenterY = boardSize / 2 + centerY * CELL_SIZE * currentScale;
+      
+      // Bereken optimale scroll positie om alles gecentreerd te houden
+      const optimalScrollX = pixelCenterX - containerRect.width / 2;
+      const optimalScrollY = pixelCenterY - containerRect.height / 2;
+      
+      // Centreer smooth
+      containerRef.current!.scrollTo({
+        left: Math.max(0, optimalScrollX),
+        top: Math.max(0, optimalScrollY),
+        behavior: 'smooth'
+      });
+    };
+    
+    // Check en hercentreer na elke domino plaatsing of legal move wijziging
+    const timer = setTimeout(checkIfRecenterNeeded, 100);
+    return () => clearTimeout(timer);
+  }, [gameState.dominoes, legalMoves, dynamicScale]);
 
   // Initial center when game starts
   useEffect(() => {
