@@ -20,7 +20,7 @@ interface GameBoardProps {
 }
 
 const CELL_SIZE = 48;
-const MOBILE_CELL_SIZE = 18; // Much smaller to prevent overlap with scale-[0.5]
+const MOBILE_CELL_SIZE = 36; // Back to reasonable spacing
 const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
 const MIN_MOBILE_BOARD_SIZE = 800; // Smaller board on mobile
 const PADDING = 400; // Increased padding for better scroll area
@@ -230,7 +230,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 flipped={domino.flipped}
                 rotation={domino.rotation || 0}
                 isShaking={gameState.isHardSlamming}
-                className={isMobile ? "!scale-[0.5] transform" : ""}
+                className={isMobile ? "!scale-[0.7] transform" : ""}
               />
             </div>
           );
