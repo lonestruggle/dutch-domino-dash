@@ -439,7 +439,7 @@ export const useDominoGame = () => {
     return moves;
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
-  // BLOCKED GAME CHECK: Use findLegalMoves to determine if any moves are possible
+  // BLOCKED GAME CHECK: Game is only blocked if NO moves possible AND boneyard is empty
   const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
     console.log('🔍 CHECKING BLOCKED GAME - Using findLegalMoves for each tile');
     console.log('🔍 All player hands:', allPlayerHands.map((hand, i) => `Player ${i}: ${hand.length} tiles`));
@@ -451,6 +451,16 @@ export const useDominoGame = () => {
       console.log('✅ Board is empty - game cannot be blocked');
       return false;
     }
+    
+    // CRITICAL: If boneyard still has tiles, game cannot be blocked
+    // Players should draw from boneyard until they can play or boneyard is empty
+    if (boneyard.length > 0) {
+      console.log('✅ Boneyard still has tiles - game cannot be blocked (should draw instead)');
+      return false;
+    }
+    
+    // Only check for blocked game if boneyard is empty
+    console.log('🔍 Boneyard is empty - checking if any players can make moves...');
     
     // Check all players' hands for legal moves
     for (let playerIndex = 0; playerIndex < allPlayerHands.length; playerIndex++) {
@@ -468,19 +478,7 @@ export const useDominoGame = () => {
       }
     }
     
-    // Check boneyard tiles for legal moves
-    console.log('🔍 Checking boneyard for legal moves...');
-    for (let boneIndex = 0; boneIndex < boneyard.length; boneIndex++) {
-      const tile = boneyard[boneIndex];
-      const legalMoves = findLegalMoves(tile);
-      
-      if (legalMoves.length > 0) {
-        console.log(`✅ Boneyard tile [${tile.value1}|${tile.value2}] has legal moves - ${legalMoves.length} found`);
-        return false; // Game is NOT blocked
-      }
-    }
-    
-    console.log('❌ NO LEGAL MOVES FOUND - Game is BLOCKED');
+    console.log('❌ NO LEGAL MOVES FOUND AND BONEYARD EMPTY - Game is BLOCKED');
     return true; // Game is blocked
 
     // Check if ANY player has a matching domino using findLegalMoves logic
