@@ -23,9 +23,9 @@ const CELL_SIZE = 48;
 const MIN_SCALE = 0.25; // Maximum 4x smaller
 const MAX_SCALE = 1.0; // Original size
 const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
-const MIN_MOBILE_BOARD_SIZE = 800; // Smaller board on mobile
+const MIN_MOBILE_BOARD_SIZE = 600; // Much smaller board on mobile to fit screen
 const PADDING = 400; // Increased padding for better scroll area
-const MOBILE_PADDING = 200; // Smaller padding on mobile
+const MOBILE_PADDING = 100; // Much smaller padding on mobile
 const SCROLL_PADDING = 200; // Extra padding for scroll calculations
 
 export const GameBoard: React.FC<GameBoardProps> = ({
@@ -226,14 +226,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full flex-1 game-board border-2 border-border rounded-lg overflow-auto ${isMobile ? "mb-2" : "mb-4"}`}
+      className={`relative w-full flex-1 game-board border-2 border-border rounded-lg ${isMobile ? 'overflow-hidden' : 'overflow-auto'} ${isMobile ? "mb-2" : "mb-4"}`}
       style={{ 
         scrollBehavior: 'smooth',
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        height: isMobile ? '40vh' : 'auto'
+        height: isMobile ? '35vh' : 'auto'
       }}
     >
       <div 
