@@ -33,6 +33,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [hasShownDialog, setHasShownDialog] = useState(false);
   const [showBoneyardDialog, setShowBoneyardDialog] = useState(false);
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
+  const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
   
   // Reset dialog shown flag when game starts new
   useEffect(() => {
@@ -158,12 +159,28 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Check if Hard Slam is activated for next move
   const hardSlamActive = gameState?.hardSlamNextMove === true;
 
+  // Handle boneyard stone preview
+  const handleStonePreview = (domino: any, index: number) => {
+    setPreviewDomino({ domino, index });
+    
+    // Auto-hide preview after 3 seconds
+    setTimeout(() => {
+      setPreviewDomino(null);
+    }, 3000);
+  };
+
   // Handle boneyard stone pick
   const handleBoneyardPick = (index: number) => {
     if (gameState?.boneyard && gameState.boneyard[index]) {
       drawFromBoneyard();
       setShowBoneyardDialog(false);
+      setPreviewDomino(null);
     }
+  };
+
+  // Handle preview click to hide it
+  const handlePreviewClick = () => {
+    setPreviewDomino(null);
   };
 
   return (
@@ -338,17 +355,48 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     style={{
                       transform: `translate(${randomX}px, ${randomY}px) rotate(${randomRotation}deg)`,
                     }}
-                    onClick={() => handleBoneyardPick(index)}
-                  >
-                    <DominoTile
-                      data={{ value1: 0, value2: 0 }} // Face down - show blank
-                      orientation="horizontal"
-                      flipped={false}
-                      className="w-12 h-6 bg-gray-800 border-2 border-gray-600"
-                    />
-                  </div>
+                     onClick={() => handleStonePreview(domino, index)}
+                   >
+                     <DominoTile
+                       data={{ value1: 0, value2: 0 }} // Face down - show blank
+                       orientation="horizontal"
+                       flipped={false}
+                       className="w-12 h-6 bg-gray-800 border-2 border-gray-600"
+                     />
+                   </div>
                 );
               })}
+              
+              {/* Preview domino in center */}
+              {previewDomino && (
+                <div 
+                  className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg cursor-pointer z-10"
+                  onClick={handlePreviewClick}
+                >
+                   <div className="bg-white rounded-lg p-4 shadow-2xl border-4 border-gray-300">
+                     <DominoTile
+                       data={previewDomino.domino}
+                       orientation="horizontal"
+                       flipped={false}
+                       className="w-48 h-24 transform scale-100" // 4x larger than normal
+                     />
+                     <div className="text-center mt-4 space-y-2">
+                       <div className="text-sm text-gray-600">
+                         Klik om deze steen te nemen
+                       </div>
+                       <Button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           handleBoneyardPick(previewDomino.index);
+                         }}
+                         className="w-full"
+                       >
+                         Neem deze steen
+                       </Button>
+                     </div>
+                   </div>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
