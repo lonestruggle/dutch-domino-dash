@@ -23,9 +23,9 @@ const CELL_SIZE = 48;
 const MIN_SCALE = 0.25; // Maximum 4x smaller
 const MAX_SCALE = 1.0; // Original size
 const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
-const MIN_MOBILE_BOARD_SIZE = 600; // Much smaller board on mobile to fit screen
+const MIN_MOBILE_BOARD_SIZE = 800; // Larger board on mobile for better gameplay
 const PADDING = 400; // Increased padding for better scroll area
-const MOBILE_PADDING = 100; // Much smaller padding on mobile
+const MOBILE_PADDING = 150; // Better padding on mobile
 const SCROLL_PADDING = 200; // Extra padding for scroll calculations
 
 export const GameBoard: React.FC<GameBoardProps> = ({
@@ -44,7 +44,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Calculate optimal scale based on domino positions and available space
   const calculateOptimalScale = () => {
     if (!containerRef.current || Object.keys(gameState.dominoes).length === 0) {
-      return isMobile ? 0.7 : MAX_SCALE;
+      return isMobile ? 0.9 : MAX_SCALE;
     }
 
     const containerRect = containerRef.current.getBoundingClientRect();
@@ -233,7 +233,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        height: isMobile ? '35vh' : 'auto'
+        height: isMobile ? '50vh' : 'auto'
       }}
     >
       <div 
