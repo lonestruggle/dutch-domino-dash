@@ -233,8 +233,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 className={isMobile ? "!scale-[0.7]" : ""}
                 style={{
                   transform: isMobile 
-                    ? `scale(0.7) rotate(${domino.rotation || 0}deg)` 
-                    : `rotate(${domino.rotation || 0}deg)`
+                    ? `scale(0.7)` 
+                    : undefined
                 }}
               />
             </div>
