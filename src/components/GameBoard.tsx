@@ -20,7 +20,7 @@ interface GameBoardProps {
 }
 
 const CELL_SIZE = 48;
-const MOBILE_CELL_SIZE = 30; // Tighter spacing for mobile
+const MOBILE_SCALE = 0.7; // Simple 1:1 scaling for mobile
 const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
 const MIN_MOBILE_BOARD_SIZE = 800; // Smaller board on mobile
 const PADDING = 400; // Increased padding for better scroll area
@@ -57,12 +57,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       maxY = Math.max(maxY, domino.y + dominoHeight - 1);
     });
 
-    const cellSize = isMobile ? MOBILE_CELL_SIZE : CELL_SIZE;
     const padding = isMobile ? MOBILE_PADDING : PADDING;
     const minBoardSize = isMobile ? MIN_MOBILE_BOARD_SIZE : MIN_BOARD_SIZE;
     
-    const requiredWidth = (maxX - minX + 1) * cellSize + padding * 2;
-    const requiredHeight = (maxY - minY + 1) * cellSize + padding * 2;
+    const requiredWidth = (maxX - minX + 1) * CELL_SIZE + padding * 2;
+    const requiredHeight = (maxY - minY + 1) * CELL_SIZE + padding * 2;
     const requiredSize = Math.max(requiredWidth, requiredHeight, minBoardSize);
     
     return Math.max(requiredSize, minBoardSize);
@@ -115,9 +114,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const boardSize = calculateBoardSize();
     
     // Convert grid coordinates to pixel coordinates
-    const cellSize = isMobile ? MOBILE_CELL_SIZE : CELL_SIZE;
-    const pixelCenterX = boardSize / 2 + centerX * cellSize;
-    const pixelCenterY = boardSize / 2 + centerY * cellSize;
+    const pixelCenterX = boardSize / 2 + centerX * CELL_SIZE;
+    const pixelCenterY = boardSize / 2 + centerY * CELL_SIZE;
     
     // Calculate optimal scroll position (center the viewport on the content center)
     const optimalScrollX = pixelCenterX - containerRect.width / 2;
@@ -209,19 +207,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           backgroundImage: `url(${backgroundImage})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
+          backgroundRepeat: 'no-repeat',
+          transform: isMobile ? `scale(${MOBILE_SCALE})` : 'none',
+          transformOrigin: 'center'
         }}
       >
         {/* Render placed dominoes */}
         {Object.entries(gameState.dominoes).map(([id, domino]) => {
-          const cellSize = isMobile ? MOBILE_CELL_SIZE : CELL_SIZE;
           return (
             <div
               key={id}
               className="absolute"
               style={{
-                left: boardSize / 2 + domino.x * cellSize,
-                top: boardSize / 2 + domino.y * cellSize,
+                left: boardSize / 2 + domino.x * CELL_SIZE,
+                top: boardSize / 2 + domino.y * CELL_SIZE,
               }}
             >
               <DominoTile
@@ -230,11 +229,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 flipped={domino.flipped}
                 rotation={domino.rotation || 0}
                 isShaking={gameState.isHardSlamming}
-                className={isMobile ? "!scale-[0.7]" : ""}
-                style={isMobile ? {
-                  transform: `scale(0.7) rotate(${domino.rotation || 0}deg)`,
-                  transformOrigin: 'center'
-                } : undefined}
               />
             </div>
           );
@@ -250,7 +244,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           let { x, y } = end;
           const { orientation, dominoData } = move;
           const isDouble = dominoData.value1 === dominoData.value2;
-          const cellSize = isMobile ? MOBILE_CELL_SIZE : CELL_SIZE;
           
           // Adjust position based on direction
           if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
@@ -269,10 +262,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               isDouble={isDouble}
               onClick={() => onMoveExecute(move)}
               style={{
-                left: boardSize / 2 + (x + size[0] / 2) * cellSize,
-                top: boardSize / 2 + (y + size[1] / 2) * cellSize,
+                left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
+                top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,
               }}
-              className={isMobile ? "!scale-[0.7]" : ""}
             />
           );
         })}
