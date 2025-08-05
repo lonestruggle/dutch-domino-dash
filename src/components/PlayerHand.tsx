@@ -24,12 +24,12 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const isMobile = useIsMobile();
   
   return (
-    <div className={`game-ui ${isMobile ? "p-3" : "p-6"}`}>
-      <h2 className={`font-semibold mb-4 text-center text-ui-text ${isMobile ? "text-base" : "text-lg"}`}>
+    <div className={`game-ui ${isMobile ? "p-2" : "p-6"}`}>
+      <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm mb-2" : "text-lg mb-4"}`}>
         Jouw Hand
       </h2>
       
-      <div className={`flex flex-wrap justify-center gap-2 min-h-[64px] ${isMobile ? "p-1" : "p-2"}`}>
+      <div className={`flex flex-wrap justify-center gap-1 min-h-[48px] ${isMobile ? "p-0" : "p-2"}`}>
         {hand.map((domino, index) => (
           <DominoTile
             key={getDominoKey(domino, index)} // More stable key
@@ -39,7 +39,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             onClick={() => onDominoSelect(index)}
             className={`relative transition-transform active:scale-95 ${
               isMobile 
-                ? "m-0.5 hover:scale-90 active:scale-85 !scale-[0.7] transform" 
+                ? "m-0 hover:scale-90 active:scale-85 !scale-[0.5] transform" 
                 : "m-1 hover:scale-105"
             }`}
           />
