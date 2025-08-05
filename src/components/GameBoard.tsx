@@ -211,16 +211,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Initial center when game starts
   useEffect(() => {
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
-      // For the first domino, center it properly
+      // Voor de eerste domino, hercentreer het grid op de positie van de eerste steen
+      const firstDomino = Object.values(gameState.dominoes)[0];
+      const firstDominoX = firstDomino.x * CELL_SIZE * dynamicScale;
+      const firstDominoY = firstDomino.y * CELL_SIZE * dynamicScale;
+      
+      // Centreer de view op de eerste domino
       setTimeout(() => {
         containerRef.current?.scrollTo({
-          left: boardSize / 2 - 200,
-          top: boardSize / 2 - 200,
+          left: boardSize / 2 + firstDominoX - containerRef.current.clientWidth / 2,
+          top: boardSize / 2 + firstDominoY - containerRef.current.clientHeight / 2,
           behavior: 'smooth'
         });
       }, 100);
     }
-  }, [gameState.dominoes, boardSize]);
+  }, [gameState.dominoes, dynamicScale, boardSize]);
 
   return (
     <div 
