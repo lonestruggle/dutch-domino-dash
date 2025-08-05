@@ -6,7 +6,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { DominoTile } from '@/components/DominoTile';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3 } from 'lucide-react';
 
 interface DominoGameProps {
   gameHook: any;
@@ -29,6 +31,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   const [hasShownDialog, setHasShownDialog] = useState(false);
+  const [showBoneyardDialog, setShowBoneyardDialog] = useState(false);
+  const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   
   // Reset dialog shown flag when game starts new
   useEffect(() => {
@@ -154,6 +158,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Check if Hard Slam is activated for next move
   const hardSlamActive = gameState?.hardSlamNextMove === true;
 
+  // Handle boneyard stone pick
+  const handleBoneyardPick = (index: number) => {
+    if (gameState?.boneyard && gameState.boneyard[index]) {
+      drawFromBoneyard();
+      setShowBoneyardDialog(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -166,10 +178,20 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 {isMyTurn ? "Your Turn" : `${currentPlayerName}'s Turn`}
               </Badge>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-4">
               <span className="text-sm text-muted-foreground">
                 Boneyard: {gameState?.boneyard?.length || 0} tiles
               </span>
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  checked={boneyardViewEnabled}
+                  onCheckedChange={setBoneyardViewEnabled}
+                  id="boneyard-view"
+                />
+                <label htmlFor="boneyard-view" className="text-sm text-muted-foreground">
+                  Boneyard view
+                </label>
+              </div>
             </div>
           </div>
         </Card>
@@ -229,11 +251,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 Start New Game
               </Button>
               <Button 
-                onClick={drawFromBoneyard}
+                onClick={boneyardViewEnabled ? () => setShowBoneyardDialog(true) : drawFromBoneyard}
                 disabled={!gameState?.boneyard?.length}
                 variant="outline"
+                className="flex items-center space-x-2"
               >
-                Draw from Boneyard ({gameState?.boneyard?.length || 0})
+                {boneyardViewEnabled && <Grid3X3 className="h-4 w-4" />}
+                <span>Draw from Boneyard ({gameState?.boneyard?.length || 0})</span>
               </Button>
               <Button 
                 onClick={passMove}
@@ -288,6 +312,46 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             </div>
           </div>
         </Card>
+
+        {/* Boneyard Dialog */}
+        <Dialog 
+          open={showBoneyardDialog} 
+          onOpenChange={(open) => {
+            if (!open) setShowBoneyardDialog(false);
+          }}
+        >
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-center">Kies een steen uit de boneyard</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-6 gap-3 p-4 bg-green-100 rounded-lg min-h-[300px] relative">
+              {gameState?.boneyard?.map((domino, index) => {
+                // Random positioning within grid cell
+                const randomX = Math.random() * 20 - 10; // -10 to 10
+                const randomY = Math.random() * 20 - 10; // -10 to 10
+                const randomRotation = Math.random() * 30 - 15; // -15 to 15 degrees
+                
+                return (
+                  <div
+                    key={index}
+                    className="relative cursor-pointer hover:scale-105 transition-transform"
+                    style={{
+                      transform: `translate(${randomX}px, ${randomY}px) rotate(${randomRotation}deg)`,
+                    }}
+                    onClick={() => handleBoneyardPick(index)}
+                  >
+                    <DominoTile
+                      data={{ value1: 0, value2: 0 }} // Face down - show blank
+                      orientation="horizontal"
+                      flipped={false}
+                      className="w-12 h-6 bg-gray-800 border-2 border-gray-600"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Game Over Dialog */}
         <Dialog 
