@@ -41,10 +41,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
 
   // Calculate dynamic board size based on domino positions
-  // Calculate optimal scale - less aggressive scaling
+  // Calculate optimal scale based on domino positions and available space
   const calculateOptimalScale = () => {
     if (!containerRef.current || Object.keys(gameState.dominoes).length === 0) {
-      return isMobile ? 0.8 : MAX_SCALE; // Less aggressive mobile scaling
+      return isMobile ? 0.7 : MAX_SCALE;
     }
 
     const containerRect = containerRef.current.getBoundingClientRect();
@@ -63,18 +63,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       maxY = Math.max(maxY, domino.y + dominoHeight - 1);
     });
 
-    // Moderate padding - enough to see the table edge but not too much
-    const moderatePadding = isMobile ? 3 : 4;
-    const requiredWidth = (maxX - minX + 1 + moderatePadding * 2) * CELL_SIZE;
-    const requiredHeight = (maxY - minY + 1 + moderatePadding * 2) * CELL_SIZE;
+    // Add padding for future moves
+    const extraPadding = 4; // cells for future expansion
+    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * CELL_SIZE;
+    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * CELL_SIZE;
 
-    // Less aggressive scaling - use more available space
-    const scaleX = (availableWidth * 0.95) / requiredWidth;
-    const scaleY = (availableHeight * 0.95) / requiredHeight;
+    // Calculate scale needed to fit
+    const scaleX = availableWidth / requiredWidth;
+    const scaleY = availableHeight / requiredHeight;
     const optimalScale = Math.min(scaleX, scaleY, MAX_SCALE);
 
-    // Higher minimum scale to keep dominoes readable
-    return Math.max(optimalScale, isMobile ? 0.5 : 0.6);
+    // Clamp to minimum scale
+    return Math.max(optimalScale, MIN_SCALE);
   };
 
   const calculateBoardSize = () => {
@@ -199,65 +199,46 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const backgroundImage = getBackgroundImage();
 
-  // Auto-scroll only when necessary (when content goes out of view)
+  // Auto-scroll when dominoes change or legal moves change
   useEffect(() => {
-    if (!containerRef.current || Object.keys(gameState.dominoes).length <= 1) return;
-    
-    // Less aggressive auto-scrolling - only when really needed
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const viewport = calculateOptimalViewport();
-    if (!viewport) return;
+    // Small delay to ensure DOM is updated
+    const timer = setTimeout(() => {
+      autoScroll();
+    }, 100);
 
-    const currentScrollX = containerRef.current.scrollLeft;
-    const currentScrollY = containerRef.current.scrollTop;
-    
-    // Only scroll if content is really going out of view (50% threshold)
-    const needsScrollX = Math.abs(currentScrollX - viewport.scrollLeft) > containerRect.width * 0.5;
-    const needsScrollY = Math.abs(currentScrollY - viewport.scrollTop) > containerRect.height * 0.5;
-    
-    if (needsScrollX || needsScrollY) {
-      const timer = setTimeout(() => {
-        containerRef.current?.scrollTo({
-          left: viewport.scrollLeft,
-          top: viewport.scrollTop,
-          behavior: 'smooth'
-        });
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-  }, [gameState.dominoes]);
+    return () => clearTimeout(timer);
+  }, [gameState.dominoes, legalMoves, dynamicScale]);
 
-  // Initial center when game starts - only for first domino
+  // Initial center when game starts
   useEffect(() => {
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       // For the first domino, center it properly
       setTimeout(() => {
         containerRef.current?.scrollTo({
-          left: boardSize / 2 - (containerRef.current?.getBoundingClientRect().width || 400) / 2,
-          top: boardSize / 2 - (containerRef.current?.getBoundingClientRect().height || 300) / 2,
+          left: boardSize / 2 - 200,
+          top: boardSize / 2 - 200,
           behavior: 'smooth'
         });
       }, 100);
     }
-  }, [Object.keys(gameState.dominoes).length === 1 ? gameState.dominoes : null, boardSize]);
+  }, [gameState.dominoes, boardSize]);
 
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full flex-1 game-board border-4 border-amber-800 rounded-lg ${isMobile ? 'overflow-hidden' : 'overflow-auto'} ${isMobile ? "mb-2" : "mb-4"} shadow-lg`}
+      className={`relative w-full flex-1 game-board border-2 border-border rounded-lg ${isMobile ? 'overflow-hidden' : 'overflow-auto'} ${isMobile ? "mb-2" : "mb-4"}`}
       style={{ 
         scrollBehavior: 'smooth',
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        height: isMobile ? '35vh' : 'auto',
-        boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3)'
+        height: isMobile ? '35vh' : 'auto'
       }}
     >
       <div 
         ref={boardRef}
-        className="relative border-4 border-amber-900 rounded-md"
+        className="relative"
         style={{ 
           width: boardSize, 
           height: boardSize,
@@ -266,8 +247,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           transform: `scale(${dynamicScale})`,
-          transformOrigin: 'center',
-          boxShadow: 'inset 0 0 30px rgba(139, 69, 19, 0.4)'
+          transformOrigin: 'center'
         }}
       >
         {/* Render placed dominoes */}
