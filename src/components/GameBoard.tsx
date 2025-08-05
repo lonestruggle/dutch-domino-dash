@@ -198,14 +198,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const backgroundImage = getBackgroundImage();
 
-  // Auto-scroll when dominoes change or legal moves change
+  // Auto-scroll alleen voor de eerste domino
   useEffect(() => {
-    // Small delay to ensure DOM is updated
-    const timer = setTimeout(() => {
-      autoScroll();
-    }, 100);
+    // Alleen auto-scroll voor de eerste domino, daarna handmatige controle
+    if (Object.keys(gameState.dominoes).length <= 1) {
+      const timer = setTimeout(() => {
+        autoScroll();
+      }, 100);
 
-    return () => clearTimeout(timer);
+      return () => clearTimeout(timer);
+    }
   }, [gameState.dominoes, legalMoves, dynamicScale]);
 
   // Initial center when game starts
