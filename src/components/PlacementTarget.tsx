@@ -27,7 +27,7 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const CELL_SIZE = 48;
-  const MOBILE_CELL_SIZE = 36;
+  const MOBILE_CELL_SIZE = 30;
   
   return (
     <div

@@ -20,7 +20,7 @@ interface GameBoardProps {
 }
 
 const CELL_SIZE = 48;
-const MOBILE_CELL_SIZE = 36; // Back to reasonable spacing
+const MOBILE_CELL_SIZE = 30; // Tighter spacing for mobile
 const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
 const MIN_MOBILE_BOARD_SIZE = 800; // Smaller board on mobile
 const PADDING = 400; // Increased padding for better scroll area
@@ -230,7 +230,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 flipped={domino.flipped}
                 rotation={domino.rotation || 0}
                 isShaking={gameState.isHardSlamming}
-                className={isMobile ? "!scale-[0.7] transform" : ""}
+                className={isMobile ? "!scale-[0.7]" : ""}
+                style={isMobile ? {
+                  transform: `scale(0.7) rotate(${domino.rotation || 0}deg)`,
+                  transformOrigin: 'center'
+                } : undefined}
               />
             </div>
           );
@@ -268,7 +272,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 left: boardSize / 2 + (x + size[0] / 2) * cellSize,
                 top: boardSize / 2 + (y + size[1] / 2) * cellSize,
               }}
-              className={isMobile ? "scale-75" : ""}
+              className={isMobile ? "!scale-[0.7]" : ""}
             />
           );
         })}
