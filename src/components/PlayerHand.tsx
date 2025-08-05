@@ -29,7 +29,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         Jouw Hand
       </h2>
       
-      <div className={`flex flex-wrap justify-center gap-0.5 min-h-[48px] ${isMobile ? "p-0" : "p-2"}`}>
+      <div className={`flex flex-wrap justify-center gap-0.5 min-h-[48px] -space-y-2 ${isMobile ? "p-0" : "p-2"}`}>
         {hand.map((domino, index) => (
           <DominoTile
             key={getDominoKey(domino, index)} // More stable key
