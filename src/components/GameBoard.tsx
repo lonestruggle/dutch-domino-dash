@@ -41,10 +41,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
 
   // Calculate dynamic board size based on domino positions
-  // Calculate optimal scale based on domino positions and available space
+  // Calculate optimal scale - less aggressive scaling
   const calculateOptimalScale = () => {
     if (!containerRef.current || Object.keys(gameState.dominoes).length === 0) {
-      return isMobile ? 0.7 : MAX_SCALE;
+      return isMobile ? 0.8 : MAX_SCALE; // Less aggressive mobile scaling
     }
 
     const containerRect = containerRef.current.getBoundingClientRect();
@@ -63,18 +63,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       maxY = Math.max(maxY, domino.y + dominoHeight - 1);
     });
 
-    // More generous padding to keep dominoes well visible
-    const safetyMargin = isMobile ? 6 : 8; // cells for safe viewing area
-    const requiredWidth = (maxX - minX + 1 + safetyMargin * 2) * CELL_SIZE;
-    const requiredHeight = (maxY - minY + 1 + safetyMargin * 2) * CELL_SIZE;
+    // Moderate padding - enough to see the table edge but not too much
+    const moderatePadding = isMobile ? 3 : 4;
+    const requiredWidth = (maxX - minX + 1 + moderatePadding * 2) * CELL_SIZE;
+    const requiredHeight = (maxY - minY + 1 + moderatePadding * 2) * CELL_SIZE;
 
-    // Calculate scale needed to fit with safety margin
-    const scaleX = (availableWidth * 0.9) / requiredWidth; // Use 90% of available space
-    const scaleY = (availableHeight * 0.9) / requiredHeight;
+    // Less aggressive scaling - use more available space
+    const scaleX = (availableWidth * 0.95) / requiredWidth;
+    const scaleY = (availableHeight * 0.95) / requiredHeight;
     const optimalScale = Math.min(scaleX, scaleY, MAX_SCALE);
 
-    // Ensure minimum readable size
-    return Math.max(optimalScale, MIN_SCALE);
+    // Higher minimum scale to keep dominoes readable
+    return Math.max(optimalScale, isMobile ? 0.5 : 0.6);
   };
 
   const calculateBoardSize = () => {
@@ -244,19 +244,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full flex-1 game-board border-2 border-border rounded-lg ${isMobile ? 'overflow-hidden' : 'overflow-auto'} ${isMobile ? "mb-2" : "mb-4"}`}
+      className={`relative w-full flex-1 game-board border-4 border-amber-800 rounded-lg ${isMobile ? 'overflow-hidden' : 'overflow-auto'} ${isMobile ? "mb-2" : "mb-4"} shadow-lg`}
       style={{ 
         scrollBehavior: 'smooth',
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        height: isMobile ? '35vh' : 'auto'
+        height: isMobile ? '35vh' : 'auto',
+        boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3)'
       }}
     >
       <div 
         ref={boardRef}
-        className="relative"
+        className="relative border-4 border-amber-900 rounded-md"
         style={{ 
           width: boardSize, 
           height: boardSize,
@@ -265,7 +266,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           transform: `scale(${dynamicScale})`,
-          transformOrigin: 'center'
+          transformOrigin: 'center',
+          boxShadow: 'inset 0 0 30px rgba(139, 69, 19, 0.4)'
         }}
       >
         {/* Render placed dominoes */}
