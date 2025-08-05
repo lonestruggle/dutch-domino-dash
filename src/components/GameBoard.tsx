@@ -20,7 +20,7 @@ interface GameBoardProps {
 }
 
 const CELL_SIZE = 48;
-const MOBILE_CELL_SIZE = 24; // 50% of CELL_SIZE to match scale-[0.5] ratio
+const MOBILE_CELL_SIZE = 18; // Much smaller to prevent overlap with scale-[0.5]
 const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
 const MIN_MOBILE_BOARD_SIZE = 800; // Smaller board on mobile
 const PADDING = 400; // Increased padding for better scroll area
