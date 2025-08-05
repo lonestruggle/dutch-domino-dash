@@ -230,7 +230,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 flipped={domino.flipped}
                 rotation={domino.rotation || 0}
                 isShaking={gameState.isHardSlamming}
-                className={isMobile ? "scale-75" : ""}
+                className={isMobile ? "scale-50" : ""}
               />
             </div>
           );

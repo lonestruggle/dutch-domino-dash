@@ -39,7 +39,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             onClick={() => onDominoSelect(index)}
             className={`relative transition-transform active:scale-95 ${
               isMobile 
-                ? "m-0.5 hover:scale-102 active:scale-95" 
+                ? "m-0.5 hover:scale-90 active:scale-85 scale-75" 
                 : "m-1 hover:scale-105"
             }`}
           />
