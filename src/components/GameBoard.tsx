@@ -20,7 +20,8 @@ interface GameBoardProps {
 }
 
 const CELL_SIZE = 48;
-const MOBILE_SCALE = 0.7; // Simple 1:1 scaling for mobile
+const MIN_SCALE = 0.25; // Maximum 4x smaller
+const MAX_SCALE = 1.0; // Original size
 const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
 const MIN_MOBILE_BOARD_SIZE = 800; // Smaller board on mobile
 const PADDING = 400; // Increased padding for better scroll area
@@ -40,6 +41,42 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
 
   // Calculate dynamic board size based on domino positions
+  // Calculate optimal scale based on domino positions and available space
+  const calculateOptimalScale = () => {
+    if (!containerRef.current || Object.keys(gameState.dominoes).length === 0) {
+      return isMobile ? 0.7 : MAX_SCALE;
+    }
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const availableWidth = containerRect.width;
+    const availableHeight = containerRect.height;
+
+    let minX = 0, maxX = 0, minY = 0, maxY = 0;
+    
+    Object.values(gameState.dominoes).forEach(domino => {
+      const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
+      const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
+      
+      minX = Math.min(minX, domino.x);
+      maxX = Math.max(maxX, domino.x + dominoWidth - 1);
+      minY = Math.min(minY, domino.y);
+      maxY = Math.max(maxY, domino.y + dominoHeight - 1);
+    });
+
+    // Add padding for future moves
+    const extraPadding = 4; // cells for future expansion
+    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * CELL_SIZE;
+    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * CELL_SIZE;
+
+    // Calculate scale needed to fit
+    const scaleX = availableWidth / requiredWidth;
+    const scaleY = availableHeight / requiredHeight;
+    const optimalScale = Math.min(scaleX, scaleY, MAX_SCALE);
+
+    // Clamp to minimum scale
+    return Math.max(optimalScale, MIN_SCALE);
+  };
+
   const calculateBoardSize = () => {
     if (Object.keys(gameState.dominoes).length === 0) {
       return isMobile ? MIN_MOBILE_BOARD_SIZE : MIN_BOARD_SIZE;
@@ -142,6 +179,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   const boardSize = calculateBoardSize();
+  const dynamicScale = calculateOptimalScale();
 
   // Get the background image based on the choice
   const getBackgroundImage = () => {
@@ -169,7 +207,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [gameState.dominoes, legalMoves]);
+  }, [gameState.dominoes, legalMoves, dynamicScale]);
 
   // Initial center when game starts
   useEffect(() => {
@@ -208,7 +246,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          transform: isMobile ? `scale(${MOBILE_SCALE})` : 'none',
+          transform: `scale(${dynamicScale})`,
           transformOrigin: 'center'
         }}
       >
