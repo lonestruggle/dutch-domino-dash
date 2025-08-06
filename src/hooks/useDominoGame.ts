@@ -307,54 +307,49 @@ export const useDominoGame = () => {
     
     const openEnds = regenerateOpenEnds(currentState);
 
-    // VERBETERDE BLOKKERING DETECTIE: Check of een move andere open ends blokkeert
-    const filterBlockingMoves = (candidateMove: any, allOpenEnds: OpenEnd[]) => {
-      // Bereken welke cellen deze move zou innemen
-      const moveCells = candidateMove.orientation === 'horizontal' 
-        ? [`${candidateMove.x},${candidateMove.y}`, `${candidateMove.x + 1},${candidateMove.y}`]
-        : [`${candidateMove.x},${candidateMove.y}`, `${candidateMove.x},${candidateMove.y + 1}`];
+    // NIEUWE LOGICA: Voorkom dat kop en staart naar elkaar toe bouwen
+    const preventHeadTailCollision = (candidateMove: any, allOpenEnds: OpenEnd[]) => {
+      // Als er maar 2 open ends zijn, zijn dit waarschijnlijk kop en staart
+      if (allOpenEnds.length !== 2) {
+        return true; // Met meer dan 2 open ends is er geen kop/staart probleem
+      }
       
-      // Check of deze move andere open ends zou blokkeren (directe overlapping)
-      const directlyBlocks = allOpenEnds.some(otherEnd => {
-        if (otherEnd.x === candidateMove.end.x && otherEnd.y === candidateMove.end.y) {
-          return false; // Skip het eigen end
+      const [end1, end2] = allOpenEnds;
+      
+      // Bereken de afstand tussen de twee open ends
+      const distance = Math.abs(end1.x - end2.x) + Math.abs(end1.y - end2.y);
+      
+      // Als de open ends dicht bij elkaar liggen, check of deze move ze nog dichter bij elkaar brengt
+      if (distance <= 4) { // Als ze binnen 4 cellen van elkaar zijn
+        
+        // Bereken waar deze move zou worden geplaatst
+        const moveCells = candidateMove.orientation === 'horizontal' 
+          ? [`${candidateMove.x},${candidateMove.y}`, `${candidateMove.x + 1},${candidateMove.y}`]
+          : [`${candidateMove.x},${candidateMove.y}`, `${candidateMove.x},${candidateMove.y + 1}`];
+        
+        // Check of deze move de open ends dichter bij elkaar brengt
+        const otherEnd = allOpenEnds.find(end => 
+          !(end.x === candidateMove.end.x && end.y === candidateMove.end.y)
+        );
+        
+        if (otherEnd) {
+          // Bereken afstand van elk cel van de move tot het andere open end
+          const minDistanceToOtherEnd = Math.min(
+            ...moveCells.map(cellKey => {
+              const [cellX, cellY] = cellKey.split(',').map(Number);
+              return Math.abs(cellX - otherEnd.x) + Math.abs(cellY - otherEnd.y);
+            })
+          );
+          
+          // Als de move binnen 2 cellen van het andere open end komt, blokkeer het
+          if (minDistanceToOtherEnd <= 2) {
+            console.log(`🚫 BLOCKED: Move would bring head/tail too close together (distance: ${minDistanceToOtherEnd})`);
+            return false;
+          }
         }
-        
-        const otherEndKey = `${otherEnd.x},${otherEnd.y}`;
-        return moveCells.includes(otherEndKey);
-      });
+      }
       
-      if (directlyBlocks) return false;
-      
-      // Check toegangspaden - specifiek voor adjacente posities
-      const blocksAccess = allOpenEnds.some(otherEnd => {
-        if (otherEnd.x === candidateMove.end.x && otherEnd.y === candidateMove.end.y) {
-          return false; // Skip het eigen end
-        }
-        
-        // Voor elk ander open end, bereken waar dominoes zouden worden geplaatst
-        let placementCells: string[] = [];
-        
-        // Bereken mogelijke plaatsingen op dit andere end
-        if (otherEnd.fromDir === 'N') {
-          // Vertical domino naar boven
-          placementCells = [`${otherEnd.x},${otherEnd.y}`, `${otherEnd.x},${otherEnd.y - 1}`];
-        } else if (otherEnd.fromDir === 'S') {
-          // Vertical domino naar beneden  
-          placementCells = [`${otherEnd.x},${otherEnd.y}`, `${otherEnd.x},${otherEnd.y + 1}`];
-        } else if (otherEnd.fromDir === 'W') {
-          // Horizontal domino naar links
-          placementCells = [`${otherEnd.x},${otherEnd.y}`, `${otherEnd.x - 1},${otherEnd.y}`];
-        } else if (otherEnd.fromDir === 'E') {
-          // Horizontal domino naar rechts
-          placementCells = [`${otherEnd.x},${otherEnd.y}`, `${otherEnd.x + 1},${otherEnd.y}`];
-        }
-        
-        // Check overlap tussen candidate move en deze placement
-        return placementCells.some(cell => moveCells.includes(cell));
-      });
-      
-      return !blocksAccess;
+      return true;
     };
 
     openEnds.forEach((end) => {
@@ -463,8 +458,8 @@ export const useDominoGame = () => {
       check(dominoData.value1, false);
       check(dominoData.value2, true);
       
-      // If we found a valid move, check if it doesn't block other moves
-      if (validMove && filterBlockingMoves(validMove, openEnds)) {
+      // Check beide condities: blokkering EN kop/staart collision
+      if (validMove && preventHeadTailCollision(validMove, openEnds)) {
         moves.push(validMove);
         uniqueEnds[`${end.x},${end.y}`] = true;
       }
