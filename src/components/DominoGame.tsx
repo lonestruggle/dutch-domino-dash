@@ -28,6 +28,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     startNewGame,
     hasDifferentNeighbor,
     rotateDomino,
+    reshapeSnake,
     syncState,
     gameData
   } = gameHook;
@@ -287,6 +288,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}
           onRotateDomino={rotateDomino}
+          onReshapeSnake={reshapeSnake}
         />
 
         {/* Player Hand */}

@@ -985,5 +985,301 @@ export const useDominoGame = () => {
         hardSlamUsesRemaining: Math.max(0, (prevState.hardSlamUsesRemaining || 0) - 1)
       }));
     },
+
+    // SNAKE RESHAPE: Reorganize the domino chain while keeping logical order
+    reshapeSnake: () => {
+      console.log('🔀 RESHAPING SNAKE - Analyzing chain...');
+      const currentState = gameStateRef.current;
+      const dominoes = Object.values(currentState.dominoes);
+      
+      if (dominoes.length < 2) {
+        console.log('❌ Not enough dominoes to reshape');
+        return;
+      }
+
+      // 1. Analyze the chain to find the logical order
+      const analyzeChain = (): DominoState[] => {
+        const visited = new Set<string>();
+        const chain: DominoState[] = [];
+        
+        // Find the first domino (has only one neighbor)
+        let startDomino: DominoState | null = null;
+        for (const domino of dominoes) {
+          const neighbors = findDominoNeighbors(domino);
+          if (neighbors.length <= 1) {
+            startDomino = domino;
+            break;
+          }
+        }
+        
+        if (!startDomino) {
+          startDomino = dominoes[0]; // Fallback to first domino
+        }
+        
+        // Traverse the chain from start to end
+        let current = startDomino;
+        while (current) {
+          const dominoId = Object.keys(currentState.dominoes).find(id => currentState.dominoes[id] === current);
+          if (!dominoId || visited.has(dominoId)) break;
+          
+          visited.add(dominoId);
+          chain.push(current);
+          
+          // Find next domino in chain
+          const neighbors = findDominoNeighbors(current);
+          current = neighbors.find(neighbor => {
+            const neighborId = Object.keys(currentState.dominoes).find(id => currentState.dominoes[id] === neighbor);
+            return neighborId && !visited.has(neighborId);
+          }) || null;
+        }
+        
+        return chain;
+      };
+
+      // 2. Find neighbors of a domino
+      const findDominoNeighbors = (domino: DominoState): DominoState[] => {
+        const neighbors: DominoState[] = [];
+        const dominoCells = getDominoCells(domino);
+        
+        for (const otherDomino of dominoes) {
+          if (otherDomino === domino) continue;
+          
+          const otherCells = getDominoCells(otherDomino);
+          const isNeighbor = dominoCells.some(cell => 
+            otherCells.some(otherCell => 
+              Math.abs(cell.x - otherCell.x) + Math.abs(cell.y - otherCell.y) === 1
+            )
+          );
+          
+          if (isNeighbor) {
+            neighbors.push(otherDomino);
+          }
+        }
+        
+        return neighbors;
+      };
+
+      // 3. Get cells occupied by a domino
+      const getDominoCells = (domino: DominoState) => {
+        if (domino.orientation === 'horizontal') {
+          return [
+            { x: domino.x, y: domino.y },
+            { x: domino.x + 1, y: domino.y }
+          ];
+        } else {
+          return [
+            { x: domino.x, y: domino.y },
+            { x: domino.x, y: domino.y + 1 }
+          ];
+        }
+      };
+
+      // 4. Generate alternative layouts
+      const generateLayouts = (chain: DominoState[]) => {
+        const layouts: Array<{ dominoes: DominoState[], pattern: string }> = [];
+        
+        // S-curve pattern (most stable)
+        const sCurveLayout = generateSCurveLayout(chain);
+        if (sCurveLayout) layouts.push({ dominoes: sCurveLayout, pattern: 's-curve' });
+        
+        // Compact L-shape
+        const lShapeLayout = generateLShapeLayout(chain);
+        if (lShapeLayout) layouts.push({ dominoes: lShapeLayout, pattern: 'l-shape' });
+        
+        // Spiral pattern
+        const spiralLayout = generateSpiralLayout(chain);
+        if (spiralLayout) layouts.push({ dominoes: spiralLayout, pattern: 'spiral' });
+        
+        return layouts;
+      };
+
+      // 5. S-curve layout generator (most reliable)
+      const generateSCurveLayout = (chain: DominoState[]): DominoState[] | null => {
+        const newChain: DominoState[] = [];
+        let x = 0, y = 0;
+        let direction = 1; // 1 for right, -1 for left
+        
+        for (let i = 0; i < chain.length; i++) {
+          const originalDomino = chain[i];
+          
+          newChain.push({
+            ...originalDomino,
+            x,
+            y,
+            orientation: 'horizontal',
+            rotation: (Math.random() - 0.5) * 15
+          });
+          
+          x += direction * 2;
+          
+          // Create S-curve by changing direction every 3-4 dominoes
+          if ((i + 1) % 4 === 0) {
+            direction *= -1;
+            y += 2;
+            x += direction * 2; // Offset for S-curve
+          }
+        }
+        
+        return isLayoutValid(newChain) ? newChain : null;
+      };
+
+      // 6. L-shape layout generator
+      const generateLShapeLayout = (chain: DominoState[]): DominoState[] | null => {
+        const newChain: DominoState[] = [];
+        let x = 0, y = 0;
+        const midPoint = Math.floor(chain.length / 2);
+        
+        for (let i = 0; i < chain.length; i++) {
+          const originalDomino = chain[i];
+          
+          if (i < midPoint) {
+            // First half: horizontal line
+            newChain.push({
+              ...originalDomino,
+              x: x,
+              y: 0,
+              orientation: 'horizontal',
+              rotation: (Math.random() - 0.5) * 15
+            });
+            x += 2;
+          } else {
+            // Second half: vertical line
+            newChain.push({
+              ...originalDomino,
+              x: x - 2,
+              y: y,
+              orientation: 'vertical',
+              rotation: (Math.random() - 0.5) * 15
+            });
+            y += 2;
+          }
+        }
+        
+        return isLayoutValid(newChain) ? newChain : null;
+      };
+
+      // 7. Spiral layout generator
+      const generateSpiralLayout = (chain: DominoState[]): DominoState[] | null => {
+        const newChain: DominoState[] = [];
+        let x = 0, y = 0;
+        let dx = 1, dy = 0; // Start moving right
+        let steps = 1;
+        let stepCount = 0;
+        let directionChanges = 0;
+        
+        for (let i = 0; i < chain.length; i++) {
+          const originalDomino = chain[i];
+          const orientation = i % 2 === 0 ? 'horizontal' : 'vertical';
+          
+          newChain.push({
+            ...originalDomino,
+            x,
+            y,
+            orientation,
+            rotation: (Math.random() - 0.5) * 15
+          });
+          
+          // Move to next position
+          if (orientation === 'horizontal') {
+            x += dx * 2;
+            y += dy * 1;
+          } else {
+            x += dx * 1;
+            y += dy * 2;
+          }
+          
+          stepCount++;
+          if (stepCount === steps) {
+            // Change direction (spiral pattern)
+            [dx, dy] = [-dy, dx];
+            directionChanges++;
+            stepCount = 0;
+            if (directionChanges % 2 === 0) {
+              steps++;
+            }
+          }
+        }
+        
+        return isLayoutValid(newChain) ? newChain : null;
+      };
+
+      // 8. Check if layout is valid (no collisions)
+      const isLayoutValid = (newChain: DominoState[]): boolean => {
+        const occupiedCells = new Set<string>();
+        
+        for (const domino of newChain) {
+          const cells = getDominoCells(domino);
+          for (const cell of cells) {
+            const key = `${cell.x},${cell.y}`;
+            if (occupiedCells.has(key)) {
+              return false; // Collision detected
+            }
+            occupiedCells.add(key);
+          }
+        }
+        
+        return true;
+      };
+
+      // 9. Execute the reshape
+      try {
+        const chain = analyzeChain();
+        console.log('🔗 Chain analyzed:', chain.length, 'dominoes');
+        
+        const layouts = generateLayouts(chain);
+        console.log('🎨 Generated layouts:', layouts.map(l => l.pattern));
+        
+        if (layouts.length === 0) {
+          console.log('❌ No valid layouts found');
+          return;
+        }
+        
+        // Pick the first valid layout
+        const selectedLayout = layouts[0];
+        console.log('✅ Selected layout:', selectedLayout.pattern);
+        
+        // Apply the new layout
+        setGameState(prev => {
+          const newState = { ...prev };
+          const newDominoes: Record<string, DominoState> = {};
+          const newBoard: Record<string, { dominoId: string; value: number }> = {};
+          
+          // Clear old board
+          newState.board = {};
+          
+          // Apply new positions
+          selectedLayout.dominoes.forEach((newDomino, index) => {
+            const dominoId = Object.keys(prev.dominoes)[index];
+            newDominoes[dominoId] = newDomino;
+            
+            // Update board with new positions
+            const cells = getDominoCells(newDomino);
+            const pips = newDomino.flipped ? 
+              [newDomino.data.value2, newDomino.data.value1] : 
+              [newDomino.data.value1, newDomino.data.value2];
+            
+            cells.forEach((cell, cellIndex) => {
+              newBoard[`${cell.x},${cell.y}`] = {
+                dominoId,
+                value: pips[cellIndex]
+              };
+            });
+          });
+          
+          newState.dominoes = newDominoes;
+          newState.board = newBoard;
+          
+          // Regenerate open ends and clear forbidden positions
+          newState.openEnds = regenerateOpenEnds(newState);
+          newState.forbiddens = {};
+          
+          return newState;
+        });
+        
+        console.log('🎉 Snake reshaped successfully!');
+      } catch (error) {
+        console.error('❌ Error reshaping snake:', error);
+      }
+    },
   };
 };
