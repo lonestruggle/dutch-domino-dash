@@ -297,9 +297,61 @@ export const useDominoGame = () => {
       return moves;
     }
     
+    
     const openEnds = regenerateOpenEnds(currentState);
 
-    openEnds.forEach((end) => {
+    // BLOKKERING DETECTIE: Filter moves die andere open ends zouden blokkeren
+    const validOpenEnds = openEnds.filter(end => {
+      // Voor elk open end, check of het geblokkeerd wordt door andere potentiële moves
+      const potentialBlockingMoves: LegalMove[] = [];
+      
+      // Verzamel alle mogelijke moves van alle open ends
+      openEnds.forEach(otherEnd => {
+        if (otherEnd === end) return; // Skip zichzelf
+        
+        // Bereken waar een move op dit andere end zou worden geplaatst
+        let moveX = otherEnd.x;
+        let moveY = otherEnd.y;
+        let moveOrientation: 'horizontal' | 'vertical' = otherEnd.fromDir === 'N' || otherEnd.fromDir === 'S' ? 'vertical' : 'horizontal';
+        
+        // Voor doubles, flip de orientatie
+        if (selectedIsDouble) {
+          moveOrientation = moveOrientation === 'horizontal' ? 'vertical' : 'horizontal';
+        }
+        
+        // Pas positie aan op basis van richting
+        if (moveOrientation === 'horizontal') {
+          if (otherEnd.fromDir === 'W') moveX -= 1;
+        } else { // vertical
+          if (otherEnd.fromDir === 'N') moveY -= 1;
+        }
+        
+        potentialBlockingMoves.push({
+          end: otherEnd,
+          dominoData,
+          flipped: false,
+          orientation: moveOrientation,
+          x: moveX,
+          y: moveY
+        });
+      });
+      
+      // Check of dit open end geblokkeerd wordt door een van de potentiële moves
+      const isBlocked = potentialBlockingMoves.some(blockingMove => {
+        // Bereken cellen die de blocking move zou innemen
+        const blockingCells = blockingMove.orientation === 'horizontal' 
+          ? [`${blockingMove.x},${blockingMove.y}`, `${blockingMove.x + 1},${blockingMove.y}`]
+          : [`${blockingMove.x},${blockingMove.y}`, `${blockingMove.x},${blockingMove.y + 1}`];
+        
+        // Check of het huidige open end fysiek geblokkeerd wordt
+        const endKey = `${end.x},${end.y}`;
+        return blockingCells.includes(endKey);
+      });
+      
+      return !isBlocked;
+    });
+
+    validOpenEnds.forEach((end) => {
       if (uniqueEnds[`${end.x},${end.y}`]) {
         return;
       }
