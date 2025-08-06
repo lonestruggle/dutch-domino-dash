@@ -328,6 +328,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               />
               
               {/* Rotatie knop - zichtbaar bij hover */}
+              {/* {console.log('🔄 Debug:', { hoveredDomino, id, hasRotateFunction: !!onRotateDomino, hovered: hoveredDomino === id })} */}
               {hoveredDomino === id && onRotateDomino && (
                 <Button
                   size="sm"
@@ -339,10 +340,30 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   )}
                   onClick={(e) => {
                     e.stopPropagation();
+                    console.log('🔄 Rotating domino:', id);
                     onRotateDomino(id);
                   }}
                 >
                   <RotateCw className={cn("text-orange-600", isMobile ? "h-4 w-4" : "h-3 w-3")} />
+                </Button>
+              )}
+              
+              {/* Altijd zichtbare rotatie knop voor debugging */}
+              {onRotateDomino && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={cn(
+                    "absolute -bottom-2 -right-2 w-6 h-6 p-0 bg-red-100 hover:bg-red-200 border-red-300 shadow-lg",
+                    isMobile && "w-8 h-8 -bottom-3 -right-3"
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('🔄 Rotating domino (always visible):', id);
+                    onRotateDomino(id);
+                  }}
+                >
+                  <RotateCw className={cn("text-red-600", isMobile ? "h-4 w-4" : "h-3 w-3")} />
                 </Button>
               )}
             </div>
