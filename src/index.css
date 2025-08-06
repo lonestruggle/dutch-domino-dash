@@ -236,6 +236,28 @@
     animation: hardSlamShake var(--shake-duration, 1s) ease-in-out;
   }
 
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+  
+  @keyframes fade-out {
+    0% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8);
+    }
+  }
+
   @keyframes hardSlamShake {
     0%, 100% { transform: translate(0, 0) rotate(var(--domino-rotation, 0deg)); }
     10% { transform: translate(-3px, -2px) rotate(calc(var(--domino-rotation, 0deg) + 5deg)); }
