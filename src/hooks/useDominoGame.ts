@@ -404,7 +404,11 @@ export const useDominoGame = () => {
       let validMove: LegalMove | null = null;
       
       const check = (value: number, flipped: boolean) => {
+        console.log(`🔍 Checking value ${value} (flipped:${flipped}) against end value ${end.value}`);
+        
         if (end.value === value && !validMove) { // Only check if we haven't found a valid move yet
+          console.log(`✅ Values match! Checking placement constraints...`);
+          
           const fromCellKey = {
             N: `${end.x},${end.y + 1}`,
             S: `${end.x},${end.y - 1}`,
@@ -426,25 +430,34 @@ export const useDominoGame = () => {
             E: `${end.x + 2},${end.y}`,
           }[end.fromDir];
 
+          console.log(`🔍 fromCell: ${fromCellKey}, toCell: ${toCellKey}, toCellForward: ${toCellKeyForward}`);
+
           const toDomino = currentState.dominoes[currentState.board[toCellKey]?.dominoId];
           const toDominoForward = currentState.dominoes[currentState.board[toCellKeyForward]?.dominoId];
           const fromDomino = currentState.dominoes[currentState.board[fromCellKey]?.dominoId];
 
+          console.log(`🔍 fromDomino exists: ${!!fromDomino}, toDomino exists: ${!!toDomino}, toDominoForward exists: ${!!toDominoForward}`);
+
           if (!fromDomino) {
+            console.log(`🚫 BLOCKED: No fromDomino at ${fromCellKey}`);
             return;
           }
           if (toDomino) {
+            console.log(`🚫 BLOCKED: toDomino already exists at ${toCellKey}`);
             return;
           }
           if (toDominoForward) {
+            console.log(`🚫 BLOCKED: toDominoForward already exists at ${toCellKeyForward}`);
             return;
           }
 
           if (currentState.forbiddens[toCellKey]) {
+            console.log(`🚫 BLOCKED: Position ${toCellKey} is forbidden`);
             return;
           }
 
           if (hasDifferentNeighbor(end.x, end.y)) {
+            console.log(`🚫 BLOCKED: hasDifferentNeighbor check failed for (${end.x},${end.y})`);
             return;
           }
 
