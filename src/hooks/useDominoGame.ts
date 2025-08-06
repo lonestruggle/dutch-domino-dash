@@ -269,80 +269,6 @@ export const useDominoGame = () => {
     return openEnds;
   }, [hasDifferentNeighbor]);
 
-  // Check if placing a domino would block other open ends
-  const wouldBlockOtherMoves = useCallback((move: LegalMove, currentState: GameState): boolean => {
-    const originalOpenEnds = regenerateOpenEnds(currentState);
-    
-    // Check each OTHER open end to see if this move would block access to it
-    for (const otherEnd of originalOpenEnds) {
-      // Skip the end we're connecting to
-      if (otherEnd.x === move.end.x && otherEnd.y === move.end.y) {
-        continue;
-      }
-      
-      // Calculate where a domino would be placed for this other end
-      const directions = ['N', 'S', 'E', 'W'] as const;
-      
-      for (const dir of directions) {
-        if (dir === otherEnd.fromDir) continue; // Can't place in the direction we came from
-        
-        // Calculate position for both horizontal and vertical orientations
-        const orientations: Array<'horizontal' | 'vertical'> = ['horizontal', 'vertical'];
-        
-        for (const orientation of orientations) {
-          let targetX = otherEnd.x;
-          let targetY = otherEnd.y;
-          
-          // Adjust position based on direction and orientation
-          if (orientation === 'horizontal') {
-            if (dir === 'W') targetX -= 1;
-            else if (dir === 'E') targetX += 0; // East placement for horizontal domino
-          } else { // vertical
-            if (dir === 'N') targetY -= 1;
-            else if (dir === 'S') targetY += 0; // South placement for vertical domino
-          }
-          
-          // Check if our move would occupy this space
-          const movePositions = [];
-          if (move.orientation === 'horizontal') {
-            movePositions.push(
-              `${move.x},${move.y}`,
-              `${move.x + 1},${move.y}`
-            );
-          } else {
-            movePositions.push(
-              `${move.x},${move.y}`,
-              `${move.x},${move.y + 1}`
-            );
-          }
-          
-          const targetPositions = [];
-          if (orientation === 'horizontal') {
-            targetPositions.push(
-              `${targetX},${targetY}`,
-              `${targetX + 1},${targetY}`
-            );
-          } else {
-            targetPositions.push(
-              `${targetX},${targetY}`,
-              `${targetX},${targetY + 1}`
-            );
-          }
-          
-          // Check for overlap
-          const hasOverlap = movePositions.some(pos => targetPositions.includes(pos));
-          
-          if (hasOverlap) {
-            console.log(`🚫 Move would block other end at (${otherEnd.x},${otherEnd.y}) from placing in direction ${dir}`);
-            return true;
-          }
-        }
-      }
-    }
-    
-    return false;
-  }, [regenerateOpenEnds]);
-
   // EXACT COPY FROM YOUR ORIGINAL CODE
   const findLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
     const moves: LegalMove[] = [];
@@ -479,20 +405,10 @@ export const useDominoGame = () => {
       check(dominoData.value1, false);
       check(dominoData.value2, true);
       
-      // If we found a valid move, add it (temporarily disable strict blocking)
+      // If we found a valid move, add it and mark the position as used
       if (validMove) {
-        // Only apply blocking detection when there are many open ends (4+ ends)
-        const currentOpenEnds = regenerateOpenEnds(currentState);
-        const shouldCheckBlocking = currentOpenEnds.length >= 6; // More lenient threshold
-        
-        const wouldBlock = shouldCheckBlocking && wouldBlockOtherMoves(validMove, currentState);
-        
-        if (!wouldBlock) {
-          moves.push(validMove);
-          uniqueEnds[`${end.x},${end.y}`] = true;
-        } else {
-          console.log(`🚫 Move blocked - would interfere with other open ends:`, validMove);
-        }
+        moves.push(validMove);
+        uniqueEnds[`${end.x},${end.y}`] = true;
       }
     });
 
