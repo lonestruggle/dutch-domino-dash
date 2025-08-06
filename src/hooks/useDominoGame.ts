@@ -269,6 +269,69 @@ export const useDominoGame = () => {
     return openEnds;
   }, [hasDifferentNeighbor]);
 
+  // Check if placing a domino would block other open ends
+  const wouldBlockOtherMoves = useCallback((move: LegalMove, currentState: GameState): boolean => {
+    // Create temporary state with the move applied
+    const tempBoard = { ...currentState.board };
+    const tempDominoes = { ...currentState.dominoes };
+    
+    // Add the new domino temporarily
+    const tempDominoId = `temp_${Date.now()}`;
+    tempDominoes[tempDominoId] = {
+      data: move.dominoData,
+      x: move.x,
+      y: move.y,
+      orientation: move.orientation,
+      flipped: move.flipped,
+      isSpinner: isDouble(move.dominoData),
+      rotation: 0
+    };
+    
+    // Add board cells for the temporary domino
+    if (move.orientation === 'horizontal') {
+      tempBoard[`${move.x},${move.y}`] = { 
+        dominoId: tempDominoId, 
+        value: move.flipped ? move.dominoData.value2 : move.dominoData.value1 
+      };
+      tempBoard[`${move.x + 1},${move.y}`] = { 
+        dominoId: tempDominoId, 
+        value: move.flipped ? move.dominoData.value1 : move.dominoData.value2 
+      };
+    } else {
+      tempBoard[`${move.x},${move.y}`] = { 
+        dominoId: tempDominoId, 
+        value: move.flipped ? move.dominoData.value2 : move.dominoData.value1 
+      };
+      tempBoard[`${move.x},${move.y + 1}`] = { 
+        dominoId: tempDominoId, 
+        value: move.flipped ? move.dominoData.value1 : move.dominoData.value2 
+      };
+    }
+    
+    // Calculate new open ends after this move
+    const tempState = { ...currentState, board: tempBoard, dominoes: tempDominoes };
+    const newOpenEnds = regenerateOpenEnds(tempState);
+    const originalOpenEnds = regenerateOpenEnds(currentState);
+    
+    // Check if we lost access to any open ends (other than the one we connected to)
+    const lostEnds = originalOpenEnds.filter(originalEnd => {
+      // Skip the end we're connecting to (it should be consumed)
+      if (originalEnd.x === move.end.x && originalEnd.y === move.end.y) {
+        return false;
+      }
+      
+      // Check if this original end is still accessible in the new state
+      return !newOpenEnds.some(newEnd => 
+        newEnd.x === originalEnd.x && 
+        newEnd.y === originalEnd.y &&
+        newEnd.value === originalEnd.value
+      );
+    });
+    
+    // If we lost any ends (other than the one we connected to), this move blocks other possibilities
+    return lostEnds.length > 0;
+  }, [regenerateOpenEnds, isDouble]);
+
   // EXACT COPY FROM YOUR ORIGINAL CODE
   const findLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
     const moves: LegalMove[] = [];
@@ -405,10 +468,18 @@ export const useDominoGame = () => {
       check(dominoData.value1, false);
       check(dominoData.value2, true);
       
-      // If we found a valid move, add it and mark the position as used
+      // If we found a valid move, check if it would block other open ends
       if (validMove) {
-        moves.push(validMove);
-        uniqueEnds[`${end.x},${end.y}`] = true;
+        // Skip moves that would block other open ends (unless we only have 2 or fewer open ends)
+        const currentOpenEnds = regenerateOpenEnds(currentState);
+        const wouldBlock = wouldBlockOtherMoves(validMove, currentState);
+        
+        if (!wouldBlock || currentOpenEnds.length <= 2) {
+          moves.push(validMove);
+          uniqueEnds[`${end.x},${end.y}`] = true;
+        } else {
+          console.log(`🚫 Move blocked - would interfere with other open ends:`, validMove);
+        }
       }
     });
 
