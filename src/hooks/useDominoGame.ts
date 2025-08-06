@@ -324,6 +324,12 @@ export const useDominoGame = () => {
       const totalDominoes = Object.keys(currentState.dominoes).length;
       
       console.log(`🎲 Collision check: ${totalDominoes} dominoes, isDouble: ${isDouble(candidateMove.dominoData)}, protection: ${currentState.headTailProtectionEnabled}`);
+      console.log(`🎲 Current head-tail settings: distance=${currentState.headTailDistance}, protection=${currentState.headTailProtectionEnabled}`);
+      console.log(`🎲 Complete currentState:`, {
+        headTailDistance: currentState.headTailDistance,
+        headTailProtectionEnabled: currentState.headTailProtectionEnabled,
+        totalDominoes: Object.keys(currentState.dominoes).length
+      });
       
       // Check if protection is disabled
       if (!currentState.headTailProtectionEnabled) {

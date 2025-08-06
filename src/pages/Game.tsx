@@ -28,6 +28,15 @@ export default function Game() {
       
       // Preserve local settings when syncing from database
       setGameState(prevState => {
+        console.log(`🔄 BEFORE MERGE - prevState settings:`, {
+          headTailDistance: prevState.headTailDistance,
+          headTailProtectionEnabled: prevState.headTailProtectionEnabled
+        });
+        console.log(`🔄 BEFORE MERGE - syncState settings:`, {
+          headTailDistance: syncState.gameState.headTailDistance,
+          headTailProtectionEnabled: syncState.gameState.headTailProtectionEnabled
+        });
+        
         const newState = {
           ...syncState.gameState,
           // Keep local head-tail settings
