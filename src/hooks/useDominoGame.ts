@@ -380,6 +380,7 @@ export const useDominoGame = () => {
       
       if (tooClose) {
         console.log(`🚫 BLOCKED: Move would bring head/tail within ${currentState.headTailDistance} grids of each other`);
+        console.log(`🚫 Current settings - distance: ${currentState.headTailDistance}, protection: ${currentState.headTailProtectionEnabled}`);
         return false;
       }
       
@@ -1101,16 +1102,26 @@ export const useDominoGame = () => {
     },
     // New functions for head-tail distance control
     setHeadTailDistance: (distance: number) => {
-      setGameState(prev => ({
-        ...prev,
-        headTailDistance: distance
-      }));
+      console.log(`⚙️ SETTING head-tail distance to: ${distance}`);
+      setGameState(prev => {
+        const newState = {
+          ...prev,
+          headTailDistance: distance
+        };
+        console.log(`⚙️ New game state distance: ${newState.headTailDistance}`);
+        return newState;
+      });
     },
     setHeadTailProtectionEnabled: (enabled: boolean) => {
-      setGameState(prev => ({
-        ...prev,
-        headTailProtectionEnabled: enabled
-      }));
+      console.log(`⚙️ SETTING head-tail protection to: ${enabled}`);
+      setGameState(prev => {
+        const newState = {
+          ...prev,
+          headTailProtectionEnabled: enabled
+        };
+        console.log(`⚙️ New game state protection: ${newState.headTailProtectionEnabled}`);
+        return newState;
+      });
     },
   };
 };

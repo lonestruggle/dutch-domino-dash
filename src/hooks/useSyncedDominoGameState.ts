@@ -165,6 +165,12 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
   const updateGameState = useCallback(async (newGameState: any, newCurrentPlayer?: number) => {
     if (!gameId) return;
 
+    console.log('💾 UPDATING game state to database:', {
+      headTailDistance: newGameState.headTailDistance,
+      headTailProtectionEnabled: newGameState.headTailProtectionEnabled,
+      totalDominoes: Object.keys(newGameState.dominoes || {}).length
+    });
+
     try {
       const { error } = await supabase
         .from('games')
