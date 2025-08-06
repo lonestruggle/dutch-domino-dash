@@ -198,6 +198,8 @@ export const useDominoGame = () => {
       const cell = state.board[coord];
       const domino = state.dominoes[cell.dominoId];
 
+      console.log(`🔍 Checking cell (${x},${y}) with value ${cell.value} from domino ${domino.data.value1}|${domino.data.value2}`);
+
       const neighbors = {
         N: [x, y - 1],
         S: [x, y + 1],
@@ -211,6 +213,7 @@ export const useDominoGame = () => {
         
         // Skip if neighbor position is occupied
         if (state.board[neighborKey]) {
+          console.log(`🔍 Position (${nx},${ny}) is occupied, skipping`);
           continue;
         }
 
@@ -218,11 +221,13 @@ export const useDominoGame = () => {
         
         // Check if forbidden
         if (state.forbiddens[neighborKey]) {
+          console.log(`🔍 Position (${nx},${ny}) is forbidden, skipping`);
           continue;
         }
 
         // Check hasDifferentNeighbor (more than 3 neighbors blocks placement)
         if (hasDifferentNeighbor(nx, ny)) {
+          console.log(`🔍 Position (${nx},${ny}) has too many neighbors, skipping`);
           continue;
         }
 
@@ -235,6 +240,7 @@ export const useDominoGame = () => {
         }[dir];
 
         if (toCellKeyForward && state.board[toCellKeyForward]) {
+          console.log(`🔍 Forward position ${toCellKeyForward} blocked for direction ${dir}`);
           continue;
         }
 
@@ -247,6 +253,7 @@ export const useDominoGame = () => {
             (isVertical && (dir === 'N' || dir === 'S')) ||
             (!isVertical && (dir === 'W' || dir === 'E'))
           ) {
+            console.log(`🔍 Double domino orientation rule blocks direction ${dir}`);
             continue;
           }
         }
@@ -254,7 +261,7 @@ export const useDominoGame = () => {
         // Use the cell value directly - this is already correctly set when domino was placed
         let edgeValue = cell.value;
         
-        console.log(`🔍 VALID CHAIN END: (${nx},${ny}) value:${edgeValue} from:${dir}`);
+        console.log(`🔍 VALID OPEN END FOUND: (${nx},${ny}) value:${edgeValue} from:${dir} (from cell ${coord})`);
         
         openEnds.push({
           x: nx,
@@ -265,7 +272,7 @@ export const useDominoGame = () => {
       }
     }
 
-    console.log('🔍 FINAL OPEN ENDS (should be 2):', openEnds.map(end => `(${end.x},${end.y}) value:${end.value} from:${end.fromDir}`));
+    console.log('🔍 FINAL OPEN ENDS:', openEnds.map(end => `(${end.x},${end.y}) value:${end.value} from:${end.fromDir}`));
     return openEnds;
   }, [hasDifferentNeighbor]);
 
