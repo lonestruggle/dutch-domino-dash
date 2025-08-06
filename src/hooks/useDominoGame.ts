@@ -463,21 +463,19 @@ export const useDominoGame = () => {
       }
     });
 
-    // PRIORITEIT: Dubbele stenen krijgen voorrang EN sorteer dubbels op waarde
+    // PRIORITEIT: Dubbele stenen krijgen voorrang (alle dubbels hebben gelijke prioriteit)
     moves.sort((a, b) => {
       const aIsDouble = a.dominoData.value1 === a.dominoData.value2;
       const bIsDouble = b.dominoData.value1 === b.dominoData.value2;
       
-      // Eerst: dubbels vs niet-dubbels
+      // Eerst: dubbels vs niet-dubbels (alle dubbels hebben gelijke prioriteit)
       if (aIsDouble && !bIsDouble) return -1; // Dubbel eerst
       if (!aIsDouble && bIsDouble) return 1;  // Dubbel eerst
       
-      // Binnen dubbels: hogere waarde eerst (6|6 voor 5|5, etc.)
-      if (aIsDouble && bIsDouble) {
-        return b.dominoData.value1 - a.dominoData.value1;
-      }
+      // Binnen dubbels: geen specifieke volgorde, behoud originele volgorde
+      if (aIsDouble && bIsDouble) return 0;
       
-      // Binnen niet-dubbels: som van waarden
+      // Binnen niet-dubbels: som van waarden (hoogste eerst)
       const aSum = a.dominoData.value1 + a.dominoData.value2;
       const bSum = b.dominoData.value1 + b.dominoData.value2;
       return bSum - aSum;
@@ -500,7 +498,7 @@ export const useDominoGame = () => {
       moves.push(...dominoMoves);
     });
     
-    // PRIORITEIT: Dubbele stenen krijgen voorrang
+    // PRIORITEIT: Dubbele stenen krijgen voorrang (alle dubbels hebben gelijke prioriteit)  
     moves.sort((a, b) => {
       const aIsDouble = a.dominoData.value1 === a.dominoData.value2;
       const bIsDouble = b.dominoData.value1 === b.dominoData.value2;
@@ -508,10 +506,13 @@ export const useDominoGame = () => {
       if (aIsDouble && !bIsDouble) return -1; // Dubbel eerst
       if (!aIsDouble && bIsDouble) return 1;  // Dubbel eerst
       
-      // Binnen dezelfde categorie (dubbel vs dubbel of gewoon vs gewoon), sorteer op waarde
+      // Binnen dubbels: geen specifieke volgorde
+      if (aIsDouble && bIsDouble) return 0;
+      
+      // Binnen niet-dubbels: hoogste waarden eerst
       const aSum = a.dominoData.value1 + a.dominoData.value2;
       const bSum = b.dominoData.value1 + b.dominoData.value2;
-      return bSum - aSum; // Hogere waarden eerst
+      return bSum - aSum;
     });
     
     return moves;
