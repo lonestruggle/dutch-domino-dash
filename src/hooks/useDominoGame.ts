@@ -307,44 +307,47 @@ export const useDominoGame = () => {
         ? [`${candidateMove.x},${candidateMove.y}`, `${candidateMove.x + 1},${candidateMove.y}`]
         : [`${candidateMove.x},${candidateMove.y}`, `${candidateMove.x},${candidateMove.y + 1}`];
       
-      // Check of deze move andere open ends zou blokkeren
-      const wouldBlock = allOpenEnds.some(otherEnd => {
+      // Check of deze move andere open ends zou blokkeren (directe overlapping)
+      const directlyBlocks = allOpenEnds.some(otherEnd => {
         if (otherEnd.x === candidateMove.end.x && otherEnd.y === candidateMove.end.y) {
           return false; // Skip het eigen end
         }
         
-        // Check of dit open end geblokkeerd wordt
         const otherEndKey = `${otherEnd.x},${otherEnd.y}`;
         return moveCells.includes(otherEndKey);
       });
       
-      // Ook check toegangspaden - een move mag geen "doorgang" naar een open end blokkeren
+      if (directlyBlocks) return false;
+      
+      // Check toegangspaden - specifiek voor adjacente posities
       const blocksAccess = allOpenEnds.some(otherEnd => {
         if (otherEnd.x === candidateMove.end.x && otherEnd.y === candidateMove.end.y) {
           return false; // Skip het eigen end
         }
         
-        // Bereken waar een domino op dit andere end zou worden geplaatst
-        let accessX = otherEnd.x;
-        let accessY = otherEnd.y;
+        // Voor elk ander open end, bereken waar dominoes zouden worden geplaatst
+        let placementCells: string[] = [];
         
-        // Pas aan op basis van fromDir - waar zou de domino komen?
-        const accessCells = [];
+        // Bereken mogelijke plaatsingen op dit andere end
         if (otherEnd.fromDir === 'N') {
-          accessCells.push(`${accessX},${accessY}`, `${accessX},${accessY - 1}`);
+          // Vertical domino naar boven
+          placementCells = [`${otherEnd.x},${otherEnd.y}`, `${otherEnd.x},${otherEnd.y - 1}`];
         } else if (otherEnd.fromDir === 'S') {
-          accessCells.push(`${accessX},${accessY}`, `${accessX},${accessY + 1}`);
+          // Vertical domino naar beneden  
+          placementCells = [`${otherEnd.x},${otherEnd.y}`, `${otherEnd.x},${otherEnd.y + 1}`];
         } else if (otherEnd.fromDir === 'W') {
-          accessCells.push(`${accessX},${accessY}`, `${accessX - 1},${accessY}`);
+          // Horizontal domino naar links
+          placementCells = [`${otherEnd.x},${otherEnd.y}`, `${otherEnd.x - 1},${otherEnd.y}`];
         } else if (otherEnd.fromDir === 'E') {
-          accessCells.push(`${accessX},${accessY}`, `${accessX + 1},${accessY}`);
+          // Horizontal domino naar rechts
+          placementCells = [`${otherEnd.x},${otherEnd.y}`, `${otherEnd.x + 1},${otherEnd.y}`];
         }
         
-        // Check of de candidate move deze toegang blokkeert
-        return accessCells.some(cell => moveCells.includes(cell));
+        // Check overlap tussen candidate move en deze placement
+        return placementCells.some(cell => moveCells.includes(cell));
       });
       
-      return !(wouldBlock || blocksAccess);
+      return !blocksAccess;
     };
 
     openEnds.forEach((end) => {
@@ -460,14 +463,24 @@ export const useDominoGame = () => {
       }
     });
 
-    // PRIORITEIT: Dubbele stenen krijgen voorrang
+    // PRIORITEIT: Dubbele stenen krijgen voorrang EN sorteer dubbels op waarde
     moves.sort((a, b) => {
       const aIsDouble = a.dominoData.value1 === a.dominoData.value2;
       const bIsDouble = b.dominoData.value1 === b.dominoData.value2;
       
+      // Eerst: dubbels vs niet-dubbels
       if (aIsDouble && !bIsDouble) return -1; // Dubbel eerst
       if (!aIsDouble && bIsDouble) return 1;  // Dubbel eerst
-      return 0; // Zelfde prioriteit
+      
+      // Binnen dubbels: hogere waarde eerst (6|6 voor 5|5, etc.)
+      if (aIsDouble && bIsDouble) {
+        return b.dominoData.value1 - a.dominoData.value1;
+      }
+      
+      // Binnen niet-dubbels: som van waarden
+      const aSum = a.dominoData.value1 + a.dominoData.value2;
+      const bSum = b.dominoData.value1 + b.dominoData.value2;
+      return bSum - aSum;
     });
 
     return moves;
@@ -485,6 +498,20 @@ export const useDominoGame = () => {
         index
       }));
       moves.push(...dominoMoves);
+    });
+    
+    // PRIORITEIT: Dubbele stenen krijgen voorrang
+    moves.sort((a, b) => {
+      const aIsDouble = a.dominoData.value1 === a.dominoData.value2;
+      const bIsDouble = b.dominoData.value1 === b.dominoData.value2;
+      
+      if (aIsDouble && !bIsDouble) return -1; // Dubbel eerst
+      if (!aIsDouble && bIsDouble) return 1;  // Dubbel eerst
+      
+      // Binnen dezelfde categorie (dubbel vs dubbel of gewoon vs gewoon), sorteer op waarde
+      const aSum = a.dominoData.value1 + a.dominoData.value2;
+      const bSum = b.dominoData.value1 + b.dominoData.value2;
+      return bSum - aSum; // Hogere waarden eerst
     });
     
     return moves;
