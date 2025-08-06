@@ -27,6 +27,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     drawFromBoneyard,
     startNewGame,
     hasDifferentNeighbor,
+    rotateDomino,
     syncState,
     gameData
   } = gameHook;
@@ -285,6 +286,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}
+          onRotateDomino={rotateDomino}
         />
 
         {/* Player Hand */}

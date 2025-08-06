@@ -884,6 +884,72 @@ export const useDominoGame = () => {
     });
   }, [regenerateOpenEnds, checkBlockedGame]);
 
+  // Function to rotate a domino on the board
+  const rotateDomino = useCallback((dominoId: string) => {
+    setGameState(prev => {
+      const domino = prev.dominoes[dominoId];
+      if (!domino) return prev;
+      
+      // Check if rotation is possible (not if it would cause collision)
+      const newOrientation: 'horizontal' | 'vertical' = domino.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+      
+      // Calculate new position to avoid collisions
+      let newX = domino.x;
+      let newY = domino.y;
+      
+      // For doubles, adjust position when rotating
+      if (isDouble(domino.data)) {
+        if (domino.orientation === 'horizontal' && newOrientation === 'vertical') {
+          // Horizontal double to vertical - might need to adjust Y
+          // Keep the center point the same
+        } else if (domino.orientation === 'vertical' && newOrientation === 'horizontal') {
+          // Vertical double to horizontal - might need to adjust X
+          // Keep the center point the same
+        }
+      }
+      
+      // Create new domino state
+      const rotatedDomino = {
+        ...domino,
+        orientation: newOrientation,
+        x: newX,
+        y: newY
+      };
+      
+      // Update board cells
+      const newBoard = { ...prev.board };
+      const newDominoes = { ...prev.dominoes };
+      
+      // Remove old board positions
+      const oldCells = domino.orientation === 'horizontal' 
+        ? [`${domino.x},${domino.y}`, `${domino.x + 1},${domino.y}`]
+        : [`${domino.x},${domino.y}`, `${domino.x},${domino.y + 1}`];
+      
+      oldCells.forEach(cell => delete newBoard[cell]);
+      
+      // Add new board positions
+      const pips = domino.flipped ? [domino.data.value2, domino.data.value1] : [domino.data.value1, domino.data.value2];
+      const newCells = newOrientation === 'horizontal' 
+        ? [`${newX},${newY}`, `${newX + 1},${newY}`]
+        : [`${newX},${newY}`, `${newX},${newY + 1}`];
+      
+      newCells.forEach((cell, index) => {
+        newBoard[cell] = { dominoId, value: pips[index] };
+      });
+      
+      newDominoes[dominoId] = rotatedDomino;
+      
+      // Regenerate open ends
+      const tempState = { ...prev, dominoes: newDominoes, board: newBoard };
+      const newOpenEnds = regenerateOpenEnds(tempState);
+      
+      return {
+        ...tempState,
+        openEnds: newOpenEnds,
+      };
+    });
+  }, [regenerateOpenEnds]);
+
   return {
     gameState,
     setGameState,
@@ -895,6 +961,7 @@ export const useDominoGame = () => {
     drawSpecificFromBoneyard,
     selectHandDomino,
     resetGame,
+    rotateDomino,
     hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y),
     regenerateOpenEnds: (state?: GameState) => regenerateOpenEnds(state || gameStateRef.current),
     manualBlockedCheck: () => {

@@ -17,6 +17,7 @@ interface GameBoardProps {
   onCenterView: () => void;
   hasDifferentNeighbor: (x: number, y: number) => boolean;
   backgroundChoice?: string;
+  onRotateDomino?: (dominoId: string) => void;
 }
 
 const CELL_SIZE = 48;
@@ -28,13 +29,14 @@ const PADDING = 400; // Increased padding for better scroll area
 const MOBILE_PADDING = 150; // Better padding on mobile
 const SCROLL_PADDING = 200; // Extra padding for scroll calculations
 
-export const GameBoard: React.FC<GameBoardProps> = ({
-  gameState,
-  legalMoves,
-  onMoveExecute,
-  onCenterView,
-  hasDifferentNeighbor,
-  backgroundChoice = 'domino-table-2'
+export const GameBoard: React.FC<GameBoardProps> = ({ 
+  gameState, 
+  legalMoves, 
+  onMoveExecute, 
+  onCenterView, 
+  hasDifferentNeighbor, 
+  backgroundChoice = 'domino-table-2',
+  onRotateDomino
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -317,6 +319,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 flipped={domino.flipped}
                 rotation={domino.rotation || 0}
                 isShaking={gameState.isHardSlamming}
+                onClick={onRotateDomino ? () => onRotateDomino(id) : undefined}
+                className={onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-dutch-orange" : undefined}
               />
             </div>
           );
