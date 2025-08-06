@@ -349,23 +349,24 @@ export const useDominoGame = () => {
         return true;
       }
       
-      // Alleen controleren als er precies 2 open ends zijn (echte kop-staart situatie)
-      if (allOpenEnds.length !== 2) {
-        console.log(`🎲 ✅ ALLOWED: Not head-tail situation (${allOpenEnds.length} open ends)`);
+      // NIEUWE LOGICA: Controleer altijd afstand tot alle open ends (niet alleen kop-staart)
+      if (allOpenEnds.length < 1) {
+        console.log(`🎲 ✅ ALLOWED: No open ends to check against`);
         return true;
       }
       
-      console.log(`🎲 🔍 CHECKING head-tail collision for 2 open ends`);
+      console.log(`🎲 🔍 CHECKING collision against all ${allOpenEnds.length} open ends`);
       
       // Bepaal welk end we gebruiken voor deze move
       const currentEnd = candidateMove.end;
-      const otherEnd = allOpenEnds.find(end => 
+      const otherEnds = allOpenEnds.filter(end => 
         !(end.x === currentEnd.x && end.y === currentEnd.y)
       );
       
-      console.log(`🎲 🔍 Current end: (${currentEnd.x},${currentEnd.y}), other end: (${otherEnd?.x},${otherEnd?.y})`);
+      console.log(`🎲 🔍 Current end: (${currentEnd.x},${currentEnd.y}), checking against ${otherEnds.length} other ends`);
       
-      if (!otherEnd) {
+      if (otherEnds.length === 0) {
+        console.log(`🎲 ✅ ALLOWED: No other ends to check against`);
         return true;
       }
       
@@ -380,10 +381,12 @@ export const useDominoGame = () => {
             { x: candidateMove.x, y: candidateMove.y + 1 }
           ];
       
-      // Check of een van de cellen van deze move binnen de geconfigureerde afstand van het andere open end komt
+      // Check of een van de cellen van deze move binnen de geconfigureerde afstand van andere open ends komt
       const tooClose = moveCells.some(cell => {
-        const distance = Math.abs(cell.x - otherEnd.x) + Math.abs(cell.y - otherEnd.y);
-        return distance <= currentState.headTailDistance;
+        return otherEnds.some(otherEnd => {
+          const distance = Math.abs(cell.x - otherEnd.x) + Math.abs(cell.y - otherEnd.y);
+          return distance <= currentState.headTailDistance;
+        });
       });
       
       if (tooClose) {
