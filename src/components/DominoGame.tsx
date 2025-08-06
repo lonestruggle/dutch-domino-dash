@@ -22,6 +22,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const {
     gameState,
     findLegalMoves,
+    findAllPossibleMoves, // NIEUWE FUNCTIE VOOR ALLE MOVES
     executeMove,
     selectHandDomino,
     drawFromBoneyard,
@@ -116,6 +117,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Calculate legal moves for selected domino
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
+  
+  // NIEUWE: Bereken alle mogelijke moves (altijd zichtbaar in blauw)
+  const allPossibleMoves = findAllPossibleMoves ? findAllPossibleMoves() : [];
 
   // Enhanced pass logic - knop altijd zichtbaar, enabled wanneer speler kan passen
   let canPass = false;
@@ -282,6 +286,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <GameBoard 
           gameState={gameState}
           legalMoves={legalMovesWithIndex}
+          allPossibleMoves={allPossibleMoves} // NIEUWE PROP VOOR ALLE MOVES
           onMoveExecute={executeMove}
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}

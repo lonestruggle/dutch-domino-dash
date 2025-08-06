@@ -13,6 +13,7 @@ const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.
 interface GameBoardProps {
   gameState: GameState;
   legalMoves: LegalMove[];
+  allPossibleMoves?: LegalMove[]; // NIEUWE PROP VOOR ALLE MOGELIJKE MOVES IN BLAUW
   onMoveExecute: (move: LegalMove) => void;
   onCenterView: () => void;
   hasDifferentNeighbor: (x: number, y: number) => boolean;
@@ -32,6 +33,7 @@ const SCROLL_PADDING = 200; // Extra padding for scroll calculations
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameState, 
   legalMoves, 
+  allPossibleMoves = [], // NIEUWE PROP MET DEFAULT
   onMoveExecute, 
   onCenterView, 
   hasDifferentNeighbor, 
@@ -323,6 +325,42 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 className={onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-dutch-orange" : undefined}
               />
             </div>
+          );
+        })}
+
+        {/* Render alle mogelijke moves in blauw (altijd zichtbaar) */}
+        {allPossibleMoves.map((move, index) => {
+          const { end } = move;
+          
+          if (hasDifferentNeighbor(end.x, end.y)) return null;
+          if (gameState.forbiddens[`${end.x},${end.y}`]) return null;
+
+          let { x, y } = end;
+          const { orientation, dominoData } = move;
+          const isDouble = dominoData.value1 === dominoData.value2;
+          
+          // Adjust position based on direction
+          if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
+          if (orientation === "vertical" && end.fromDir === "N") y -= 1;
+
+          const size = orientation === "horizontal" ? [2, 1] : [1, 2];
+
+          return (
+            <PlacementTarget
+              key={`all-moves-${end.x}-${end.y}-${index}`}
+              x={x}
+              y={y}
+              width={size[0]}
+              height={size[1]}
+              orientation={orientation}
+              isDouble={isDouble}
+              onClick={() => onMoveExecute(move)}
+              isBlueHighlight={true} // BLAUW HIGHLIGHT VOOR ALLE MOVES
+              style={{
+                left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
+                top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,
+              }}
+            />
           );
         })}
 

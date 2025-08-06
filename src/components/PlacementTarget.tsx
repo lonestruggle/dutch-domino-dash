@@ -12,6 +12,7 @@ interface PlacementTargetProps {
   onClick: () => void;
   style?: React.CSSProperties;
   className?: string;
+  isBlueHighlight?: boolean; // NIEUWE PROP VOOR BLAUW HIGHLIGHT
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -23,7 +24,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   isDouble,
   onClick,
   style,
-  className
+  className,
+  isBlueHighlight = false // DEFAULT FALSE
 }) => {
   const isMobile = useIsMobile();
   const CELL_SIZE = 48;
@@ -33,6 +35,7 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
     <div
       className={cn(
         'placement-target absolute z-10 transform -translate-x-1/2 -translate-y-1/2',
+        isBlueHighlight && 'placement-target-blue', // BLAUW HIGHLIGHT VOOR ALLE MOVES
         isDouble && orientation === 'vertical' && '-mt-6',
         isDouble && orientation === 'horizontal' && '-ml-6',
         isMobile && 'cursor-pointer active:bg-opacity-80 !scale-[0.7] transform',

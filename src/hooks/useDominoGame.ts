@@ -415,6 +415,23 @@ export const useDominoGame = () => {
     return moves;
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
+  // KOPIE VAN findLegalMoves - VOOR ALTIJD TONEN BLUE LEGAL MOVES
+  const findAllPossibleMoves = useCallback((): LegalMove[] => {
+    const moves: LegalMove[] = [];
+    const currentState = gameStateRef.current;
+    
+    // Voor elke steen in de hand, bereken alle mogelijke zetten
+    currentState.playerHand.forEach((dominoData, index) => {
+      const dominoMoves = findLegalMoves(dominoData).map(move => ({
+        ...move,
+        index
+      }));
+      moves.push(...dominoMoves);
+    });
+    
+    return moves;
+  }, [findLegalMoves]);
+
   // BLOCKED GAME CHECK: Game is only blocked if NO moves possible AND boneyard is empty
   const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
     console.log('🔍 CHECKING BLOCKED GAME - Using findLegalMoves for each tile');
@@ -929,6 +946,7 @@ export const useDominoGame = () => {
     startGame,
     placeDominoOnGrid,
     findLegalMoves,
+    findAllPossibleMoves, // NIEUWE FUNCTIE VOOR ALTIJD TONEN BLUE MOVES
     executeMove,
     drawFromBoneyard,
     drawSpecificFromBoneyard,

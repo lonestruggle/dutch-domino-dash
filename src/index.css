@@ -195,6 +195,18 @@
     background: hsl(var(--selected-glow));
     transform: translate(-50%, -50%) scale(1.02);
   }
+
+  /* Blauwe variant voor alle mogelijke moves */
+  .placement-target-blue {
+    background: hsl(220 90% 85% / 0.6) !important;
+    border: 2px dashed hsl(220 90% 60%) !important;
+    z-index: 5 !important; /* Lager dan normale placement targets */
+  }
+
+  .placement-target-blue:hover {
+    background: hsl(220 90% 75% / 0.8) !important;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
   
   .game-ui {
     background: hsl(var(--ui-bg));
