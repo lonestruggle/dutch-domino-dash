@@ -309,44 +309,55 @@ export const useDominoGame = () => {
 
     // NIEUWE LOGICA: Voorkom dat kop en staart naar elkaar toe bouwen
     const preventHeadTailCollision = (candidateMove: any, allOpenEnds: OpenEnd[]) => {
-      // Als er maar 2 open ends zijn, zijn dit waarschijnlijk kop en staart
+      const totalDominoes = Object.keys(currentState.dominoes).length;
+      
+      // UITZONDERING 1: Eerste 3 stenen mogen overal
+      if (totalDominoes <= 3) {
+        return true;
+      }
+      
+      // UITZONDERING 2: Dubbele stenen mogen altijd (hebben voorrang)
+      if (isDouble(candidateMove.dominoData)) {
+        return true;
+      }
+      
+      // Alleen controleren als er precies 2 open ends zijn (kop en staart)
       if (allOpenEnds.length !== 2) {
-        return true; // Met meer dan 2 open ends is er geen kop/staart probleem
+        return true;
       }
       
       const [end1, end2] = allOpenEnds;
       
-      // Bereken de afstand tussen de twee open ends
-      const distance = Math.abs(end1.x - end2.x) + Math.abs(end1.y - end2.y);
+      // Bepaal welk end we gebruiken voor deze move
+      const currentEnd = candidateMove.end;
+      const otherEnd = allOpenEnds.find(end => 
+        !(end.x === currentEnd.x && end.y === currentEnd.y)
+      );
       
-      // Als de open ends dicht bij elkaar liggen, check of deze move ze nog dichter bij elkaar brengt
-      if (distance <= 4) { // Als ze binnen 4 cellen van elkaar zijn
-        
-        // Bereken waar deze move zou worden geplaatst
-        const moveCells = candidateMove.orientation === 'horizontal' 
-          ? [`${candidateMove.x},${candidateMove.y}`, `${candidateMove.x + 1},${candidateMove.y}`]
-          : [`${candidateMove.x},${candidateMove.y}`, `${candidateMove.x},${candidateMove.y + 1}`];
-        
-        // Check of deze move de open ends dichter bij elkaar brengt
-        const otherEnd = allOpenEnds.find(end => 
-          !(end.x === candidateMove.end.x && end.y === candidateMove.end.y)
-        );
-        
-        if (otherEnd) {
-          // Bereken afstand van elk cel van de move tot het andere open end
-          const minDistanceToOtherEnd = Math.min(
-            ...moveCells.map(cellKey => {
-              const [cellX, cellY] = cellKey.split(',').map(Number);
-              return Math.abs(cellX - otherEnd.x) + Math.abs(cellY - otherEnd.y);
-            })
-          );
-          
-          // Als de move binnen 2 cellen van het andere open end komt, blokkeer het
-          if (minDistanceToOtherEnd <= 2) {
-            console.log(`🚫 BLOCKED: Move would bring head/tail too close together (distance: ${minDistanceToOtherEnd})`);
-            return false;
-          }
-        }
+      if (!otherEnd) {
+        return true;
+      }
+      
+      // Bereken waar deze move zou worden geplaatst (beide cellen van de domino)
+      const moveCells = candidateMove.orientation === 'horizontal' 
+        ? [
+            { x: candidateMove.x, y: candidateMove.y },
+            { x: candidateMove.x + 1, y: candidateMove.y }
+          ]
+        : [
+            { x: candidateMove.x, y: candidateMove.y },
+            { x: candidateMove.x, y: candidateMove.y + 1 }
+          ];
+      
+      // Check of een van de cellen van deze move binnen 3 grids van het andere open end komt
+      const tooClose = moveCells.some(cell => {
+        const distance = Math.abs(cell.x - otherEnd.x) + Math.abs(cell.y - otherEnd.y);
+        return distance <= 3;
+      });
+      
+      if (tooClose) {
+        console.log(`🚫 BLOCKED: Move would bring head/tail within 3 grids of each other`);
+        return false;
       }
       
       return true;
