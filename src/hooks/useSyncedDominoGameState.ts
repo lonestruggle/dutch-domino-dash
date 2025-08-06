@@ -115,7 +115,10 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         // Hard slam properties for synchronization
         hardSlamUsesRemaining: gameState.hardSlamUsesRemaining,
         hardSlamNextMove: gameState.hardSlamNextMove,
-        isHardSlamming: gameState.isHardSlamming
+        isHardSlamming: gameState.isHardSlamming,
+        // Head-tail collision settings
+        headTailDistance: gameState.headTailDistance || 3,
+        headTailProtectionEnabled: gameState.headTailProtectionEnabled !== false
       } : null;
       
       console.log('🔍 LOADED FROM DATABASE:', {

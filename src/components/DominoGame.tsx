@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
+import { HeadTailDistanceControl } from '@/components/HeadTailDistanceControl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Settings } from 'lucide-react';
 
 interface DominoGameProps {
   gameHook: any;
@@ -30,7 +31,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     hasDifferentNeighbor,
     rotateDomino,
     syncState,
-    gameData
+    gameData,
+    setHeadTailDistance,
+    setHeadTailProtectionEnabled
   } = gameHook;
 
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
@@ -39,6 +42,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   
   // Reset dialog shown flag when game starts new
   useEffect(() => {
@@ -437,6 +441,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 >
                   🔧 Check Blocked
                 </Button>
+                <Button 
+                  onClick={() => setShowSettingsDialog(true)}
+                  variant="outline"
+                  className="bg-blue-50 hover:bg-blue-100 flex items-center space-x-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </Button>
               </div>
               <div className="text-sm text-muted-foreground flex items-center">
                 {gameState?.isGameOver ? (
@@ -640,6 +652,23 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Settings Dialog */}
+        <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Kop-Staart Instellingen</DialogTitle>
+            </DialogHeader>
+            <HeadTailDistanceControl
+              distance={gameState?.headTailDistance || 3}
+              onDistanceChange={setHeadTailDistance}
+              enabled={gameState?.headTailProtectionEnabled || false}
+              onEnabledChange={setHeadTailProtectionEnabled}
+              currentOpenEnds={gameState?.openEnds?.length || 0}
+              totalDominoes={Object.keys(gameState?.dominoes || {}).length}
+            />
           </DialogContent>
         </Dialog>
       </div>

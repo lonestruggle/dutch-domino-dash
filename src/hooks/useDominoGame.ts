@@ -24,6 +24,8 @@ export const useDominoGame = () => {
     spinnerId: null,
     isGameOver: false,
     selectedHandIndex: null,
+    headTailDistance: 3,
+    headTailProtectionEnabled: true,
   });
 
   const gameStateRef = useRef(gameState);
@@ -41,6 +43,8 @@ export const useDominoGame = () => {
       spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
+      headTailDistance: 3,
+      headTailProtectionEnabled: true,
     });
   }, []);
 
@@ -107,6 +111,8 @@ export const useDominoGame = () => {
       spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
+      headTailDistance: 3,
+      headTailProtectionEnabled: true,
     });
   }, [resetGame]);
 
@@ -317,7 +323,13 @@ export const useDominoGame = () => {
     const preventHeadTailCollision = (candidateMove: any, allOpenEnds: OpenEnd[]) => {
       const totalDominoes = Object.keys(currentState.dominoes).length;
       
-      console.log(`🎲 Collision check: ${totalDominoes} dominoes, isDouble: ${isDouble(candidateMove.dominoData)}`);
+      console.log(`🎲 Collision check: ${totalDominoes} dominoes, isDouble: ${isDouble(candidateMove.dominoData)}, protection: ${currentState.headTailProtectionEnabled}`);
+      
+      // Check if protection is disabled
+      if (!currentState.headTailProtectionEnabled) {
+        console.log(`🎲 ✅ ALLOWED: Head-tail protection is disabled`);
+        return true;
+      }
       
       // UITZONDERING 1: Eerste 3 stenen mogen overal
       if (totalDominoes <= 2) { // Aangepast van 3 naar 2 omdat we de 3e steen willen plaatsen
@@ -327,11 +339,13 @@ export const useDominoGame = () => {
       
       // UITZONDERING 2: Dubbele stenen mogen altijd (hebben voorrang)
       if (isDouble(candidateMove.dominoData)) {
+        console.log(`🎲 ✅ ALLOWED: Double domino exception`);
         return true;
       }
       
       // Alleen controleren als er precies 2 open ends zijn (kop en staart)
       if (allOpenEnds.length !== 2) {
+        console.log(`🎲 ✅ ALLOWED: Not head-tail situation (${allOpenEnds.length} open ends)`);
         return true;
       }
       
@@ -358,17 +372,18 @@ export const useDominoGame = () => {
             { x: candidateMove.x, y: candidateMove.y + 1 }
           ];
       
-      // Check of een van de cellen van deze move binnen 3 grids van het andere open end komt
+      // Check of een van de cellen van deze move binnen de geconfigureerde afstand van het andere open end komt
       const tooClose = moveCells.some(cell => {
         const distance = Math.abs(cell.x - otherEnd.x) + Math.abs(cell.y - otherEnd.y);
-        return distance <= 3;
+        return distance <= currentState.headTailDistance;
       });
       
       if (tooClose) {
-        console.log(`🚫 BLOCKED: Move would bring head/tail within 3 grids of each other`);
+        console.log(`🚫 BLOCKED: Move would bring head/tail within ${currentState.headTailDistance} grids of each other`);
         return false;
       }
       
+      console.log(`🎲 ✅ ALLOWED: Distance check passed`);
       return true;
     };
 
@@ -1082,6 +1097,19 @@ export const useDominoGame = () => {
         ...prevState,
         hardSlamNextMove: true,
         hardSlamUsesRemaining: Math.max(0, (prevState.hardSlamUsesRemaining || 0) - 1)
+      }));
+    },
+    // New functions for head-tail distance control
+    setHeadTailDistance: (distance: number) => {
+      setGameState(prev => ({
+        ...prev,
+        headTailDistance: distance
+      }));
+    },
+    setHeadTailProtectionEnabled: (enabled: boolean) => {
+      setGameState(prev => ({
+        ...prev,
+        headTailProtectionEnabled: enabled
       }));
     },
   };
