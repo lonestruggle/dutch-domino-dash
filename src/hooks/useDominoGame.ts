@@ -349,24 +349,31 @@ export const useDominoGame = () => {
         return true;
       }
       
-      // NIEUWE LOGICA: Controleer altijd afstand tot alle open ends (niet alleen kop-staart)
-      if (allOpenEnds.length < 1) {
-        console.log(`🎲 ✅ ALLOWED: No open ends to check against`);
+      // INTELLIGENTE LOGICA: Alleen controleren bij echte kop-staart situaties
+      // Bij kruispatronen (3+ open ends) geen afstand controle
+      if (allOpenEnds.length > 2) {
+        console.log(`🎲 ✅ ALLOWED: Cross pattern detected (${allOpenEnds.length} open ends) - no distance restriction`);
         return true;
       }
       
-      console.log(`🎲 🔍 CHECKING collision against all ${allOpenEnds.length} open ends`);
+      // Alleen bij precies 2 open ends (echte kop-staart) afstand controleren
+      if (allOpenEnds.length !== 2) {
+        console.log(`🎲 ✅ ALLOWED: Not enough open ends for distance check (${allOpenEnds.length} open ends)`);
+        return true;
+      }
+      
+      console.log(`🎲 🔍 CHECKING head-tail distance for 2 open ends`);
       
       // Bepaal welk end we gebruiken voor deze move
       const currentEnd = candidateMove.end;
-      const otherEnds = allOpenEnds.filter(end => 
+      const otherEnd = allOpenEnds.find(end => 
         !(end.x === currentEnd.x && end.y === currentEnd.y)
       );
       
-      console.log(`🎲 🔍 Current end: (${currentEnd.x},${currentEnd.y}), checking against ${otherEnds.length} other ends`);
+      console.log(`🎲 🔍 Current end: (${currentEnd.x},${currentEnd.y}), other end: (${otherEnd?.x},${otherEnd?.y})`);
       
-      if (otherEnds.length === 0) {
-        console.log(`🎲 ✅ ALLOWED: No other ends to check against`);
+      if (!otherEnd) {
+        console.log(`🎲 ✅ ALLOWED: No other end found`);
         return true;
       }
       
@@ -381,12 +388,10 @@ export const useDominoGame = () => {
             { x: candidateMove.x, y: candidateMove.y + 1 }
           ];
       
-      // Check of een van de cellen van deze move binnen de geconfigureerde afstand van andere open ends komt
+      // Check of een van de cellen van deze move binnen de geconfigureerde afstand van het andere open end komt
       const tooClose = moveCells.some(cell => {
-        return otherEnds.some(otherEnd => {
-          const distance = Math.abs(cell.x - otherEnd.x) + Math.abs(cell.y - otherEnd.y);
-          return distance <= currentState.headTailDistance;
-        });
+        const distance = Math.abs(cell.x - otherEnd.x) + Math.abs(cell.y - otherEnd.y);
+        return distance <= currentState.headTailDistance;
       });
       
       if (tooClose) {
