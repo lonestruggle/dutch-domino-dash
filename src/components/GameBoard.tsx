@@ -1,11 +1,9 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { DominoTile } from './DominoTile';
 import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Button } from '@/components/ui/button';
-import { RotateCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
@@ -40,7 +38,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   backgroundChoice = 'domino-table-2',
   onRotateDomino
 }) => {
-  const [hoveredDomino, setHoveredDomino] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -310,13 +307,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           return (
             <div
               key={id}
-              className="absolute group"
+              className="absolute"
               style={{
                 left: boardSize / 2 + domino.x * CELL_SIZE,
                 top: boardSize / 2 + domino.y * CELL_SIZE,
               }}
-              onMouseEnter={() => setHoveredDomino(id)}
-              onMouseLeave={() => setHoveredDomino(null)}
             >
               <DominoTile
                 data={domino.data}
@@ -324,48 +319,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 flipped={domino.flipped}
                 rotation={domino.rotation || 0}
                 isShaking={gameState.isHardSlamming}
-                className={onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-orange-400" : undefined}
+                onClick={onRotateDomino ? () => onRotateDomino(id) : undefined}
+                className={onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-dutch-orange" : undefined}
               />
-              
-              {/* Rotatie knop - zichtbaar bij hover */}
-              {/* {console.log('🔄 Debug:', { hoveredDomino, id, hasRotateFunction: !!onRotateDomino, hovered: hoveredDomino === id })} */}
-              {hoveredDomino === id && onRotateDomino && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className={cn(
-                    "absolute -top-2 -right-2 w-6 h-6 p-0 bg-orange-100 hover:bg-orange-200 border-orange-300 shadow-lg",
-                    "opacity-90 group-hover:opacity-100 transition-opacity duration-200",
-                    isMobile && "w-8 h-8 -top-3 -right-3"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    console.log('🔄 Rotating domino:', id);
-                    onRotateDomino(id);
-                  }}
-                >
-                  <RotateCw className={cn("text-orange-600", isMobile ? "h-4 w-4" : "h-3 w-3")} />
-                </Button>
-              )}
-              
-              {/* Altijd zichtbare rotatie knop voor debugging */}
-              {onRotateDomino && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className={cn(
-                    "absolute -bottom-2 -right-2 w-6 h-6 p-0 bg-red-100 hover:bg-red-200 border-red-300 shadow-lg",
-                    isMobile && "w-8 h-8 -bottom-3 -right-3"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    console.log('🔄 Rotating domino (always visible):', id);
-                    onRotateDomino(id);
-                  }}
-                >
-                  <RotateCw className={cn("text-red-600", isMobile ? "h-4 w-4" : "h-3 w-3")} />
-                </Button>
-              )}
             </div>
           );
         })}
