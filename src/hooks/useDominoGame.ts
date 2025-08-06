@@ -479,13 +479,15 @@ export const useDominoGame = () => {
       check(dominoData.value1, false);
       check(dominoData.value2, true);
       
-      // If we found a valid move, check if it would block other open ends
+      // If we found a valid move, add it (temporarily disable strict blocking)
       if (validMove) {
-        // Skip moves that would block other open ends (unless we only have 2 or fewer open ends)
+        // Only apply blocking detection when there are many open ends (4+ ends)
         const currentOpenEnds = regenerateOpenEnds(currentState);
-        const wouldBlock = wouldBlockOtherMoves(validMove, currentState);
+        const shouldCheckBlocking = currentOpenEnds.length >= 6; // More lenient threshold
         
-        if (!wouldBlock || currentOpenEnds.length <= 2) {
+        const wouldBlock = shouldCheckBlocking && wouldBlockOtherMoves(validMove, currentState);
+        
+        if (!wouldBlock) {
           moves.push(validMove);
           uniqueEnds[`${end.x},${end.y}`] = true;
         } else {
