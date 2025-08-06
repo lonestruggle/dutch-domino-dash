@@ -320,7 +320,7 @@ export const useDominoGame = () => {
     console.log(`🎲 Found ${openEnds.length} open ends:`, openEnds.map(end => `(${end.x},${end.y}) value:${end.value}`));
 
     // NIEUWE LOGICA: Voorkom dat kop en staart naar elkaar toe bouwen
-    const preventHeadTailCollision = (candidateMove: any, allOpenEnds: OpenEnd[]) => {
+    const canPlaceDomino = (candidateMove: any, allOpenEnds: OpenEnd[]) => {
       const totalDominoes = Object.keys(currentState.dominoes).length;
       
       console.log(`🎲 Collision check: ${totalDominoes} dominoes, isDouble: ${isDouble(candidateMove.dominoData)}, protection: ${currentState.headTailProtectionEnabled}`);
@@ -514,8 +514,8 @@ export const useDominoGame = () => {
       check(dominoData.value1, false);
       check(dominoData.value2, true);
       
-      // Check beide condities: blokkering EN kop/staart collision
-      if (validMove && preventHeadTailCollision(validMove, openEnds)) {
+      // Check beide condities: blokkering EN kop/staart collision  
+      if (validMove && canPlaceDomino(validMove, openEnds)) {
         moves.push(validMove);
         uniqueEnds[`${end.x},${end.y}`] = true;
       }
