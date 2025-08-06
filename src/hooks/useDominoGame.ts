@@ -331,9 +331,9 @@ export const useDominoGame = () => {
         return true;
       }
       
-      // UITZONDERING 1: Eerste 3 stenen mogen overal
-      if (totalDominoes <= 2) { // Aangepast van 3 naar 2 omdat we de 3e steen willen plaatsen
-        console.log(`🎲 ✅ ALLOWED: First 3 stones exception (currently ${totalDominoes})`);
+      // UITZONDERING 1: Eerste 4 stenen mogen overal
+      if (totalDominoes <= 3) { // Aangepast naar 3 zodat de eerste 4 stenen vrij kunnen
+        console.log(`🎲 ✅ ALLOWED: First 4 stones exception (currently ${totalDominoes})`);
         return true;
       }
       
