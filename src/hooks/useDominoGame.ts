@@ -1093,109 +1093,147 @@ export const useDominoGame = () => {
         return layouts;
       };
 
-      // 5. S-curve layout generator (most reliable)
+      // 5. S-curve layout generator (dominoes end-to-end connected)
       const generateSCurveLayout = (chain: DominoState[]): DominoState[] | null => {
         const newChain: DominoState[] = [];
         let x = 0, y = 0;
-        let direction = 1; // 1 for right, -1 for left
+        let direction = 'right'; // right, down, left, up
+        let dominoesInRow = 0;
+        const maxDominoesInRow = 4;
         
         for (let i = 0; i < chain.length; i++) {
           const originalDomino = chain[i];
           
-          newChain.push({
-            ...originalDomino,
-            x,
-            y,
-            orientation: 'horizontal',
-            rotation: (Math.random() - 0.5) * 15
-          });
+          // Bepaal oriëntatie op basis van richting
+          let orientation: 'horizontal' | 'vertical';
+          let nextX = x, nextY = y;
           
-          x += direction * 2;
-          
-          // Create S-curve by changing direction every 3-4 dominoes
-          if ((i + 1) % 4 === 0) {
-            direction *= -1;
-            y += 2;
-            x += direction * 2; // Offset for S-curve
-          }
-        }
-        
-        return isLayoutValid(newChain) ? newChain : null;
-      };
-
-      // 6. L-shape layout generator
-      const generateLShapeLayout = (chain: DominoState[]): DominoState[] | null => {
-        const newChain: DominoState[] = [];
-        let x = 0, y = 0;
-        const midPoint = Math.floor(chain.length / 2);
-        
-        for (let i = 0; i < chain.length; i++) {
-          const originalDomino = chain[i];
-          
-          if (i < midPoint) {
-            // First half: horizontal line
-            newChain.push({
-              ...originalDomino,
-              x: x,
-              y: 0,
-              orientation: 'horizontal',
-              rotation: (Math.random() - 0.5) * 15
-            });
-            x += 2;
+          if (direction === 'right' || direction === 'left') {
+            orientation = 'horizontal';
+            nextX = direction === 'right' ? x + 2 : x - 2;
           } else {
-            // Second half: vertical line
-            newChain.push({
-              ...originalDomino,
-              x: x - 2,
-              y: y,
-              orientation: 'vertical',
-              rotation: (Math.random() - 0.5) * 15
-            });
-            y += 2;
+            orientation = 'vertical';
+            nextY = direction === 'down' ? y + 2 : y - 2;
           }
-        }
-        
-        return isLayoutValid(newChain) ? newChain : null;
-      };
-
-      // 7. Spiral layout generator
-      const generateSpiralLayout = (chain: DominoState[]): DominoState[] | null => {
-        const newChain: DominoState[] = [];
-        let x = 0, y = 0;
-        let dx = 1, dy = 0; // Start moving right
-        let steps = 1;
-        let stepCount = 0;
-        let directionChanges = 0;
-        
-        for (let i = 0; i < chain.length; i++) {
-          const originalDomino = chain[i];
-          const orientation = i % 2 === 0 ? 'horizontal' : 'vertical';
           
           newChain.push({
             ...originalDomino,
             x,
             y,
             orientation,
-            rotation: (Math.random() - 0.5) * 15
+            rotation: 0 // Geen random rotatie voor betere verbinding
           });
           
-          // Move to next position
-          if (orientation === 'horizontal') {
-            x += dx * 2;
-            y += dy * 1;
-          } else {
-            x += dx * 1;
-            y += dy * 2;
+          // Naar volgende positie alleen als er nog meer stenen zijn
+          if (i < chain.length - 1) {
+            x = nextX;
+            y = nextY;
+            dominoesInRow++;
+            
+            // Verander richting voor S-curve na bepaald aantal stenen
+            if (dominoesInRow >= maxDominoesInRow) {
+              dominoesInRow = 0;
+              
+              // Maak een hoek voor S-vorm
+              if (direction === 'right') {
+                direction = 'down';
+                y += 2;
+              } else if (direction === 'down') {
+                direction = 'left';
+                x -= 2;
+              } else if (direction === 'left') {
+                direction = 'up';
+                y -= 2;
+              } else {
+                direction = 'right';
+                x += 2;
+              }
+            }
           }
+        }
+        
+        return isLayoutValid(newChain) ? newChain : null;
+      };
+
+      // 6. L-shape layout generator (correct end-to-end connection)
+      const generateLShapeLayout = (chain: DominoState[]): DominoState[] | null => {
+        const newChain: DominoState[] = [];
+        let x = 0, y = 0;
+        const horizontalCount = Math.min(chain.length, 6); // Max 6 horizontaal
+        
+        for (let i = 0; i < chain.length; i++) {
+          const originalDomino = chain[i];
           
-          stepCount++;
-          if (stepCount === steps) {
-            // Change direction (spiral pattern)
-            [dx, dy] = [-dy, dx];
-            directionChanges++;
-            stepCount = 0;
-            if (directionChanges % 2 === 0) {
-              steps++;
+          if (i < horizontalCount) {
+            // Horizontale lijn
+            newChain.push({
+              ...originalDomino,
+              x: i * 2,
+              y: 0,
+              orientation: 'horizontal',
+              rotation: 0
+            });
+          } else {
+            // Verticale lijn vanaf einde horizontale lijn
+            const verticalIndex = i - horizontalCount;
+            newChain.push({
+              ...originalDomino,
+              x: (horizontalCount - 1) * 2, // Blijf op zelfde x als laatste horizontale
+              y: (verticalIndex + 1) * 2, // Start onder de horizontale lijn
+              orientation: 'vertical',
+              rotation: 0
+            });
+          }
+        }
+        
+        return isLayoutValid(newChain) ? newChain : null;
+      };
+
+      // 7. Compacte spiral layout generator (end-to-end verbonden)
+      const generateSpiralLayout = (chain: DominoState[]): DominoState[] | null => {
+        const newChain: DominoState[] = [];
+        let x = 0, y = 0;
+        let direction = 0; // 0=right, 1=down, 2=left, 3=up
+        let stepsInDirection = 1;
+        let stepsTaken = 0;
+        let directionsChanged = 0;
+        
+        for (let i = 0; i < chain.length; i++) {
+          const originalDomino = chain[i];
+          
+          // Bepaal oriëntatie op basis van richting
+          const orientation = (direction % 2 === 0) ? 'horizontal' : 'vertical';
+          
+          newChain.push({
+            ...originalDomino,
+            x,
+            y,
+            orientation,
+            rotation: 0
+          });
+          
+          // Bereken volgende positie als er nog meer stenen zijn
+          if (i < chain.length - 1) {
+            stepsTaken++;
+            
+            // Beweeg naar volgende positie
+            switch (direction) {
+              case 0: x += 2; break; // right
+              case 1: y += 2; break; // down  
+              case 2: x -= 2; break; // left
+              case 3: y -= 2; break; // up
+            }
+            
+            // Check of we richting moeten veranderen
+            if (stepsTaken >= stepsInDirection) {
+              direction = (direction + 1) % 4;
+              stepsTaken = 0;
+              directionsChanged++;
+              
+              // Verhoog aantal stappen elke 2 richtingsveranderingen
+              if (directionsChanged % 2 === 0) {
+                stepsInDirection++;
+              }
             }
           }
         }
