@@ -368,8 +368,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {legalMoves.map((move, index) => {
           const { end } = move;
           
-          if (hasDifferentNeighbor(end.x, end.y)) return null;
-          if (gameState.forbiddens[`${end.x},${end.y}`]) return null;
+          console.log(`🎯 Rendering placement target ${index}: (${end.x},${end.y}) from:${end.fromDir}`);
+          console.log(`🎯 hasDifferentNeighbor(${end.x},${end.y}): ${hasDifferentNeighbor(end.x, end.y)}`);
+          console.log(`🎯 gameState.forbiddens[${end.x},${end.y}]: ${gameState.forbiddens[`${end.x},${end.y}`]}`);
+          
+          if (hasDifferentNeighbor(end.x, end.y)) {
+            console.log(`🚫 Skipping placement target: hasDifferentNeighbor failed`);
+            return null;
+          }
+          if (gameState.forbiddens[`${end.x},${end.y}`]) {
+            console.log(`🚫 Skipping placement target: position is forbidden`);
+            return null;
+          }
 
           let { x, y } = end;
           const { orientation, dominoData } = move;
