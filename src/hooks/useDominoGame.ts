@@ -251,35 +251,8 @@ export const useDominoGame = () => {
           }
         }
 
-        // Determine the outward-facing value
-        const dominoData = domino.data;
-        const isHorizontal = domino.orientation === 'horizontal';
-        const isFlipped = domino.flipped;
-        
+        // Use the cell value directly - this is already correctly set when domino was placed
         let edgeValue = cell.value;
-        
-        // For non-double dominoes, determine which value faces which direction
-        if (!isDouble(dominoData)) {
-          const [leftTopValue, rightBottomValue] = isFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
-          
-          if (isHorizontal) {
-            const isLeftCell = coord === `${domino.x},${domino.y}`;
-            const isRightCell = coord === `${domino.x + 1},${domino.y}`;
-            
-            if (dir === 'W' && isLeftCell) edgeValue = leftTopValue;
-            else if (dir === 'E' && isRightCell) edgeValue = rightBottomValue;
-            else if (dir === 'W' && isRightCell) edgeValue = rightBottomValue;
-            else if (dir === 'E' && isLeftCell) edgeValue = rightBottomValue;
-          } else {
-            const isTopCell = coord === `${domino.x},${domino.y}`;
-            const isBottomCell = coord === `${domino.x},${domino.y + 1}`;
-            
-            if (dir === 'N' && isTopCell) edgeValue = leftTopValue;
-            else if (dir === 'S' && isBottomCell) edgeValue = rightBottomValue;
-            else if (dir === 'N' && isBottomCell) edgeValue = rightBottomValue;
-            else if (dir === 'S' && isTopCell) edgeValue = rightBottomValue;
-          }
-        }
         
         console.log(`🔍 VALID CHAIN END: (${nx},${ny}) value:${edgeValue} from:${dir}`);
         
