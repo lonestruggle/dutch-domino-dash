@@ -283,6 +283,10 @@ export const useDominoGame = () => {
     const uniqueEnds: Record<string, boolean> = {};
     const currentState = gameStateRef.current;
     
+    console.log(`🎲 FINDING LEGAL MOVES for ${dominoData.value1}|${dominoData.value2}`);
+    console.log(`🎲 Total dominoes on board: ${Object.keys(currentState.dominoes).length}`);
+    console.log(`🎲 Is double: ${selectedIsDouble}`);
+    
     // EERSTE DOMINO: Als het bord leeg is, kan de eerste domino overal geplaatst worden
     if (Object.keys(currentState.dominoes).length === 0) {
       const orientation = selectedIsDouble ? 'vertical' : 'horizontal';
@@ -301,18 +305,23 @@ export const useDominoGame = () => {
         }
       }
       
+      console.log(`🎲 Empty board: generated ${moves.length} moves`);
       return moves;
     }
     
     
     const openEnds = regenerateOpenEnds(currentState);
+    console.log(`🎲 Found ${openEnds.length} open ends:`, openEnds.map(end => `(${end.x},${end.y}) value:${end.value}`));
 
     // NIEUWE LOGICA: Voorkom dat kop en staart naar elkaar toe bouwen
     const preventHeadTailCollision = (candidateMove: any, allOpenEnds: OpenEnd[]) => {
       const totalDominoes = Object.keys(currentState.dominoes).length;
       
+      console.log(`🎲 Collision check: ${totalDominoes} dominoes, isDouble: ${isDouble(candidateMove.dominoData)}`);
+      
       // UITZONDERING 1: Eerste 3 stenen mogen overal
-      if (totalDominoes <= 3) {
+      if (totalDominoes <= 2) { // Aangepast van 3 naar 2 omdat we de 3e steen willen plaatsen
+        console.log(`🎲 ✅ ALLOWED: First 3 stones exception (currently ${totalDominoes})`);
         return true;
       }
       
