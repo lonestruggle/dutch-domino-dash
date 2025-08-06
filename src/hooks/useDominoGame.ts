@@ -300,58 +300,54 @@ export const useDominoGame = () => {
     
     const openEnds = regenerateOpenEnds(currentState);
 
-    // BLOKKERING DETECTIE: Filter moves die andere open ends zouden blokkeren
-    const validOpenEnds = openEnds.filter(end => {
-      // Voor elk open end, check of het geblokkeerd wordt door andere potentiële moves
-      const potentialBlockingMoves: LegalMove[] = [];
+    // VERBETERDE BLOKKERING DETECTIE: Check of een move andere open ends blokkeert
+    const filterBlockingMoves = (candidateMove: any, allOpenEnds: OpenEnd[]) => {
+      // Bereken welke cellen deze move zou innemen
+      const moveCells = candidateMove.orientation === 'horizontal' 
+        ? [`${candidateMove.x},${candidateMove.y}`, `${candidateMove.x + 1},${candidateMove.y}`]
+        : [`${candidateMove.x},${candidateMove.y}`, `${candidateMove.x},${candidateMove.y + 1}`];
       
-      // Verzamel alle mogelijke moves van alle open ends
-      openEnds.forEach(otherEnd => {
-        if (otherEnd === end) return; // Skip zichzelf
-        
-        // Bereken waar een move op dit andere end zou worden geplaatst
-        let moveX = otherEnd.x;
-        let moveY = otherEnd.y;
-        let moveOrientation: 'horizontal' | 'vertical' = otherEnd.fromDir === 'N' || otherEnd.fromDir === 'S' ? 'vertical' : 'horizontal';
-        
-        // Voor doubles, flip de orientatie
-        if (selectedIsDouble) {
-          moveOrientation = moveOrientation === 'horizontal' ? 'vertical' : 'horizontal';
+      // Check of deze move andere open ends zou blokkeren
+      const wouldBlock = allOpenEnds.some(otherEnd => {
+        if (otherEnd.x === candidateMove.end.x && otherEnd.y === candidateMove.end.y) {
+          return false; // Skip het eigen end
         }
         
-        // Pas positie aan op basis van richting
-        if (moveOrientation === 'horizontal') {
-          if (otherEnd.fromDir === 'W') moveX -= 1;
-        } else { // vertical
-          if (otherEnd.fromDir === 'N') moveY -= 1;
+        // Check of dit open end geblokkeerd wordt
+        const otherEndKey = `${otherEnd.x},${otherEnd.y}`;
+        return moveCells.includes(otherEndKey);
+      });
+      
+      // Ook check toegangspaden - een move mag geen "doorgang" naar een open end blokkeren
+      const blocksAccess = allOpenEnds.some(otherEnd => {
+        if (otherEnd.x === candidateMove.end.x && otherEnd.y === candidateMove.end.y) {
+          return false; // Skip het eigen end
         }
         
-        potentialBlockingMoves.push({
-          end: otherEnd,
-          dominoData,
-          flipped: false,
-          orientation: moveOrientation,
-          x: moveX,
-          y: moveY
-        });
-      });
-      
-      // Check of dit open end geblokkeerd wordt door een van de potentiële moves
-      const isBlocked = potentialBlockingMoves.some(blockingMove => {
-        // Bereken cellen die de blocking move zou innemen
-        const blockingCells = blockingMove.orientation === 'horizontal' 
-          ? [`${blockingMove.x},${blockingMove.y}`, `${blockingMove.x + 1},${blockingMove.y}`]
-          : [`${blockingMove.x},${blockingMove.y}`, `${blockingMove.x},${blockingMove.y + 1}`];
+        // Bereken waar een domino op dit andere end zou worden geplaatst
+        let accessX = otherEnd.x;
+        let accessY = otherEnd.y;
         
-        // Check of het huidige open end fysiek geblokkeerd wordt
-        const endKey = `${end.x},${end.y}`;
-        return blockingCells.includes(endKey);
+        // Pas aan op basis van fromDir - waar zou de domino komen?
+        const accessCells = [];
+        if (otherEnd.fromDir === 'N') {
+          accessCells.push(`${accessX},${accessY}`, `${accessX},${accessY - 1}`);
+        } else if (otherEnd.fromDir === 'S') {
+          accessCells.push(`${accessX},${accessY}`, `${accessX},${accessY + 1}`);
+        } else if (otherEnd.fromDir === 'W') {
+          accessCells.push(`${accessX},${accessY}`, `${accessX - 1},${accessY}`);
+        } else if (otherEnd.fromDir === 'E') {
+          accessCells.push(`${accessX},${accessY}`, `${accessX + 1},${accessY}`);
+        }
+        
+        // Check of de candidate move deze toegang blokkeert
+        return accessCells.some(cell => moveCells.includes(cell));
       });
       
-      return !isBlocked;
-    });
+      return !(wouldBlock || blocksAccess);
+    };
 
-    validOpenEnds.forEach((end) => {
+    openEnds.forEach((end) => {
       if (uniqueEnds[`${end.x},${end.y}`]) {
         return;
       }
@@ -457,11 +453,21 @@ export const useDominoGame = () => {
       check(dominoData.value1, false);
       check(dominoData.value2, true);
       
-      // If we found a valid move, add it and mark the position as used
-      if (validMove) {
+      // If we found a valid move, check if it doesn't block other moves
+      if (validMove && filterBlockingMoves(validMove, openEnds)) {
         moves.push(validMove);
         uniqueEnds[`${end.x},${end.y}`] = true;
       }
+    });
+
+    // PRIORITEIT: Dubbele stenen krijgen voorrang
+    moves.sort((a, b) => {
+      const aIsDouble = a.dominoData.value1 === a.dominoData.value2;
+      const bIsDouble = b.dominoData.value1 === b.dominoData.value2;
+      
+      if (aIsDouble && !bIsDouble) return -1; // Dubbel eerst
+      if (!aIsDouble && bIsDouble) return 1;  // Dubbel eerst
+      return 0; // Zelfde prioriteit
     });
 
     return moves;
