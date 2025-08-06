@@ -18,7 +18,6 @@ interface GameBoardProps {
   hasDifferentNeighbor: (x: number, y: number) => boolean;
   backgroundChoice?: string;
   onRotateDomino?: (dominoId: string) => void;
-  onReshapeSnake?: () => void;
 }
 
 const CELL_SIZE = 48;
@@ -37,8 +36,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onCenterView, 
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
-  onRotateDomino,
-  onReshapeSnake
+  onRotateDomino
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -277,8 +275,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [gameState.dominoes, dynamicScale, boardSize]);
 
-  const canReshape = Object.keys(gameState.dominoes).length >= 3;
-
   return (
     <div 
       ref={containerRef}
@@ -292,17 +288,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         height: isMobile ? '50vh' : 'auto'
       }}
     >
-      {/* Snake Reshape Button */}
-      {canReshape && onReshapeSnake && (
-        <button
-          onClick={onReshapeSnake}
-          className="absolute top-4 right-4 z-20 bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 shadow-lg"
-          title="Reorganize domino chain layout"
-        >
-          🔀 Reshape Snake
-        </button>
-      )}
-      
       <div 
         ref={boardRef}
         className="relative"
