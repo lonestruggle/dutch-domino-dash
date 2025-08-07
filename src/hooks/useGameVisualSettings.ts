@@ -52,6 +52,7 @@ export const useGameVisualSettings = () => {
   const updateFrameSize = (size: number, targetDevice?: DeviceType) => {
     const clampedSize = Math.max(0.5, Math.min(2.0, size));
     const device = targetDevice || deviceType;
+    console.log('Updating frame size:', { size: clampedSize, device, targetDevice });
     setAllSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], frameSize: clampedSize }
@@ -69,6 +70,7 @@ export const useGameVisualSettings = () => {
 
   const updateFrameVisible = (visible: boolean, targetDevice?: DeviceType) => {
     const device = targetDevice || deviceType;
+    console.log('Updating frame visibility:', { visible, device, targetDevice });
     setAllSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], frameVisible: visible }

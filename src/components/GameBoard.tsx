@@ -104,6 +104,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     // Update frame visibility
     document.documentElement.style.setProperty('--frame-visible', settings.frameVisible ? '1' : '0');
+    
+    // Debug logging
+    console.log('Visual settings applied:', {
+      frameSize: settings.frameSize,
+      frameVisible: settings.frameVisible,
+      dominoScale: settings.dominoScale,
+      deviceType: 'current device'
+    });
+    
+    // Verify CSS variables are set
+    const rootStyle = getComputedStyle(document.documentElement);
+    console.log('CSS Variables check:', {
+      '--frame-size-multiplier': rootStyle.getPropertyValue('--frame-size-multiplier'),
+      '--frame-visible': rootStyle.getPropertyValue('--frame-visible'),
+      '--domino-scale': rootStyle.getPropertyValue('--domino-scale')
+    });
   };
 
   // Update scaling on mount and when viewport changes
