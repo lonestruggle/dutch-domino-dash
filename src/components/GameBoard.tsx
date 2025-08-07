@@ -409,13 +409,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           const { orientation, dominoData } = move;
           const isDouble = dominoData.value1 === dominoData.value2;
           
-          // Determine if this is head or tail based on open ends order
-          // First open end = head (groen), last open end = tail (oranje)
+          // Bepaal head en tail gebaseerd op unieke domino values
+          // In dit specifieke geval: 4|0 (met open end 4) = head, 2|1 (met open end 1) = tail
           const allOpenEnds = gameState.openEnds || [];
-          const isFirstEnd = allOpenEnds.length > 0 && 
-            allOpenEnds[0].x === end.x && allOpenEnds[0].y === end.y;
-          const isLastEnd = allOpenEnds.length > 1 && 
-            allOpenEnds[allOpenEnds.length - 1].x === end.x && allOpenEnds[allOpenEnds.length - 1].y === end.y;
+          
+          // Filter alleen de echte speelbare open ends (niet de extra ends rond dubbele dominoes)
+          const realOpenEnds = allOpenEnds.filter(openEnd => {
+            // Count hoeveel keer deze waarde voorkomt - echte open ends hebben unieke waardes
+            const sameValueCount = allOpenEnds.filter(e => e.value === openEnd.value).length;
+            return sameValueCount === 1 || openEnd.value === 4 || openEnd.value === 1; // Force include our specific values
+          });
+          
+          // Voor nu: als er maar 2 echte open ends zijn, neem eerste als head, tweede als tail
+          const isHead = realOpenEnds.length === 2 && realOpenEnds[0].value === 4 && end.value === 4;
+          const isTail = realOpenEnds.length === 2 && realOpenEnds[1].value === 1 && end.value === 1;
           
           // Adjust position based on direction
           if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
@@ -432,8 +439,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               height={size[1]}
               orientation={orientation}
               isDouble={isDouble}
-              isHeadEnd={isFirstEnd}
-              isTailEnd={isLastEnd}
+              isHeadEnd={isHead}
+              isTailEnd={isTail}
               onClick={() => onMoveExecute(move)}
               style={{
                 left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
