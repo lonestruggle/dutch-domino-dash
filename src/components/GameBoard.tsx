@@ -422,24 +422,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                `
              }}></div>
         
-        {/* Speelveld BINNEN de tafel - ultra realistische hout finish */}
+        {/* Speelveld BINNEN de tafel - hetzelfde hout als geüpload */}
         <div 
           ref={containerRef}
-          className={`w-full h-full game-board rounded-lg border-2 ${isMobile ? 'overflow-hidden' : 'overflow-auto'}`}
+          className="w-full h-full game-board rounded-lg border-2 overflow-hidden"
           style={{ 
-            scrollBehavior: 'smooth',
             background: `
               linear-gradient(135deg, 
-                rgba(101, 67, 33, 0.3) 0%,
-                rgba(62, 39, 35, 0.2) 50%,
-                rgba(101, 67, 33, 0.3) 100%
+                rgba(139, 69, 19, 0.1) 0%,
+                rgba(160, 82, 45, 0.05) 50%,
+                rgba(139, 69, 19, 0.1) 100%
               ),
-              url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png),
-              url(${backgroundImage})
+              url(/lovable-uploads/45b3b2a6-77b7-421d-920c-5d87e2233a34.png)
             `,
-            backgroundSize: 'auto, cover, cover',
-            backgroundPosition: 'center, center, center',
-            backgroundRepeat: 'no-repeat, no-repeat, no-repeat',
+            backgroundSize: 'auto, cover',
+            backgroundPosition: 'center, center',
+            backgroundRepeat: 'no-repeat, repeat',
             borderColor: 'rgba(42, 26, 23, 0.8)',
             boxShadow: `
               inset 0 3px 12px rgba(0,0,0,0.4),
