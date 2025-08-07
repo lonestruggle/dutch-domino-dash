@@ -343,6 +343,15 @@
       transform: scale(2) translateY(-2px);
     }
     
+    /* Dunnere frame op mobile */
+    .game-board::before {
+      top: -6px;
+      left: -6px;
+      right: -6px;
+      bottom: -6px;
+      border-radius: 6px;
+    }
+    
     /* Larger touch targets for mobile */
     .placement-target {
       min-width: 44px;
