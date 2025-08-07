@@ -276,55 +276,40 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [gameState.dominoes, dynamicScale, boardSize]);
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto aspect-square min-h-[700px]">
-      {/* Complete Square Wooden Frame Table */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-700 via-amber-800 to-amber-900 rounded-2xl shadow-2xl p-8">
+    <div className="relative w-full max-w-4xl mx-auto aspect-square">
+      {/* Vierkante Houten Tafel */}
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-700 via-amber-800 to-amber-900 rounded-2xl shadow-2xl p-12">
         
-        {/* Top side - large compartment for 10 dominoes */}
-        <div className="absolute top-10 left-24 right-24 h-24 bg-amber-900 border-3 border-amber-600 rounded-lg shadow-inner">
-          <div className="absolute inset-2 border-2 border-amber-500 rounded-md bg-gradient-to-b from-amber-800 to-amber-900"></div>
-          <div className="absolute inset-3 flex items-center justify-center text-amber-600 text-xs font-semibold">10 stenen</div>
-        </div>
+        {/* Top vak voor dominostenen */}
+        <div className="absolute top-6 left-20 right-20 h-20 bg-amber-900 border-2 border-amber-600 rounded-lg shadow-inner"></div>
         
-        {/* Right side - large compartment for 10 dominoes */}
-        <div className="absolute top-24 bottom-24 right-10 w-24 bg-amber-900 border-3 border-amber-600 rounded-lg shadow-inner">
-          <div className="absolute inset-2 border-2 border-amber-500 rounded-md bg-gradient-to-r from-amber-800 to-amber-900"></div>
-          <div className="absolute inset-3 flex items-center justify-center text-amber-600 text-xs font-semibold writing-mode-vertical-rl">10 stenen</div>
-        </div>
+        {/* Right vak voor dominostenen */}
+        <div className="absolute top-20 bottom-20 right-6 w-20 bg-amber-900 border-2 border-amber-600 rounded-lg shadow-inner"></div>
         
-        {/* Bottom side - large compartment for 10 dominoes */}
-        <div className="absolute bottom-10 left-24 right-24 h-24 bg-amber-900 border-3 border-amber-600 rounded-lg shadow-inner">
-          <div className="absolute inset-2 border-2 border-amber-500 rounded-md bg-gradient-to-t from-amber-800 to-amber-900"></div>
-          <div className="absolute inset-3 flex items-center justify-center text-amber-600 text-xs font-semibold">10 stenen</div>
-        </div>
+        {/* Bottom vak voor dominostenen */}
+        <div className="absolute bottom-6 left-20 right-20 h-20 bg-amber-900 border-2 border-amber-600 rounded-lg shadow-inner"></div>
         
-        {/* Left side - large compartment for 10 dominoes */}
-        <div className="absolute top-24 bottom-24 left-10 w-24 bg-amber-900 border-3 border-amber-600 rounded-lg shadow-inner">
-          <div className="absolute inset-2 border-2 border-amber-500 rounded-md bg-gradient-to-l from-amber-800 to-amber-900"></div>
-          <div className="absolute inset-3 flex items-center justify-center text-amber-600 text-xs font-semibold writing-mode-vertical-rl">10 stenen</div>
-        </div>
+        {/* Left vak voor dominostenen */}
+        <div className="absolute top-20 bottom-20 left-6 w-20 bg-amber-900 border-2 border-amber-600 rounded-lg shadow-inner"></div>
         
-        {/* Corner decorations with brass look */}
-        <div className="absolute top-10 left-10 w-14 h-14 bg-gradient-to-br from-yellow-600 to-yellow-800 rounded-full shadow-lg border-3 border-amber-500"></div>
-        <div className="absolute top-10 right-10 w-14 h-14 bg-gradient-to-bl from-yellow-600 to-yellow-800 rounded-full shadow-lg border-3 border-amber-500"></div>
-        <div className="absolute bottom-10 left-10 w-14 h-14 bg-gradient-to-tr from-yellow-600 to-yellow-800 rounded-full shadow-lg border-3 border-amber-500"></div>
-        <div className="absolute bottom-10 right-10 w-14 h-14 bg-gradient-to-tl from-yellow-600 to-yellow-800 rounded-full shadow-lg border-3 border-amber-500"></div>
+        {/* Hoekversieringen */}
+        <div className="absolute top-6 left-6 w-14 h-14 bg-gradient-to-br from-yellow-600 to-yellow-800 rounded-full shadow-lg border-2 border-amber-500"></div>
+        <div className="absolute top-6 right-6 w-14 h-14 bg-gradient-to-bl from-yellow-600 to-yellow-800 rounded-full shadow-lg border-2 border-amber-500"></div>
+        <div className="absolute bottom-6 left-6 w-14 h-14 bg-gradient-to-tr from-yellow-600 to-yellow-800 rounded-full shadow-lg border-2 border-amber-500"></div>
+        <div className="absolute bottom-6 right-6 w-14 h-14 bg-gradient-to-tl from-yellow-600 to-yellow-800 rounded-full shadow-lg border-2 border-amber-500"></div>
         
-        {/* Central playing area frame - game board goes INSIDE this */}
-        <div className="absolute top-34 bottom-34 left-34 right-34 border-4 border-amber-600 rounded-xl bg-gradient-to-br from-amber-600 to-amber-700 shadow-inner p-2">
-          
-          {/* Game Board - positioned WITHIN the table frame */}
-          <div 
-            ref={containerRef}
-            className={`relative w-full h-full game-board rounded-lg border-2 border-amber-500 ${isMobile ? 'overflow-hidden' : 'overflow-auto'}`}
-            style={{ 
-              scrollBehavior: 'smooth',
-              backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-            }}
-          >
+        {/* Speelveld BINNEN de tafel - dit is het echte game board */}
+        <div 
+          ref={containerRef}
+          className={`w-full h-full game-board rounded-lg border-2 border-amber-600 ${isMobile ? 'overflow-hidden' : 'overflow-auto'}`}
+          style={{ 
+            scrollBehavior: 'smooth',
+            backgroundImage: `url(${backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        >
       <div 
         ref={boardRef}
         className="relative"
@@ -399,7 +384,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         })}
       </div>
       </div>
-        </div>
       </div>
     </div>
   );
