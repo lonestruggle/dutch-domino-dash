@@ -194,7 +194,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     
     const secondLevelMoves: ExtendedLegalMove[] = [];
     const firstLevelMoves = getAllLegalMoves();
-    const seenPositions = new Set<string>(); // Track positions to avoid duplicates
+    const seenPositions = new Set<string>(); // Track exact positions to avoid duplicates
     
     firstLevelMoves.forEach(firstMove => {
       // Simulate placing this domino and calculate new open ends
@@ -211,9 +211,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             const orientation = getOrientationForConnection(openEnd);
             const { x, y } = calculatePositionFromOpenEnd(openEnd, orientation);
             
-            // Create unique position key
-            const positionKey = `${x},${y},${orientation}`;
-            if (seenPositions.has(positionKey)) return; // Skip duplicates
+            // Create unique position key with more detail to prevent duplicates
+            const positionKey = `${x},${y},${orientation},${domino.value1},${domino.value2},${flipped}`;
+            if (seenPositions.has(positionKey)) return; // Skip exact duplicates
             
             // Check for overlap with first-level moves
             const moveWidth = orientation === 'horizontal' ? 2 : 1;
@@ -244,7 +244,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               }
             });
             
-            // Check if position would overlap with existing dominoes
+            // Check for overlap with existing board pieces
             let overlapsWithBoard = false;
             for (let dx = 0; dx < moveWidth && !overlapsWithBoard; dx++) {
               for (let dy = 0; dy < moveHeight && !overlapsWithBoard; dy++) {
@@ -257,8 +257,33 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               }
             }
             
-            // Only add if no overlap with first-level moves or existing board
-            if (!overlapsWithFirstLevel && !overlapsWithBoard) {
+            // Check for overlap with other second-level moves (prevent yellow on yellow)
+            let overlapsWithSecondLevel = false;
+            secondLevelMoves.forEach(existingSecondMove => {
+              const existingWidth = existingSecondMove.orientation === 'horizontal' ? 2 : 1;
+              const existingHeight = existingSecondMove.orientation === 'vertical' ? 2 : 1;
+              
+              for (let dx = 0; dx < moveWidth && !overlapsWithSecondLevel; dx++) {
+                for (let dy = 0; dy < moveHeight && !overlapsWithSecondLevel; dy++) {
+                  const checkX = x + dx;
+                  const checkY = y + dy;
+                  
+                  for (let edx = 0; edx < existingWidth && !overlapsWithSecondLevel; edx++) {
+                    for (let edy = 0; edy < existingHeight && !overlapsWithSecondLevel; edy++) {
+                      const existingX = existingSecondMove.x + edx;
+                      const existingY = existingSecondMove.y + edy;
+                      
+                      if (checkX === existingX && checkY === existingY) {
+                        overlapsWithSecondLevel = true;
+                      }
+                    }
+                  }
+                }
+              }
+            });
+            
+            // Only add if no overlaps
+            if (!overlapsWithFirstLevel && !overlapsWithBoard && !overlapsWithSecondLevel) {
               seenPositions.add(positionKey);
               secondLevelMoves.push({
                 end: openEnd,
