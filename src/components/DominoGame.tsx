@@ -159,7 +159,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 
                 // Calculate Manhattan distance in half-grids
                 const distance = (Math.abs(checkX - existingX) + Math.abs(checkY - existingY)) * 2;
-                if (distance <= distanceRestriction) {
+                if (distance < distanceRestriction) { // Changed from <= to <
                   return true; // Too close
                 }
               }
