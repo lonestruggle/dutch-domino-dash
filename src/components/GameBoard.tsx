@@ -310,13 +310,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         <div className="absolute bottom-10 left-10 w-14 h-14 bg-gradient-to-tr from-yellow-600 to-yellow-800 rounded-full shadow-lg border-3 border-amber-500"></div>
         <div className="absolute bottom-10 right-10 w-14 h-14 bg-gradient-to-tl from-yellow-600 to-yellow-800 rounded-full shadow-lg border-3 border-amber-500"></div>
         
-        {/* Central playing area frame */}
-        <div className="absolute top-34 bottom-34 left-34 right-34 border-4 border-amber-600 rounded-xl bg-gradient-to-br from-amber-600 to-amber-700 shadow-inner">
+        {/* Central playing area frame - game board goes INSIDE this */}
+        <div className="absolute top-34 bottom-34 left-34 right-34 border-4 border-amber-600 rounded-xl bg-gradient-to-br from-amber-600 to-amber-700 shadow-inner p-2">
           
-          {/* Game Board */}
+          {/* Game Board - positioned WITHIN the table frame */}
           <div 
             ref={containerRef}
-            className={`relative w-full h-full game-board rounded-lg ${isMobile ? 'overflow-hidden' : 'overflow-auto'}`}
+            className={`relative w-full h-full game-board rounded-lg border-2 border-amber-500 ${isMobile ? 'overflow-hidden' : 'overflow-auto'}`}
             style={{ 
               scrollBehavior: 'smooth',
               backgroundImage: `url(${backgroundImage})`,
