@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { DominoTile } from './DominoTile';
 import { SimpleDragDomino } from './SimpleDragDomino';
 import { MagnetSnapZones } from './MagnetSnapZones';
@@ -47,6 +47,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   showDominoPreview = true,
   magnetDomino
 }) => {
+  const [selectedDominoId, setSelectedDominoId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -368,10 +369,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 rotation={domino.rotation || 0}
                 isShaking={gameState.isHardSlamming}
                 gameState={gameState}
-                selected={gameState.selectedHandIndex !== null}
-                onClick={onRotateDomino ? () => onRotateDomino(id) : undefined}
+                selectedDominoId={selectedDominoId}
+                onClick={() => {
+                  // Toggle selection
+                  setSelectedDominoId(selectedDominoId === id ? null : id);
+                  console.log(`Selected domino ${id}`);
+                }}
                 onDragMove={(dominoId, deltaX, deltaY) => {
-                  // Hier kun je later logica toevoegen voor het verplaatsen
                   console.log(`Dragging ${dominoId} by ${deltaX}, ${deltaY}`);
                 }}
                 onDragEnd={(dominoId) => {

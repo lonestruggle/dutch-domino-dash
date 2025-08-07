@@ -15,6 +15,7 @@ interface SimpleDragDominoProps {
   rotation?: number;
   isShaking?: boolean;
   gameState: GameState;
+  selectedDominoId?: string | null; // Track which domino is selected
   onDragMove?: (dominoId: string, deltaX: number, deltaY: number) => void;
   onDragEnd?: (dominoId: string) => void;
 }
@@ -31,6 +32,7 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
   rotation = 0,
   isShaking = false,
   gameState,
+  selectedDominoId,
   onDragMove,
   onDragEnd
 }) => {
@@ -39,9 +41,12 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const dragRef = useRef<HTMLDivElement>(null);
   
+  // Check if this domino is selected
+  const isSelected = selectedDominoId === dominoId;
+  
   const handleMouseDown = (event: React.MouseEvent) => {
-    if (!selected) {
-      onClick?.();
+    if (!isSelected) {
+      onClick?.(); // Select this domino
       return;
     }
     
@@ -83,8 +88,8 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
   };
 
   const handleTouchStart = (event: React.TouchEvent) => {
-    if (!selected) {
-      onClick?.();
+    if (!isSelected) {
+      onClick?.(); // Select this domino
       return;
     }
     
@@ -133,17 +138,17 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
       ref={dragRef}
       className={cn(
         'relative transition-all duration-200',
-        selected && 'cursor-grab active:cursor-grabbing ring-2 ring-primary/50',
-        !selected && 'cursor-pointer',
+        isSelected && 'cursor-grab active:cursor-grabbing ring-2 ring-primary/50',
+        !isSelected && 'cursor-pointer',
         isDragging && 'scale-110 z-50 shadow-2xl',
-        selected && !isDragging && 'scale-105 shadow-lg'
+        isSelected && !isDragging && 'scale-105 shadow-lg'
       )}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       style={{
         ...style,
         transform: `${style?.transform || ''} translate(${dragOffset.x}px, ${dragOffset.y}px)`,
-        zIndex: isDragging ? 100 : selected ? 50 : 10,
+        zIndex: isDragging ? 100 : isSelected ? 50 : 10,
         pointerEvents: 'auto'
       }}
     >
@@ -152,13 +157,13 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
         orientation={orientation} // Keep original orientation, no rotation
         flipped={flipped}
         className={className}
-        selected={selected}
+        selected={isSelected}
         rotation={rotation} // Keep original rotation
         isShaking={isShaking}
       />
       
       {/* Selection indicator */}
-      {selected && (
+      {isSelected && (
         <div className="absolute -top-2 -right-2 w-4 h-4 bg-primary rounded-full animate-pulse flex items-center justify-center">
           <div className="w-2 h-2 bg-background rounded-full"></div>
         </div>
