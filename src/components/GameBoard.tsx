@@ -501,7 +501,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 rotation={domino.rotation || 0}
                 isShaking={gameState.isHardSlamming}
                 onClick={onRotateDomino ? () => onRotateDomino(id) : undefined}
-                className={onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-dutch-orange" : undefined}
+                className={cn("domino-tile-board", onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-dutch-orange" : undefined)}
               />
             </div>
           );

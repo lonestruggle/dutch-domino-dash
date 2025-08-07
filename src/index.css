@@ -329,18 +329,22 @@
       transform: scale(0.95);
     }
     
-    /* 4x Groter dominostenen op mobile */
-    .domino-tile {
+    /* 4x Groter dominostenen op mobile - alleen op het bord */
+    .domino-tile-board {
       transform: scale(4);
-      transform-origin: center;
+      transform-origin: top left;
     }
     
-    .domino-tile.selected {
+    .domino-tile-board.selected {
       transform: scale(4.2);
     }
     
-    .domino-tile:hover {
+    .domino-tile-board:hover {
       transform: scale(4) translateY(-2px);
+    }
+    
+    .domino-tile-board:active {
+      transform: scale(3.9);
     }
     
     /* Dunnere frame op mobile */
@@ -350,6 +354,15 @@
       right: -6px;
       bottom: -6px;
       border-radius: 6px;
+    }
+    
+    .game-board::after {
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border-width: 1px;
+      border-radius: 4px;
     }
     
     /* Larger touch targets for mobile */

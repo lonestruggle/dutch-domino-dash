@@ -41,8 +41,8 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   return (
     <div
       className={cn(
-        'domino-tile cursor-pointer flex relative',
-        orientation === 'vertical' ? 'flex-col w-11 h-[88px]' : 'w-[88px] h-11',
+        'domino-tile cursor-pointer relative',
+        orientation === 'vertical' ? 'w-11 h-[88px]' : 'w-[88px] h-11',
         double && orientation === 'vertical' && 'transform -translate-y-6',
         double && orientation === 'horizontal' && 'transform -translate-x-6',
         selected && 'selected',
@@ -52,23 +52,30 @@ export const DominoTile: React.FC<DominoTileProps> = ({
       onClick={onClick}
       style={{
         ...style,
-        transform: `${style?.transform || ''} rotate(${rotation}deg)`.trim(),
         '--domino-rotation': `${rotation}deg`,
-        '--shake-duration': `${1 + Math.random()}s`, // Random duration between 1-2 seconds
+        '--shake-duration': `${1 + Math.random()}s`,
       } as React.CSSProperties}
     >
-      <div className={cn(
-        'flex-1 relative flex items-center justify-center',
-        orientation === 'horizontal' ? 'border-r border-domino-border' : 'border-b border-domino-border',
-        `pip-pattern-${pips[0]}`
-      )}>
-        {renderPips(pips[0])}
-      </div>
-      <div className={cn(
-        'flex-1 relative flex items-center justify-center',
-        `pip-pattern-${pips[1]}`
-      )}>
-        {renderPips(pips[1])}
+      <div
+        className={cn(
+          'absolute inset-0 flex',
+          orientation === 'vertical' ? 'flex-col' : 'flex-row'
+        )}
+        style={{ transform: `rotate(${rotation}deg)` }}
+      >
+        <div className={cn(
+          'flex-1 relative flex items-center justify-center',
+          orientation === 'horizontal' ? 'border-r border-domino-border' : 'border-b border-domino-border',
+          `pip-pattern-${pips[0]}`
+        )}>
+          {renderPips(pips[0])}
+        </div>
+        <div className={cn(
+          'flex-1 relative flex items-center justify-center',
+          `pip-pattern-${pips[1]}`
+        )}>
+          {renderPips(pips[1])}
+        </div>
       </div>
     </div>
   );
