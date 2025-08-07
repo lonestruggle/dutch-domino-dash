@@ -331,20 +331,20 @@
     
     /* 4x Groter dominostenen op mobile - alleen op het bord */
     .domino-tile-board {
-      transform: scale(4);
+      transform: scale(6);
       transform-origin: top left;
     }
     
     .domino-tile-board.selected {
-      transform: scale(4.2);
+      transform: scale(6.3);
     }
     
     .domino-tile-board:hover {
-      transform: scale(4) translateY(-2px);
+      transform: scale(6) translateY(-2px);
     }
     
     .domino-tile-board:active {
-      transform: scale(3.9);
+      transform: scale(5.8);
     }
     
     /* Dunnere frame op mobile */
