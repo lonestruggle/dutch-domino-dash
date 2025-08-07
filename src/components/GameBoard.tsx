@@ -48,6 +48,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   magnetDomino
 }) => {
   const [selectedDominoId, setSelectedDominoId] = useState<string | null>(null);
+  const [trainOffsets, setTrainOffsets] = useState<Record<string, { x: number, y: number }>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -348,6 +349,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         {/* Render placed dominoes */}
         {Object.entries(gameState.dominoes).map(([id, domino]) => {
+          const offset = trainOffsets[id] || { x: 0, y: 0 };
           const isInDraggedChain = magnetDomino?.draggedChain?.dominoIds.includes(id) || false;
           const isBeingDragged = magnetDomino?.draggedChain?.leadDominoId === id;
           
@@ -356,8 +358,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               key={id}
               className="absolute"
               style={{
-                left: boardSize / 2 + domino.x * CELL_SIZE,
-                top: boardSize / 2 + domino.y * CELL_SIZE,
+                left: boardSize / 2 + domino.x * CELL_SIZE + offset.x,
+                top: boardSize / 2 + domino.y * CELL_SIZE + offset.y,
                 zIndex: isBeingDragged ? 50 : isInDraggedChain ? 20 : 10,
               }}
             >
@@ -375,11 +377,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   setSelectedDominoId(selectedDominoId === id ? null : id);
                   console.log(`Selected domino ${id}`);
                 }}
-                onDragMove={(dominoId, deltaX, deltaY) => {
-                  console.log(`Dragging ${dominoId} by ${deltaX}, ${deltaY}`);
+                onDragMove={(dominoId, deltaX, deltaY, trainIds) => {
+                  // Update offsets for all train dominoes
+                  const newOffsets: Record<string, { x: number, y: number }> = {};
+                  trainIds.forEach(trainId => {
+                    newOffsets[trainId] = { x: deltaX, y: deltaY };
+                  });
+                  setTrainOffsets(newOffsets);
                 }}
-                onDragEnd={(dominoId) => {
-                  console.log(`Finished dragging ${dominoId}`);
+                onDragEnd={(dominoId, finalX, finalY, trainIds) => {
+                  console.log(`Moving train to final position: ${finalX}, ${finalY}`);
+                  // Here you would update the actual game state with new positions
+                  setTrainOffsets({}); // Clear offsets after move
                 }}
               />
             </div>

@@ -15,9 +15,9 @@ interface SimpleDragDominoProps {
   rotation?: number;
   isShaking?: boolean;
   gameState: GameState;
-  selectedDominoId?: string | null; // Track which domino is selected
-  onDragMove?: (dominoId: string, deltaX: number, deltaY: number) => void;
-  onDragEnd?: (dominoId: string) => void;
+  selectedDominoId?: string | null;
+  onDragMove?: (dominoId: string, deltaX: number, deltaY: number, trainIds: string[]) => void;
+  onDragEnd?: (dominoId: string, finalX: number, finalY: number, trainIds: string[]) => void;
 }
 
 export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
@@ -44,6 +44,42 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
   // Check if this domino is selected
   const isSelected = selectedDominoId === dominoId;
   
+  // Find connected dominoes (train)
+  const getTrainDominoes = (leadId: string): string[] => {
+    const visited = new Set<string>();
+    const train: string[] = [];
+    
+    const findConnected = (dominoId: string) => {
+      if (visited.has(dominoId)) return;
+      visited.add(dominoId);
+      train.push(dominoId);
+      
+      const domino = gameState.dominoes[dominoId];
+      if (!domino) return;
+      
+      // Check adjacent positions for connected dominoes
+      const positions = domino.orientation === 'horizontal'
+        ? [
+            { x: domino.x - 1, y: domino.y },    // Left
+            { x: domino.x + 2, y: domino.y },    // Right
+          ]
+        : [
+            { x: domino.x, y: domino.y - 1 },    // Top
+            { x: domino.x, y: domino.y + 2 },    // Bottom
+          ];
+      
+      for (const pos of positions) {
+        const boardCell = gameState.board[`${pos.x},${pos.y}`];
+        if (boardCell && boardCell.dominoId && !visited.has(boardCell.dominoId)) {
+          findConnected(boardCell.dominoId);
+        }
+      }
+    };
+    
+    findConnected(leadId);
+    return train;
+  };
+  
   const handleMouseDown = (event: React.MouseEvent) => {
     if (!isSelected) {
       onClick?.(); // Select this domino
@@ -55,29 +91,33 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
     setDragStartPos({ x: event.clientX, y: event.clientY });
     setDragOffset({ x: 0, y: 0 });
     
+    const trainIds = getTrainDominoes(dominoId);
+    
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - dragStartPos.x;
       const deltaY = e.clientY - dragStartPos.y;
       
-      // Allow free movement - no grid constraints during drag
+      // Allow free movement during drag
       setDragOffset({ x: deltaX, y: deltaY });
-      onDragMove?.(dominoId, deltaX, deltaY);
+      onDragMove?.(dominoId, deltaX, deltaY, trainIds);
     };
-    
     const handleMouseUp = () => {
       setIsDragging(false);
-      // Snap to nearest grid position on release
+      
+      // Calculate final grid position
       const gridSize = 48;
       const snappedX = Math.round(dragOffset.x / gridSize) * gridSize;
       const snappedY = Math.round(dragOffset.y / gridSize) * gridSize;
       
-      setDragOffset({ x: snappedX, y: snappedY });
-      onDragEnd?.(dominoId);
+      // Calculate final world position
+      const domino = gameState.dominoes[dominoId];
+      const finalWorldX = domino.x + Math.round(dragOffset.x / gridSize);
+      const finalWorldY = domino.y + Math.round(dragOffset.y / gridSize);
       
-      // Reset to original position after a short delay
-      setTimeout(() => {
-        setDragOffset({ x: 0, y: 0 });
-      }, 300);
+      onDragEnd?.(dominoId, finalWorldX, finalWorldY, trainIds);
+      
+      // Keep the snapped position (don't reset to 0)
+      setDragOffset({ x: snappedX, y: snappedY });
       
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -99,31 +139,32 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
     setDragStartPos({ x: touch.clientX, y: touch.clientY });
     setDragOffset({ x: 0, y: 0 });
     
+    const trainIds = getTrainDominoes(dominoId);
+    
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault();
       const touch = e.touches[0];
       const deltaX = touch.clientX - dragStartPos.x;
       const deltaY = touch.clientY - dragStartPos.y;
       
-      // Allow free movement during touch drag
       setDragOffset({ x: deltaX, y: deltaY });
-      onDragMove?.(dominoId, deltaX, deltaY);
+      onDragMove?.(dominoId, deltaX, deltaY, trainIds);
     };
     
     const handleTouchEnd = () => {
       setIsDragging(false);
-      // Snap to nearest grid position on release
+      
+      // Calculate final position
       const gridSize = 48;
       const snappedX = Math.round(dragOffset.x / gridSize) * gridSize;
       const snappedY = Math.round(dragOffset.y / gridSize) * gridSize;
       
-      setDragOffset({ x: snappedX, y: snappedY });
-      onDragEnd?.(dominoId);
+      const domino = gameState.dominoes[dominoId];
+      const finalWorldX = domino.x + Math.round(dragOffset.x / gridSize);
+      const finalWorldY = domino.y + Math.round(dragOffset.y / gridSize);
       
-      // Reset to original position after a short delay
-      setTimeout(() => {
-        setDragOffset({ x: 0, y: 0 });
-      }, 300);
+      onDragEnd?.(dominoId, finalWorldX, finalWorldY, trainIds);
+      setDragOffset({ x: snappedX, y: snappedY });
       
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
