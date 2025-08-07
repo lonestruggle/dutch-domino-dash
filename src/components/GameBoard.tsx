@@ -277,46 +277,38 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="relative p-8">
-      {/* Thick Wooden Frame with Stone Compartments */}
+      {/* Thick Wooden Frame with Large Compartments */}
       <div className="absolute inset-0 bg-gradient-to-br from-amber-700 via-amber-800 to-amber-900 rounded-xl shadow-2xl">
         {/* Frame border */}
         <div className="absolute inset-4 border-4 border-amber-600 rounded-lg">
           <div className="absolute inset-2 border-2 border-amber-500 rounded-md"></div>
         </div>
         
-        {/* Top side - domino compartments */}
-        <div className="absolute top-8 left-12 right-12 h-12 flex justify-center space-x-2">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={`top-${i}`} className="w-8 h-10 bg-amber-900 border border-amber-600 rounded-sm shadow-inner"></div>
-          ))}
+        {/* Top side - single large compartment */}
+        <div className="absolute top-6 left-16 right-16 h-16 bg-amber-900 border-2 border-amber-600 rounded-md shadow-inner">
+          <div className="absolute inset-1 border border-amber-500 rounded-sm"></div>
         </div>
         
-        {/* Right side - domino compartments */}
-        <div className="absolute top-12 bottom-12 right-8 w-12 flex flex-col justify-center space-y-2">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={`right-${i}`} className="w-10 h-8 bg-amber-900 border border-amber-600 rounded-sm shadow-inner"></div>
-          ))}
+        {/* Right side - single large compartment */}
+        <div className="absolute top-16 bottom-16 right-6 w-16 bg-amber-900 border-2 border-amber-600 rounded-md shadow-inner">
+          <div className="absolute inset-1 border border-amber-500 rounded-sm"></div>
         </div>
         
-        {/* Bottom side - domino compartments */}
-        <div className="absolute bottom-8 left-12 right-12 h-12 flex justify-center space-x-2">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={`bottom-${i}`} className="w-8 h-10 bg-amber-900 border border-amber-600 rounded-sm shadow-inner"></div>
-          ))}
+        {/* Bottom side - single large compartment */}
+        <div className="absolute bottom-6 left-16 right-16 h-16 bg-amber-900 border-2 border-amber-600 rounded-md shadow-inner">
+          <div className="absolute inset-1 border border-amber-500 rounded-sm"></div>
         </div>
         
-        {/* Left side - domino compartments */}
-        <div className="absolute top-12 bottom-12 left-8 w-12 flex flex-col justify-center space-y-2">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={`left-${i}`} className="w-10 h-8 bg-amber-900 border border-amber-600 rounded-sm shadow-inner"></div>
-          ))}
+        {/* Left side - single large compartment */}
+        <div className="absolute top-16 bottom-16 left-6 w-16 bg-amber-900 border-2 border-amber-600 rounded-md shadow-inner">
+          <div className="absolute inset-1 border border-amber-500 rounded-sm"></div>
         </div>
         
         {/* Corner decorations */}
-        <div className="absolute top-4 left-4 w-6 h-6 bg-amber-600 rounded-full shadow-md"></div>
-        <div className="absolute top-4 right-4 w-6 h-6 bg-amber-600 rounded-full shadow-md"></div>
-        <div className="absolute bottom-4 left-4 w-6 h-6 bg-amber-600 rounded-full shadow-md"></div>
-        <div className="absolute bottom-4 right-4 w-6 h-6 bg-amber-600 rounded-full shadow-md"></div>
+        <div className="absolute top-6 left-6 w-8 h-8 bg-amber-600 rounded-full shadow-md border-2 border-amber-500"></div>
+        <div className="absolute top-6 right-6 w-8 h-8 bg-amber-600 rounded-full shadow-md border-2 border-amber-500"></div>
+        <div className="absolute bottom-6 left-6 w-8 h-8 bg-amber-600 rounded-full shadow-md border-2 border-amber-500"></div>
+        <div className="absolute bottom-6 right-6 w-8 h-8 bg-amber-600 rounded-full shadow-md border-2 border-amber-500"></div>
       </div>
       
       {/* Game Board */}
@@ -330,7 +322,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           height: isMobile ? '50vh' : 'auto',
-          margin: '32px' // Extra margin voor de dikke frame
+          margin: '40px' // Extra margin voor de dikke frame met grote vakken
         }}
       >
       <div 
