@@ -12,12 +12,13 @@ const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.
 
 interface GameBoardProps {
   gameState: GameState;
-  legalMoves: LegalMove[];
+  legalMoves: any[]; // Use any[] to accept extended legal moves
   onMoveExecute: (move: LegalMove) => void;
   onCenterView: () => void;
   hasDifferentNeighbor: (x: number, y: number) => boolean;
   backgroundChoice?: string;
   onRotateDomino?: (dominoId: string) => void;
+  showGrid?: boolean;
 }
 
 const CELL_SIZE = 48;
@@ -36,7 +37,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onCenterView, 
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
-  onRotateDomino
+  onRotateDomino,
+  showGrid = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -302,6 +304,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           transformOrigin: 'center'
         }}
       >
+        {/* Grid overlay */}
+        {showGrid && (
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: `
+                linear-gradient(to right, rgba(239, 68, 68, 0.6) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(239, 68, 68, 0.6) 1px, transparent 1px)
+              `,
+              backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
+              backgroundPosition: `${boardSize / 2}px ${boardSize / 2}px`
+            }}
+          />
+        )}
+
         {/* Render placed dominoes */}
         {Object.entries(gameState.dominoes).map(([id, domino]) => {
           return (
@@ -353,6 +370,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               orientation={orientation}
               isDouble={isDouble}
               onClick={() => onMoveExecute(move)}
+              dominoData={dominoData}
+              flipped={move.flipped}
+              isSelected={move.isSelected}
               style={{
                 left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
                 top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,

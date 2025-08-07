@@ -10,9 +10,15 @@ import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
+import { LegalMove } from '@/types/domino';
 
 interface DominoGameProps {
   gameHook: any;
+}
+
+interface ExtendedLegalMove extends LegalMove {
+  handIndex: number;
+  isSelected: boolean;
 }
 
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
@@ -38,6 +44,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
   
   // Reset dialog shown flag when game starts new
   useEffect(() => {
@@ -113,9 +120,27 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     playerHands: (gameState as any)?.playerHands?.map((hand: any, i: number) => ({ player: i, handSize: hand?.length || 0 }))
   });
   
-  // Calculate legal moves for selected domino
-  const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
-  const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
+  // Calculate legal moves - always show all possible moves
+  const getAllLegalMoves = (): ExtendedLegalMove[] => {
+    if (!gameState?.playerHand || !isMyTurn) return [];
+    
+    const allMoves: ExtendedLegalMove[] = [];
+    const selectedIndex = gameState.selectedHandIndex;
+    
+    gameState.playerHand.forEach((domino, index) => {
+      const moves = findLegalMoves(domino);
+      moves.forEach(move => {
+        allMoves.push({ 
+          ...move, 
+          handIndex: index,
+          isSelected: selectedIndex === index
+        });
+      });
+    });
+    return allMoves;
+  };
+  
+  const legalMoves = getAllLegalMoves();
 
   // Enhanced pass logic - knop altijd zichtbaar, enabled wanneer speler kan passen
   let canPass = false;
@@ -227,6 +252,17 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     id="mobile-boneyard-view"
                   />
                 </div>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="mobile-grid-view" className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Grid3X3 className="h-3 w-3" />
+                    Grid
+                  </label>
+                  <Switch 
+                    checked={showGrid}
+                    onCheckedChange={setShowGrid}
+                    id="mobile-grid-view"
+                  />
+                </div>
               </div>
             )}
           </Card>
@@ -244,15 +280,28 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 <span className="text-sm text-muted-foreground">
                   Boneyard: {gameState?.boneyard?.length || 0} tiles
                 </span>
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    checked={boneyardViewEnabled}
-                    onCheckedChange={setBoneyardViewEnabled}
-                    id="boneyard-view"
-                  />
-                  <label htmlFor="boneyard-view" className="text-sm text-muted-foreground">
-                    Boneyard view
-                  </label>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      checked={boneyardViewEnabled}
+                      onCheckedChange={setBoneyardViewEnabled}
+                      id="boneyard-view"
+                    />
+                    <label htmlFor="boneyard-view" className="text-sm text-muted-foreground">
+                      Boneyard view
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      checked={showGrid}
+                      onCheckedChange={setShowGrid}
+                      id="grid-view"
+                    />
+                    <label htmlFor="grid-view" className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Grid3X3 className="h-3 w-3" />
+                      Grid
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -287,6 +336,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}
           onRotateDomino={rotateDomino}
+          showGrid={showGrid}
         />
 
         {/* Player Hand */}
