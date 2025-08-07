@@ -525,6 +525,30 @@ export const useDominoGame = () => {
     }
 
     setGameState(prev => {
+      // DUPLICATE CHECK: Ensure the domino isn't already on the board
+      const dominoKey = `${dominoData.value1}|${dominoData.value2}`;
+      const reverseDominoKey = `${dominoData.value2}|${dominoData.value1}`;
+      
+      const isDuplicate = Object.values(prev.dominoes).some(domino => {
+        const existingKey = `${domino.data.value1}|${domino.data.value2}`;
+        const existingReverseKey = `${domino.data.value2}|${domino.data.value1}`;
+        return existingKey === dominoKey || existingKey === reverseDominoKey || 
+               existingReverseKey === dominoKey || existingReverseKey === reverseDominoKey;
+      });
+      
+      if (isDuplicate) {
+        console.error('❌ DUPLICATE DOMINO DETECTED:', dominoKey, '- Move rejected!');
+        return prev; // Return unchanged state
+      }
+      
+      // Also check if the domino is still in player's hand
+      if (!prev.playerHand[index] || 
+          (prev.playerHand[index].value1 !== dominoData.value1 || 
+           prev.playerHand[index].value2 !== dominoData.value2)) {
+        console.error('❌ DOMINO NOT IN HAND:', dominoKey, '- Move rejected!');
+        return prev; // Return unchanged state
+      }
+
       const id = `d${prev.nextDominoId}`;
       
       // Gebruik de reeds berekende waarden uit move object zonder verdere aanpassingen
