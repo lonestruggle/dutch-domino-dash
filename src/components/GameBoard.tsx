@@ -24,9 +24,9 @@ const CELL_SIZE = 48;
 const MIN_SCALE = 0.25; // Maximum 4x smaller
 const MAX_SCALE = 1.0; // Original size
 const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
-const MIN_MOBILE_BOARD_SIZE = 800; // Larger board on mobile for better gameplay
+const MIN_MOBILE_BOARD_SIZE = 1400; // Veel groter board op mobile voor initial placement
 const PADDING = 400; // Increased padding for better scroll area
-const MOBILE_PADDING = 150; // Better padding on mobile
+const MOBILE_PADDING = 200; // Meer padding op mobile
 const SCROLL_PADDING = 200; // Extra padding for scroll calculations
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
