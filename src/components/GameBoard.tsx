@@ -433,7 +433,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 rgba(160, 82, 45, 0.05) 50%,
                 rgba(139, 69, 19, 0.1) 100%
               ),
-              url(/lovable-uploads/45b3b2a6-77b7-421d-920c-5d87e2233a34.png)
+              url(/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.png)
             `,
             backgroundSize: 'auto, cover',
             backgroundPosition: 'center, center',
