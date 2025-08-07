@@ -502,13 +502,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg cursor-pointer z-10"
                   onClick={handlePreviewClick}
                 >
-                   <div className="bg-white rounded-lg p-4 shadow-2xl border-4 border-gray-300">
-                     <DominoTile
-                       data={previewDomino.domino}
-                       orientation="horizontal"
-                       flipped={false}
-                       className="w-48 h-24 transform scale-100" // 4x larger than normal
-                      />
+                    <div className="bg-white rounded-lg p-4 shadow-2xl border-4 border-gray-300">
+                      <DominoTile
+                        data={previewDomino.domino}
+                        orientation="horizontal"
+                        flipped={false}
+                        className={isMobile ? "w-24 h-12" : "w-48 h-24"} // Smaller on mobile
+                       />
                       <div className="text-center mt-2 text-sm text-gray-600">
                         Klik om deze steen te nemen
                       </div>
