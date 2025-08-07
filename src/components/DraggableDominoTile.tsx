@@ -51,12 +51,6 @@ export const DraggableDominoTile: React.FC<DraggableDominoTileProps> = ({
   const { isEnd, isHead } = isDominoChainEnd(dominoId, gameState);
   const canDrag = magnetEnabled && isEnd;
   
-  console.log(`🔍 DraggableDomino ${dominoId}:`, {
-    magnetEnabled: magnetEnabled,
-    isEnd: isEnd,
-    isHead: isHead,
-    canDrag: canDrag
-  });
   
   const handleMouseDown = (event: React.MouseEvent) => {
     // Allow dragging even if game is over, for viewing purposes

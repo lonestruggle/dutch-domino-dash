@@ -24,8 +24,6 @@ export const useMagnetDomino = () => {
   const [trainLength, setTrainLength] = useState(3); // Default train length
   const [magnetEnabled, setMagnetEnabled] = useState(true); // Toggle for magnet mode
   
-  console.log('🔍 useMagnetDomino - magnetEnabled:', magnetEnabled);
-  
   const dragOffset = useRef({ x: 0, y: 0 });
   
   // Find domino chains - connected sequences of dominoes
@@ -130,13 +128,6 @@ export const useMagnetDomino = () => {
     const chains = findDominoChains(gameState);
     const chain = chains.find(c => c.includes(dominoId));
     
-    console.log(`🔍 isDominoChainEnd for ${dominoId}:`, {
-      chains: chains.length,
-      chainFound: !!chain,
-      chainLength: chain?.length || 0,
-      allChains: chains
-    });
-    
     if (!chain) return { isEnd: false, isHead: false };
     
     const { head, tail } = findChainEnds(chain, gameState);
@@ -145,14 +136,6 @@ export const useMagnetDomino = () => {
       isEnd: dominoId === head || dominoId === tail,
       isHead: dominoId === head
     };
-    
-    console.log(`🔍 Chain end result for ${dominoId}:`, {
-      isEnd: result.isEnd,
-      isHead: result.isHead,
-      head: head,
-      tail: tail,
-      dominoId: dominoId
-    });
     
     return result;
   }, [findDominoChains, findChainEnds]);
