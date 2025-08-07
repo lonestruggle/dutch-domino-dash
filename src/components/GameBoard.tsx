@@ -7,7 +7,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
-import dominoTable3 from '@/assets/domino-table-3.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
 const premiumWoodTable = '/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.png';
 
@@ -188,7 +187,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const backgroundMap: { [key: string]: string } = {
       'domino-table-1': dominoTable1,
       'domino-table-2': dominoTable2,
-      'domino-table-3': dominoTable3,
       'curacao-flag-table': curacaoFlagTable,
       'premium-wood-table': premiumWoodTable
     };

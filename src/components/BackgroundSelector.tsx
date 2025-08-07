@@ -6,7 +6,6 @@ import { useCustomBackgrounds } from '@/hooks/useCustomBackgrounds';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
-import dominoTable3 from '@/assets/domino-table-3.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
 const premiumWoodTable = '/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.png';
 
@@ -19,7 +18,6 @@ interface BackgroundOption {
 const defaultBackgroundOptions: BackgroundOption[] = [
   { id: 'domino-table-1', name: 'Mahonie Tafel', image: dominoTable1 },
   { id: 'domino-table-2', name: 'Walnoot Tafel', image: dominoTable2 },
-  { id: 'domino-table-3', name: 'Eiken Tafel', image: dominoTable3 },
   { id: 'curacao-flag-table', name: 'Antiliaanse Vlag', image: curacaoFlagTable },
   { id: 'premium-wood-table', name: 'Premium Hout Tafel', image: premiumWoodTable },
 ];
