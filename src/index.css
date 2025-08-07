@@ -53,6 +53,7 @@
     --domino-scale-selected: 1.05;
     --domino-scale-hover: 1;
     --domino-target-scale: 1;
+    --frame-size-multiplier: 1;
     
     /* Table Frame Colors */
     --frame-wood-light: 35 25% 60%;
@@ -161,10 +162,10 @@
   .game-board::before {
     content: '';
     position: absolute;
-    top: -8px;
-    left: -8px;
-    right: -8px;
-    bottom: -8px;
+    top: calc(-8px * var(--frame-size-multiplier));
+    left: calc(-8px * var(--frame-size-multiplier));
+    right: calc(-8px * var(--frame-size-multiplier));
+    bottom: calc(-8px * var(--frame-size-multiplier));
     background: linear-gradient(135deg, 
       hsl(var(--frame-wood-light)) 0%,
       hsl(var(--frame-wood-medium)) 25%,
@@ -183,10 +184,10 @@
   .game-board::after {
     content: '';
     position: absolute;
-    top: -6px;
-    left: -6px;
-    right: -6px;
-    bottom: -6px;
+    top: calc(-6px * var(--frame-size-multiplier));
+    left: calc(-6px * var(--frame-size-multiplier));
+    right: calc(-6px * var(--frame-size-multiplier));
+    bottom: calc(-6px * var(--frame-size-multiplier));
     border: 2px solid hsl(var(--frame-wood-dark));
     border-radius: 8px;
     z-index: -1;
@@ -390,20 +391,20 @@
     
     /* Dunnere frame op mobile */
     .game-board::before {
-      top: -4px;
-      left: -4px;
-      right: -4px;
-      bottom: -4px;
-      border-radius: 6px;
+      top: calc(-4px * var(--frame-size-multiplier));
+      left: calc(-4px * var(--frame-size-multiplier));
+      right: calc(-4px * var(--frame-size-multiplier));
+      bottom: calc(-4px * var(--frame-size-multiplier));
+      border-radius: calc(6px * var(--frame-size-multiplier));
     }
     
     .game-board::after {
-      top: -4px;
-      left: -4px;
-      right: -4px;
-      bottom: -4px;
-      border-width: 1px;
-      border-radius: 4px;
+      top: calc(-4px * var(--frame-size-multiplier));
+      left: calc(-4px * var(--frame-size-multiplier));
+      right: calc(-4px * var(--frame-size-multiplier));
+      bottom: calc(-4px * var(--frame-size-multiplier));
+      border-width: calc(1px * var(--frame-size-multiplier));
+      border-radius: calc(4px * var(--frame-size-multiplier));
     }
     
     /* Larger touch targets for mobile */

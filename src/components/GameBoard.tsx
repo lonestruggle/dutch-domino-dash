@@ -2,8 +2,10 @@
 import React, { useRef, useEffect } from 'react';
 import { DominoTile } from './DominoTile';
 import { PlacementTarget } from './PlacementTarget';
+import { GameVisualControls } from './GameVisualControls';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { cn } from '@/lib/utils';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
@@ -43,6 +45,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const { settings } = useGameVisualSettings();
 
   // Calculate responsive domino scale based on viewport size
   const calculateDominoScale = () => {
@@ -84,15 +87,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Update CSS custom properties for responsive scaling
   const updateDominoScaling = () => {
-    const scale = calculateDominoScale();
-    const selectedScale = scale * 1.05;
-    const hoverScale = scale;
-    const targetScale = scale * 0.8; // Placement targets schaalt iets minder voor betere visibility
+    const baseScale = calculateDominoScale();
+    const userScale = settings.dominoScale;
+    const finalScale = baseScale * userScale;
+    const selectedScale = finalScale * 1.05;
+    const hoverScale = finalScale;
+    const targetScale = finalScale * 0.8; // Placement targets schaalt iets minder voor betere visibility
     
-    document.documentElement.style.setProperty('--domino-scale', scale.toString());
+    document.documentElement.style.setProperty('--domino-scale', finalScale.toString());
     document.documentElement.style.setProperty('--domino-scale-selected', selectedScale.toString());
     document.documentElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
     document.documentElement.style.setProperty('--domino-target-scale', targetScale.toString());
+    
+    // Update frame size based on user settings
+    document.documentElement.style.setProperty('--frame-size-multiplier', settings.frameSize.toString());
   };
 
   // Update scaling on mount and when viewport changes
@@ -122,7 +130,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Update scaling when game state changes (more dominoes = potentially different optimal scale)
   useEffect(() => {
     updateDominoScaling();
-  }, [gameState.dominoes]);
+  }, [gameState.dominoes, settings.dominoScale, settings.frameSize]);
 
   // Calculate dynamic board size based on domino positions
   const calculateOptimalScale = () => {
@@ -356,6 +364,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
+      {/* Visual Controls Button */}
+      <GameVisualControls />
+      
       {/* Dynamische Tafel Achtergrond met aparte achtergrond achter de tafel */}
       <div 
         className="absolute inset-0 rounded-2xl shadow-2xl p-20"
