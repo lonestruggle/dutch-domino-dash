@@ -123,22 +123,42 @@ export const useMagnetDomino = () => {
     };
   }, []);
   
-  // Check if a domino is a head or tail of its chain
+  // Check if a domino is a head or tail based on open ends
   const isDominoChainEnd = useCallback((dominoId: string, gameState: GameState): { isEnd: boolean, isHead: boolean } => {
-    const chains = findDominoChains(gameState);
-    const chain = chains.find(c => c.includes(dominoId));
+    const domino = gameState.dominoes[dominoId];
+    if (!domino) return { isEnd: false, isHead: false };
     
-    if (!chain) return { isEnd: false, isHead: false };
+    // Check if this domino is adjacent to any open end
+    const dominoPositions = domino.orientation === 'horizontal' 
+      ? [`${domino.x},${domino.y}`, `${domino.x + 1},${domino.y}`]
+      : [`${domino.x},${domino.y}`, `${domino.x},${domino.y + 1}`];
     
-    const { head, tail } = findChainEnds(chain, gameState);
+    let isAtOpenEnd = false;
     
-    const result = {
-      isEnd: dominoId === head || dominoId === tail,
-      isHead: dominoId === head
+    // Check if any open end is adjacent to this domino
+    for (const openEnd of gameState.openEnds) {
+      const openEndPos = `${openEnd.x},${openEnd.y}`;
+      
+      // Check if the open end is next to this domino
+      for (const dominoPos of dominoPositions) {
+        const [dx, dy] = dominoPos.split(',').map(Number);
+        const [ox, oy] = [openEnd.x, openEnd.y];
+        
+        // Check if open end is adjacent (distance of 1)
+        const distance = Math.abs(dx - ox) + Math.abs(dy - oy);
+        if (distance === 1) {
+          isAtOpenEnd = true;
+          break;
+        }
+      }
+      if (isAtOpenEnd) break;
+    }
+    
+    return {
+      isEnd: isAtOpenEnd,
+      isHead: isAtOpenEnd  // For now, treat all open end dominoes as "head"
     };
-    
-    return result;
-  }, [findDominoChains, findChainEnds]);
+  }, []);
   
   // Get the train of dominoes that should move with the dragged domino
   const getTrainDominoes = useCallback((leadDominoId: string, isHead: boolean, gameState: GameState): string[] => {
