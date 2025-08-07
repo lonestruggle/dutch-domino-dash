@@ -386,23 +386,18 @@ export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ onBackgrou
 
           <div className="space-y-2">
             <Label htmlFor="file">Afbeelding (max 5MB) *</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="file"
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                disabled={isUploading}
-              />
-              <Button 
-                type="submit" 
-                disabled={isUploading || !formData.name.trim()}
-                className="whitespace-nowrap"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                {isUploading ? 'Uploaden...' : 'Upload'}
-              </Button>
-            </div>
+            <Input
+              id="file"
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              disabled={isUploading}
+            />
+            {(isUploading || !formData.name.trim()) && (
+              <p className="text-sm text-muted-foreground">
+                {isUploading ? 'Bezig met uploaden...' : 'Vul eerst een naam in'}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

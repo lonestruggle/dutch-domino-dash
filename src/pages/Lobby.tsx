@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Users, Play, LogOut, Copy, Plus, Minus, Bot } from 'lucide-react';
 import { BackgroundSelector } from '@/components/BackgroundSelector';
+import { TableBackgroundSelector } from '@/components/TableBackgroundSelector';
 import { useLobbies } from '@/hooks/useLobbies';
 
 interface LobbyPlayer {
@@ -38,6 +39,7 @@ export default function Lobby() {
   const [lobby, setLobby] = useState<LobbyDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedBackground, setSelectedBackground] = useState<string>('domino-table-2');
+  const [selectedTableBackground, setSelectedTableBackground] = useState<string | null>(null);
   
   console.log('Lobby params:', params);
   console.log('Lobby ID extracted:', lobbyId);
@@ -161,7 +163,8 @@ export default function Lobby() {
           current_player_turn: starterPlayerIndex,
           game_state: initialGameState,
           status: 'active',
-          background_choice: selectedBackground
+          background_choice: selectedBackground,
+          table_background_url: selectedTableBackground
         })
         .eq('id', existingGame.id);
 
@@ -182,7 +185,8 @@ export default function Lobby() {
           current_player_turn: starterPlayerIndex,
           game_state: initialGameState,
           status: 'active',
-          background_choice: selectedBackground
+          background_choice: selectedBackground,
+          table_background_url: selectedTableBackground
         });
 
       if (createError) {
@@ -455,12 +459,18 @@ export default function Lobby() {
             </div>
           </div>
 
-          {/* Background selector for lobby creator */}
+          {/* Background selectors for lobby creator */}
           {isLobbyCreator && (
-            <BackgroundSelector
-              selectedBackground={selectedBackground}
-              onBackgroundChange={setSelectedBackground}
-            />
+            <div className="space-y-4">
+              <BackgroundSelector
+                selectedBackground={selectedBackground}
+                onBackgroundChange={setSelectedBackground}
+              />
+              <TableBackgroundSelector
+                selectedTableBackground={selectedTableBackground}
+                onTableBackgroundChange={setSelectedTableBackground}
+              />
+            </div>
           )}
 
           {lobby.status === 'waiting' && (

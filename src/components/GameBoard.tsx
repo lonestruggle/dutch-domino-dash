@@ -281,7 +281,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         className="absolute inset-0 rounded-2xl shadow-2xl p-20"
         style={{
           background: tableBackgroundUrl 
-            ? `url(${tableBackgroundUrl})` 
+            ? `linear-gradient(
+                45deg,
+                rgba(101, 67, 33, 0.15) 0%,
+                rgba(160, 82, 45, 0.05) 50%,
+                rgba(139, 69, 19, 0.1) 100%
+              ),
+              url(${tableBackgroundUrl})` 
             : `
               linear-gradient(
                 45deg,
