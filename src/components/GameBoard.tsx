@@ -276,55 +276,51 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [gameState.dominoes, dynamicScale, boardSize]);
 
   return (
-    <div className="relative p-8">
-      {/* Thick Wooden Frame with Large Compartments */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-700 via-amber-800 to-amber-900 rounded-xl shadow-2xl">
-        {/* Frame border */}
-        <div className="absolute inset-4 border-4 border-amber-600 rounded-lg">
-          <div className="absolute inset-2 border-2 border-amber-500 rounded-md"></div>
+    <div className="relative w-full h-full min-h-[600px]">
+      {/* Complete Wooden Frame Table */}
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-700 via-amber-800 to-amber-900 rounded-2xl shadow-2xl p-6">
+        
+        {/* Top side - large compartment */}
+        <div className="absolute top-8 left-20 right-20 h-20 bg-amber-900 border-3 border-amber-600 rounded-lg shadow-inner">
+          <div className="absolute inset-2 border-2 border-amber-500 rounded-md bg-gradient-to-b from-amber-800 to-amber-900"></div>
         </div>
         
-        {/* Top side - single large compartment */}
-        <div className="absolute top-6 left-16 right-16 h-16 bg-amber-900 border-2 border-amber-600 rounded-md shadow-inner">
-          <div className="absolute inset-1 border border-amber-500 rounded-sm"></div>
+        {/* Right side - large compartment */}
+        <div className="absolute top-20 bottom-20 right-8 w-20 bg-amber-900 border-3 border-amber-600 rounded-lg shadow-inner">
+          <div className="absolute inset-2 border-2 border-amber-500 rounded-md bg-gradient-to-r from-amber-800 to-amber-900"></div>
         </div>
         
-        {/* Right side - single large compartment */}
-        <div className="absolute top-16 bottom-16 right-6 w-16 bg-amber-900 border-2 border-amber-600 rounded-md shadow-inner">
-          <div className="absolute inset-1 border border-amber-500 rounded-sm"></div>
+        {/* Bottom side - large compartment */}
+        <div className="absolute bottom-8 left-20 right-20 h-20 bg-amber-900 border-3 border-amber-600 rounded-lg shadow-inner">
+          <div className="absolute inset-2 border-2 border-amber-500 rounded-md bg-gradient-to-t from-amber-800 to-amber-900"></div>
         </div>
         
-        {/* Bottom side - single large compartment */}
-        <div className="absolute bottom-6 left-16 right-16 h-16 bg-amber-900 border-2 border-amber-600 rounded-md shadow-inner">
-          <div className="absolute inset-1 border border-amber-500 rounded-sm"></div>
+        {/* Left side - large compartment */}
+        <div className="absolute top-20 bottom-20 left-8 w-20 bg-amber-900 border-3 border-amber-600 rounded-lg shadow-inner">
+          <div className="absolute inset-2 border-2 border-amber-500 rounded-md bg-gradient-to-l from-amber-800 to-amber-900"></div>
         </div>
         
-        {/* Left side - single large compartment */}
-        <div className="absolute top-16 bottom-16 left-6 w-16 bg-amber-900 border-2 border-amber-600 rounded-md shadow-inner">
-          <div className="absolute inset-1 border border-amber-500 rounded-sm"></div>
-        </div>
+        {/* Corner decorations with brass look */}
+        <div className="absolute top-8 left-8 w-12 h-12 bg-gradient-to-br from-yellow-600 to-yellow-800 rounded-full shadow-lg border-3 border-amber-500"></div>
+        <div className="absolute top-8 right-8 w-12 h-12 bg-gradient-to-bl from-yellow-600 to-yellow-800 rounded-full shadow-lg border-3 border-amber-500"></div>
+        <div className="absolute bottom-8 left-8 w-12 h-12 bg-gradient-to-tr from-yellow-600 to-yellow-800 rounded-full shadow-lg border-3 border-amber-500"></div>
+        <div className="absolute bottom-8 right-8 w-12 h-12 bg-gradient-to-tl from-yellow-600 to-yellow-800 rounded-full shadow-lg border-3 border-amber-500"></div>
         
-        {/* Corner decorations */}
-        <div className="absolute top-6 left-6 w-8 h-8 bg-amber-600 rounded-full shadow-md border-2 border-amber-500"></div>
-        <div className="absolute top-6 right-6 w-8 h-8 bg-amber-600 rounded-full shadow-md border-2 border-amber-500"></div>
-        <div className="absolute bottom-6 left-6 w-8 h-8 bg-amber-600 rounded-full shadow-md border-2 border-amber-500"></div>
-        <div className="absolute bottom-6 right-6 w-8 h-8 bg-amber-600 rounded-full shadow-md border-2 border-amber-500"></div>
-      </div>
-      
-      {/* Game Board */}
-      <div 
-        ref={containerRef}
-        className={`relative z-10 w-full flex-1 game-board border-2 border-border rounded-lg ${isMobile ? 'overflow-hidden' : 'overflow-auto'} ${isMobile ? "mb-2" : "mb-4"}`}
-        style={{ 
-          scrollBehavior: 'smooth',
-          backgroundImage: `url(${backgroundImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          height: isMobile ? '50vh' : 'auto',
-          margin: '40px' // Extra margin voor de dikke frame met grote vakken
-        }}
-      >
+        {/* Central playing area frame */}
+        <div className="absolute top-28 bottom-28 left-28 right-28 border-4 border-amber-600 rounded-xl bg-gradient-to-br from-amber-600 to-amber-700 shadow-inner">
+          
+          {/* Game Board */}
+          <div 
+            ref={containerRef}
+            className={`relative w-full h-full game-board rounded-lg ${isMobile ? 'overflow-hidden' : 'overflow-auto'}`}
+            style={{ 
+              scrollBehavior: 'smooth',
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
+            }}
+          >
       <div 
         ref={boardRef}
         className="relative"
@@ -398,6 +394,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           );
         })}
       </div>
+      </div>
+        </div>
       </div>
     </div>
   );
