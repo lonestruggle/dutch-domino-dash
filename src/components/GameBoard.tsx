@@ -370,6 +370,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               orientation={orientation}
               isDouble={isDouble}
               onClick={() => onMoveExecute(move)}
+              dominoData={dominoData}
+              flipped={move.flipped}
               style={{
                 left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
                 top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,

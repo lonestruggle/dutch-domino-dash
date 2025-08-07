@@ -1,6 +1,8 @@
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { DominoTile } from './DominoTile';
+import { DominoData } from '@/types/domino';
 
 interface PlacementTargetProps {
   x: number;
@@ -12,6 +14,8 @@ interface PlacementTargetProps {
   onClick: () => void;
   style?: React.CSSProperties;
   className?: string;
+  dominoData?: DominoData;
+  flipped?: boolean;
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -23,7 +27,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   isDouble,
   onClick,
   style,
-  className
+  className,
+  dominoData,
+  flipped = false
 }) => {
   const isMobile = useIsMobile();
   const CELL_SIZE = 48;
@@ -48,6 +54,18 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         onClick();
       }}
       onTouchStart={isMobile ? (e) => e.stopPropagation() : undefined}
-    />
+    >
+      {dominoData && (
+        <div className="absolute inset-0 opacity-60 hover:opacity-80 transition-opacity">
+          <DominoTile
+            data={dominoData}
+            orientation={orientation}
+            flipped={flipped}
+            rotation={0}
+            className="pointer-events-none"
+          />
+        </div>
+      )}
+    </div>
   );
 };
