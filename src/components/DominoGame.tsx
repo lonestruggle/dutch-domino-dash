@@ -139,8 +139,103 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     });
     return allMoves;
   };
+
+  // Calculate second level legal moves (next possible moves after placing first moves)
+  const getSecondLevelMoves = (): ExtendedLegalMove[] => {
+    if (!gameState?.playerHand || !isMyTurn || gameState.selectedHandIndex !== null) return [];
+    
+    const secondLevelMoves: ExtendedLegalMove[] = [];
+    const firstLevelMoves = getAllLegalMoves();
+    
+    firstLevelMoves.forEach(firstMove => {
+      // Simulate placing this domino and calculate new open ends
+      const simulatedOpenEnds = calculateOpenEndsAfterMove(firstMove);
+      
+      // Check remaining dominoes for moves against new open ends
+      gameState.playerHand.forEach((domino, handIndex) => {
+        if (handIndex === firstMove.handIndex) return; // Skip the domino we just placed
+        
+        simulatedOpenEnds.forEach(openEnd => {
+          if (openEnd.value === domino.value1 || openEnd.value === domino.value2) {
+            // This domino can connect to the new open end
+            const flipped = openEnd.value === domino.value2;
+            const orientation = getOrientationForConnection(openEnd);
+            const { x, y } = calculatePositionFromOpenEnd(openEnd, orientation);
+            
+            secondLevelMoves.push({
+              end: openEnd,
+              dominoData: domino,
+              flipped,
+              orientation,
+              x,
+              y,
+              handIndex,
+              isSelected: false // These are always yellow/secondary
+            });
+          }
+        });
+      });
+    });
+    
+    return secondLevelMoves;
+  };
+
+  // Helper function to calculate open ends after a move
+  const calculateOpenEndsAfterMove = (move: ExtendedLegalMove) => {
+    const { dominoData, x, y, orientation, flipped } = move;
+    const newOpenEnds = [];
+    
+    // Calculate the new open ends this domino would create
+    if (orientation === 'horizontal') {
+      const leftValue = flipped ? dominoData.value2 : dominoData.value1;
+      const rightValue = flipped ? dominoData.value1 : dominoData.value2;
+      
+      newOpenEnds.push({
+        x: x - 1,
+        y: y,
+        value: leftValue,
+        fromDir: 'W' as const
+      });
+      newOpenEnds.push({
+        x: x + 2,
+        y: y,
+        value: rightValue,
+        fromDir: 'E' as const
+      });
+    } else {
+      const topValue = flipped ? dominoData.value2 : dominoData.value1;
+      const bottomValue = flipped ? dominoData.value1 : dominoData.value2;
+      
+      newOpenEnds.push({
+        x: x,
+        y: y - 1,
+        value: topValue,
+        fromDir: 'N' as const
+      });
+      newOpenEnds.push({
+        x: x,
+        y: y + 2,
+        value: bottomValue,
+        fromDir: 'S' as const
+      });
+    }
+    
+    return newOpenEnds;
+  };
+
+  const getOrientationForConnection = (openEnd: any) => {
+    return (openEnd.fromDir === 'N' || openEnd.fromDir === 'S') ? 'vertical' : 'horizontal';
+  };
+
+  const calculatePositionFromOpenEnd = (openEnd: any, orientation: string) => {
+    let { x, y } = openEnd;
+    if (orientation === "horizontal" && openEnd.fromDir === "W") x -= 1;
+    if (orientation === "vertical" && openEnd.fromDir === "N") y -= 1;
+    return { x, y };
+  };
   
   const legalMoves = getAllLegalMoves();
+  const secondLevelMoves = getSecondLevelMoves();
 
   // Enhanced pass logic - knop altijd zichtbaar, enabled wanneer speler kan passen
   let canPass = false;
@@ -330,7 +425,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         {/* Game Board */}
         <GameBoard 
           gameState={gameState}
-          legalMoves={legalMovesWithIndex}
+          legalMoves={[...legalMovesWithIndex, ...secondLevelMoves.map(move => ({ ...move, isSecondLevel: true }))]}
           onMoveExecute={executeMove}
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}

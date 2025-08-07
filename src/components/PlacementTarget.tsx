@@ -17,6 +17,7 @@ interface PlacementTargetProps {
   dominoData?: DominoData;
   flipped?: boolean;
   isSelected?: boolean;
+  isSecondLevel?: boolean;
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -31,7 +32,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   className,
   dominoData,
   flipped = false,
-  isSelected = false
+  isSelected = false,
+  isSecondLevel = false
 }) => {
   const isMobile = useIsMobile();
   const CELL_SIZE = 48;
@@ -42,9 +44,11 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
       className={cn(
         'placement-target absolute z-10 transform -translate-x-1/2 -translate-y-1/2',
         'border-2 rounded transition-colors cursor-pointer',
-        isSelected 
-          ? 'bg-yellow-500/60 border-yellow-400 hover:bg-yellow-500/80 z-20' 
-          : 'bg-blue-500/40 border-blue-400 hover:bg-blue-500/60 z-10',
+        isSecondLevel
+          ? 'bg-yellow-500/40 border-yellow-400 hover:bg-yellow-500/60 z-5'
+          : isSelected 
+            ? 'bg-yellow-500/60 border-yellow-400 hover:bg-yellow-500/80 z-20' 
+            : 'bg-blue-500/40 border-blue-400 hover:bg-blue-500/60 z-10',
         isDouble && orientation === 'vertical' && '-mt-6',
         isDouble && orientation === 'horizontal' && '-ml-6',
         isMobile && 'active:bg-opacity-80 !scale-[0.7] transform',
@@ -70,9 +74,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
             rotation={0}
             className={cn(
               "pointer-events-none",
-              isSelected ? "opacity-80" : "opacity-60"
+              isSecondLevel ? "opacity-50" : isSelected ? "opacity-80" : "opacity-60"
             )}
-            style={!isSelected ? {
+            style={(!isSelected && !isSecondLevel) ? {
               filter: 'sepia(100%) saturate(200%) hue-rotate(45deg) brightness(1.2)'
             } : undefined}
           />
