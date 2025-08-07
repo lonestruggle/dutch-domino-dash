@@ -507,7 +507,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                         data={previewDomino.domino}
                         orientation="horizontal"
                         flipped={false}
-                        className={isMobile ? "w-24 h-12" : "w-48 h-24"} // Smaller on mobile
+                        className={isMobile ? "scale-50" : "w-48 h-24"} // Same scale as hand dominoes on mobile
                        />
                       <div className="text-center mt-2 text-sm text-gray-600">
                         Klik om deze steen te nemen
