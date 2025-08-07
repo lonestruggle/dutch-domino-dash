@@ -44,6 +44,84 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
+  // Calculate responsive domino scale based on viewport size
+  const calculateDominoScale = () => {
+    if (!containerRef.current) return 1;
+    
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Base scale factors
+    let baseScale = 1;
+    
+    if (isMobile) {
+      // On mobile, scale based on screen size
+      // Smaller screens get bigger dominoes for better visibility
+      if (viewportWidth < 400) {
+        baseScale = 2.5;
+      } else if (viewportWidth < 500) {
+        baseScale = 2.2;
+      } else if (viewportWidth < 600) {
+        baseScale = 1.8;
+      } else {
+        baseScale = 1.5;
+      }
+    } else {
+      // On desktop, scale based on container size
+      // Smaller containers get slightly bigger dominoes
+      if (containerRect.width < 400) {
+        baseScale = 1.3;
+      } else if (containerRect.width < 600) {
+        baseScale = 1.1;
+      } else {
+        baseScale = 1;
+      }
+    }
+    
+    return baseScale;
+  };
+
+  // Update CSS custom properties for responsive scaling
+  const updateDominoScaling = () => {
+    const scale = calculateDominoScale();
+    const selectedScale = scale * 1.05;
+    const hoverScale = scale;
+    
+    document.documentElement.style.setProperty('--domino-scale', scale.toString());
+    document.documentElement.style.setProperty('--domino-scale-selected', selectedScale.toString());
+    document.documentElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
+  };
+
+  // Update scaling on mount and when viewport changes
+  useEffect(() => {
+    updateDominoScaling();
+    
+    const handleResize = () => {
+      updateDominoScaling();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobile]);
+
+  // Update scaling when container size changes
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const observer = new ResizeObserver(() => {
+      updateDominoScaling();
+    });
+    
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Update scaling when game state changes (more dominoes = potentially different optimal scale)
+  useEffect(() => {
+    updateDominoScaling();
+  }, [gameState.dominoes]);
+
   // Calculate dynamic board size based on domino positions
   const calculateOptimalScale = () => {
     if (!containerRef.current || Object.keys(gameState.dominoes).length === 0) {

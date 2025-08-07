@@ -48,6 +48,11 @@
     --domino-radius: 6px;
     --ui-radius: 8px;
     
+    /* Responsive domino scaling */
+    --domino-scale: 1;
+    --domino-scale-selected: 1.05;
+    --domino-scale-hover: 1;
+    
     /* Table Frame Colors */
     --frame-wood-light: 35 25% 60%;
     --frame-wood-medium: 28 20% 45%;
@@ -329,22 +334,22 @@
       transform: scale(0.95);
     }
     
-    /* 4x Groter dominostenen op mobile - alleen op het bord */
+    /* Responsive dominostenen op het bord */
     .domino-tile-board {
-      transform: scale(6);
+      transform: scale(var(--domino-scale));
       transform-origin: top left;
     }
     
     .domino-tile-board.selected {
-      transform: scale(6.3);
+      transform: scale(var(--domino-scale-selected));
     }
     
     .domino-tile-board:hover {
-      transform: scale(6) translateY(-2px);
+      transform: scale(var(--domino-scale-hover)) translateY(-2px);
     }
     
     .domino-tile-board:active {
-      transform: scale(5.8);
+      transform: scale(calc(var(--domino-scale) * 0.95));
     }
     
     /* Dunnere frame op mobile */
