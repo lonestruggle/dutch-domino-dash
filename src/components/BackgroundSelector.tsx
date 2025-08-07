@@ -1,7 +1,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Check, Grid3X3 } from 'lucide-react';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 import dominoTable3 from '@/assets/domino-table-3.webp';
@@ -24,12 +26,16 @@ interface BackgroundSelectorProps {
   selectedBackground: string;
   onBackgroundChange: (backgroundId: string) => void;
   disabled?: boolean;
+  showGrid?: boolean;
+  onGridToggle?: (show: boolean) => void;
 }
 
 export const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({
   selectedBackground,
   onBackgroundChange,
-  disabled = false
+  disabled = false,
+  showGrid = false,
+  onGridToggle
 }) => {
   return (
     <Card>
@@ -68,6 +74,26 @@ export const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({
             </Button>
           ))}
         </div>
+        
+        {onGridToggle && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="grid-toggle" className="flex items-center gap-2 text-sm font-medium">
+                <Grid3X3 className="h-4 w-4" />
+                Toon rasterlijnen
+              </Label>
+              <Switch
+                id="grid-toggle"
+                checked={showGrid}
+                onCheckedChange={onGridToggle}
+                disabled={disabled}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Toon hulplijnen voor beter domino plaatsing
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

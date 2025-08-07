@@ -18,6 +18,7 @@ interface GameBoardProps {
   hasDifferentNeighbor: (x: number, y: number) => boolean;
   backgroundChoice?: string;
   onRotateDomino?: (dominoId: string) => void;
+  showGrid?: boolean;
 }
 
 const CELL_SIZE = 48;
@@ -36,7 +37,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onCenterView, 
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
-  onRotateDomino
+  onRotateDomino,
+  showGrid = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -302,6 +304,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           transformOrigin: 'center'
         }}
       >
+        {/* Grid overlay */}
+        {showGrid && (
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: `
+                linear-gradient(to right, hsl(var(--muted-foreground) / 0.2) 1px, transparent 1px),
+                linear-gradient(to bottom, hsl(var(--muted-foreground) / 0.2) 1px, transparent 1px)
+              `,
+              backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
+              backgroundPosition: `${boardSize / 2}px ${boardSize / 2}px`
+            }}
+          />
+        )}
+
         {/* Render placed dominoes */}
         {Object.entries(gameState.dominoes).map(([id, domino]) => {
           return (
