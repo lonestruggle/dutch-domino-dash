@@ -7,22 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
 import { DominoTile } from '@/components/DominoTile';
-import { DraggableDominoTile } from '@/components/DraggableDominoTile';
-import { MagnetSnapZones } from '@/components/MagnetSnapZones';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useMagnetDomino } from '@/hooks/useMagnetDomino';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Settings, Ruler, Magnet, Train } from 'lucide-react';
-import { LegalMove } from '@/types/domino';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
 
 interface DominoGameProps {
   gameHook: any;
-}
-
-interface ExtendedLegalMove extends LegalMove {
-  handIndex: number;
-  isSelected: boolean;
 }
 
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
@@ -48,13 +38,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
-  const [showDominoPreview, setShowDominoPreview] = useState(true);
-  const [distanceRestriction, setDistanceRestriction] = useState(3); // Distance in half-grids (3 = 1.5 cells)
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  
-  // Magnet/Train system
-  const magnetDomino = useMagnetDomino();
   
   // Reset dialog shown flag when game starts new
   useEffect(() => {
@@ -130,278 +113,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     playerHands: (gameState as any)?.playerHands?.map((hand: any, i: number) => ({ player: i, handSize: hand?.length || 0 }))
   });
   
-  // Calculate legal moves - always show all possible moves
-  const getAllLegalMoves = (): ExtendedLegalMove[] => {
-    if (!gameState?.playerHand || !isMyTurn) return [];
-    
-    const allMoves: ExtendedLegalMove[] = [];
-    const selectedIndex = gameState.selectedHandIndex;
-    
-    // Helper function to check if a position is too close to existing dominoes
-    const isTooCloseToExistingDominoes = (x: number, y: number, orientation: string) => {
-      // Exception: allow placement if there are 3 or fewer dominoes on the board
-      if (Object.keys(gameState.dominoes).length <= 3) {
-        return false;
-      }
-      const moveWidth = orientation === 'horizontal' ? 2 : 1;
-      const moveHeight = orientation === 'vertical' ? 2 : 1;
-      
-      // Check all cells that this domino would occupy
-      for (let dx = 0; dx < moveWidth; dx++) {
-        for (let dy = 0; dy < moveHeight; dy++) {
-          const checkX = x + dx;
-          const checkY = y + dy;
-          
-          // Check distance to all existing dominoes
-          for (const domino of Object.values(gameState.dominoes)) {
-            const dominoWidth = (domino as any).orientation === 'horizontal' ? 2 : 1;
-            const dominoHeight = (domino as any).orientation === 'vertical' ? 2 : 1;
-            
-            // Check all cells of the existing domino
-            for (let odx = 0; odx < dominoWidth; odx++) {
-              for (let ody = 0; ody < dominoHeight; ody++) {
-                const existingX = (domino as any).x + odx;
-                const existingY = (domino as any).y + ody;
-                
-                // Calculate Manhattan distance in half-grids
-                const distance = (Math.abs(checkX - existingX) + Math.abs(checkY - existingY)) * 2;
-                if (distance < distanceRestriction) { // Changed from <= to <
-                  return true; // Too close
-                }
-              }
-            }
-          }
-        }
-      }
-      return false; // Safe distance
-    };
-    
-    gameState.playerHand.forEach((domino, index) => {
-      const moves = findLegalMoves(domino);
-      moves.forEach(move => {
-        // Skip if too close to existing dominoes (but allow direct connections)
-        if (isTooCloseToExistingDominoes(move.x, move.y, move.orientation)) {
-          return;
-        }
-        
-        allMoves.push({ 
-          ...move, 
-          handIndex: index,
-          isSelected: selectedIndex === index
-        });
-      });
-    });
-    return allMoves;
-  };
-
-  // Calculate second level legal moves (next possible moves after placing first moves)
-  const getSecondLevelMoves = (): ExtendedLegalMove[] => {
-    if (!gameState?.playerHand || !isMyTurn || gameState.selectedHandIndex !== null) return [];
-    
-    const secondLevelMoves: ExtendedLegalMove[] = [];
-    const firstLevelMoves = getAllLegalMoves();
-    const seenPositions = new Set<string>(); // Track exact positions to avoid duplicates
-    
-    firstLevelMoves.forEach(firstMove => {
-      // Simulate placing this domino and calculate new open ends
-      const simulatedOpenEnds = calculateOpenEndsAfterMove(firstMove);
-      
-      // Check remaining dominoes for moves against new open ends
-      gameState.playerHand.forEach((domino, handIndex) => {
-        if (handIndex === firstMove.handIndex) return; // Skip the domino we just placed
-        
-        simulatedOpenEnds.forEach(openEnd => {
-          if (openEnd.value === domino.value1 || openEnd.value === domino.value2) {
-            // This domino can connect to the new open end
-            const flipped = openEnd.value === domino.value2;
-            const orientation = getOrientationForConnection(openEnd);
-            const { x, y } = calculatePositionFromOpenEnd(openEnd, orientation);
-            
-            // Create unique position key with more detail to prevent duplicates
-            const positionKey = `${x},${y},${orientation},${domino.value1},${domino.value2},${flipped}`;
-            if (seenPositions.has(positionKey)) return; // Skip exact duplicates
-            
-            // Check for overlap with first-level moves
-            const moveWidth = orientation === 'horizontal' ? 2 : 1;
-            const moveHeight = orientation === 'vertical' ? 2 : 1;
-            let overlapsWithFirstLevel = false;
-            
-            // Check against all first-level moves
-            firstLevelMoves.forEach(otherFirstMove => {
-              const otherWidth = otherFirstMove.orientation === 'horizontal' ? 2 : 1;
-              const otherHeight = otherFirstMove.orientation === 'vertical' ? 2 : 1;
-              
-              for (let dx = 0; dx < moveWidth && !overlapsWithFirstLevel; dx++) {
-                for (let dy = 0; dy < moveHeight && !overlapsWithFirstLevel; dy++) {
-                  const checkX = x + dx;
-                  const checkY = y + dy;
-                  
-                  for (let odx = 0; odx < otherWidth && !overlapsWithFirstLevel; odx++) {
-                    for (let ody = 0; ody < otherHeight && !overlapsWithFirstLevel; ody++) {
-                      const otherX = otherFirstMove.x + odx;
-                      const otherY = otherFirstMove.y + ody;
-                      
-                      if (checkX === otherX && checkY === otherY) {
-                        overlapsWithFirstLevel = true;
-                      }
-                    }
-                  }
-                }
-              }
-            });
-            
-            // Check for overlap with existing board pieces
-            let overlapsWithBoard = false;
-            for (let dx = 0; dx < moveWidth && !overlapsWithBoard; dx++) {
-              for (let dy = 0; dy < moveHeight && !overlapsWithBoard; dy++) {
-                const checkX = x + dx;
-                const checkY = y + dy;
-                const cellKey = `${checkX},${checkY}`;
-                if (gameState.board[cellKey]) {
-                  overlapsWithBoard = true;
-                }
-              }
-            }
-            
-            // Check for overlap with other second-level moves (prevent yellow on yellow)
-            let overlapsWithSecondLevel = false;
-            secondLevelMoves.forEach(existingSecondMove => {
-              const existingWidth = existingSecondMove.orientation === 'horizontal' ? 2 : 1;
-              const existingHeight = existingSecondMove.orientation === 'vertical' ? 2 : 1;
-              
-              for (let dx = 0; dx < moveWidth && !overlapsWithSecondLevel; dx++) {
-                for (let dy = 0; dy < moveHeight && !overlapsWithSecondLevel; dy++) {
-                  const checkX = x + dx;
-                  const checkY = y + dy;
-                  
-                  for (let edx = 0; edx < existingWidth && !overlapsWithSecondLevel; edx++) {
-                    for (let edy = 0; edy < existingHeight && !overlapsWithSecondLevel; edy++) {
-                      const existingX = existingSecondMove.x + edx;
-                      const existingY = existingSecondMove.y + edy;
-                      
-                      if (checkX === existingX && checkY === existingY) {
-                        overlapsWithSecondLevel = true;
-                      }
-                    }
-                  }
-                }
-              }
-            });
-            
-            // Only add if no overlaps
-            if (!overlapsWithFirstLevel && !overlapsWithBoard && !overlapsWithSecondLevel) {
-              seenPositions.add(positionKey);
-              secondLevelMoves.push({
-                end: openEnd,
-                dominoData: domino,
-                flipped,
-                orientation,
-                x,
-                y,
-                handIndex,
-                isSelected: false // These are always yellow/secondary
-              });
-            }
-          }
-        });
-      });
-    });
-    
-    return secondLevelMoves;
-  };
-
-  // Helper function to calculate open ends after a move (verbeterde versie)
-  const calculateOpenEndsAfterMove = (move: ExtendedLegalMove) => {
-    const { dominoData, x, y, orientation, flipped, end } = move;
-    
-    // Start with existing open ends and remove the one that this move connects to
-    const remainingOpenEnds = gameState.openEnds.filter(openEnd => 
-      !(openEnd.x === end.x && openEnd.y === end.y)
-    );
-    
-    // Add the new open ends from the placed domino (only the free ends)
-    const newOpenEnds = [...remainingOpenEnds];
-    
-    if (orientation === 'horizontal') {
-      const leftValue = flipped ? dominoData.value2 : dominoData.value1;
-      const rightValue = flipped ? dominoData.value1 : dominoData.value2;
-      
-      // Left end
-      const leftX = x - 1;
-      const leftY = y;
-      const leftKey = `${leftX},${leftY}`;
-      // Only add if this position is not the connection point and not occupied
-      if (!(leftX === end.x && leftY === end.y) && !gameState.board[leftKey]) {
-        newOpenEnds.push({
-          x: leftX,
-          y: leftY,
-          value: leftValue,
-          fromDir: 'W' as const
-        });
-      }
-      
-      // Right end
-      const rightX = x + 2;
-      const rightY = y;
-      const rightKey = `${rightX},${rightY}`;
-      // Only add if this position is not the connection point and not occupied
-      if (!(rightX === end.x && rightY === end.y) && !gameState.board[rightKey]) {
-        newOpenEnds.push({
-          x: rightX,
-          y: rightY,
-          value: rightValue,
-          fromDir: 'E' as const
-        });
-      }
-    } else {
-      const topValue = flipped ? dominoData.value2 : dominoData.value1;
-      const bottomValue = flipped ? dominoData.value1 : dominoData.value2;
-      
-      // Top end
-      const topX = x;
-      const topY = y - 1;
-      const topKey = `${topX},${topY}`;
-      // Only add if this position is not the connection point and not occupied
-      if (!(topX === end.x && topY === end.y) && !gameState.board[topKey]) {
-        newOpenEnds.push({
-          x: topX,
-          y: topY,
-          value: topValue,
-          fromDir: 'N' as const
-        });
-      }
-      
-      // Bottom end
-      const bottomX = x;
-      const bottomY = y + 2;
-      const bottomKey = `${bottomX},${bottomY}`;
-      // Only add if this position is not the connection point and not occupied
-      if (!(bottomX === end.x && bottomY === end.y) && !gameState.board[bottomKey]) {
-        newOpenEnds.push({
-          x: bottomX,
-          y: bottomY,
-          value: bottomValue,
-          fromDir: 'S' as const
-        });
-      }
-    }
-    
-    return newOpenEnds;
-  };
-
-  const getOrientationForConnection = (openEnd: any) => {
-    return (openEnd.fromDir === 'N' || openEnd.fromDir === 'S') ? 'vertical' : 'horizontal';
-  };
-
-  const calculatePositionFromOpenEnd = (openEnd: any, orientation: string) => {
-    let { x, y } = openEnd;
-    if (orientation === "horizontal" && openEnd.fromDir === "W") x -= 1;
-    if (orientation === "vertical" && openEnd.fromDir === "N") y -= 1;
-    return { x, y };
-  };
-  
-  const legalMoves = getAllLegalMoves();
-  const secondLevelMoves = getSecondLevelMoves();
+  // Calculate legal moves for selected domino
+  const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
+  const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
 
   // Enhanced pass logic - knop altijd zichtbaar, enabled wanneer speler kan passen
   let canPass = false;
@@ -513,15 +227,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     id="mobile-boneyard-view"
                   />
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSettingsDialog(true)}
-                  className="w-full flex items-center gap-2 justify-center"
-                >
-                  <Settings className="h-4 w-4" />
-                  Instellingen
-                </Button>
               </div>
             )}
           </Card>
@@ -539,26 +244,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 <span className="text-sm text-muted-foreground">
                   Boneyard: {gameState?.boneyard?.length || 0} tiles
                 </span>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch 
-                      checked={boneyardViewEnabled}
-                      onCheckedChange={setBoneyardViewEnabled}
-                      id="boneyard-view"
-                    />
-                    <label htmlFor="boneyard-view" className="text-sm text-muted-foreground">
-                      Boneyard view
-                    </label>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowSettingsDialog(true)}
-                    className="flex items-center gap-1"
-                  >
-                    <Settings className="h-4 w-4" />
-                    Instellingen
-                  </Button>
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    checked={boneyardViewEnabled}
+                    onCheckedChange={setBoneyardViewEnabled}
+                    id="boneyard-view"
+                  />
+                  <label htmlFor="boneyard-view" className="text-sm text-muted-foreground">
+                    Boneyard view
+                  </label>
                 </div>
               </div>
             </div>
@@ -587,15 +281,12 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         {/* Game Board */}
         <GameBoard 
           gameState={gameState}
-          legalMoves={[...legalMovesWithIndex, ...secondLevelMoves.map(move => ({ ...move, isSecondLevel: true }))]}
+          legalMoves={legalMovesWithIndex}
           onMoveExecute={executeMove}
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}
           onRotateDomino={rotateDomino}
-          showGrid={showGrid}
-          showDominoPreview={showDominoPreview}
-          magnetDomino={magnetDomino}
         />
 
         {/* Player Hand */}
@@ -947,143 +638,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           </DialogContent>
         </Dialog>
       </div>
-
-      {/* Settings Dialog */}
-      <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Instellingen
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            {/* Magnet Mode Toggle */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <label htmlFor="magnet-setting" className="text-sm font-medium flex items-center gap-2">
-                  <Magnet className="h-4 w-4" />
-                  Magneet Modus
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Sleep kop- of staartdomino's om ketens te verplaatsen
-                </p>
-              </div>
-              <Switch
-                id="magnet-setting"
-                checked={magnetDomino.magnetEnabled}
-                onCheckedChange={magnetDomino.setMagnetEnabled}
-              />
-            </div>
-            
-            {magnetDomino.magnetEnabled && (
-              <>
-                {/* Train Length */}
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label htmlFor="train-setting" className="text-sm font-medium flex items-center gap-2">
-                      <Train className="h-4 w-4" />
-                      Trein Lengte
-                    </label>
-                    <p className="text-xs text-muted-foreground">
-                      Hoeveel stenen bewegen mee wanneer je sleept
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">1</span>
-                      <span className="text-sm font-medium">{magnetDomino.trainLength} stenen</span>
-                      <span className="text-sm text-muted-foreground">10</span>
-                    </div>
-                    <Slider
-                      id="train-setting"
-                      min={1}
-                      max={10}
-                      step={1}
-                      value={[magnetDomino.trainLength]}
-                      onValueChange={(value) => magnetDomino.setTrainLength(value[0])}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-                
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <p className="text-xs text-muted-foreground">
-                    <strong>Tips:</strong> Blauw = kop, Groen = staart. Sleep een kop/staart om de trein te bewegen. 
-                    Stenen snappen automatisch vast aan geldige verbindingen.
-                  </p>
-                </div>
-              </>
-            )}
-
-            {!magnetDomino.magnetEnabled && (
-              <>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <label htmlFor="grid-setting" className="text-sm font-medium flex items-center gap-2">
-                      <Grid3X3 className="h-4 w-4" />
-                      Grid weergeven
-                    </label>
-                    <p className="text-xs text-muted-foreground">
-                      Toon hulplijnen voor beter domino plaatsing
-                    </p>
-                  </div>
-                  <Switch
-                    id="grid-setting"
-                    checked={showGrid}
-                    onCheckedChange={setShowGrid}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <label htmlFor="preview-setting" className="text-sm font-medium flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      Domino preview
-                    </label>
-                    <p className="text-xs text-muted-foreground">
-                      Toon domino preview in legal moves
-                    </p>
-                  </div>
-                  <Switch
-                    id="preview-setting"
-                    checked={showDominoPreview}
-                    onCheckedChange={setShowDominoPreview}
-                  />
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label htmlFor="distance-setting" className="text-sm font-medium flex items-center gap-2">
-                      <Ruler className="h-4 w-4" />
-                      Afstandsbeperking
-                    </label>
-                    <p className="text-xs text-muted-foreground">
-                      Minimale afstand tussen dominostenen (in halve grids)
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">0</span>
-                      <span className="text-sm font-medium">{distanceRestriction / 2}</span>
-                      <span className="text-sm text-muted-foreground">5</span>
-                    </div>
-                    <Slider
-                      id="distance-setting"
-                      min={0}
-                      max={10}
-                      step={1}
-                      value={[distanceRestriction]}
-                      onValueChange={(value) => setDistanceRestriction(value[0])}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

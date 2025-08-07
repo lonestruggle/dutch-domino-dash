@@ -1,13 +1,9 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { DominoTile } from './DominoTile';
-import { SimpleDragDomino } from './SimpleDragDomino';
-import { TrainLengthControl } from './TrainLengthControl';
-import { MagnetSnapZones } from './MagnetSnapZones';
 import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useMagnetDomino } from '@/hooks/useMagnetDomino';
 import { cn } from '@/lib/utils';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
@@ -16,15 +12,12 @@ const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.
 
 interface GameBoardProps {
   gameState: GameState;
-  legalMoves: any[]; // Use any[] to accept extended legal moves
+  legalMoves: LegalMove[];
   onMoveExecute: (move: LegalMove) => void;
   onCenterView: () => void;
   hasDifferentNeighbor: (x: number, y: number) => boolean;
   backgroundChoice?: string;
   onRotateDomino?: (dominoId: string) => void;
-  showGrid?: boolean;
-  showDominoPreview?: boolean;
-  magnetDomino?: ReturnType<typeof useMagnetDomino>;
 }
 
 const CELL_SIZE = 48;
@@ -43,26 +36,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onCenterView, 
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
-  onRotateDomino,
-  showGrid = false,
-  showDominoPreview = true,
-  magnetDomino
+  onRotateDomino
 }) => {
-  const [selectedDominoId, setSelectedDominoId] = useState<string | null>(null);
-  const [trainOffsets, setTrainOffsets] = useState<Record<string, { x: number, y: number }>>({});
-  const [trainLength, setTrainLength] = useState(3); // Default train length
-  // Add smooth animation frame for snake effect
-  const [animationFrame, setAnimationFrame] = useState(0);
-  
-  useEffect(() => {
-    let animationId: number;
-    const animate = () => {
-      setAnimationFrame(prev => prev + 1);
-      animationId = requestAnimationFrame(animate);
-    };
-    animate();
-    return () => cancelAnimationFrame(animationId);
-  }, []);
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -327,99 +302,32 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           transformOrigin: 'center'
         }}
       >
-        {/* Grid overlay */}
-        {showGrid && (
-          <div 
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundImage: `
-                linear-gradient(to right, rgba(239, 68, 68, 0.6) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(239, 68, 68, 0.6) 1px, transparent 1px)
-              `,
-              backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
-              backgroundPosition: `${boardSize / 2}px ${boardSize / 2}px`
-            }}
-          />
-        )}
-
-        {/* Magnet snap zones - only show when actually dragging */}
-        {magnetDomino?.magnetEnabled && magnetDomino?.isDragging && magnetDomino?.snapZones?.length > 0 && (
-          <div 
-            className="absolute inset-0"
-            style={{
-              left: boardSize / 2,
-              top: boardSize / 2,
-              transform: 'translate(-50%, -50%)',
-              width: boardSize,
-              height: boardSize
-            }}
-          >
-            <MagnetSnapZones
-              snapZones={magnetDomino.snapZones}
-              cellSize={CELL_SIZE}
-            />
-          </div>
-        )}
-
         {/* Render placed dominoes */}
         {Object.entries(gameState.dominoes).map(([id, domino]) => {
-          const offset = trainOffsets[id] || { x: 0, y: 0 };
-          const isInDraggedChain = magnetDomino?.draggedChain?.dominoIds.includes(id) || false;
-          const isBeingDragged = magnetDomino?.draggedChain?.leadDominoId === id;
-          
           return (
             <div
               key={id}
-              className="absolute transition-all duration-100 ease-out"
+              className="absolute"
               style={{
-                left: boardSize / 2 + domino.x * CELL_SIZE + offset.x,
-                top: boardSize / 2 + domino.y * CELL_SIZE + offset.y,
-                zIndex: isBeingDragged ? 50 : isInDraggedChain ? 20 : 10,
+                left: boardSize / 2 + domino.x * CELL_SIZE,
+                top: boardSize / 2 + domino.y * CELL_SIZE,
               }}
             >
-              <SimpleDragDomino
-                dominoId={id}
+              <DominoTile
                 data={domino.data}
                 orientation={domino.orientation}
                 flipped={domino.flipped}
                 rotation={domino.rotation || 0}
                 isShaking={gameState.isHardSlamming}
-                gameState={gameState}
-                selectedDominoId={selectedDominoId}
-                trainLength={trainLength}
-                onClick={() => {
-                  // Toggle selection
-                  setSelectedDominoId(selectedDominoId === id ? null : id);
-                  console.log(`Selected domino ${id}`);
-                }}
-                onDragMove={(dominoId, deltaX, deltaY, trainData) => {
-                  // Update offsets for all train dominoes with snake curve
-                  const newOffsets: Record<string, { x: number, y: number }> = {};
-                  trainData.forEach(({ id, offsetX, offsetY }) => {
-                    newOffsets[id] = { x: offsetX, y: offsetY };
-                  });
-                  setTrainOffsets(newOffsets);
-                }}
-                onDragEnd={(dominoId, finalX, finalY, trainData) => {
-                  console.log(`Moving train to final position: ${finalX}, ${finalY}`);
-                  // Here you would update the actual game state with new positions
-                  setTrainOffsets({}); // Clear offsets after move
-                }}
+                onClick={onRotateDomino ? () => onRotateDomino(id) : undefined}
+                className={onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-dutch-orange" : undefined}
               />
             </div>
           );
         })}
-        
-        {/* Train Length Control */}
-        <div className="absolute top-4 right-4 z-30">
-          <TrainLengthControl
-            trainLength={trainLength}
-            onTrainLengthChange={setTrainLength}
-          />
-        </div>
-        
-        {/* Render placement targets - only show when magnet mode is disabled */}
-        {(!magnetDomino?.magnetEnabled) && legalMoves.map((move, index) => {
+
+        {/* Render placement targets */}
+        {legalMoves.map((move, index) => {
           const { end } = move;
           
           if (hasDifferentNeighbor(end.x, end.y)) return null;
@@ -435,24 +343,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           const size = orientation === "horizontal" ? [2, 1] : [1, 2];
 
-          // Check if preview would overlap with existing dominoes
-          const wouldOverlap = () => {
-            for (let dx = 0; dx < size[0]; dx++) {
-              for (let dy = 0; dy < size[1]; dy++) {
-                const checkX = x + dx;
-                const checkY = y + dy;
-                const cellKey = `${checkX},${checkY}`;
-                if (gameState.board[cellKey]) {
-                  return true; // This cell is occupied by an existing domino
-                }
-              }
-            }
-            return false;
-          };
-
-          // Skip rendering if would overlap
-          if (wouldOverlap()) return null;
-
           return (
             <PlacementTarget
               key={`${end.x}-${end.y}-${index}`}
@@ -463,10 +353,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               orientation={orientation}
               isDouble={isDouble}
               onClick={() => onMoveExecute(move)}
-              dominoData={showDominoPreview ? dominoData : undefined}
-              flipped={move.flipped}
-              isSelected={move.isSelected}
-              isSecondLevel={move.isSecondLevel}
               style={{
                 left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
                 top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,
