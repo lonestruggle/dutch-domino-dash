@@ -310,8 +310,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             className="absolute inset-0 pointer-events-none"
             style={{
               backgroundImage: `
-                linear-gradient(to right, hsl(var(--muted-foreground) / 0.2) 1px, transparent 1px),
-                linear-gradient(to bottom, hsl(var(--muted-foreground) / 0.2) 1px, transparent 1px)
+                linear-gradient(to right, rgba(239, 68, 68, 0.6) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(239, 68, 68, 0.6) 1px, transparent 1px)
               `,
               backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
               backgroundPosition: `${boardSize / 2}px ${boardSize / 2}px`
