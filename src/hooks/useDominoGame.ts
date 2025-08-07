@@ -653,8 +653,11 @@ export const useDominoGame = () => {
         prev.spinnerId = id;
       }
 
+      // Remove domino from hand FIRST to prevent duplicate issues
       const newPlayerHand = [...prev.playerHand];
+      console.log('🎯 REMOVING DOMINO FROM HAND:', dominoKey, 'at index:', index, 'hand before:', newPlayerHand.map((d, i) => `${i}:${d.value1}|${d.value2}`));
       newPlayerHand.splice(index, 1);
+      console.log('🎯 HAND AFTER REMOVAL:', newPlayerHand.map((d, i) => `${i}:${d.value1}|${d.value2}`));
 
       // ROTATIE FIX: Genereer rotatie hier in lokale state
       // Deze rotatie wordt later ook gebruikt voor database synchronisatie
