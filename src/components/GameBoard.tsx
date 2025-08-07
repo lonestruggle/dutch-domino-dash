@@ -277,86 +277,152 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
-      {/* Vierkante Eikenhout Tafel */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-900 via-amber-800 to-yellow-900 rounded-2xl shadow-2xl p-12" 
+      {/* Realistische Eikenhout Tafel */}
+      <div className="absolute inset-0 rounded-2xl shadow-2xl p-12" 
            style={{
-             background: `
-               linear-gradient(135deg, 
-                 hsl(30, 35%, 45%) 0%,
-                 hsl(25, 40%, 40%) 25%,
-                 hsl(20, 45%, 35%) 50%,
-                 hsl(25, 40%, 40%) 75%,
-                 hsl(30, 35%, 45%) 100%
-               ),
-               repeating-linear-gradient(90deg, 
-                 transparent, 
-                 transparent 2px, 
-                 rgba(0,0,0,0.1) 2px, 
-                 rgba(0,0,0,0.1) 3px
-               )
-             `,
+             background: `url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)`,
+             backgroundSize: 'cover',
+             backgroundPosition: 'center',
+             backgroundRepeat: 'no-repeat',
              boxShadow: `
-               inset 0 2px 4px rgba(139, 69, 19, 0.3),
-               inset 0 -2px 4px rgba(101, 67, 33, 0.3),
-               0 8px 32px rgba(0, 0, 0, 0.4)
+               inset 0 2px 8px rgba(101, 67, 33, 0.4),
+               inset 0 -2px 8px rgba(62, 39, 35, 0.4),
+               0 12px 40px rgba(0, 0, 0, 0.5),
+               0 4px 16px rgba(101, 67, 33, 0.3)
              `
            }}>
         
-        {/* Top vak voor dominostenen - eikenhout */}
+        {/* Top vak voor dominostenen - ingelegd hout */}
         <div className="absolute top-6 left-20 right-20 h-20 rounded-lg shadow-inner border-2"
              style={{
-               background: `linear-gradient(180deg, hsl(25, 30%, 30%) 0%, hsl(20, 35%, 25%) 100%)`,
-               borderColor: 'hsl(20, 40%, 20%)',
-               boxShadow: 'inset 0 3px 6px rgba(0,0,0,0.4)'
+               background: `
+                 linear-gradient(180deg, 
+                   rgba(62, 39, 35, 0.8) 0%, 
+                   rgba(42, 26, 23, 0.9) 100%
+                 ),
+                 url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)
+               `,
+               backgroundSize: 'auto, cover',
+               backgroundPosition: 'center, center',
+               borderColor: 'rgba(42, 26, 23, 0.8)',
+               boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)'
              }}></div>
         
-        {/* Right vak voor dominostenen - eikenhout */}
+        {/* Right vak voor dominostenen - ingelegd hout */}
         <div className="absolute top-20 bottom-20 right-6 w-20 rounded-lg shadow-inner border-2"
              style={{
-               background: `linear-gradient(90deg, hsl(25, 30%, 30%) 0%, hsl(20, 35%, 25%) 100%)`,
-               borderColor: 'hsl(20, 40%, 20%)',
-               boxShadow: 'inset 0 3px 6px rgba(0,0,0,0.4)'
+               background: `
+                 linear-gradient(90deg, 
+                   rgba(62, 39, 35, 0.8) 0%, 
+                   rgba(42, 26, 23, 0.9) 100%
+                 ),
+                 url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)
+               `,
+               backgroundSize: 'auto, cover',
+               backgroundPosition: 'center, center',
+               borderColor: 'rgba(42, 26, 23, 0.8)',
+               boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)'
              }}></div>
         
-        {/* Bottom vak voor dominostenen - eikenhout */}
+        {/* Bottom vak voor dominostenen - ingelegd hout */}
         <div className="absolute bottom-6 left-20 right-20 h-20 rounded-lg shadow-inner border-2"
              style={{
-               background: `linear-gradient(0deg, hsl(25, 30%, 30%) 0%, hsl(20, 35%, 25%) 100%)`,
-               borderColor: 'hsl(20, 40%, 20%)',
-               boxShadow: 'inset 0 3px 6px rgba(0,0,0,0.4)'
+               background: `
+                 linear-gradient(0deg, 
+                   rgba(62, 39, 35, 0.8) 0%, 
+                   rgba(42, 26, 23, 0.9) 100%
+                 ),
+                 url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)
+               `,
+               backgroundSize: 'auto, cover',
+               backgroundPosition: 'center, center',
+               borderColor: 'rgba(42, 26, 23, 0.8)',
+               boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)'
              }}></div>
         
-        {/* Left vak voor dominostenen - eikenhout */}
+        {/* Left vak voor dominostenen - ingelegd hout */}
         <div className="absolute top-20 bottom-20 left-6 w-20 rounded-lg shadow-inner border-2"
              style={{
-               background: `linear-gradient(270deg, hsl(25, 30%, 30%) 0%, hsl(20, 35%, 25%) 100%)`,
-               borderColor: 'hsl(20, 40%, 20%)',
-               boxShadow: 'inset 0 3px 6px rgba(0,0,0,0.4)'
+               background: `
+                 linear-gradient(270deg, 
+                   rgba(62, 39, 35, 0.8) 0%, 
+                   rgba(42, 26, 23, 0.9) 100%
+                 ),
+                 url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)
+               `,
+               backgroundSize: 'auto, cover',
+               backgroundPosition: 'center, center',
+               borderColor: 'rgba(42, 26, 23, 0.8)',
+               boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)'
              }}></div>
         
-        {/* Hoekversieringen - eikenhout met metalen accenten */}
+        {/* Hoekversieringen - echt metalen hoekbeslag */}
         <div className="absolute top-6 left-6 w-14 h-14 rounded-full shadow-lg border-2"
              style={{
-               background: `radial-gradient(circle, hsl(35, 50%, 55%) 0%, hsl(30, 45%, 45%) 100%)`,
-               borderColor: 'hsl(20, 40%, 20%)'
+               background: `
+                 radial-gradient(circle at 30% 30%, 
+                   rgba(139, 114, 98, 1) 0%, 
+                   rgba(101, 82, 72, 1) 40%, 
+                   rgba(62, 51, 45, 1) 100%
+                 )
+               `,
+               borderColor: 'rgba(42, 26, 23, 0.8)',
+               boxShadow: `
+                 0 4px 8px rgba(0,0,0,0.5),
+                 inset 0 1px 2px rgba(139, 114, 98, 0.5),
+                 inset 0 -1px 2px rgba(42, 26, 23, 0.5)
+               `
              }}></div>
         <div className="absolute top-6 right-6 w-14 h-14 rounded-full shadow-lg border-2"
              style={{
-               background: `radial-gradient(circle, hsl(35, 50%, 55%) 0%, hsl(30, 45%, 45%) 100%)`,
-               borderColor: 'hsl(20, 40%, 20%)'
+               background: `
+                 radial-gradient(circle at 70% 30%, 
+                   rgba(139, 114, 98, 1) 0%, 
+                   rgba(101, 82, 72, 1) 40%, 
+                   rgba(62, 51, 45, 1) 100%
+                 )
+               `,
+               borderColor: 'rgba(42, 26, 23, 0.8)',
+               boxShadow: `
+                 0 4px 8px rgba(0,0,0,0.5),
+                 inset 0 1px 2px rgba(139, 114, 98, 0.5),
+                 inset 0 -1px 2px rgba(42, 26, 23, 0.5)
+               `
              }}></div>
         <div className="absolute bottom-6 left-6 w-14 h-14 rounded-full shadow-lg border-2"
              style={{
-               background: `radial-gradient(circle, hsl(35, 50%, 55%) 0%, hsl(30, 45%, 45%) 100%)`,
-               borderColor: 'hsl(20, 40%, 20%)'
+               background: `
+                 radial-gradient(circle at 30% 70%, 
+                   rgba(139, 114, 98, 1) 0%, 
+                   rgba(101, 82, 72, 1) 40%, 
+                   rgba(62, 51, 45, 1) 100%
+                 )
+               `,
+               borderColor: 'rgba(42, 26, 23, 0.8)',
+               boxShadow: `
+                 0 4px 8px rgba(0,0,0,0.5),
+                 inset 0 1px 2px rgba(139, 114, 98, 0.5),
+                 inset 0 -1px 2px rgba(42, 26, 23, 0.5)
+               `
              }}></div>
         <div className="absolute bottom-6 right-6 w-14 h-14 rounded-full shadow-lg border-2"
              style={{
-               background: `radial-gradient(circle, hsl(35, 50%, 55%) 0%, hsl(30, 45%, 45%) 100%)`,
-               borderColor: 'hsl(20, 40%, 20%)'
+               background: `
+                 radial-gradient(circle at 70% 70%, 
+                   rgba(139, 114, 98, 1) 0%, 
+                   rgba(101, 82, 72, 1) 40%, 
+                   rgba(62, 51, 45, 1) 100%
+                 )
+               `,
+               borderColor: 'rgba(42, 26, 23, 0.8)',
+               boxShadow: `
+                 0 4px 8px rgba(0,0,0,0.5),
+                 inset 0 1px 2px rgba(139, 114, 98, 0.5),
+                 inset 0 -1px 2px rgba(42, 26, 23, 0.5)
+               `
              }}></div>
         
-        {/* Speelveld BINNEN de tafel - eikenhout finish */}
+        {/* Speelveld BINNEN de tafel - ultra realistische hout finish */}
         <div 
           ref={containerRef}
           className={`w-full h-full game-board rounded-lg border-2 ${isMobile ? 'overflow-hidden' : 'overflow-auto'}`}
@@ -364,25 +430,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             scrollBehavior: 'smooth',
             background: `
               linear-gradient(135deg, 
-                hsl(30, 25%, 50%) 0%,
-                hsl(25, 30%, 45%) 25%,
-                hsl(20, 35%, 40%) 50%,
-                hsl(25, 30%, 45%) 75%,
-                hsl(30, 25%, 50%) 100%
+                rgba(101, 67, 33, 0.3) 0%,
+                rgba(62, 39, 35, 0.2) 50%,
+                rgba(101, 67, 33, 0.3) 100%
               ),
-              repeating-linear-gradient(45deg, 
-                transparent, 
-                transparent 4px, 
-                rgba(139, 69, 19, 0.1) 4px, 
-                rgba(139, 69, 19, 0.1) 6px
-              ),
+              url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png),
               url(${backgroundImage})
             `,
-            backgroundSize: 'cover, auto, cover',
+            backgroundSize: 'auto, cover, cover',
             backgroundPosition: 'center, center, center',
-            backgroundRepeat: 'no-repeat, repeat, no-repeat',
-            borderColor: 'hsl(20, 40%, 20%)',
-            boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3)'
+            backgroundRepeat: 'no-repeat, no-repeat, no-repeat',
+            borderColor: 'rgba(42, 26, 23, 0.8)',
+            boxShadow: `
+              inset 0 3px 12px rgba(0,0,0,0.4),
+              inset 0 0 0 1px rgba(139, 114, 98, 0.2)
+            `
           }}
         >
       <div 
