@@ -14,19 +14,28 @@ interface CustomBackground {
 }
 
 export const useCustomBackgrounds = () => {
+  console.log('useCustomBackgrounds hook starting...');
   const [backgrounds, setBackgrounds] = useState<CustomBackground[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  console.log('useCustomBackgrounds initial state set');
 
   const fetchBackgrounds = async () => {
+    console.log('fetchBackgrounds called');
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('custom_backgrounds')
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('Backgrounds fetch result:', { data, error });
+
       if (error) throw error;
 
-      setBackgrounds(data || []);
+      setBackgrounds((data || []).map(bg => ({
+        ...bg,
+        permission_level: bg.permission_level as 'admin' | 'moderator' | 'user'
+      })));
     } catch (error) {
       console.error('Error fetching custom backgrounds:', error);
     } finally {

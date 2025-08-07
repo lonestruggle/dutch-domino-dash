@@ -36,6 +36,8 @@ interface BackgroundPermission {
 }
 
 export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ onBackgroundsChange }) => {
+  console.log('BackgroundManager component mounting...');
+  
   const { backgrounds, loading, refetch } = useCustomBackgrounds();
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
@@ -48,46 +50,56 @@ export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ onBackgrou
     permission_level: 'admin' as 'admin' | 'moderator' | 'user'
   });
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  console.log('BackgroundManager hooks initialized:', { backgrounds, loading });
 
   const fetchUsers = async () => {
     try {
+      if (!supabase) {
+        console.error('Supabase client not available');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('user_id, username')
         .order('username');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching users:', error);
+        return;
+      }
+
       setUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
   };
 
+  useEffect(() => {
+    // Fetch users when component mounts
+    fetchUsers();
+  }, []);
+
   const fetchBackgroundPermissions = async (backgroundId: string) => {
     try {
-      const { data, error } = await supabase
+      // Get permissions for this background
+      const { data: permissions, error: permError } = await supabase
         .from('background_user_permissions')
-        .select(`
-          user_id,
-          can_use,
-          profiles!inner(username)
-        `)
+        .select('user_id, can_use')
         .eq('background_id', backgroundId);
 
-      if (error) throw error;
+      if (permError) throw permError;
 
-      // Combine with all users to show who doesn't have explicit permissions
+      // Create permissions map
       const permissionsMap = new Map(
-        data?.map(p => [p.user_id, { ...p, username: (p.profiles as any).username }]) || []
+        permissions?.map(p => [p.user_id, p.can_use]) || []
       );
 
+      // Combine with all users to show who doesn't have explicit permissions
       const allPermissions = users.map(user => ({
         user_id: user.user_id,
         username: user.username,
-        can_use: permissionsMap.get(user.user_id)?.can_use ?? true // Default to true if no explicit permission
+        can_use: permissionsMap.get(user.user_id) ?? true // Default to true if no explicit permission
       }));
 
       setBackgroundPermissions(allPermissions);
@@ -290,12 +302,35 @@ export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ onBackgrou
   };
 
   const openPermissionsDialog = (backgroundId: string) => {
+    if (!backgroundId || !users.length) {
+      toast({
+        title: "Fout", 
+        description: "Kan permissions niet laden - geen gebruikers gevonden",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedBackground(backgroundId);
     fetchBackgroundPermissions(backgroundId);
   };
 
+  // Early return with loading state if hooks aren't ready
   if (loading) {
-    return <div>Laden...</div>;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-muted-foreground">Achtergronden laden...</div>
+      </div>
+    );
+  }
+
+  // Ensure we have access to necessary hooks
+  if (!backgrounds) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-muted-foreground">Kan achtergronden niet laden</div>
+      </div>
+    );
   }
 
   return (
