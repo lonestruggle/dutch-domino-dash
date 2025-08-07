@@ -114,9 +114,21 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     playerHands: (gameState as any)?.playerHands?.map((hand: any, i: number) => ({ player: i, handSize: hand?.length || 0 }))
   });
   
-  // Calculate legal moves for selected domino
-  const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
-  const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
+  // Calculate legal moves - always show all possible moves
+  const getAllLegalMoves = () => {
+    if (!gameState?.playerHand || !isMyTurn) return [];
+    
+    const allMoves: any[] = [];
+    gameState.playerHand.forEach((domino, index) => {
+      const moves = findLegalMoves(domino);
+      moves.forEach(move => {
+        allMoves.push({ ...move, handIndex: index });
+      });
+    });
+    return allMoves;
+  };
+  
+  const legalMoves = getAllLegalMoves();
 
   // Enhanced pass logic - knop altijd zichtbaar, enabled wanneer speler kan passen
   let canPass = false;
