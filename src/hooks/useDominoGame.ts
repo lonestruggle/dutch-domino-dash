@@ -352,6 +352,13 @@ export const useDominoGame = () => {
         return true;
       }
       
+      // UITZONDERING 3: Stenen tegen dubbele dominoes mogen altijd
+      const againstDoubleDomino = candidateMove.fromDomino && isDouble(candidateMove.fromDomino.data);
+      if (againstDoubleDomino) {
+        console.log(`🎲 ✅ ALLOWED: Move against double domino exception (against ${candidateMove.fromDomino.data.value1}|${candidateMove.fromDomino.data.value2})`);
+        return true;
+      }
+      
       // UNIVERSELE AFSTANDSCONTROLE: Check afstand tot ALLE andere open ends
       console.log(`🎲 🔍 UNIVERSAL DISTANCE CHECK: Checking against ${allOpenEnds.length} open ends`);
       
