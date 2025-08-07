@@ -409,6 +409,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           const { orientation, dominoData } = move;
           const isDouble = dominoData.value1 === dominoData.value2;
           
+          // Determine if this is head or tail based on open ends order
+          // First open end = head (groen), last open end = tail (oranje)
+          const allOpenEnds = gameState.openEnds || [];
+          const isFirstEnd = allOpenEnds.length > 0 && 
+            allOpenEnds[0].x === end.x && allOpenEnds[0].y === end.y;
+          const isLastEnd = allOpenEnds.length > 1 && 
+            allOpenEnds[allOpenEnds.length - 1].x === end.x && allOpenEnds[allOpenEnds.length - 1].y === end.y;
+          
           // Adjust position based on direction
           if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
           if (orientation === "vertical" && end.fromDir === "N") y -= 1;
@@ -424,6 +432,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               height={size[1]}
               orientation={orientation}
               isDouble={isDouble}
+              isHeadEnd={isFirstEnd}
+              isTailEnd={isLastEnd}
               onClick={() => onMoveExecute(move)}
               style={{
                 left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,

@@ -13,6 +13,8 @@ interface PlacementTargetProps {
   style?: React.CSSProperties;
   className?: string;
   isBlueHighlight?: boolean; // NIEUWE PROP VOOR BLAUW HIGHLIGHT
+  isHeadEnd?: boolean; // NIEUWE PROP VOOR KOP
+  isTailEnd?: boolean; // NIEUWE PROP VOOR STAART
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -25,7 +27,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   onClick,
   style,
   className,
-  isBlueHighlight = false // DEFAULT FALSE
+  isBlueHighlight = false, // DEFAULT FALSE
+  isHeadEnd = false, // DEFAULT FALSE
+  isTailEnd = false // DEFAULT FALSE
 }) => {
   const isMobile = useIsMobile();
   const CELL_SIZE = 48;
@@ -36,6 +40,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
       className={cn(
         'placement-target absolute z-10 transform -translate-x-1/2 -translate-y-1/2',
         isBlueHighlight && 'placement-target-blue', // BLAUW HIGHLIGHT VOOR ALLE MOVES
+        isHeadEnd && 'placement-target-head', // GROENE KLEUR VOOR KOP
+        isTailEnd && 'placement-target-tail', // ORANJE KLEUR VOOR STAART
         isDouble && orientation === 'vertical' && '-mt-6',
         isDouble && orientation === 'horizontal' && '-ml-6',
         isMobile && 'cursor-pointer active:bg-opacity-80 !scale-[0.7] transform',

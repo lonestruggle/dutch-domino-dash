@@ -207,6 +207,30 @@
     background: hsl(220 90% 75% / 0.8) !important;
     transform: translate(-50%, -50%) scale(1.02);
   }
+
+  /* Groene variant voor kop moves */
+  .placement-target-head {
+    background: hsl(120 70% 85% / 0.7) !important;
+    border: 2px dashed hsl(120 70% 50%) !important;
+    z-index: 15 !important;
+  }
+
+  .placement-target-head:hover {
+    background: hsl(120 70% 75% / 0.9) !important;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+
+  /* Oranje variant voor staart moves */
+  .placement-target-tail {
+    background: hsl(30 90% 85% / 0.7) !important;
+    border: 2px dashed hsl(30 90% 60%) !important;
+    z-index: 15 !important;
+  }
+
+  .placement-target-tail:hover {
+    background: hsl(30 90% 75% / 0.9) !important;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
   
   .game-ui {
     background: hsl(var(--ui-bg));
