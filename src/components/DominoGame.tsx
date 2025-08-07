@@ -129,9 +129,49 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     const allMoves: ExtendedLegalMove[] = [];
     const selectedIndex = gameState.selectedHandIndex;
     
+    // Helper function to check if a position is too close to existing dominoes
+    const isTooCloseToExistingDominoes = (x: number, y: number, orientation: string) => {
+      const moveWidth = orientation === 'horizontal' ? 2 : 1;
+      const moveHeight = orientation === 'vertical' ? 2 : 1;
+      
+      // Check all cells that this domino would occupy
+      for (let dx = 0; dx < moveWidth; dx++) {
+        for (let dy = 0; dy < moveHeight; dy++) {
+          const checkX = x + dx;
+          const checkY = y + dy;
+          
+          // Check distance to all existing dominoes
+          for (const domino of Object.values(gameState.dominoes)) {
+            const dominoWidth = (domino as any).orientation === 'horizontal' ? 2 : 1;
+            const dominoHeight = (domino as any).orientation === 'vertical' ? 2 : 1;
+            
+            // Check all cells of the existing domino
+            for (let odx = 0; odx < dominoWidth; odx++) {
+              for (let ody = 0; ody < dominoHeight; ody++) {
+                const existingX = (domino as any).x + odx;
+                const existingY = (domino as any).y + ody;
+                
+                // Calculate Manhattan distance
+                const distance = Math.abs(checkX - existingX) + Math.abs(checkY - existingY);
+                if (distance <= 3) {
+                  return true; // Too close
+                }
+              }
+            }
+          }
+        }
+      }
+      return false; // Safe distance
+    };
+    
     gameState.playerHand.forEach((domino, index) => {
       const moves = findLegalMoves(domino);
       moves.forEach(move => {
+        // Skip if too close to existing dominoes (but allow direct connections)
+        if (isTooCloseToExistingDominoes(move.x, move.y, move.orientation)) {
+          return;
+        }
+        
         allMoves.push({ 
           ...move, 
           handIndex: index,
