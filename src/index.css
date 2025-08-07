@@ -338,39 +338,6 @@
       transform: scale(0.95);
     }
     
-    /* Mobile domino spacing fixes to prevent overlap */
-    .domino-tile-board.double-vertical-offset {
-      transform: scale(var(--domino-scale)) translateY(-2rem);
-    }
-    
-    .domino-tile-board.double-horizontal-offset {
-      transform: scale(var(--domino-scale)) translateX(-2rem);
-    }
-    
-    .domino-tile-board.selected.double-vertical-offset {
-      transform: scale(var(--domino-scale-selected)) translateY(-2rem);
-    }
-    
-    .domino-tile-board.selected.double-horizontal-offset {
-      transform: scale(var(--domino-scale-selected)) translateX(-2rem);
-    }
-    
-    .domino-tile-board:hover.double-vertical-offset {
-      transform: scale(var(--domino-scale-hover)) translateY(-2rem) translateY(-2px);
-    }
-    
-    .domino-tile-board:hover.double-horizontal-offset {
-      transform: scale(var(--domino-scale-hover)) translateX(-2rem) translateX(-2px);
-    }
-    
-    .domino-tile-board:active.double-vertical-offset {
-      transform: scale(calc(var(--domino-scale) * 0.95)) translateY(-2rem);
-    }
-    
-    .domino-tile-board:active.double-horizontal-offset {
-      transform: scale(calc(var(--domino-scale) * 0.95)) translateX(-2rem);
-    }
-    
   }
   
   /* Responsive dominostenen op het bord - werkt op alle apparaten */
