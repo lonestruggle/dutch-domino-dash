@@ -1,9 +1,12 @@
 
 import React, { useRef, useEffect } from 'react';
 import { DominoTile } from './DominoTile';
+import { DraggableDominoTile } from './DraggableDominoTile';
+import { MagnetSnapZones } from './MagnetSnapZones';
 import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useMagnetDomino } from '@/hooks/useMagnetDomino';
 import { cn } from '@/lib/utils';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
@@ -20,6 +23,7 @@ interface GameBoardProps {
   onRotateDomino?: (dominoId: string) => void;
   showGrid?: boolean;
   showDominoPreview?: boolean;
+  magnetDomino?: ReturnType<typeof useMagnetDomino>;
 }
 
 const CELL_SIZE = 48;
@@ -40,7 +44,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   backgroundChoice = 'domino-table-2',
   onRotateDomino,
   showGrid = false,
-  showDominoPreview = true
+  showDominoPreview = true,
+  magnetDomino
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -321,8 +326,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           />
         )}
 
+        {/* Magnet snap zones */}
+        {magnetDomino?.magnetEnabled && magnetDomino?.isDragging && (
+          <div className="absolute inset-0">
+            <MagnetSnapZones
+              snapZones={magnetDomino.snapZones}
+              cellSize={CELL_SIZE}
+            />
+          </div>
+        )}
+
         {/* Render placed dominoes */}
         {Object.entries(gameState.dominoes).map(([id, domino]) => {
+          const isInDraggedChain = magnetDomino?.draggedChain?.dominoIds.includes(id) || false;
+          const isBeingDragged = magnetDomino?.draggedChain?.leadDominoId === id;
+          
           return (
             <div
               key={id}
@@ -330,23 +348,42 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               style={{
                 left: boardSize / 2 + domino.x * CELL_SIZE,
                 top: boardSize / 2 + domino.y * CELL_SIZE,
+                zIndex: isBeingDragged ? 50 : isInDraggedChain ? 20 : 10,
               }}
             >
-              <DominoTile
-                data={domino.data}
-                orientation={domino.orientation}
-                flipped={domino.flipped}
-                rotation={domino.rotation || 0}
-                isShaking={gameState.isHardSlamming}
-                onClick={onRotateDomino ? () => onRotateDomino(id) : undefined}
-                className={onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-dutch-orange" : undefined}
-              />
+              {magnetDomino?.magnetEnabled ? (
+                <DraggableDominoTile
+                  dominoId={id}
+                  data={domino.data}
+                  orientation={domino.orientation}
+                  flipped={domino.flipped}
+                  rotation={domino.rotation || 0}
+                  isShaking={gameState.isHardSlamming}
+                  gameState={gameState}
+                  magnetEnabled={magnetDomino.magnetEnabled}
+                  isDominoChainEnd={magnetDomino.isDominoChainEnd}
+                  onDragStart={magnetDomino.startDrag}
+                  onDragEnd={magnetDomino.endDrag}
+                  isBeingDragged={isBeingDragged}
+                  isInDraggedChain={isInDraggedChain}
+                />
+              ) : (
+                <DominoTile
+                  data={domino.data}
+                  orientation={domino.orientation}
+                  flipped={domino.flipped}
+                  rotation={domino.rotation || 0}
+                  isShaking={gameState.isHardSlamming}
+                  onClick={onRotateDomino ? () => onRotateDomino(id) : undefined}
+                  className={onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-dutch-orange" : undefined}
+                />
+              )}
             </div>
           );
         })}
 
-        {/* Render placement targets */}
-        {legalMoves.map((move, index) => {
+        {/* Render placement targets - only show when magnet mode is disabled */}
+        {(!magnetDomino?.magnetEnabled) && legalMoves.map((move, index) => {
           const { end } = move;
           
           if (hasDifferentNeighbor(end.x, end.y)) return null;

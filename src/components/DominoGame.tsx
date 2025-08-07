@@ -9,8 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { DominoTile } from '@/components/DominoTile';
+import { DraggableDominoTile } from '@/components/DraggableDominoTile';
+import { MagnetSnapZones } from '@/components/MagnetSnapZones';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Settings, Ruler } from 'lucide-react';
+import { useMagnetDomino } from '@/hooks/useMagnetDomino';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Settings, Ruler, Magnet, Train } from 'lucide-react';
 import { LegalMove } from '@/types/domino';
 
 interface DominoGameProps {
@@ -49,6 +52,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [showDominoPreview, setShowDominoPreview] = useState(true);
   const [distanceRestriction, setDistanceRestriction] = useState(3); // Distance in half-grids (3 = 1.5 cells)
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  
+  // Magnet/Train system
+  const magnetDomino = useMagnetDomino();
   
   // Reset dialog shown flag when game starts new
   useEffect(() => {
@@ -589,6 +595,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           onRotateDomino={rotateDomino}
           showGrid={showGrid}
           showDominoPreview={showDominoPreview}
+          magnetDomino={magnetDomino}
         />
 
         {/* Player Hand */}
@@ -951,67 +958,129 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
+            {/* Magnet Mode Toggle */}
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <label htmlFor="grid-setting" className="text-sm font-medium flex items-center gap-2">
-                  <Grid3X3 className="h-4 w-4" />
-                  Grid weergeven
+                <label htmlFor="magnet-setting" className="text-sm font-medium flex items-center gap-2">
+                  <Magnet className="h-4 w-4" />
+                  Magneet Modus
                 </label>
                 <p className="text-xs text-muted-foreground">
-                  Toon hulplijnen voor beter domino plaatsing
+                  Sleep kop- of staartdomino's om ketens te verplaatsen
                 </p>
               </div>
               <Switch
-                id="grid-setting"
-                checked={showGrid}
-                onCheckedChange={setShowGrid}
+                id="magnet-setting"
+                checked={magnetDomino.magnetEnabled}
+                onCheckedChange={magnetDomino.setMagnetEnabled}
               />
             </div>
             
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <label htmlFor="preview-setting" className="text-sm font-medium flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  Domino preview
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Toon domino preview in legal moves
-                </p>
-              </div>
-              <Switch
-                id="preview-setting"
-                checked={showDominoPreview}
-                onCheckedChange={setShowDominoPreview}
-              />
-            </div>
-            
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label htmlFor="distance-setting" className="text-sm font-medium flex items-center gap-2">
-                  <Ruler className="h-4 w-4" />
-                  Afstandsbeperking
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Minimale afstand tussen dominostenen (in halve grids)
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">0</span>
-                  <span className="text-sm font-medium">{distanceRestriction / 2}</span>
-                  <span className="text-sm text-muted-foreground">5</span>
+            {magnetDomino.magnetEnabled && (
+              <>
+                {/* Train Length */}
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label htmlFor="train-setting" className="text-sm font-medium flex items-center gap-2">
+                      <Train className="h-4 w-4" />
+                      Trein Lengte
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Hoeveel stenen bewegen mee wanneer je sleept
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">1</span>
+                      <span className="text-sm font-medium">{magnetDomino.trainLength} stenen</span>
+                      <span className="text-sm text-muted-foreground">10</span>
+                    </div>
+                    <Slider
+                      id="train-setting"
+                      min={1}
+                      max={10}
+                      step={1}
+                      value={[magnetDomino.trainLength]}
+                      onValueChange={(value) => magnetDomino.setTrainLength(value[0])}
+                      className="w-full"
+                    />
+                  </div>
                 </div>
-                <Slider
-                  id="distance-setting"
-                  min={0}
-                  max={10}
-                  step={1}
-                  value={[distanceRestriction]}
-                  onValueChange={(value) => setDistanceRestriction(value[0])}
-                  className="w-full"
-                />
-              </div>
-            </div>
+                
+                <div className="bg-primary/10 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Tips:</strong> Blauw = kop, Groen = staart. Sleep een kop/staart om de trein te bewegen. 
+                    Stenen snappen automatisch vast aan geldige verbindingen.
+                  </p>
+                </div>
+              </>
+            )}
+
+            {!magnetDomino.magnetEnabled && (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <label htmlFor="grid-setting" className="text-sm font-medium flex items-center gap-2">
+                      <Grid3X3 className="h-4 w-4" />
+                      Grid weergeven
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Toon hulplijnen voor beter domino plaatsing
+                    </p>
+                  </div>
+                  <Switch
+                    id="grid-setting"
+                    checked={showGrid}
+                    onCheckedChange={setShowGrid}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <label htmlFor="preview-setting" className="text-sm font-medium flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      Domino preview
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Toon domino preview in legal moves
+                    </p>
+                  </div>
+                  <Switch
+                    id="preview-setting"
+                    checked={showDominoPreview}
+                    onCheckedChange={setShowDominoPreview}
+                  />
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label htmlFor="distance-setting" className="text-sm font-medium flex items-center gap-2">
+                      <Ruler className="h-4 w-4" />
+                      Afstandsbeperking
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Minimale afstand tussen dominostenen (in halve grids)
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">0</span>
+                      <span className="text-sm font-medium">{distanceRestriction / 2}</span>
+                      <span className="text-sm text-muted-foreground">5</span>
+                    </div>
+                    <Slider
+                      id="distance-setting"
+                      min={0}
+                      max={10}
+                      step={1}
+                      value={[distanceRestriction]}
+                      onValueChange={(value) => setDistanceRestriction(value[0])}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
