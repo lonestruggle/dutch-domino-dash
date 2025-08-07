@@ -278,7 +278,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
       {/* Realistische Eikenhout Tafel */}
-      <div className="absolute inset-0 rounded-2xl shadow-2xl p-12" 
+      <div className="absolute inset-0 rounded-2xl shadow-2xl p-20"
            style={{
              background: `url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)`,
              backgroundSize: 'cover',
