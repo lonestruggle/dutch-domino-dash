@@ -59,6 +59,7 @@ export const DraggableDominoTile: React.FC<DraggableDominoTileProps> = ({
   });
   
   const handleMouseDown = (event: React.MouseEvent) => {
+    // Allow dragging even if game is over, for viewing purposes
     if (!canDrag) {
       onClick?.();
       return;
@@ -94,6 +95,7 @@ export const DraggableDominoTile: React.FC<DraggableDominoTileProps> = ({
   };
   
   const handleTouchStart = (event: React.TouchEvent) => {
+    // Allow dragging even if game is over, for viewing purposes
     if (!canDrag) {
       onClick?.();
       return;
