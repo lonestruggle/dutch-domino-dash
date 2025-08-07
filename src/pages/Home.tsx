@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { Play, Users, UserCircle, LogOut, LogIn } from 'lucide-react';
 import { DominoIcon } from '@/components/DominoIcon';
@@ -13,6 +14,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { user, signOut, isAuthenticated } = useAuth();
   const { trackPageView } = useAnalytics();
+  const { getSetting } = useAppSettings();
   const [username, setUsername] = useState<string>('');
 
   useEffect(() => {
@@ -113,28 +115,30 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white/10 backdrop-blur-md border-white/20">
-                <CardHeader className="text-center">
-                  <div className="mx-auto mb-4 p-3 bg-white/20 rounded-full w-fit">
-                    <Play className="h-8 w-8 text-white" />
-                  </div>
-                  <CardTitle className="text-xl text-white">Single Player</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center space-y-4">
-                  <p className="text-white/80">
-                    Speel tegen de computer en oefen je vaardigheden
-                  </p>
-                  <Button 
-                    onClick={() => navigate('/single-player')} 
-                    className="w-full bg-gray-500 hover:bg-gray-500 text-white cursor-not-allowed"
-                    size="lg"
-                    disabled
-                  >
-                    Tijdelijk Buiten Gebruik
-                  </Button>
-                </CardContent>
-              </Card>
+            <div className={`grid grid-cols-1 ${getSetting('single_player_enabled') === true ? 'md:grid-cols-2' : ''} gap-6`}>
+              {getSetting('single_player_enabled') === true && (
+                <Card className="hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white/10 backdrop-blur-md border-white/20">
+                  <CardHeader className="text-center">
+                    <div className="mx-auto mb-4 p-3 bg-white/20 rounded-full w-fit">
+                      <Play className="h-8 w-8 text-white" />
+                    </div>
+                    <CardTitle className="text-xl text-white">Single Player</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center space-y-4">
+                    <p className="text-white/80">
+                      Speel tegen de computer en oefen je vaardigheden
+                    </p>
+                    <Button 
+                      onClick={() => navigate('/single-player')} 
+                      className="w-full bg-gray-500 hover:bg-gray-500 text-white cursor-not-allowed"
+                      size="lg"
+                      disabled
+                    >
+                      Tijdelijk Buiten Gebruik
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card className="hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white/10 backdrop-blur-md border-white/20">
                 <CardHeader className="text-center">
