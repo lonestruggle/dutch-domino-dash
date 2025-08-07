@@ -113,7 +113,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isMobile]);
+  }, [isMobile, settings.dominoScale, settings.frameSize]);
 
   // Update scaling when container size changes
   useEffect(() => {
@@ -125,7 +125,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [settings.dominoScale, settings.frameSize]);
 
   // Update scaling when game state changes (more dominoes = potentially different optimal scale)
   useEffect(() => {
