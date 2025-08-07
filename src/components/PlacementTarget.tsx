@@ -39,9 +39,10 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
     <div
       className={cn(
         'placement-target absolute z-10 transform -translate-x-1/2 -translate-y-1/2',
+        'bg-blue-500/40 border-2 border-blue-400 rounded hover:bg-blue-500/60 transition-colors cursor-pointer',
         isDouble && orientation === 'vertical' && '-mt-6',
         isDouble && orientation === 'horizontal' && '-ml-6',
-        isMobile && 'cursor-pointer active:bg-opacity-80 !scale-[0.7] transform',
+        isMobile && 'active:bg-opacity-80 !scale-[0.7] transform',
         className
       )}
       style={{
@@ -54,18 +55,6 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         onClick();
       }}
       onTouchStart={isMobile ? (e) => e.stopPropagation() : undefined}
-    >
-      {dominoData && (
-        <div className="absolute inset-0 opacity-60 hover:opacity-80 transition-opacity">
-          <DominoTile
-            data={dominoData}
-            orientation={orientation}
-            flipped={flipped}
-            rotation={0}
-            className="pointer-events-none"
-          />
-        </div>
-      )}
-    </div>
+    />
   );
 };
