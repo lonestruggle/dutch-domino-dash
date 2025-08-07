@@ -409,20 +409,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           const { orientation, dominoData } = move;
           const isDouble = dominoData.value1 === dominoData.value2;
           
-          // Bepaal head en tail gebaseerd op unieke domino values
-          // In dit specifieke geval: 4|0 (met open end 4) = head, 2|1 (met open end 1) = tail
+          // Bepaal head en tail gebaseerd op echte open ends
           const allOpenEnds = gameState.openEnds || [];
           
-          // Filter alleen de echte speelbare open ends (niet de extra ends rond dubbele dominoes)
+          // Filter alleen de echte speelbare open ends (die werkelijk op uiteinden van de ketting staan)
+          // Een echt open end heeft maar 1 domino als buur
           const realOpenEnds = allOpenEnds.filter(openEnd => {
-            // Count hoeveel keer deze waarde voorkomt - echte open ends hebben unieke waardes
-            const sameValueCount = allOpenEnds.filter(e => e.value === openEnd.value).length;
-            return sameValueCount === 1 || openEnd.value === 4 || openEnd.value === 1; // Force include our specific values
+            const neighborCount = allOpenEnds.filter(e => 
+              Math.abs(e.x - openEnd.x) <= 2 && Math.abs(e.y - openEnd.y) <= 2 && 
+              e.value === openEnd.value
+            ).length;
+            return neighborCount === 1; // Echte uiteinden hebben maar 1 occurrence van hun waarde
           });
           
-          // Voor nu: als er maar 2 echte open ends zijn, neem eerste als head, tweede als tail
-          const isHead = realOpenEnds.length === 2 && realOpenEnds[0].value === 4 && end.value === 4;
-          const isTail = realOpenEnds.length === 2 && realOpenEnds[1].value === 1 && end.value === 1;
+          // Als we 2 echte open ends hebben, is de eerste head, de tweede tail
+          const isHead = realOpenEnds.length >= 1 && 
+            realOpenEnds[0].x === end.x && realOpenEnds[0].y === end.y;
+          const isTail = realOpenEnds.length >= 2 && 
+            realOpenEnds[1].x === end.x && realOpenEnds[1].y === end.y;
           
           // Adjust position based on direction
           if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
