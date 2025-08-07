@@ -60,6 +60,24 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         onClick();
       }}
       onTouchStart={isMobile ? (e) => e.stopPropagation() : undefined}
-    />
+    >
+      {dominoData && (
+        <div className="absolute inset-0 transition-opacity">
+          <DominoTile
+            data={dominoData}
+            orientation={orientation}
+            flipped={flipped}
+            rotation={0}
+            className={cn(
+              "pointer-events-none",
+              isSelected ? "opacity-80" : "opacity-60"
+            )}
+            style={!isSelected ? {
+              filter: 'sepia(100%) saturate(200%) hue-rotate(45deg) brightness(1.2)'
+            } : undefined}
+          />
+        </div>
+      )}
+    </div>
   );
 };
