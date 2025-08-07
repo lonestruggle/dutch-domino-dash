@@ -307,9 +307,9 @@ export const useDominoGame = () => {
     if (Object.keys(currentState.dominoes).length === 0) {
       const orientation = selectedIsDouble ? 'vertical' : 'horizontal';
       
-      // Maak een grid van mogelijke posities rond het zichtbare gebied
-      for (let x = -10; x <= 10; x += 2) {
-        for (let y = -10; y <= 10; y += 2) {
+      // Maak een uitgebreid grid van mogelijke posities
+      for (let x = -30; x <= 30; x += 1) {
+        for (let y = -30; y <= 30; y += 1) {
           moves.push({
             end: { x: x, y: y, value: dominoData.value1, fromDir: 'E' },
             dominoData,
