@@ -326,9 +326,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           />
         )}
 
-        {/* Magnet snap zones */}
-        {magnetDomino?.magnetEnabled && magnetDomino?.isDragging && (
-          <div className="absolute inset-0">
+        {/* Magnet snap zones - only show when actually dragging */}
+        {magnetDomino?.magnetEnabled && magnetDomino?.isDragging && magnetDomino?.snapZones?.length > 0 && (
+          <div 
+            className="absolute inset-0"
+            style={{
+              left: boardSize / 2,
+              top: boardSize / 2,
+              transform: 'translate(-50%, -50%)',
+              width: boardSize,
+              height: boardSize
+            }}
+          >
             <MagnetSnapZones
               snapZones={magnetDomino.snapZones}
               cellSize={CELL_SIZE}

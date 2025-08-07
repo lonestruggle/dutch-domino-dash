@@ -27,11 +27,12 @@ export const MagnetSnapZones: React.FC<MagnetSnapZonesProps> = ({
               : 'border-primary/40 bg-primary/10'
           )}
           style={{
-            left: zone.x * cellSize,
-            top: zone.y * cellSize,
+            left: zone.x * cellSize + (cellSize * (zone.orientation === 'horizontal' ? 2 : 1)) / 2,
+            top: zone.y * cellSize + (cellSize * (zone.orientation === 'vertical' ? 2 : 1)) / 2,
             width: zone.orientation === 'horizontal' ? cellSize * 2 : cellSize,
             height: zone.orientation === 'horizontal' ? cellSize : cellSize * 2,
-            zIndex: highlightedZone === zone ? 30 : 20
+            zIndex: highlightedZone === zone ? 30 : 20,
+            transform: 'translate(-50%, -50%)'
           }}
         >
           {/* Connection point indicator */}
