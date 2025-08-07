@@ -281,57 +281,77 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   // Helper function to calculate open ends after a move (verbeterde versie)
   const calculateOpenEndsAfterMove = (move: ExtendedLegalMove) => {
-    const { dominoData, x, y, orientation, flipped } = move;
-    const newOpenEnds = [];
+    const { dominoData, x, y, orientation, flipped, end } = move;
     
-    // Calculate the new open ends this domino would create
+    // Start with existing open ends and remove the one that this move connects to
+    const remainingOpenEnds = gameState.openEnds.filter(openEnd => 
+      !(openEnd.x === end.x && openEnd.y === end.y && openEnd.value === end.value)
+    );
+    
+    // Add the new open ends from the placed domino
+    const newOpenEnds = [...remainingOpenEnds];
+    
     if (orientation === 'horizontal') {
       const leftValue = flipped ? dominoData.value2 : dominoData.value1;
       const rightValue = flipped ? dominoData.value1 : dominoData.value2;
       
-      // Only add open ends that are not blocked by existing dominoes
-      const leftKey = `${x - 1},${y}`;
-      if (!gameState.board[leftKey]) {
-        newOpenEnds.push({
-          x: x - 1,
-          y: y,
-          value: leftValue,
-          fromDir: 'W' as const
-        });
+      // Left end - only add if not blocked and not connecting to the original end
+      const leftPos = { x: x - 1, y: y };
+      if (!(leftPos.x === end.x && leftPos.y === end.y)) {
+        const leftKey = `${leftPos.x},${leftPos.y}`;
+        if (!gameState.board[leftKey]) {
+          newOpenEnds.push({
+            x: leftPos.x,
+            y: leftPos.y,
+            value: leftValue,
+            fromDir: 'W' as const
+          });
+        }
       }
       
-      const rightKey = `${x + 2},${y}`;
-      if (!gameState.board[rightKey]) {
-        newOpenEnds.push({
-          x: x + 2,
-          y: y,
-          value: rightValue,
-          fromDir: 'E' as const
-        });
+      // Right end - only add if not blocked and not connecting to the original end
+      const rightPos = { x: x + 2, y: y };
+      if (!(rightPos.x === end.x && rightPos.y === end.y)) {
+        const rightKey = `${rightPos.x},${rightPos.y}`;
+        if (!gameState.board[rightKey]) {
+          newOpenEnds.push({
+            x: rightPos.x,
+            y: rightPos.y,
+            value: rightValue,
+            fromDir: 'E' as const
+          });
+        }
       }
     } else {
       const topValue = flipped ? dominoData.value2 : dominoData.value1;
       const bottomValue = flipped ? dominoData.value1 : dominoData.value2;
       
-      // Only add open ends that are not blocked by existing dominoes
-      const topKey = `${x},${y - 1}`;
-      if (!gameState.board[topKey]) {
-        newOpenEnds.push({
-          x: x,
-          y: y - 1,
-          value: topValue,
-          fromDir: 'N' as const
-        });
+      // Top end - only add if not blocked and not connecting to the original end
+      const topPos = { x: x, y: y - 1 };
+      if (!(topPos.x === end.x && topPos.y === end.y)) {
+        const topKey = `${topPos.x},${topPos.y}`;
+        if (!gameState.board[topKey]) {
+          newOpenEnds.push({
+            x: topPos.x,
+            y: topPos.y,
+            value: topValue,
+            fromDir: 'N' as const
+          });
+        }
       }
       
-      const bottomKey = `${x},${y + 2}`;
-      if (!gameState.board[bottomKey]) {
-        newOpenEnds.push({
-          x: x,
-          y: y + 2,
-          value: bottomValue,
-          fromDir: 'S' as const
-        });
+      // Bottom end - only add if not blocked and not connecting to the original end
+      const bottomPos = { x: x, y: y + 2 };
+      if (!(bottomPos.x === end.x && bottomPos.y === end.y)) {
+        const bottomKey = `${bottomPos.x},${bottomPos.y}`;
+        if (!gameState.board[bottomKey]) {
+          newOpenEnds.push({
+            x: bottomPos.x,
+            y: bottomPos.y,
+            value: bottomValue,
+            fromDir: 'S' as const
+          });
+        }
       }
     }
     
