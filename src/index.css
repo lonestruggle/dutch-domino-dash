@@ -239,6 +239,8 @@
     /* Fade in animation */
     animation: fade-in 0.4s ease-out;
     opacity: 1;
+    /* Ensure proper scaling with domino scale */
+    transform-origin: center;
   }
   
   .placement-target.fade-out {
@@ -247,7 +249,7 @@
   
   .placement-target:hover {
     background: hsl(var(--selected-glow));
-    transform: translate(-50%, -50%) scale(1.02);
+    transform: translate(-50%, -50%) scale(calc(1.02 * var(--domino-scale)));
   }
   
   .game-ui {
@@ -329,7 +331,7 @@
   @media (max-width: 768px) {
     .placement-target:active {
       background: hsl(var(--selected-glow));
-      transform: translate(-50%, -50%) scale(0.95);
+      transform: translate(-50%, -50%) scale(calc(0.95 * var(--domino-scale)));
     }
     
     .domino-tile:active {
