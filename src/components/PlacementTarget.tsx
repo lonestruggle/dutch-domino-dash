@@ -35,16 +35,16 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
     <div
       className={cn(
         'placement-target absolute z-10 transform -translate-x-1/2 -translate-y-1/2',
-        isDouble && orientation === 'vertical' && '-mt-6',
-        isDouble && orientation === 'horizontal' && '-ml-6',
+        isDouble && orientation === 'vertical' && 'double-vertical-offset',
+        isDouble && orientation === 'horizontal' && 'double-horizontal-offset',
         isMobile && 'cursor-pointer active:bg-opacity-80',
-        isMobile && isInitialPlacement && '!scale-[0.5] transform',
-        isMobile && !isInitialPlacement && '!scale-[0.7] transform',
         className
       )}
       style={{
         width: `calc(var(--cell-size) * ${width} - 1px)`,
         height: `calc(var(--cell-size) * ${height} - 1px)`,
+        transform: `scale(var(--domino-target-scale)) translate(-50%, -50%)`,
+        transformOrigin: 'center',
         ...style
       }}
       onClick={(e) => {

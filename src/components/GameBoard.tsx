@@ -87,10 +87,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const scale = calculateDominoScale();
     const selectedScale = scale * 1.05;
     const hoverScale = scale;
+    const targetScale = scale * 0.8; // Placement targets schaalt iets minder voor betere visibility
     
     document.documentElement.style.setProperty('--domino-scale', scale.toString());
     document.documentElement.style.setProperty('--domino-scale-selected', selectedScale.toString());
     document.documentElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
+    document.documentElement.style.setProperty('--domino-target-scale', targetScale.toString());
   };
 
   // Update scaling on mount and when viewport changes

@@ -52,6 +52,7 @@
     --domino-scale: 1;
     --domino-scale-selected: 1.05;
     --domino-scale-hover: 1;
+    --domino-target-scale: 1;
     
     /* Table Frame Colors */
     --frame-wood-light: 35 25% 60%;
