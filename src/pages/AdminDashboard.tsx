@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { BackgroundManager } from '@/components/BackgroundManager';
+import { TableBackgroundManager } from '@/components/TableBackgroundManager';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { 
   Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
@@ -800,7 +801,11 @@ const AdminDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="backgrounds" className="flex items-center gap-2">
               <ImageIcon className="h-4 w-4" />
-              Achtergronden
+              Frame Achtergronden
+            </TabsTrigger>
+            <TabsTrigger value="table-backgrounds" className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Tafel Achtergronden
             </TabsTrigger>
             <TabsTrigger value="moderation" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -1251,6 +1256,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="backgrounds">
             <BackgroundManager onBackgroundsChange={loadDashboardData} />
+          </TabsContent>
+
+          <TabsContent value="table-backgrounds">
+            <TableBackgroundManager onBackgroundsChange={loadDashboardData} />
           </TabsContent>
 
           <TabsContent value="moderation">
