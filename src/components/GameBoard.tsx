@@ -494,14 +494,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 top: boardSize / 2 + domino.y * CELL_SIZE,
               }}
             >
-              <DominoTile
-                data={domino.data}
-                orientation={domino.orientation}
-                flipped={domino.flipped}
-                rotation={domino.rotation || 0}
-                isShaking={gameState.isHardSlamming}
-                onClick={onRotateDomino ? () => onRotateDomino(id) : undefined}
-                className={cn("domino-tile-board", onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-dutch-orange" : undefined)}
+               <DominoTile
+                 data={domino.data}
+                 orientation={domino.orientation}
+                 flipped={domino.flipped}
+                 rotation={domino.rotation || 0}
+                 isShaking={gameState.isHardSlamming}
+                 onClick={undefined}
+                 className="domino-tile-board"
               />
             </div>
           );
