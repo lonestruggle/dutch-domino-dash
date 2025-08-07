@@ -43,8 +43,8 @@ export const DominoTile: React.FC<DominoTileProps> = ({
       className={cn(
         'domino-tile cursor-pointer relative',
         orientation === 'vertical' ? 'w-11 h-[88px]' : 'w-[88px] h-11',
-        double && orientation === 'vertical' && 'transform -translate-y-6',
-        double && orientation === 'horizontal' && 'transform -translate-x-6',
+        double && orientation === 'vertical' && '-translate-y-6',
+        double && orientation === 'horizontal' && '-translate-x-6',
         selected && 'selected',
         isShaking && 'hard-slam-shake',
         className

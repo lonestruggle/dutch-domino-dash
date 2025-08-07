@@ -340,16 +340,51 @@
       transform-origin: top left;
     }
     
+    /* Dubbele dominostenen met translate + scale gecombineerd */
+    .domino-tile-board.-translate-y-6 {
+      transform: scale(var(--domino-scale)) translateY(-1.5rem);
+      transform-origin: top left;
+    }
+    
+    .domino-tile-board.-translate-x-6 {
+      transform: scale(var(--domino-scale)) translateX(-1.5rem);
+      transform-origin: top left;
+    }
+    
     .domino-tile-board.selected {
       transform: scale(var(--domino-scale-selected));
+    }
+    
+    .domino-tile-board.selected.-translate-y-6 {
+      transform: scale(var(--domino-scale-selected)) translateY(-1.5rem);
+    }
+    
+    .domino-tile-board.selected.-translate-x-6 {
+      transform: scale(var(--domino-scale-selected)) translateX(-1.5rem);
     }
     
     .domino-tile-board:hover {
       transform: scale(var(--domino-scale-hover)) translateY(-2px);
     }
     
+    .domino-tile-board:hover.-translate-y-6 {
+      transform: scale(var(--domino-scale-hover)) translateY(-1.5rem) translateY(-2px);
+    }
+    
+    .domino-tile-board:hover.-translate-x-6 {
+      transform: scale(var(--domino-scale-hover)) translateX(-1.5rem) translateY(-2px);
+    }
+    
     .domino-tile-board:active {
       transform: scale(calc(var(--domino-scale) * 0.95));
+    }
+    
+    .domino-tile-board:active.-translate-y-6 {
+      transform: scale(calc(var(--domino-scale) * 0.95)) translateY(-1.5rem);
+    }
+    
+    .domino-tile-board:active.-translate-x-6 {
+      transform: scale(calc(var(--domino-scale) * 0.95)) translateX(-1.5rem);
     }
     
     /* Dunnere frame op mobile */
