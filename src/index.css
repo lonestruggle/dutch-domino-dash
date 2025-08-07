@@ -180,8 +180,15 @@
       inset 0 2px 4px hsl(var(--frame-border-light)),
       inset 0 -2px 4px hsl(var(--frame-border-dark)),
       0 8px 24px rgba(0, 0, 0, 0.3);
-    /* Hide frame when frameVisible is false */
-    opacity: var(--frame-visible, 1);
+  }
+  
+  /* Hide frame when frame-hidden class is present */
+  .game-board.frame-hidden::before {
+    display: none;
+  }
+  
+  .game-board.frame-hidden::after {
+    display: none;
   }
 
   .game-board::after {
@@ -197,8 +204,6 @@
     box-shadow: 
       inset 0 1px 2px hsl(var(--frame-border-light)),
       inset 0 -1px 2px hsl(var(--frame-border-dark));
-    /* Hide frame when frameVisible is false */
-    opacity: var(--frame-visible, 1);
   }
   
   .domino-tile {
@@ -408,8 +413,6 @@
       right: calc(-8px * var(--frame-size-multiplier));
       bottom: calc(-8px * var(--frame-size-multiplier));
       border-radius: calc(4px * var(--frame-size-multiplier));
-      /* Hide frame on mobile when frameVisible is false */
-      opacity: var(--frame-visible, 1);
     }
     
     .game-board::after {
@@ -419,8 +422,6 @@
       bottom: calc(-8px * var(--frame-size-multiplier));
       border-width: calc(1px * var(--frame-size-multiplier));
       border-radius: calc(3px * var(--frame-size-multiplier));
-      /* Hide frame on mobile when frameVisible is false */
-      opacity: var(--frame-visible, 1);
     }
     
     /* Larger touch targets for mobile */

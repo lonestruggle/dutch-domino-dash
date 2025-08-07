@@ -102,23 +102,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // Update frame size based on user settings
     document.documentElement.style.setProperty('--frame-size-multiplier', settings.frameSize.toString());
     
-    // Update frame visibility
-    document.documentElement.style.setProperty('--frame-visible', settings.frameVisible ? '1' : '0');
+    // Update frame visibility using class toggle instead of CSS variables
+    const gameBoard = document.querySelector('.game-board');
+    if (gameBoard) {
+      if (settings.frameVisible) {
+        gameBoard.classList.remove('frame-hidden');
+      } else {
+        gameBoard.classList.add('frame-hidden');
+      }
+    }
     
     // Debug logging
     console.log('Visual settings applied:', {
       frameSize: settings.frameSize,
       frameVisible: settings.frameVisible,
       dominoScale: settings.dominoScale,
-      deviceType: 'current device'
-    });
-    
-    // Verify CSS variables are set
-    const rootStyle = getComputedStyle(document.documentElement);
-    console.log('CSS Variables check:', {
-      '--frame-size-multiplier': rootStyle.getPropertyValue('--frame-size-multiplier'),
-      '--frame-visible': rootStyle.getPropertyValue('--frame-visible'),
-      '--domino-scale': rootStyle.getPropertyValue('--domino-scale')
+      deviceType: 'current device',
+      frameHiddenClass: gameBoard ? gameBoard.classList.contains('frame-hidden') : 'no-board-found'
     });
   };
 
