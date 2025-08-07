@@ -2,6 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { DominoTile } from './DominoTile';
 import { SimpleDragDomino } from './SimpleDragDomino';
+import { TrainLengthControl } from './TrainLengthControl';
 import { MagnetSnapZones } from './MagnetSnapZones';
 import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
@@ -49,7 +50,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 }) => {
   const [selectedDominoId, setSelectedDominoId] = useState<string | null>(null);
   const [trainOffsets, setTrainOffsets] = useState<Record<string, { x: number, y: number }>>({});
-  
+  const [trainLength, setTrainLength] = useState(3); // Default train length
   // Add smooth animation frame for snake effect
   const [animationFrame, setAnimationFrame] = useState(0);
   
@@ -385,6 +386,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 isShaking={gameState.isHardSlamming}
                 gameState={gameState}
                 selectedDominoId={selectedDominoId}
+                trainLength={trainLength}
                 onClick={() => {
                   // Toggle selection
                   setSelectedDominoId(selectedDominoId === id ? null : id);
@@ -407,7 +409,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </div>
           );
         })}
-
+        
+        {/* Train Length Control */}
+        <div className="absolute top-4 right-4 z-30">
+          <TrainLengthControl
+            trainLength={trainLength}
+            onTrainLengthChange={setTrainLength}
+          />
+        </div>
+        
         {/* Render placement targets - only show when magnet mode is disabled */}
         {(!magnetDomino?.magnetEnabled) && legalMoves.map((move, index) => {
           const { end } = move;

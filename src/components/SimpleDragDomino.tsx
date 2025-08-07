@@ -16,6 +16,7 @@ interface SimpleDragDominoProps {
   isShaking?: boolean;
   gameState: GameState;
   selectedDominoId?: string | null;
+  trainLength?: number; // Maximum number of dominoes in train
   onDragMove?: (dominoId: string, deltaX: number, deltaY: number, trainData: Array<{id: string, offsetX: number, offsetY: number}>) => void;
   onDragEnd?: (dominoId: string, finalX: number, finalY: number, trainData: Array<{id: string, offsetX: number, offsetY: number}>) => void;
 }
@@ -33,6 +34,7 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
   isShaking = false,
   gameState,
   selectedDominoId,
+  trainLength = 3, // Default train length
   onDragMove,
   onDragEnd
 }) => {
@@ -85,9 +87,12 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
     return chain;
   };
   
-  // Create snake/curve effect for train
+  // Create snake/curve effect for train with limited length
   const createSnakeTrainData = (deltaX: number, deltaY: number): Array<{id: string, offsetX: number, offsetY: number}> => {
-    const trainChain = getTrainChain(dominoId);
+    const fullChain = getTrainChain(dominoId);
+    
+    // Limit train length
+    const trainChain = fullChain.slice(0, trainLength);
     const trainData: Array<{id: string, offsetX: number, offsetY: number}> = [];
     
     for (let i = 0; i < trainChain.length; i++) {
@@ -97,13 +102,17 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
         // Lead domino moves with full offset
         trainData.push({ id, offsetX: deltaX, offsetY: deltaY });
       } else {
-        // Following dominoes create a snake curve
-        const followFactor = Math.pow(0.8, i); // Each domino follows with 80% of previous
-        const waveFactor = Math.sin(i * 0.5) * 10; // Sinus wave for snake effect
-        const delay = i * 0.1; // Slight delay factor
+        // Following dominoes create a snake curve with spacing
+        const followFactor = Math.pow(0.7, i); // Each domino follows with 70% of previous
+        const spacingFactor = i * 15; // Add spacing between dominoes
+        const waveFactor = Math.sin(i * 0.8) * 8; // Sinus wave for snake effect
         
-        const snakeOffsetX = deltaX * followFactor + waveFactor * Math.cos(Date.now() * 0.005 + i);
-        const snakeOffsetY = deltaY * followFactor + waveFactor * Math.sin(Date.now() * 0.005 + i);
+        // Create separation - last domino should not stick to previous
+        const separationX = Math.cos(Math.atan2(deltaY, deltaX)) * spacingFactor;
+        const separationY = Math.sin(Math.atan2(deltaY, deltaX)) * spacingFactor;
+        
+        const snakeOffsetX = (deltaX * followFactor) - separationX + waveFactor * Math.cos(Date.now() * 0.003 + i);
+        const snakeOffsetY = (deltaY * followFactor) - separationY + waveFactor * Math.sin(Date.now() * 0.003 + i);
         
         trainData.push({ 
           id, 
