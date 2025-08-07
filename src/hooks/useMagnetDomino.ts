@@ -133,7 +133,8 @@ export const useMagnetDomino = () => {
     console.log(`🔍 isDominoChainEnd for ${dominoId}:`, {
       chains: chains.length,
       chainFound: !!chain,
-      chainLength: chain?.length || 0
+      chainLength: chain?.length || 0,
+      allChains: chains
     });
     
     if (!chain) return { isEnd: false, isHead: false };
@@ -145,7 +146,13 @@ export const useMagnetDomino = () => {
       isHead: dominoId === head
     };
     
-    console.log(`🔍 Chain end result for ${dominoId}:`, { ...result, head, tail });
+    console.log(`🔍 Chain end result for ${dominoId}:`, {
+      isEnd: result.isEnd,
+      isHead: result.isHead,
+      head: head,
+      tail: tail,
+      dominoId: dominoId
+    });
     
     return result;
   }, [findDominoChains, findChainEnds]);

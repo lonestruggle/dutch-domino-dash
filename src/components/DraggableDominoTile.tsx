@@ -52,10 +52,10 @@ export const DraggableDominoTile: React.FC<DraggableDominoTileProps> = ({
   const canDrag = magnetEnabled && isEnd;
   
   console.log(`🔍 DraggableDomino ${dominoId}:`, {
-    magnetEnabled,
-    isEnd,
-    isHead,
-    canDrag
+    magnetEnabled: magnetEnabled,
+    isEnd: isEnd,
+    isHead: isHead,
+    canDrag: canDrag
   });
   
   const handleMouseDown = (event: React.MouseEvent) => {
