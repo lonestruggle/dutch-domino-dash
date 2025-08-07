@@ -54,19 +54,26 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
       const deltaX = e.clientX - dragStartPos.x;
       const deltaY = e.clientY - dragStartPos.y;
       
-      // Limit to 5 grid cells (5 * 48px = 240px)
-      const maxDistance = 5 * 48;
-      const limitedDeltaX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
-      const limitedDeltaY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
-      
-      setDragOffset({ x: limitedDeltaX, y: limitedDeltaY });
-      onDragMove?.(dominoId, limitedDeltaX, limitedDeltaY);
+      // Allow free movement - no grid constraints during drag
+      setDragOffset({ x: deltaX, y: deltaY });
+      onDragMove?.(dominoId, deltaX, deltaY);
     };
     
     const handleMouseUp = () => {
       setIsDragging(false);
-      setDragOffset({ x: 0, y: 0 });
+      // Snap to nearest grid position on release
+      const gridSize = 48;
+      const snappedX = Math.round(dragOffset.x / gridSize) * gridSize;
+      const snappedY = Math.round(dragOffset.y / gridSize) * gridSize;
+      
+      setDragOffset({ x: snappedX, y: snappedY });
       onDragEnd?.(dominoId);
+      
+      // Reset to original position after a short delay
+      setTimeout(() => {
+        setDragOffset({ x: 0, y: 0 });
+      }, 300);
+      
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -93,19 +100,26 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
       const deltaX = touch.clientX - dragStartPos.x;
       const deltaY = touch.clientY - dragStartPos.y;
       
-      // Limit to 5 grid cells
-      const maxDistance = 5 * 48;
-      const limitedDeltaX = Math.max(-maxDistance, Math.min(maxDistance, deltaX));
-      const limitedDeltaY = Math.max(-maxDistance, Math.min(maxDistance, deltaY));
-      
-      setDragOffset({ x: limitedDeltaX, y: limitedDeltaY });
-      onDragMove?.(dominoId, limitedDeltaX, limitedDeltaY);
+      // Allow free movement during touch drag
+      setDragOffset({ x: deltaX, y: deltaY });
+      onDragMove?.(dominoId, deltaX, deltaY);
     };
     
     const handleTouchEnd = () => {
       setIsDragging(false);
-      setDragOffset({ x: 0, y: 0 });
+      // Snap to nearest grid position on release
+      const gridSize = 48;
+      const snappedX = Math.round(dragOffset.x / gridSize) * gridSize;
+      const snappedY = Math.round(dragOffset.y / gridSize) * gridSize;
+      
+      setDragOffset({ x: snappedX, y: snappedY });
       onDragEnd?.(dominoId);
+      
+      // Reset to original position after a short delay
+      setTimeout(() => {
+        setDragOffset({ x: 0, y: 0 });
+      }, 300);
+      
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
     };
@@ -129,16 +143,17 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
       style={{
         ...style,
         transform: `${style?.transform || ''} translate(${dragOffset.x}px, ${dragOffset.y}px)`,
-        zIndex: isDragging ? 100 : selected ? 50 : 10
+        zIndex: isDragging ? 100 : selected ? 50 : 10,
+        pointerEvents: 'auto'
       }}
     >
       <DominoTile
         data={data}
-        orientation={orientation}
+        orientation={orientation} // Keep original orientation, no rotation
         flipped={flipped}
         className={className}
         selected={selected}
-        rotation={rotation}
+        rotation={rotation} // Keep original rotation
         isShaking={isShaking}
       />
       
@@ -149,18 +164,14 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
         </div>
       )}
       
-      {/* Drag range indicator when dragging */}
+      {/* Grid snap indicator when dragging */}
       {isDragging && (
-        <div 
-          className="absolute border-2 border-dashed border-primary/40 rounded-lg pointer-events-none"
-          style={{
-            left: -240, // 5 * 48px
-            top: -240,
-            width: 480, // 10 * 48px
-            height: 480,
-            zIndex: -1
-          }}
-        />
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="w-2 h-2 bg-primary/60 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
+          <div className="text-xs bg-background/90 text-primary px-2 py-1 rounded absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+            Sleep vrij - loslaten = snap naar grid
+          </div>
+        </div>
       )}
     </div>
   );
