@@ -47,7 +47,4 @@ export interface GameState {
   hardSlamUsesRemaining?: number; // Track hard slam uses for current player
   hardSlamNextMove?: boolean; // Track if next move should be a hard slam
   isHardSlamming?: boolean; // Track if hard slam animation is currently playing
-  headTailDistance: number; // Configurable distance between head and tail
-  headTailProtectionEnabled: boolean; // Enable/disable head-tail protection
-  gridVisible: boolean; // Show/hide grid lines
 }

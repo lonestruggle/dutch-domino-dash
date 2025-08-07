@@ -13,13 +13,11 @@ const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.
 interface GameBoardProps {
   gameState: GameState;
   legalMoves: LegalMove[];
-  allPossibleMoves?: LegalMove[]; // NIEUWE PROP VOOR ALLE MOGELIJKE MOVES IN BLAUW
   onMoveExecute: (move: LegalMove) => void;
   onCenterView: () => void;
   hasDifferentNeighbor: (x: number, y: number) => boolean;
   backgroundChoice?: string;
   onRotateDomino?: (dominoId: string) => void;
-  gridVisible?: boolean;
 }
 
 const CELL_SIZE = 48;
@@ -34,13 +32,11 @@ const SCROLL_PADDING = 200; // Extra padding for scroll calculations
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameState, 
   legalMoves, 
-  allPossibleMoves = [], // NIEUWE PROP MET DEFAULT
   onMoveExecute, 
   onCenterView, 
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
-  onRotateDomino,
-  gridVisible = false
+  onRotateDomino
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -305,31 +301,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           transform: `scale(${dynamicScale})`,
           transformOrigin: 'center'
         }}
-        >
-          {/* Grid Lines */}
-          {gridVisible && (
-            <div className="absolute inset-0 pointer-events-none">
-              {/* Vertical lines */}
-              {Array.from({ length: Math.ceil(boardSize / 60) + 1 }, (_, i) => (
-                <div
-                  key={`v-${i}`}
-                  className="absolute top-0 bottom-0 w-px bg-green-500/30"
-                  style={{ left: `${i * 60}px` }}
-                />
-              ))}
-              {/* Horizontal lines */}
-              {Array.from({ length: Math.ceil(boardSize / 60) + 1 }, (_, i) => (
-                <div
-                  key={`h-${i}`}
-                  className="absolute left-0 right-0 h-px bg-green-500/30"
-                  style={{ top: `${i * 60}px` }}
-                />
-              ))}
-            </div>
-          )}
-          
-          {/* Render placed dominoes */}
-          {Object.entries(gameState.dominoes).map(([id, domino]) => {
+      >
+        {/* Render placed dominoes */}
+        {Object.entries(gameState.dominoes).map(([id, domino]) => {
           return (
             <div
               key={id}
@@ -352,8 +326,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           );
         })}
 
-        {/* Render alle mogelijke moves in blauw (altijd zichtbaar) */}
-        {allPossibleMoves.map((move, index) => {
+        {/* Render placement targets */}
+        {legalMoves.map((move, index) => {
           const { end } = move;
           
           if (hasDifferentNeighbor(end.x, end.y)) return null;
@@ -371,71 +345,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           return (
             <PlacementTarget
-              key={`all-moves-${end.x}-${end.y}-${index}`}
-              x={x}
-              y={y}
-              width={size[0]}
-              height={size[1]}
-              orientation={orientation}
-              isDouble={isDouble}
-              onClick={() => onMoveExecute(move)}
-              isBlueHighlight={true} // BLAUW HIGHLIGHT VOOR ALLE MOVES
-              style={{
-                left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
-                top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,
-              }}
-            />
-          );
-        })}
-
-        {/* Render placement targets */}
-        {legalMoves.map((move, index) => {
-          const { end } = move;
-          
-          console.log(`🎯 Rendering placement target ${index}: (${end.x},${end.y}) from:${end.fromDir}`);
-          console.log(`🎯 hasDifferentNeighbor(${end.x},${end.y}): ${hasDifferentNeighbor(end.x, end.y)}`);
-          console.log(`🎯 gameState.forbiddens[${end.x},${end.y}]: ${gameState.forbiddens[`${end.x},${end.y}`]}`);
-          
-          if (hasDifferentNeighbor(end.x, end.y)) {
-            console.log(`🚫 Skipping placement target: hasDifferentNeighbor failed`);
-            return null;
-          }
-          if (gameState.forbiddens[`${end.x},${end.y}`]) {
-            console.log(`🚫 Skipping placement target: position is forbidden`);
-            return null;
-          }
-
-          let { x, y } = end;
-          const { orientation, dominoData } = move;
-          const isDouble = dominoData.value1 === dominoData.value2;
-          
-          // Bepaal head en tail gebaseerd op echte open ends
-          const allOpenEnds = gameState.openEnds || [];
-          
-          // Filter alleen de echte speelbare open ends (die werkelijk op uiteinden van de ketting staan)
-          // Een echt open end heeft maar 1 domino als buur
-          const realOpenEnds = allOpenEnds.filter(openEnd => {
-            const neighborCount = allOpenEnds.filter(e => 
-              Math.abs(e.x - openEnd.x) <= 2 && Math.abs(e.y - openEnd.y) <= 2 && 
-              e.value === openEnd.value
-            ).length;
-            return neighborCount === 1; // Echte uiteinden hebben maar 1 occurrence van hun waarde
-          });
-          
-          // Als we 2 echte open ends hebben, is de eerste head, de tweede tail
-          const isHead = realOpenEnds.length >= 1 && 
-            realOpenEnds[0].x === end.x && realOpenEnds[0].y === end.y;
-          const isTail = realOpenEnds.length >= 2 && 
-            realOpenEnds[1].x === end.x && realOpenEnds[1].y === end.y;
-          
-          // Adjust position based on direction
-          if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
-          if (orientation === "vertical" && end.fromDir === "N") y -= 1;
-
-          const size = orientation === "horizontal" ? [2, 1] : [1, 2];
-
-          return (
-            <PlacementTarget
               key={`${end.x}-${end.y}-${index}`}
               x={x}
               y={y}
@@ -443,8 +352,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               height={size[1]}
               orientation={orientation}
               isDouble={isDouble}
-              isHeadEnd={isHead}
-              isTailEnd={isTail}
               onClick={() => onMoveExecute(move)}
               style={{
                 left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,

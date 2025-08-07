@@ -115,12 +115,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         // Hard slam properties for synchronization
         hardSlamUsesRemaining: gameState.hardSlamUsesRemaining,
         hardSlamNextMove: gameState.hardSlamNextMove,
-        isHardSlamming: gameState.isHardSlamming,
-        // Head-tail collision settings
-        headTailDistance: gameState.headTailDistance || 3,
-        headTailProtectionEnabled: gameState.headTailProtectionEnabled !== false,
-        // Grid visibility
-        gridVisible: gameState.gridVisible || false
+        isHardSlamming: gameState.isHardSlamming
       } : null;
       
       console.log('🔍 LOADED FROM DATABASE:', {
@@ -166,12 +161,6 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
   // Update game state in database
   const updateGameState = useCallback(async (newGameState: any, newCurrentPlayer?: number) => {
     if (!gameId) return;
-
-    console.log('💾 UPDATING game state to database:', {
-      headTailDistance: newGameState.headTailDistance,
-      headTailProtectionEnabled: newGameState.headTailProtectionEnabled,
-      totalDominoes: Object.keys(newGameState.dominoes || {}).length
-    });
 
     try {
       const { error } = await supabase

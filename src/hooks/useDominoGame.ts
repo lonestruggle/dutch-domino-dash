@@ -24,9 +24,6 @@ export const useDominoGame = () => {
     spinnerId: null,
     isGameOver: false,
     selectedHandIndex: null,
-    headTailDistance: 3,
-    headTailProtectionEnabled: true,
-    gridVisible: false,
   });
 
   const gameStateRef = useRef(gameState);
@@ -44,9 +41,6 @@ export const useDominoGame = () => {
       spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
-      headTailDistance: 3,
-      headTailProtectionEnabled: true,
-      gridVisible: false,
     });
   }, []);
 
@@ -113,9 +107,6 @@ export const useDominoGame = () => {
       spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
-      headTailDistance: 3,
-      headTailProtectionEnabled: true,
-      gridVisible: false,
     });
   }, [resetGame]);
 
@@ -207,8 +198,6 @@ export const useDominoGame = () => {
       const cell = state.board[coord];
       const domino = state.dominoes[cell.dominoId];
 
-      console.log(`🔍 Checking cell (${x},${y}) with value ${cell.value} from domino ${domino.data.value1}|${domino.data.value2}`);
-
       const neighbors = {
         N: [x, y - 1],
         S: [x, y + 1],
@@ -222,7 +211,6 @@ export const useDominoGame = () => {
         
         // Skip if neighbor position is occupied
         if (state.board[neighborKey]) {
-          console.log(`🔍 Position (${nx},${ny}) is occupied, skipping`);
           continue;
         }
 
@@ -230,13 +218,11 @@ export const useDominoGame = () => {
         
         // Check if forbidden
         if (state.forbiddens[neighborKey]) {
-          console.log(`🔍 Position (${nx},${ny}) is forbidden, skipping`);
           continue;
         }
 
         // Check hasDifferentNeighbor (more than 3 neighbors blocks placement)
         if (hasDifferentNeighbor(nx, ny)) {
-          console.log(`🔍 Position (${nx},${ny}) has too many neighbors, skipping`);
           continue;
         }
 
@@ -249,7 +235,6 @@ export const useDominoGame = () => {
         }[dir];
 
         if (toCellKeyForward && state.board[toCellKeyForward]) {
-          console.log(`🔍 Forward position ${toCellKeyForward} blocked for direction ${dir}`);
           continue;
         }
 
@@ -262,15 +247,41 @@ export const useDominoGame = () => {
             (isVertical && (dir === 'N' || dir === 'S')) ||
             (!isVertical && (dir === 'W' || dir === 'E'))
           ) {
-            console.log(`🔍 Double domino orientation rule blocks direction ${dir}`);
             continue;
           }
         }
 
-        // Use the cell value directly - this is already correctly set when domino was placed
+        // Determine the outward-facing value
+        const dominoData = domino.data;
+        const isHorizontal = domino.orientation === 'horizontal';
+        const isFlipped = domino.flipped;
+        
         let edgeValue = cell.value;
         
-        console.log(`🔍 VALID OPEN END FOUND: (${nx},${ny}) value:${edgeValue} from:${dir} (from cell ${coord})`);
+        // For non-double dominoes, determine which value faces which direction
+        if (!isDouble(dominoData)) {
+          const [leftTopValue, rightBottomValue] = isFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
+          
+          if (isHorizontal) {
+            const isLeftCell = coord === `${domino.x},${domino.y}`;
+            const isRightCell = coord === `${domino.x + 1},${domino.y}`;
+            
+            if (dir === 'W' && isLeftCell) edgeValue = leftTopValue;
+            else if (dir === 'E' && isRightCell) edgeValue = rightBottomValue;
+            else if (dir === 'W' && isRightCell) edgeValue = rightBottomValue;
+            else if (dir === 'E' && isLeftCell) edgeValue = rightBottomValue;
+          } else {
+            const isTopCell = coord === `${domino.x},${domino.y}`;
+            const isBottomCell = coord === `${domino.x},${domino.y + 1}`;
+            
+            if (dir === 'N' && isTopCell) edgeValue = leftTopValue;
+            else if (dir === 'S' && isBottomCell) edgeValue = rightBottomValue;
+            else if (dir === 'N' && isBottomCell) edgeValue = rightBottomValue;
+            else if (dir === 'S' && isTopCell) edgeValue = rightBottomValue;
+          }
+        }
+        
+        console.log(`🔍 VALID CHAIN END: (${nx},${ny}) value:${edgeValue} from:${dir}`);
         
         openEnds.push({
           x: nx,
@@ -281,7 +292,7 @@ export const useDominoGame = () => {
       }
     }
 
-    console.log('🔍 FINAL OPEN ENDS:', openEnds.map(end => `(${end.x},${end.y}) value:${end.value} from:${end.fromDir}`));
+    console.log('🔍 FINAL OPEN ENDS (should be 2):', openEnds.map(end => `(${end.x},${end.y}) value:${end.value} from:${end.fromDir}`));
     return openEnds;
   }, [hasDifferentNeighbor]);
 
@@ -291,10 +302,6 @@ export const useDominoGame = () => {
     const selectedIsDouble = isDouble(dominoData);
     const uniqueEnds: Record<string, boolean> = {};
     const currentState = gameStateRef.current;
-    
-    console.log(`🎲 FINDING LEGAL MOVES for ${dominoData.value1}|${dominoData.value2}`);
-    console.log(`🎲 Total dominoes on board: ${Object.keys(currentState.dominoes).length}`);
-    console.log(`🎲 Is double: ${selectedIsDouble}`);
     
     // EERSTE DOMINO: Als het bord leeg is, kan de eerste domino overal geplaatst worden
     if (Object.keys(currentState.dominoes).length === 0) {
@@ -314,112 +321,10 @@ export const useDominoGame = () => {
         }
       }
       
-      console.log(`🎲 Empty board: generated ${moves.length} moves`);
       return moves;
     }
     
-    
     const openEnds = regenerateOpenEnds(currentState);
-    console.log(`🎲 Found ${openEnds.length} open ends:`, openEnds.map(end => `(${end.x},${end.y}) value:${end.value}`));
-
-    // NIEUWE LOGICA: Voorkom dat kop en staart naar elkaar toe bouwen
-    const canPlaceDomino = (candidateMove: any, allOpenEnds: OpenEnd[]) => {
-      const totalDominoes = Object.keys(currentState.dominoes).length;
-      
-      console.log(`🎲 Collision check: ${totalDominoes} dominoes, isDouble: ${isDouble(candidateMove.dominoData)}, protection: ${currentState.headTailProtectionEnabled}`);
-      console.log(`🎲 Current head-tail settings: distance=${currentState.headTailDistance}, protection=${currentState.headTailProtectionEnabled}`);
-      console.log(`🎲 Complete currentState:`, {
-        headTailDistance: currentState.headTailDistance,
-        headTailProtectionEnabled: currentState.headTailProtectionEnabled,
-        totalDominoes: Object.keys(currentState.dominoes).length
-      });
-      
-      // Check if protection is disabled
-      if (!currentState.headTailProtectionEnabled) {
-        console.log(`🎲 ✅ ALLOWED: Head-tail protection is disabled`);
-        return true;
-      }
-      
-      // UITZONDERING 1: Eerste 4 stenen mogen overal
-      if (totalDominoes <= 3) { // Aangepast naar 3 zodat de eerste 4 stenen vrij kunnen
-        console.log(`🎲 ✅ ALLOWED: First 4 stones exception (currently ${totalDominoes})`);
-        return true;
-      }
-      
-      // UITZONDERING 2: Dubbele stenen mogen altijd (hebben voorrang)
-      if (isDouble(candidateMove.dominoData)) {
-        console.log(`🎲 ✅ ALLOWED: Double domino exception`);
-        return true;
-      }
-      
-      // UITZONDERING 3: Stenen tegen dubbele dominoes mogen altijd
-      const againstDoubleDomino = candidateMove.fromDomino && isDouble(candidateMove.fromDomino.data);
-      if (againstDoubleDomino) {
-        console.log(`🎲 ✅ ALLOWED: Move against double domino exception (against ${candidateMove.fromDomino.data.value1}|${candidateMove.fromDomino.data.value2})`);
-        return true;
-      }
-      
-      // UNIVERSELE AFSTANDSCONTROLE: Check afstand tot ALLE andere open ends
-      console.log(`🎲 🔍 UNIVERSAL DISTANCE CHECK: Checking against ${allOpenEnds.length} open ends`);
-      
-      // Bepaal welk end we gebruiken voor deze move
-      const currentEnd = candidateMove.end;
-      const otherEnds = allOpenEnds.filter(end => 
-        !(end.x === currentEnd.x && end.y === currentEnd.y)
-      );
-      
-      console.log(`🎲 🔍 Current end: (${currentEnd.x},${currentEnd.y}), checking against ${otherEnds.length} other ends`);
-      
-      if (otherEnds.length === 0) {
-        console.log(`🎲 ✅ ALLOWED: No other ends to check against`);
-        return true;
-      }
-      
-      // Bereken waar deze move zou worden geplaatst (beide cellen van de domino)
-      const moveCells = candidateMove.orientation === 'horizontal' 
-        ? [
-            { x: candidateMove.x, y: candidateMove.y },
-            { x: candidateMove.x + 1, y: candidateMove.y }
-          ]
-        : [
-            { x: candidateMove.x, y: candidateMove.y },
-            { x: candidateMove.x, y: candidateMove.y + 1 }
-          ];
-      
-      // Voeg ook het nieuwe open end toe dat ontstaat na deze move
-      let newEndPosition;
-      if (candidateMove.orientation === 'horizontal') {
-        // Voor horizontale dominoes, het nieuwe end is aan de andere kant van waar we plaatsen
-        if (candidateMove.end.fromDir === 'W') { // Plaatsen naar het westen, nieuw end komt oostelijk
-          newEndPosition = { x: candidateMove.x + 1, y: candidateMove.y };
-        } else { // Plaatsen naar het oosten, nieuw end komt westelijk  
-          newEndPosition = { x: candidateMove.x, y: candidateMove.y };
-        }
-      } else {
-        // Voor verticale dominoes
-        if (candidateMove.end.fromDir === 'N') { // Plaatsen naar het noorden, nieuw end komt zuidelijk
-          newEndPosition = { x: candidateMove.x, y: candidateMove.y + 1 };
-        } else { // Plaatsen naar het zuiden, nieuw end komt noordelijk
-          newEndPosition = { x: candidateMove.x, y: candidateMove.y };
-        }
-      }
-      
-      // Check of het nieuwe end te dicht bij andere open ends komt
-      const tooClose = otherEnds.some(otherEnd => {
-        const distance = Math.abs(newEndPosition.x - otherEnd.x) + Math.abs(newEndPosition.y - otherEnd.y);
-        console.log(`🎲 📏 Distance from NEW END (${newEndPosition.x},${newEndPosition.y}) to existing end (${otherEnd.x},${otherEnd.y}): ${distance} (min required: ${currentState.headTailDistance + 1})`);
-        return distance <= currentState.headTailDistance;
-      });
-      
-      if (tooClose) {
-        console.log(`🚫 BLOCKED: Move would bring head/tail within ${currentState.headTailDistance} grids of each other`);
-        console.log(`🚫 Current settings - distance: ${currentState.headTailDistance}, protection: ${currentState.headTailProtectionEnabled}`);
-        return false;
-      }
-      
-      console.log(`🎲 ✅ ALLOWED: Distance check passed`);
-      return true;
-    };
 
     openEnds.forEach((end) => {
       if (uniqueEnds[`${end.x},${end.y}`]) {
@@ -429,11 +334,7 @@ export const useDominoGame = () => {
       let validMove: LegalMove | null = null;
       
       const check = (value: number, flipped: boolean) => {
-        console.log(`🔍 Checking value ${value} (flipped:${flipped}) against end value ${end.value}`);
-        
         if (end.value === value && !validMove) { // Only check if we haven't found a valid move yet
-          console.log(`✅ Values match! Checking placement constraints...`);
-          
           const fromCellKey = {
             N: `${end.x},${end.y + 1}`,
             S: `${end.x},${end.y - 1}`,
@@ -455,34 +356,25 @@ export const useDominoGame = () => {
             E: `${end.x + 2},${end.y}`,
           }[end.fromDir];
 
-          console.log(`🔍 fromCell: ${fromCellKey}, toCell: ${toCellKey}, toCellForward: ${toCellKeyForward}`);
-
           const toDomino = currentState.dominoes[currentState.board[toCellKey]?.dominoId];
           const toDominoForward = currentState.dominoes[currentState.board[toCellKeyForward]?.dominoId];
           const fromDomino = currentState.dominoes[currentState.board[fromCellKey]?.dominoId];
 
-          console.log(`🔍 fromDomino exists: ${!!fromDomino}, toDomino exists: ${!!toDomino}, toDominoForward exists: ${!!toDominoForward}`);
-
           if (!fromDomino) {
-            console.log(`🚫 BLOCKED: No fromDomino at ${fromCellKey}`);
             return;
           }
           if (toDomino) {
-            console.log(`🚫 BLOCKED: toDomino already exists at ${toCellKey}`);
             return;
           }
           if (toDominoForward) {
-            console.log(`🚫 BLOCKED: toDominoForward already exists at ${toCellKeyForward}`);
             return;
           }
 
           if (currentState.forbiddens[toCellKey]) {
-            console.log(`🚫 BLOCKED: Position ${toCellKey} is forbidden`);
             return;
           }
 
           if (hasDifferentNeighbor(end.x, end.y)) {
-            console.log(`🚫 BLOCKED: hasDifferentNeighbor check failed for (${end.x},${end.y})`);
             return;
           }
 
@@ -540,67 +432,15 @@ export const useDominoGame = () => {
       check(dominoData.value1, false);
       check(dominoData.value2, true);
       
-      // Check beide condities: blokkering EN kop/staart collision  
-      if (validMove && canPlaceDomino(validMove, openEnds)) {
+      // If we found a valid move, add it and mark the position as used
+      if (validMove) {
         moves.push(validMove);
         uniqueEnds[`${end.x},${end.y}`] = true;
       }
     });
 
-    // PRIORITEIT: Dubbele stenen krijgen voorrang (alle dubbels hebben gelijke prioriteit)
-    moves.sort((a, b) => {
-      const aIsDouble = a.dominoData.value1 === a.dominoData.value2;
-      const bIsDouble = b.dominoData.value1 === b.dominoData.value2;
-      
-      // Eerst: dubbels vs niet-dubbels (alle dubbels hebben gelijke prioriteit)
-      if (aIsDouble && !bIsDouble) return -1; // Dubbel eerst
-      if (!aIsDouble && bIsDouble) return 1;  // Dubbel eerst
-      
-      // Binnen dubbels: geen specifieke volgorde, behoud originele volgorde
-      if (aIsDouble && bIsDouble) return 0;
-      
-      // Binnen niet-dubbels: som van waarden (hoogste eerst)
-      const aSum = a.dominoData.value1 + a.dominoData.value2;
-      const bSum = b.dominoData.value1 + b.dominoData.value2;
-      return bSum - aSum;
-    });
-
     return moves;
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
-
-  // KOPIE VAN findLegalMoves - VOOR ALTIJD TONEN BLUE LEGAL MOVES
-  const findAllPossibleMoves = useCallback((): LegalMove[] => {
-    const moves: LegalMove[] = [];
-    const currentState = gameStateRef.current;
-    
-    // Voor elke steen in de hand, bereken alle mogelijke zetten
-    currentState.playerHand.forEach((dominoData, index) => {
-      const dominoMoves = findLegalMoves(dominoData).map(move => ({
-        ...move,
-        index
-      }));
-      moves.push(...dominoMoves);
-    });
-    
-    // PRIORITEIT: Dubbele stenen krijgen voorrang (alle dubbels hebben gelijke prioriteit)  
-    moves.sort((a, b) => {
-      const aIsDouble = a.dominoData.value1 === a.dominoData.value2;
-      const bIsDouble = b.dominoData.value1 === b.dominoData.value2;
-      
-      if (aIsDouble && !bIsDouble) return -1; // Dubbel eerst
-      if (!aIsDouble && bIsDouble) return 1;  // Dubbel eerst
-      
-      // Binnen dubbels: geen specifieke volgorde
-      if (aIsDouble && bIsDouble) return 0;
-      
-      // Binnen niet-dubbels: hoogste waarden eerst
-      const aSum = a.dominoData.value1 + a.dominoData.value2;
-      const bSum = b.dominoData.value1 + b.dominoData.value2;
-      return bSum - aSum;
-    });
-    
-    return moves;
-  }, [findLegalMoves]);
 
   // BLOCKED GAME CHECK: Game is only blocked if NO moves possible AND boneyard is empty
   const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
@@ -1116,7 +956,6 @@ export const useDominoGame = () => {
     startGame,
     placeDominoOnGrid,
     findLegalMoves,
-    findAllPossibleMoves, // NIEUWE FUNCTIE VOOR ALTIJD TONEN BLUE MOVES
     executeMove,
     drawFromBoneyard,
     drawSpecificFromBoneyard,
@@ -1144,35 +983,6 @@ export const useDominoGame = () => {
         ...prevState,
         hardSlamNextMove: true,
         hardSlamUsesRemaining: Math.max(0, (prevState.hardSlamUsesRemaining || 0) - 1)
-      }));
-    },
-    // New functions for head-tail distance control
-    setHeadTailDistance: (distance: number) => {
-      console.log(`⚙️ SETTING head-tail distance to: ${distance}`);
-      setGameState(prev => {
-        const newState = {
-          ...prev,
-          headTailDistance: distance
-        };
-        console.log(`⚙️ New game state distance: ${newState.headTailDistance}`);
-        return newState;
-      });
-    },
-    setHeadTailProtectionEnabled: (enabled: boolean) => {
-      console.log(`⚙️ SETTING head-tail protection to: ${enabled}`);
-      setGameState(prev => {
-        const newState = {
-          ...prev,
-          headTailProtectionEnabled: enabled
-        };
-        console.log(`⚙️ New game state protection: ${newState.headTailProtectionEnabled}`);
-        return newState;
-      });
-    },
-    setGridVisible: (visible: boolean) => {
-      setGameState(prev => ({
-        ...prev,
-        gridVisible: visible
       }));
     },
   };

@@ -19,38 +19,7 @@ export default function Game() {
   // Sync the game state when synced state changes
   useEffect(() => {
     if (syncState.gameState && !syncState.isLoading) {
-      console.log('🔄 SYNCING game state from database:', {
-        dominoes: Object.keys(syncState.gameState.dominoes || {}).length,
-        board: Object.keys(syncState.gameState.board || {}).length,
-        headTailDistance: syncState.gameState.headTailDistance,
-        headTailProtectionEnabled: syncState.gameState.headTailProtectionEnabled
-      });
-      
-      // Preserve local settings when syncing from database
-      setGameState(prevState => {
-        console.log(`🔄 BEFORE MERGE - prevState settings:`, {
-          headTailDistance: prevState.headTailDistance,
-          headTailProtectionEnabled: prevState.headTailProtectionEnabled
-        });
-        console.log(`🔄 BEFORE MERGE - syncState settings:`, {
-          headTailDistance: syncState.gameState.headTailDistance,
-          headTailProtectionEnabled: syncState.gameState.headTailProtectionEnabled
-        });
-        
-        const newState = {
-          ...syncState.gameState,
-          // Keep local head-tail settings
-          headTailDistance: prevState.headTailDistance || 3,
-          headTailProtectionEnabled: prevState.headTailProtectionEnabled !== false
-        };
-        
-        console.log('🔄 MERGED local settings:', {
-          headTailDistance: newState.headTailDistance,
-          headTailProtectionEnabled: newState.headTailProtectionEnabled
-        });
-        
-        return newState;
-      });
+      setGameState(syncState.gameState);
     }
   }, [syncState.gameState, syncState.isLoading, setGameState]);
 
