@@ -10,9 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { BackgroundManager } from '@/components/BackgroundManager';
 import { 
   Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
-  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star, Zap, Copy, LogOut
+  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star, Zap, Copy, LogOut, Image as ImageIcon
 } from 'lucide-react';
 import {
   Select,
