@@ -43,8 +43,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         className
       )}
       style={{
-        width: `calc(var(--cell-size) * ${width} - 4px)`,
-        height: `calc(var(--cell-size) * ${height} - 4px)`,
+        width: `calc(var(--cell-size) * ${width} - 1px)`,
+        height: `calc(var(--cell-size) * ${height} - 1px)`,
         ...style
       }}
       onClick={(e) => {
