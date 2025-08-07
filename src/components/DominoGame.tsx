@@ -281,43 +281,55 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   // Helper function to calculate open ends after a move
   const calculateOpenEndsAfterMove = (move: ExtendedLegalMove) => {
+    // Create a simulated game state with this move applied
+    const simulatedState = { ...gameState };
+    
+    // Add the domino to the simulated board
     const { dominoData, x, y, orientation, flipped } = move;
+    const width = orientation === 'horizontal' ? 2 : 1;
+    const height = orientation === 'vertical' ? 2 : 1;
+    
+    // Create simulated board with this domino added
+    const simulatedBoard = { ...simulatedState.board };
+    for (let dx = 0; dx < width; dx++) {
+      for (let dy = 0; dy < height; dy++) {
+        const cellKey = `${x + dx},${y + dy}`;
+        const value = orientation === 'horizontal' 
+          ? (dx === 0 ? (flipped ? dominoData.value2 : dominoData.value1) : (flipped ? dominoData.value1 : dominoData.value2))
+          : (dy === 0 ? (flipped ? dominoData.value2 : dominoData.value1) : (flipped ? dominoData.value1 : dominoData.value2));
+        simulatedBoard[cellKey] = { dominoId: 'simulated', value };
+      }
+    }
+    
+    // Calculate all open ends from the simulated board
     const newOpenEnds = [];
     
-    // Calculate the new open ends this domino would create
-    if (orientation === 'horizontal') {
-      const leftValue = flipped ? dominoData.value2 : dominoData.value1;
-      const rightValue = flipped ? dominoData.value1 : dominoData.value2;
+    // Check all cells in the simulated board for open ends
+    Object.entries(simulatedBoard).forEach(([cellKey, cellData]) => {
+      const [cellX, cellY] = cellKey.split(',').map(Number);
+      const value = (cellData as any).value;
       
-      newOpenEnds.push({
-        x: x - 1,
-        y: y,
-        value: leftValue,
-        fromDir: 'W' as const
-      });
-      newOpenEnds.push({
-        x: x + 2,
-        y: y,
-        value: rightValue,
-        fromDir: 'E' as const
-      });
-    } else {
-      const topValue = flipped ? dominoData.value2 : dominoData.value1;
-      const bottomValue = flipped ? dominoData.value1 : dominoData.value2;
+      // Check all 4 directions for open ends
+      const directions = [
+        { dx: -1, dy: 0, fromDir: 'W' as const },
+        { dx: 1, dy: 0, fromDir: 'E' as const },
+        { dx: 0, dy: -1, fromDir: 'N' as const },
+        { dx: 0, dy: 1, fromDir: 'S' as const }
+      ];
       
-      newOpenEnds.push({
-        x: x,
-        y: y - 1,
-        value: topValue,
-        fromDir: 'N' as const
+      directions.forEach(({ dx, dy, fromDir }) => {
+        const adjacentKey = `${cellX + dx},${cellY + dy}`;
+        if (!simulatedBoard[adjacentKey]) {
+          // This is an open end
+          newOpenEnds.push({
+            x: cellX + dx,
+            y: cellY + dy,
+            value: value,
+            fromDir: fromDir
+          });
+        }
       });
-      newOpenEnds.push({
-        x: x,
-        y: y + 2,
-        value: bottomValue,
-        fromDir: 'S' as const
-      });
-    }
+    });
     
     return newOpenEnds;
   };
