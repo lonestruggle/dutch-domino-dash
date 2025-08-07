@@ -310,73 +310,73 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     
     // Start with existing open ends and remove the one that this move connects to
     const remainingOpenEnds = gameState.openEnds.filter(openEnd => 
-      !(openEnd.x === end.x && openEnd.y === end.y && openEnd.value === end.value)
+      !(openEnd.x === end.x && openEnd.y === end.y)
     );
     
-    // Add the new open ends from the placed domino
+    // Add the new open ends from the placed domino (only the free ends)
     const newOpenEnds = [...remainingOpenEnds];
     
     if (orientation === 'horizontal') {
       const leftValue = flipped ? dominoData.value2 : dominoData.value1;
       const rightValue = flipped ? dominoData.value1 : dominoData.value2;
       
-      // Left end - only add if not blocked and not connecting to the original end
-      const leftPos = { x: x - 1, y: y };
-      if (!(leftPos.x === end.x && leftPos.y === end.y)) {
-        const leftKey = `${leftPos.x},${leftPos.y}`;
-        if (!gameState.board[leftKey]) {
-          newOpenEnds.push({
-            x: leftPos.x,
-            y: leftPos.y,
-            value: leftValue,
-            fromDir: 'W' as const
-          });
-        }
+      // Left end
+      const leftX = x - 1;
+      const leftY = y;
+      const leftKey = `${leftX},${leftY}`;
+      // Only add if this position is not the connection point and not occupied
+      if (!(leftX === end.x && leftY === end.y) && !gameState.board[leftKey]) {
+        newOpenEnds.push({
+          x: leftX,
+          y: leftY,
+          value: leftValue,
+          fromDir: 'W' as const
+        });
       }
       
-      // Right end - only add if not blocked and not connecting to the original end
-      const rightPos = { x: x + 2, y: y };
-      if (!(rightPos.x === end.x && rightPos.y === end.y)) {
-        const rightKey = `${rightPos.x},${rightPos.y}`;
-        if (!gameState.board[rightKey]) {
-          newOpenEnds.push({
-            x: rightPos.x,
-            y: rightPos.y,
-            value: rightValue,
-            fromDir: 'E' as const
-          });
-        }
+      // Right end
+      const rightX = x + 2;
+      const rightY = y;
+      const rightKey = `${rightX},${rightY}`;
+      // Only add if this position is not the connection point and not occupied
+      if (!(rightX === end.x && rightY === end.y) && !gameState.board[rightKey]) {
+        newOpenEnds.push({
+          x: rightX,
+          y: rightY,
+          value: rightValue,
+          fromDir: 'E' as const
+        });
       }
     } else {
       const topValue = flipped ? dominoData.value2 : dominoData.value1;
       const bottomValue = flipped ? dominoData.value1 : dominoData.value2;
       
-      // Top end - only add if not blocked and not connecting to the original end
-      const topPos = { x: x, y: y - 1 };
-      if (!(topPos.x === end.x && topPos.y === end.y)) {
-        const topKey = `${topPos.x},${topPos.y}`;
-        if (!gameState.board[topKey]) {
-          newOpenEnds.push({
-            x: topPos.x,
-            y: topPos.y,
-            value: topValue,
-            fromDir: 'N' as const
-          });
-        }
+      // Top end
+      const topX = x;
+      const topY = y - 1;
+      const topKey = `${topX},${topY}`;
+      // Only add if this position is not the connection point and not occupied
+      if (!(topX === end.x && topY === end.y) && !gameState.board[topKey]) {
+        newOpenEnds.push({
+          x: topX,
+          y: topY,
+          value: topValue,
+          fromDir: 'N' as const
+        });
       }
       
-      // Bottom end - only add if not blocked and not connecting to the original end
-      const bottomPos = { x: x, y: y + 2 };
-      if (!(bottomPos.x === end.x && bottomPos.y === end.y)) {
-        const bottomKey = `${bottomPos.x},${bottomPos.y}`;
-        if (!gameState.board[bottomKey]) {
-          newOpenEnds.push({
-            x: bottomPos.x,
-            y: bottomPos.y,
-            value: bottomValue,
-            fromDir: 'S' as const
-          });
-        }
+      // Bottom end
+      const bottomX = x;
+      const bottomY = y + 2;
+      const bottomKey = `${bottomX},${bottomY}`;
+      // Only add if this position is not the connection point and not occupied
+      if (!(bottomX === end.x && bottomY === end.y) && !gameState.board[bottomKey]) {
+        newOpenEnds.push({
+          x: bottomX,
+          y: bottomY,
+          value: bottomValue,
+          fromDir: 'S' as const
+        });
       }
     }
     
