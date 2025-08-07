@@ -276,18 +276,33 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [gameState.dominoes, dynamicScale, boardSize]);
 
   return (
-    <div 
-      ref={containerRef}
-      className={`relative w-full flex-1 game-board border-2 border-border rounded-lg ${isMobile ? 'overflow-hidden' : 'overflow-auto'} ${isMobile ? "mb-2" : "mb-4"}`}
-      style={{ 
-        scrollBehavior: 'smooth',
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        height: isMobile ? '50vh' : 'auto'
-      }}
-    >
+    <div className="relative p-4">
+      {/* Wooden Frame */}
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-700 via-amber-800 to-amber-900 rounded-xl shadow-2xl">
+        {/* Inner frame detail */}
+        <div className="absolute inset-2 border-2 border-amber-600 rounded-lg">
+          <div className="absolute inset-1 border border-amber-500 rounded-md"></div>
+        </div>
+        {/* Frame corners */}
+        <div className="absolute top-2 left-2 w-4 h-4 bg-amber-600 rounded-full"></div>
+        <div className="absolute top-2 right-2 w-4 h-4 bg-amber-600 rounded-full"></div>
+        <div className="absolute bottom-2 left-2 w-4 h-4 bg-amber-600 rounded-full"></div>
+        <div className="absolute bottom-2 right-2 w-4 h-4 bg-amber-600 rounded-full"></div>
+      </div>
+      
+      {/* Game Board */}
+      <div 
+        ref={containerRef}
+        className={`relative z-10 w-full flex-1 game-board border-2 border-border rounded-lg ${isMobile ? 'overflow-hidden' : 'overflow-auto'} ${isMobile ? "mb-2" : "mb-4"}`}
+        style={{ 
+          scrollBehavior: 'smooth',
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          height: isMobile ? '50vh' : 'auto'
+        }}
+      >
       <div 
         ref={boardRef}
         className="relative"
@@ -360,6 +375,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             />
           );
         })}
+      </div>
       </div>
     </div>
   );
