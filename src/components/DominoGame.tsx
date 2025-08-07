@@ -33,7 +33,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     syncState,
     gameData,
     setHeadTailDistance,
-    setHeadTailProtectionEnabled
+    setHeadTailProtectionEnabled,
+    setGridVisible
   } = gameHook;
 
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
@@ -296,6 +297,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}
           onRotateDomino={rotateDomino}
+          gridVisible={gameState?.gridVisible || false}
         />
 
         {/* Player Hand */}
@@ -661,14 +663,33 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             <DialogHeader>
               <DialogTitle>Kop-Staart Instellingen</DialogTitle>
             </DialogHeader>
-            <HeadTailDistanceControl
-              distance={gameState?.headTailDistance || 3}
-              onDistanceChange={setHeadTailDistance}
-              enabled={gameState?.headTailProtectionEnabled || false}
-              onEnabledChange={setHeadTailProtectionEnabled}
-              currentOpenEnds={gameState?.openEnds?.length || 0}
-              totalDominoes={Object.keys(gameState?.dominoes || {}).length}
-            />
+            <div className="space-y-4">
+              <HeadTailDistanceControl
+                distance={gameState?.headTailDistance || 3}
+                onDistanceChange={setHeadTailDistance}
+                enabled={gameState?.headTailProtectionEnabled || false}
+                onEnabledChange={setHeadTailProtectionEnabled}
+                currentOpenEnds={gameState?.openEnds?.length || 0}
+                totalDominoes={Object.keys(gameState?.dominoes || {}).length}
+              />
+              
+              {/* Grid Visibility Toggle */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="grid-visibility" className="text-sm font-medium">
+                    Grid zichtbaar maken
+                  </label>
+                  <Switch 
+                    checked={gameState?.gridVisible || false}
+                    onCheckedChange={setGridVisible}
+                    id="grid-visibility"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Toont een groen grid op het spelbord
+                </p>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

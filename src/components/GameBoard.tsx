@@ -19,6 +19,7 @@ interface GameBoardProps {
   hasDifferentNeighbor: (x: number, y: number) => boolean;
   backgroundChoice?: string;
   onRotateDomino?: (dominoId: string) => void;
+  gridVisible?: boolean;
 }
 
 const CELL_SIZE = 48;
@@ -38,7 +39,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onCenterView, 
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
-  onRotateDomino
+  onRotateDomino,
+  gridVisible = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -303,9 +305,31 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           transform: `scale(${dynamicScale})`,
           transformOrigin: 'center'
         }}
-      >
-        {/* Render placed dominoes */}
-        {Object.entries(gameState.dominoes).map(([id, domino]) => {
+        >
+          {/* Grid Lines */}
+          {gridVisible && (
+            <div className="absolute inset-0 pointer-events-none">
+              {/* Vertical lines */}
+              {Array.from({ length: Math.ceil(boardSize / 60) + 1 }, (_, i) => (
+                <div
+                  key={`v-${i}`}
+                  className="absolute top-0 bottom-0 w-px bg-green-500/30"
+                  style={{ left: `${i * 60}px` }}
+                />
+              ))}
+              {/* Horizontal lines */}
+              {Array.from({ length: Math.ceil(boardSize / 60) + 1 }, (_, i) => (
+                <div
+                  key={`h-${i}`}
+                  className="absolute left-0 right-0 h-px bg-green-500/30"
+                  style={{ top: `${i * 60}px` }}
+                />
+              ))}
+            </div>
+          )}
+          
+          {/* Render placed dominoes */}
+          {Object.entries(gameState.dominoes).map(([id, domino]) => {
           return (
             <div
               key={id}

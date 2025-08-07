@@ -26,6 +26,7 @@ export const useDominoGame = () => {
     selectedHandIndex: null,
     headTailDistance: 3,
     headTailProtectionEnabled: true,
+    gridVisible: false,
   });
 
   const gameStateRef = useRef(gameState);
@@ -45,6 +46,7 @@ export const useDominoGame = () => {
       selectedHandIndex: null,
       headTailDistance: 3,
       headTailProtectionEnabled: true,
+      gridVisible: false,
     });
   }, []);
 
@@ -113,6 +115,7 @@ export const useDominoGame = () => {
       selectedHandIndex: null,
       headTailDistance: 3,
       headTailProtectionEnabled: true,
+      gridVisible: false,
     });
   }, [resetGame]);
 
@@ -1142,6 +1145,12 @@ export const useDominoGame = () => {
         console.log(`⚙️ New game state protection: ${newState.headTailProtectionEnabled}`);
         return newState;
       });
+    },
+    setGridVisible: (visible: boolean) => {
+      setGameState(prev => ({
+        ...prev,
+        gridVisible: visible
+      }));
     },
   };
 };

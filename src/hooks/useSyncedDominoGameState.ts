@@ -118,7 +118,9 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         isHardSlamming: gameState.isHardSlamming,
         // Head-tail collision settings
         headTailDistance: gameState.headTailDistance || 3,
-        headTailProtectionEnabled: gameState.headTailProtectionEnabled !== false
+        headTailProtectionEnabled: gameState.headTailProtectionEnabled !== false,
+        // Grid visibility
+        gridVisible: gameState.gridVisible || false
       } : null;
       
       console.log('🔍 LOADED FROM DATABASE:', {
