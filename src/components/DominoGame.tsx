@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Settings } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Settings, Ruler } from 'lucide-react';
 import { LegalMove } from '@/types/domino';
 
 interface DominoGameProps {
@@ -46,6 +47,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [showDominoPreview, setShowDominoPreview] = useState(true);
+  const [distanceRestriction, setDistanceRestriction] = useState(3); // Distance in half-grids (3 = 1.5 cells)
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   
   // Reset dialog shown flag when game starts new
@@ -155,9 +157,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 const existingX = (domino as any).x + odx;
                 const existingY = (domino as any).y + ody;
                 
-                // Calculate Manhattan distance
-                const distance = Math.abs(checkX - existingX) + Math.abs(checkY - existingY);
-                if (distance <= 3) {
+                // Calculate Manhattan distance in half-grids
+                const distance = (Math.abs(checkX - existingX) + Math.abs(checkY - existingY)) * 2;
+                if (distance <= distanceRestriction) {
                   return true; // Too close
                 }
               }
@@ -920,6 +922,34 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 checked={showDominoPreview}
                 onCheckedChange={setShowDominoPreview}
               />
+            </div>
+            
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label htmlFor="distance-setting" className="text-sm font-medium flex items-center gap-2">
+                  <Ruler className="h-4 w-4" />
+                  Afstandsbeperking
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Minimale afstand tussen dominostenen (in halve grids)
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">0</span>
+                  <span className="text-sm font-medium">{distanceRestriction / 2}</span>
+                  <span className="text-sm text-muted-foreground">5</span>
+                </div>
+                <Slider
+                  id="distance-setting"
+                  min={0}
+                  max={10}
+                  step={1}
+                  value={[distanceRestriction]}
+                  onValueChange={(value) => setDistanceRestriction(value[0])}
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
         </DialogContent>
