@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Settings } from 'lucide-react';
 import { LegalMove } from '@/types/domino';
 
 interface DominoGameProps {
@@ -45,6 +45,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
+  const [showDominoPreview, setShowDominoPreview] = useState(true);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   
   // Reset dialog shown flag when game starts new
   useEffect(() => {
@@ -347,17 +349,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     id="mobile-boneyard-view"
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <label htmlFor="mobile-grid-view" className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Grid3X3 className="h-3 w-3" />
-                    Grid
-                  </label>
-                  <Switch 
-                    checked={showGrid}
-                    onCheckedChange={setShowGrid}
-                    id="mobile-grid-view"
-                  />
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSettingsDialog(true)}
+                  className="w-full flex items-center gap-2 justify-center"
+                >
+                  <Settings className="h-4 w-4" />
+                  Instellingen
+                </Button>
               </div>
             )}
           </Card>
@@ -386,17 +386,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                       Boneyard view
                     </label>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch 
-                      checked={showGrid}
-                      onCheckedChange={setShowGrid}
-                      id="grid-view"
-                    />
-                    <label htmlFor="grid-view" className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Grid3X3 className="h-3 w-3" />
-                      Grid
-                    </label>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSettingsDialog(true)}
+                    className="flex items-center gap-1"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Instellingen
+                  </Button>
                 </div>
               </div>
             </div>
@@ -432,6 +430,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           backgroundChoice={gameData?.background_choice}
           onRotateDomino={rotateDomino}
           showGrid={showGrid}
+          showDominoPreview={showDominoPreview}
         />
 
         {/* Player Hand */}
@@ -783,6 +782,53 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Instellingen
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <label htmlFor="grid-setting" className="text-sm font-medium flex items-center gap-2">
+                  <Grid3X3 className="h-4 w-4" />
+                  Grid weergeven
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Toon hulplijnen voor beter domino plaatsing
+                </p>
+              </div>
+              <Switch
+                id="grid-setting"
+                checked={showGrid}
+                onCheckedChange={setShowGrid}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <label htmlFor="preview-setting" className="text-sm font-medium flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Domino preview
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Toon domino preview in legal moves
+                </p>
+              </div>
+              <Switch
+                id="preview-setting"
+                checked={showDominoPreview}
+                onCheckedChange={setShowDominoPreview}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

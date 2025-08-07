@@ -19,6 +19,7 @@ interface GameBoardProps {
   backgroundChoice?: string;
   onRotateDomino?: (dominoId: string) => void;
   showGrid?: boolean;
+  showDominoPreview?: boolean;
 }
 
 const CELL_SIZE = 48;
@@ -38,7 +39,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
   onRotateDomino,
-  showGrid = false
+  showGrid = false,
+  showDominoPreview = true
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -370,9 +372,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               orientation={orientation}
               isDouble={isDouble}
               onClick={() => onMoveExecute(move)}
-              dominoData={dominoData}
+              dominoData={showDominoPreview ? dominoData : undefined}
               flipped={move.flipped}
               isSelected={move.isSelected}
+              isSecondLevel={move.isSecondLevel}
               style={{
                 left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
                 top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,
