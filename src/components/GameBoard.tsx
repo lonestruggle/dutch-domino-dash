@@ -49,6 +49,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 }) => {
   const [selectedDominoId, setSelectedDominoId] = useState<string | null>(null);
   const [trainOffsets, setTrainOffsets] = useState<Record<string, { x: number, y: number }>>({});
+  
+  // Add smooth animation frame for snake effect
+  const [animationFrame, setAnimationFrame] = useState(0);
+  
+  useEffect(() => {
+    let animationId: number;
+    const animate = () => {
+      setAnimationFrame(prev => prev + 1);
+      animationId = requestAnimationFrame(animate);
+    };
+    animate();
+    return () => cancelAnimationFrame(animationId);
+  }, []);
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -356,7 +369,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           return (
             <div
               key={id}
-              className="absolute"
+              className="absolute transition-all duration-100 ease-out"
               style={{
                 left: boardSize / 2 + domino.x * CELL_SIZE + offset.x,
                 top: boardSize / 2 + domino.y * CELL_SIZE + offset.y,
@@ -377,15 +390,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   setSelectedDominoId(selectedDominoId === id ? null : id);
                   console.log(`Selected domino ${id}`);
                 }}
-                onDragMove={(dominoId, deltaX, deltaY, trainIds) => {
-                  // Update offsets for all train dominoes
+                onDragMove={(dominoId, deltaX, deltaY, trainData) => {
+                  // Update offsets for all train dominoes with snake curve
                   const newOffsets: Record<string, { x: number, y: number }> = {};
-                  trainIds.forEach(trainId => {
-                    newOffsets[trainId] = { x: deltaX, y: deltaY };
+                  trainData.forEach(({ id, offsetX, offsetY }) => {
+                    newOffsets[id] = { x: offsetX, y: offsetY };
                   });
                   setTrainOffsets(newOffsets);
                 }}
-                onDragEnd={(dominoId, finalX, finalY, trainIds) => {
+                onDragEnd={(dominoId, finalX, finalY, trainData) => {
                   console.log(`Moving train to final position: ${finalX}, ${finalY}`);
                   // Here you would update the actual game state with new positions
                   setTrainOffsets({}); // Clear offsets after move

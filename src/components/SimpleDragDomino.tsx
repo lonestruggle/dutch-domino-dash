@@ -16,8 +16,8 @@ interface SimpleDragDominoProps {
   isShaking?: boolean;
   gameState: GameState;
   selectedDominoId?: string | null;
-  onDragMove?: (dominoId: string, deltaX: number, deltaY: number, trainIds: string[]) => void;
-  onDragEnd?: (dominoId: string, finalX: number, finalY: number, trainIds: string[]) => void;
+  onDragMove?: (dominoId: string, deltaX: number, deltaY: number, trainData: Array<{id: string, offsetX: number, offsetY: number}>) => void;
+  onDragEnd?: (dominoId: string, finalX: number, finalY: number, trainData: Array<{id: string, offsetX: number, offsetY: number}>) => void;
 }
 
 export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
@@ -44,40 +44,76 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
   // Check if this domino is selected
   const isSelected = selectedDominoId === dominoId;
   
-  // Find connected dominoes (train)
-  const getTrainDominoes = (leadId: string): string[] => {
+  // Find connected dominoes in order (train chain)
+  const getTrainChain = (leadId: string): string[] => {
     const visited = new Set<string>();
-    const train: string[] = [];
+    const chain: string[] = [];
     
-    const findConnected = (dominoId: string) => {
-      if (visited.has(dominoId)) return;
-      visited.add(dominoId);
-      train.push(dominoId);
+    const findConnectedInOrder = (currentId: string, fromDirection?: string) => {
+      if (visited.has(currentId)) return;
+      visited.add(currentId);
+      chain.push(currentId);
       
-      const domino = gameState.dominoes[dominoId];
+      const domino = gameState.dominoes[currentId];
       if (!domino) return;
       
-      // Check adjacent positions for connected dominoes
-      const positions = domino.orientation === 'horizontal'
+      // Find next domino in the chain (excluding the one we came from)
+      const adjacentPositions = domino.orientation === 'horizontal'
         ? [
-            { x: domino.x - 1, y: domino.y },    // Left
-            { x: domino.x + 2, y: domino.y },    // Right
+            { x: domino.x - 1, y: domino.y, dir: 'left' },
+            { x: domino.x + 2, y: domino.y, dir: 'right' },
           ]
         : [
-            { x: domino.x, y: domino.y - 1 },    // Top
-            { x: domino.x, y: domino.y + 2 },    // Bottom
+            { x: domino.x, y: domino.y - 1, dir: 'up' },
+            { x: domino.x, y: domino.y + 2, dir: 'down' },
           ];
       
-      for (const pos of positions) {
+      for (const pos of adjacentPositions) {
+        if (pos.dir === fromDirection) continue; // Don't go back
+        
         const boardCell = gameState.board[`${pos.x},${pos.y}`];
         if (boardCell && boardCell.dominoId && !visited.has(boardCell.dominoId)) {
-          findConnected(boardCell.dominoId);
+          const oppositeDir = pos.dir === 'left' ? 'right' : 
+                             pos.dir === 'right' ? 'left' :
+                             pos.dir === 'up' ? 'down' : 'up';
+          findConnectedInOrder(boardCell.dominoId, oppositeDir);
         }
       }
     };
     
-    findConnected(leadId);
-    return train;
+    findConnectedInOrder(leadId);
+    return chain;
+  };
+  
+  // Create snake/curve effect for train
+  const createSnakeTrainData = (deltaX: number, deltaY: number): Array<{id: string, offsetX: number, offsetY: number}> => {
+    const trainChain = getTrainChain(dominoId);
+    const trainData: Array<{id: string, offsetX: number, offsetY: number}> = [];
+    
+    for (let i = 0; i < trainChain.length; i++) {
+      const id = trainChain[i];
+      
+      if (i === 0) {
+        // Lead domino moves with full offset
+        trainData.push({ id, offsetX: deltaX, offsetY: deltaY });
+      } else {
+        // Following dominoes create a snake curve
+        const followFactor = Math.pow(0.8, i); // Each domino follows with 80% of previous
+        const waveFactor = Math.sin(i * 0.5) * 10; // Sinus wave for snake effect
+        const delay = i * 0.1; // Slight delay factor
+        
+        const snakeOffsetX = deltaX * followFactor + waveFactor * Math.cos(Date.now() * 0.005 + i);
+        const snakeOffsetY = deltaY * followFactor + waveFactor * Math.sin(Date.now() * 0.005 + i);
+        
+        trainData.push({ 
+          id, 
+          offsetX: snakeOffsetX, 
+          offsetY: snakeOffsetY 
+        });
+      }
+    }
+    
+    return trainData;
   };
   
   const handleMouseDown = (event: React.MouseEvent) => {
@@ -91,32 +127,35 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
     setDragStartPos({ x: event.clientX, y: event.clientY });
     setDragOffset({ x: 0, y: 0 });
     
-    const trainIds = getTrainDominoes(dominoId);
+    let animationId: number;
     
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - dragStartPos.x;
       const deltaY = e.clientY - dragStartPos.y;
       
-      // Allow free movement during drag
       setDragOffset({ x: deltaX, y: deltaY });
-      onDragMove?.(dominoId, deltaX, deltaY, trainIds);
+      
+      // Create snake effect and update train
+      const trainData = createSnakeTrainData(deltaX, deltaY);
+      onDragMove?.(dominoId, deltaX, deltaY, trainData);
     };
     const handleMouseUp = () => {
       setIsDragging(false);
       
-      // Calculate final grid position
-      const gridSize = 48;
-      const snappedX = Math.round(dragOffset.x / gridSize) * gridSize;
-      const snappedY = Math.round(dragOffset.y / gridSize) * gridSize;
+      // Calculate final positions for the whole train
+      const trainData = createSnakeTrainData(dragOffset.x, dragOffset.y);
       
-      // Calculate final world position
+      // Get final world position for lead domino
       const domino = gameState.dominoes[dominoId];
+      const gridSize = 48;
       const finalWorldX = domino.x + Math.round(dragOffset.x / gridSize);
       const finalWorldY = domino.y + Math.round(dragOffset.y / gridSize);
       
-      onDragEnd?.(dominoId, finalWorldX, finalWorldY, trainIds);
+      onDragEnd?.(dominoId, finalWorldX, finalWorldY, trainData);
       
-      // Keep the snapped position (don't reset to 0)
+      // Keep final position
+      const snappedX = Math.round(dragOffset.x / gridSize) * gridSize;
+      const snappedY = Math.round(dragOffset.y / gridSize) * gridSize;
       setDragOffset({ x: snappedX, y: snappedY });
       
       document.removeEventListener('mousemove', handleMouseMove);
@@ -139,8 +178,6 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
     setDragStartPos({ x: touch.clientX, y: touch.clientY });
     setDragOffset({ x: 0, y: 0 });
     
-    const trainIds = getTrainDominoes(dominoId);
-    
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault();
       const touch = e.touches[0];
@@ -148,22 +185,25 @@ export const SimpleDragDomino: React.FC<SimpleDragDominoProps> = ({
       const deltaY = touch.clientY - dragStartPos.y;
       
       setDragOffset({ x: deltaX, y: deltaY });
-      onDragMove?.(dominoId, deltaX, deltaY, trainIds);
+      
+      const trainData = createSnakeTrainData(deltaX, deltaY);
+      onDragMove?.(dominoId, deltaX, deltaY, trainData);
     };
     
     const handleTouchEnd = () => {
       setIsDragging(false);
       
-      // Calculate final position
-      const gridSize = 48;
-      const snappedX = Math.round(dragOffset.x / gridSize) * gridSize;
-      const snappedY = Math.round(dragOffset.y / gridSize) * gridSize;
+      const trainData = createSnakeTrainData(dragOffset.x, dragOffset.y);
       
       const domino = gameState.dominoes[dominoId];
+      const gridSize = 48;
       const finalWorldX = domino.x + Math.round(dragOffset.x / gridSize);
       const finalWorldY = domino.y + Math.round(dragOffset.y / gridSize);
       
-      onDragEnd?.(dominoId, finalWorldX, finalWorldY, trainIds);
+      onDragEnd?.(dominoId, finalWorldX, finalWorldY, trainData);
+      
+      const snappedX = Math.round(dragOffset.x / gridSize) * gridSize;
+      const snappedY = Math.round(dragOffset.y / gridSize) * gridSize;
       setDragOffset({ x: snappedX, y: snappedY });
       
       document.removeEventListener('touchmove', handleTouchMove);
