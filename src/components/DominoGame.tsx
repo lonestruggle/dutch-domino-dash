@@ -148,6 +148,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     
     const secondLevelMoves: ExtendedLegalMove[] = [];
     const firstLevelMoves = getAllLegalMoves();
+    const seenPositions = new Set<string>(); // Track positions to avoid duplicates
     
     firstLevelMoves.forEach(firstMove => {
       // Simulate placing this domino and calculate new open ends
@@ -163,6 +164,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             const flipped = openEnd.value === domino.value2;
             const orientation = getOrientationForConnection(openEnd);
             const { x, y } = calculatePositionFromOpenEnd(openEnd, orientation);
+            
+            // Create unique position key
+            const positionKey = `${x},${y},${orientation}`;
+            if (seenPositions.has(positionKey)) return; // Skip duplicates
             
             // Check for overlap with first-level moves
             const moveWidth = orientation === 'horizontal' ? 2 : 1;
@@ -193,8 +198,22 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               }
             });
             
-            // Only add if no overlap with first-level moves
-            if (!overlapsWithFirstLevel) {
+            // Check if position would overlap with existing dominoes
+            let overlapsWithBoard = false;
+            for (let dx = 0; dx < moveWidth && !overlapsWithBoard; dx++) {
+              for (let dy = 0; dy < moveHeight && !overlapsWithBoard; dy++) {
+                const checkX = x + dx;
+                const checkY = y + dy;
+                const cellKey = `${checkX},${checkY}`;
+                if (gameState.board[cellKey]) {
+                  overlapsWithBoard = true;
+                }
+              }
+            }
+            
+            // Only add if no overlap with first-level moves or existing board
+            if (!overlapsWithFirstLevel && !overlapsWithBoard) {
+              seenPositions.add(positionKey);
               secondLevelMoves.push({
                 end: openEnd,
                 dominoData: domino,
