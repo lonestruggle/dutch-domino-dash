@@ -1441,6 +1441,56 @@ const AdminDashboard = () => {
               </Card>
             </div>
           </TabsContent>
+          
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    App Instellingen
+                  </CardTitle>
+                  <CardDescription>
+                    Beheer de zichtbaarheid van functies op de homepage
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-base">Single Player Modus</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Bepaal of de single player optie zichtbaar is op de homepage
+                      </p>
+                    </div>
+                    <Button
+                      variant={getSetting('single_player_enabled') === true ? 'default' : 'outline'}
+                      onClick={async () => {
+                        const currentValue = getSetting('single_player_enabled');
+                        const newValue = !currentValue;
+                        const result = await updateSetting('single_player_enabled', newValue);
+                        if (result.success) {
+                          toast({
+                            title: 'Instelling bijgewerkt',
+                            description: `Single player is nu ${newValue ? 'ingeschakeld' : 'uitgeschakeld'}`,
+                          });
+                        } else {
+                          toast({
+                            title: 'Fout',
+                            description: 'Kon instelling niet bijwerken',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                      disabled={settingsLoading}
+                    >
+                      {getSetting('single_player_enabled') === true ? 'Ingeschakeld' : 'Uitgeschakeld'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
         </Tabs>
         
         {/* Password Reset Dialog */}
