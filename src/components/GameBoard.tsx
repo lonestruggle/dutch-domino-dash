@@ -1,7 +1,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import { DominoTile } from './DominoTile';
-import { DraggableDominoTile } from './DraggableDominoTile';
+import { SimpleDragDomino } from './SimpleDragDomino';
 import { MagnetSnapZones } from './MagnetSnapZones';
 import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
@@ -360,33 +360,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 zIndex: isBeingDragged ? 50 : isInDraggedChain ? 20 : 10,
               }}
             >
-              {magnetDomino?.magnetEnabled ? (
-                <DraggableDominoTile
-                  dominoId={id}
-                  data={domino.data}
-                  orientation={domino.orientation}
-                  flipped={domino.flipped}
-                  rotation={domino.rotation || 0}
-                  isShaking={gameState.isHardSlamming}
-                  gameState={gameState}
-                  magnetEnabled={magnetDomino.magnetEnabled}
-                  isDominoChainEnd={magnetDomino.isDominoChainEnd}
-                  onDragStart={magnetDomino.startDrag}
-                  onDragEnd={magnetDomino.endDrag}
-                  isBeingDragged={isBeingDragged}
-                  isInDraggedChain={isInDraggedChain}
-                />
-              ) : (
-                <DominoTile
-                  data={domino.data}
-                  orientation={domino.orientation}
-                  flipped={domino.flipped}
-                  rotation={domino.rotation || 0}
-                  isShaking={gameState.isHardSlamming}
-                  onClick={onRotateDomino ? () => onRotateDomino(id) : undefined}
-                  className={onRotateDomino ? "cursor-pointer hover:ring-2 hover:ring-dutch-orange" : undefined}
-                />
-              )}
+              <SimpleDragDomino
+                dominoId={id}
+                data={domino.data}
+                orientation={domino.orientation}
+                flipped={domino.flipped}
+                rotation={domino.rotation || 0}
+                isShaking={gameState.isHardSlamming}
+                gameState={gameState}
+                selected={gameState.selectedHandIndex !== null}
+                onClick={onRotateDomino ? () => onRotateDomino(id) : undefined}
+                onDragMove={(dominoId, deltaX, deltaY) => {
+                  // Hier kun je later logica toevoegen voor het verplaatsen
+                  console.log(`Dragging ${dominoId} by ${deltaX}, ${deltaY}`);
+                }}
+                onDragEnd={(dominoId) => {
+                  console.log(`Finished dragging ${dominoId}`);
+                }}
+              />
             </div>
           );
         })}

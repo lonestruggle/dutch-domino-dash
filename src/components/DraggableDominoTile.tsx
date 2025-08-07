@@ -49,7 +49,8 @@ export const DraggableDominoTile: React.FC<DraggableDominoTileProps> = ({
   const dragRef = useRef<HTMLDivElement>(null);
   
   const { isEnd, isHead } = isDominoChainEnd(dominoId, gameState);
-  const canDrag = magnetEnabled && isEnd;
+  // Simple drag: allow dragging any domino within 5 grids
+  const canDrag = true;
   
   
   const handleMouseDown = (event: React.MouseEvent) => {
