@@ -4,6 +4,7 @@ import { useDeviceType, DeviceType } from './useDeviceType';
 export interface GameVisualSettings {
   frameSize: number; // 0.5 to 2.0 multiplier
   dominoScale: number; // 0.5 to 2.0 multiplier
+  frameVisible: boolean; // show/hide frame
 }
 
 export interface DeviceSpecificSettings {
@@ -15,12 +16,13 @@ export interface DeviceSpecificSettings {
 const DEFAULT_SETTINGS: GameVisualSettings = {
   frameSize: 1.0,
   dominoScale: 1.0,
+  frameVisible: true,
 };
 
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
-  desktop: { frameSize: 1.0, dominoScale: 1.0 },
-  tablet: { frameSize: 0.8, dominoScale: 0.9 },
-  mobile: { frameSize: 0.7, dominoScale: 0.8 },
+  desktop: { frameSize: 1.0, dominoScale: 1.0, frameVisible: true },
+  tablet: { frameSize: 0.8, dominoScale: 0.9, frameVisible: true },
+  mobile: { frameSize: 0.7, dominoScale: 0.8, frameVisible: true },
 };
 
 const STORAGE_KEY = 'domino-game-visual-settings-v2';
@@ -65,6 +67,14 @@ export const useGameVisualSettings = () => {
     }));
   };
 
+  const updateFrameVisible = (visible: boolean, targetDevice?: DeviceType) => {
+    const device = targetDevice || deviceType;
+    setAllSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], frameVisible: visible }
+    }));
+  };
+
   const resetToDefaults = (targetDevice?: DeviceType) => {
     if (targetDevice) {
       setAllSettings(prev => ({
@@ -84,6 +94,7 @@ export const useGameVisualSettings = () => {
     currentDeviceType: deviceType,
     updateFrameSize,
     updateDominoScale,
+    updateFrameVisible,
     resetToDefaults,
     getSettingsForDevice,
   };

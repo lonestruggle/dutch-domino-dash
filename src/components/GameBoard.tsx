@@ -101,6 +101,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     // Update frame size based on user settings
     document.documentElement.style.setProperty('--frame-size-multiplier', settings.frameSize.toString());
+    
+    // Update frame visibility
+    document.documentElement.style.setProperty('--frame-visible', settings.frameVisible ? '1' : '0');
   };
 
   // Update scaling on mount and when viewport changes
@@ -113,7 +116,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isMobile, settings.dominoScale, settings.frameSize]);
+  }, [isMobile, settings.dominoScale, settings.frameSize, settings.frameVisible]);
 
   // Update scaling when container size changes
   useEffect(() => {
@@ -125,7 +128,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [settings.dominoScale, settings.frameSize]);
+  }, [settings.dominoScale, settings.frameSize, settings.frameVisible]);
 
   // Update scaling when game state changes (more dominoes = potentially different optimal scale)
   useEffect(() => {

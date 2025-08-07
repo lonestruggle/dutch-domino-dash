@@ -403,6 +403,8 @@
       right: calc(-8px * var(--frame-size-multiplier));
       bottom: calc(-8px * var(--frame-size-multiplier));
       border-radius: calc(4px * var(--frame-size-multiplier));
+      /* Hide frame on mobile when frameVisible is false */
+      display: var(--frame-visible, 1) == 1 ? block : none;
     }
     
     .game-board::after {
@@ -412,6 +414,8 @@
       bottom: calc(-8px * var(--frame-size-multiplier));
       border-width: calc(1px * var(--frame-size-multiplier));
       border-radius: calc(3px * var(--frame-size-multiplier));
+      /* Hide frame on mobile when frameVisible is false */
+      display: var(--frame-visible, 1) == 1 ? block : none;
     }
     
     /* Larger touch targets for mobile */

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -28,7 +29,7 @@ const deviceLabels = {
 
 export const GameVisualControls: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { currentDeviceType, getSettingsForDevice, updateFrameSize, updateDominoScale, resetToDefaults } = useGameVisualSettings();
+  const { currentDeviceType, getSettingsForDevice, updateFrameSize, updateDominoScale, updateFrameVisible, resetToDefaults } = useGameVisualSettings();
   const [activeTab, setActiveTab] = useState<DeviceType>(currentDeviceType);
 
   const handleFrameSizeChange = (values: number[], device: DeviceType) => {
@@ -65,8 +66,29 @@ export const GameVisualControls: React.FC = () => {
           )}
         </div>
         
-        {/* Frame Grootte */}
+        {/* Frame Zichtbaarheid */}
         <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              {settings.frameVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              Tafel Frame
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                {settings.frameVisible ? 'Frame zichtbaar' : 'Frame verborgen'}
+              </span>
+              <Switch
+                checked={settings.frameVisible}
+                onCheckedChange={(checked) => updateFrameVisible(checked, device)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+        {/* Frame Grootte - alleen tonen als frame zichtbaar is */}
+        {settings.frameVisible && (
+          <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">
               Frame Grootte ({Math.round(settings.frameSize * 100)}%)
@@ -105,6 +127,7 @@ export const GameVisualControls: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Domino Grootte */}
         <Card>
