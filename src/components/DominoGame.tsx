@@ -174,11 +174,16 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Pas knop is altijd zichtbaar maar alleen enabled wanneer speler kan passen
   const shouldEnablePassButton = canPass && isMyTurn && !gameState?.isGameOver;
 
-  // Add index to legal moves for executeMove
-  const legalMovesWithIndex = legalMoves.map(move => ({
-    ...move,
-    index: gameState?.selectedHandIndex
-  }));
+  // Filter legal moves - only show for selected domino if one is selected
+  const legalMovesWithIndex = gameState?.selectedHandIndex !== null 
+    ? legalMoves.filter(move => move.handIndex === gameState.selectedHandIndex).map(move => ({
+        ...move,
+        index: move.handIndex // Use the correct hand index from the move
+      }))
+    : legalMoves.map(move => ({
+        ...move,
+        index: move.handIndex // Use the correct hand index from the move
+      }));
 
   // Check if Hard Slam is available
   const canUseHardSlam = isMyTurn && 
