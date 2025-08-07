@@ -143,6 +143,7 @@ export type Database = {
           id: string
           lobby_id: string
           status: string
+          table_background_url: string | null
           updated_at: string
           winner_position: number | null
         }
@@ -154,6 +155,7 @@ export type Database = {
           id?: string
           lobby_id: string
           status?: string
+          table_background_url?: string | null
           updated_at?: string
           winner_position?: number | null
         }
@@ -165,6 +167,7 @@ export type Database = {
           id?: string
           lobby_id?: string
           status?: string
+          table_background_url?: string | null
           updated_at?: string
           winner_position?: number | null
         }
@@ -372,6 +375,36 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      table_background_settings: {
+        Row: {
+          background_url: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          background_url: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          background_url?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }

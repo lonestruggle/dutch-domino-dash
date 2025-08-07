@@ -286,6 +286,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}
+          tableBackgroundUrl={gameData?.table_background_url}
           onRotateDomino={rotateDomino}
         />
 

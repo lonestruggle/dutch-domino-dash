@@ -17,6 +17,7 @@ interface GameBoardProps {
   onCenterView: () => void;
   hasDifferentNeighbor: (x: number, y: number) => boolean;
   backgroundChoice?: string;
+  tableBackgroundUrl?: string; // Aparte achtergrond voor achter de tafel
   onRotateDomino?: (dominoId: string) => void;
 }
 
@@ -36,6 +37,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onCenterView, 
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
+  tableBackgroundUrl,
   onRotateDomino
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -274,89 +276,97 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
-      {/* Dynamische Tafel Achtergrond */}
-      <div className="absolute inset-0 rounded-2xl shadow-2xl p-20"
-           style={{
-             background: `
-               linear-gradient(
-                 45deg,
-                 rgba(101, 67, 33, 0.15) 0%,
-                 rgba(160, 82, 45, 0.05) 50%,
-                 rgba(139, 69, 19, 0.1) 100%
-               ),
-               url(${backgroundImage})
-             `,
-             backgroundSize: 'cover',
-             backgroundPosition: 'center',
-             backgroundRepeat: 'no-repeat',
-             boxShadow: `
-               inset 0 2px 8px rgba(101, 67, 33, 0.4),
-               inset 0 -2px 8px rgba(62, 39, 35, 0.4),
-               0 12px 40px rgba(0, 0, 0, 0.5),
-               0 4px 16px rgba(101, 67, 33, 0.3)
-             `
-           }}>
+      {/* Dynamische Tafel Achtergrond met aparte achtergrond achter de tafel */}
+      <div 
+        className="absolute inset-0 rounded-2xl shadow-2xl p-20"
+        style={{
+          background: tableBackgroundUrl 
+            ? `url(${tableBackgroundUrl})` 
+            : `
+              linear-gradient(
+                45deg,
+                rgba(101, 67, 33, 0.15) 0%,
+                rgba(160, 82, 45, 0.05) 50%,
+                rgba(139, 69, 19, 0.1) 100%
+              ),
+              url(${backgroundImage})
+            `,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          boxShadow: `
+            inset 0 2px 8px rgba(101, 67, 33, 0.4),
+            inset 0 -2px 8px rgba(62, 39, 35, 0.4),
+            0 12px 40px rgba(0, 0, 0, 0.5),
+            0 4px 16px rgba(101, 67, 33, 0.3)
+          `
+        }}
+      >
         
-        {/* Top vak voor dominostenen - ingelegd hout */}
+        {/* Top vak voor dominostenen - gebruikt gekozen frame achtergrond */}
         <div className="absolute top-6 left-20 right-20 h-20 rounded-lg shadow-inner border-2"
              style={{
                 background: `
                   linear-gradient(180deg, 
-                    rgba(62, 39, 35, 0.8) 0%, 
-                    rgba(42, 26, 23, 0.9) 100%
+                    rgba(62, 39, 35, 0.6) 0%, 
+                    rgba(42, 26, 23, 0.7) 100%
                   ),
                   url(${backgroundImage})
                 `,
-               backgroundSize: 'auto, cover',
-               backgroundPosition: 'center, center',
+               backgroundSize: 'cover',
+               backgroundPosition: 'center',
+               backgroundRepeat: 'no-repeat',
                borderColor: 'rgba(42, 26, 23, 0.8)',
                boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)'
              }}></div>
         
-        {/* Right vak voor dominostenen - ingelegd hout */}
+        {/* Right vak voor dominostenen - gebruikt gekozen frame achtergrond */}
         <div className="absolute top-20 bottom-20 right-6 w-20 rounded-lg shadow-inner border-2"
              style={{
                 background: `
                   linear-gradient(90deg, 
-                    rgba(62, 39, 35, 0.8) 0%, 
-                    rgba(42, 26, 23, 0.9) 100%
+                    rgba(62, 39, 35, 0.6) 0%, 
+                    rgba(42, 26, 23, 0.7) 100%
                   ),
                   url(${backgroundImage})
                 `,
-               backgroundSize: 'auto, cover',
-               backgroundPosition: 'center, center',
+               backgroundSize: 'cover',
+               backgroundPosition: 'center',
+               backgroundRepeat: 'no-repeat',
                borderColor: 'rgba(42, 26, 23, 0.8)',
                boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)'
              }}></div>
         
-        {/* Bottom vak voor dominostenen - ingelegd hout */}
+        {/* Bottom vak voor dominostenen - gebruikt gekozen frame achtergrond */}
         <div className="absolute bottom-6 left-20 right-20 h-20 rounded-lg shadow-inner border-2"
              style={{
                 background: `
                   linear-gradient(0deg, 
-                    rgba(62, 39, 35, 0.8) 0%, 
-                    rgba(42, 26, 23, 0.9) 100%
+                    rgba(62, 39, 35, 0.6) 0%, 
+                    rgba(42, 26, 23, 0.7) 100%
                   ),
                   url(${backgroundImage})
                 `,
-               backgroundSize: 'auto, cover',
-               backgroundPosition: 'center, center',
+               backgroundSize: 'cover',
+               backgroundPosition: 'center',
+               backgroundRepeat: 'no-repeat',
                borderColor: 'rgba(42, 26, 23, 0.8)',
                boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)'
              }}></div>
         
-        {/* Left vak voor dominostenen - ingelegd hout */}
+        {/* Left vak voor dominostenen - gebruikt gekozen frame achtergrond */}
         <div className="absolute top-20 bottom-20 left-6 w-20 rounded-lg shadow-inner border-2"
              style={{
                 background: `
                   linear-gradient(270deg, 
-                    rgba(62, 39, 35, 0.8) 0%, 
-                    rgba(42, 26, 23, 0.9) 100%
+                    rgba(62, 39, 35, 0.6) 0%, 
+                    rgba(42, 26, 23, 0.7) 100%
                   ),
                   url(${backgroundImage})
                 `,
-               backgroundSize: 'auto, cover',
-               backgroundPosition: 'center, center',
+               backgroundSize: 'cover',
+               backgroundPosition: 'center',
+               backgroundRepeat: 'no-repeat',
                borderColor: 'rgba(42, 26, 23, 0.8)',
                boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6)'
              }}></div>
@@ -427,20 +437,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                `
              }}></div>
         
-         {/* Speelveld BINNEN de tafel - dynamische achtergrond */}
+         {/* Speelveld BINNEN de tafel - gebruikt aparte achtergrond als ingesteld */}
          <div 
            ref={containerRef}
            className="w-full h-full game-board rounded-lg border-2 overflow-hidden"
            style={{ 
-             background: `
-               linear-gradient(
-                 45deg,
-                 rgba(101, 67, 33, 0.15) 0%,
-                 rgba(160, 82, 45, 0.05) 50%,
-                 rgba(139, 69, 19, 0.1) 100%
-               ),
-               url(${backgroundImage})
-             `,
+             background: tableBackgroundUrl 
+               ? `url(${tableBackgroundUrl})`
+               : `
+                 linear-gradient(
+                   45deg,
+                   rgba(101, 67, 33, 0.15) 0%,
+                   rgba(160, 82, 45, 0.05) 50%,
+                   rgba(139, 69, 19, 0.1) 100%
+                 ),
+                 url(${backgroundImage})
+               `,
+             backgroundSize: 'cover',
+             backgroundPosition: 'center',
+             backgroundRepeat: 'no-repeat',
              borderColor: 'rgba(42, 26, 23, 0.8)',
              boxShadow: `
                inset 0 3px 12px rgba(0,0,0,0.4),
