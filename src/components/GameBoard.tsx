@@ -12,7 +12,7 @@ const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.
 
 interface GameBoardProps {
   gameState: GameState;
-  legalMoves: LegalMove[];
+  legalMoves: any[]; // Use any[] to accept extended legal moves
   onMoveExecute: (move: LegalMove) => void;
   onCenterView: () => void;
   hasDifferentNeighbor: (x: number, y: number) => boolean;
@@ -372,6 +372,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               onClick={() => onMoveExecute(move)}
               dominoData={dominoData}
               flipped={move.flipped}
+              isSelected={move.isSelected}
               style={{
                 left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
                 top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,

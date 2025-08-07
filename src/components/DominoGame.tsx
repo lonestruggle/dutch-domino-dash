@@ -10,9 +10,15 @@ import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
+import { LegalMove } from '@/types/domino';
 
 interface DominoGameProps {
   gameHook: any;
+}
+
+interface ExtendedLegalMove extends LegalMove {
+  handIndex: number;
+  isSelected: boolean;
 }
 
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
@@ -115,14 +121,20 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   });
   
   // Calculate legal moves - always show all possible moves
-  const getAllLegalMoves = () => {
+  const getAllLegalMoves = (): ExtendedLegalMove[] => {
     if (!gameState?.playerHand || !isMyTurn) return [];
     
-    const allMoves: any[] = [];
+    const allMoves: ExtendedLegalMove[] = [];
+    const selectedIndex = gameState.selectedHandIndex;
+    
     gameState.playerHand.forEach((domino, index) => {
       const moves = findLegalMoves(domino);
       moves.forEach(move => {
-        allMoves.push({ ...move, handIndex: index });
+        allMoves.push({ 
+          ...move, 
+          handIndex: index,
+          isSelected: selectedIndex === index
+        });
       });
     });
     return allMoves;
