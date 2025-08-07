@@ -164,16 +164,48 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             const orientation = getOrientationForConnection(openEnd);
             const { x, y } = calculatePositionFromOpenEnd(openEnd, orientation);
             
-            secondLevelMoves.push({
-              end: openEnd,
-              dominoData: domino,
-              flipped,
-              orientation,
-              x,
-              y,
-              handIndex,
-              isSelected: false // These are always yellow/secondary
+            // Check for overlap with first-level moves
+            const moveWidth = orientation === 'horizontal' ? 2 : 1;
+            const moveHeight = orientation === 'vertical' ? 2 : 1;
+            let overlapsWithFirstLevel = false;
+            
+            // Check against all first-level moves
+            firstLevelMoves.forEach(otherFirstMove => {
+              const otherWidth = otherFirstMove.orientation === 'horizontal' ? 2 : 1;
+              const otherHeight = otherFirstMove.orientation === 'vertical' ? 2 : 1;
+              
+              for (let dx = 0; dx < moveWidth && !overlapsWithFirstLevel; dx++) {
+                for (let dy = 0; dy < moveHeight && !overlapsWithFirstLevel; dy++) {
+                  const checkX = x + dx;
+                  const checkY = y + dy;
+                  
+                  for (let odx = 0; odx < otherWidth && !overlapsWithFirstLevel; odx++) {
+                    for (let ody = 0; ody < otherHeight && !overlapsWithFirstLevel; ody++) {
+                      const otherX = otherFirstMove.x + odx;
+                      const otherY = otherFirstMove.y + ody;
+                      
+                      if (checkX === otherX && checkY === otherY) {
+                        overlapsWithFirstLevel = true;
+                      }
+                    }
+                  }
+                }
+              }
             });
+            
+            // Only add if no overlap with first-level moves
+            if (!overlapsWithFirstLevel) {
+              secondLevelMoves.push({
+                end: openEnd,
+                dominoData: domino,
+                flipped,
+                orientation,
+                x,
+                y,
+                handIndex,
+                isSelected: false // These are always yellow/secondary
+              });
+            }
           }
         });
       });
