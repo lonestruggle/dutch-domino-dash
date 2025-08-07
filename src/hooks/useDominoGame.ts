@@ -379,13 +379,29 @@ export const useDominoGame = () => {
             { x: candidateMove.x, y: candidateMove.y + 1 }
           ];
       
-      // Check of een van de cellen van deze move binnen de minimale afstand van ALLE andere open ends komt
-      const tooClose = moveCells.some(cell => {
-        return otherEnds.some(otherEnd => {
-          const distance = Math.abs(cell.x - otherEnd.x) + Math.abs(cell.y - otherEnd.y);
-          console.log(`🎲 📏 Distance from cell (${cell.x},${cell.y}) to end (${otherEnd.x},${otherEnd.y}): ${distance} (min required: ${currentState.headTailDistance + 1})`);
-          return distance <= currentState.headTailDistance;
-        });
+      // Voeg ook het nieuwe open end toe dat ontstaat na deze move
+      let newEndPosition;
+      if (candidateMove.orientation === 'horizontal') {
+        // Voor horizontale dominoes, het nieuwe end is aan de andere kant van waar we plaatsen
+        if (candidateMove.end.fromDir === 'W') { // Plaatsen naar het westen, nieuw end komt oostelijk
+          newEndPosition = { x: candidateMove.x + 1, y: candidateMove.y };
+        } else { // Plaatsen naar het oosten, nieuw end komt westelijk  
+          newEndPosition = { x: candidateMove.x, y: candidateMove.y };
+        }
+      } else {
+        // Voor verticale dominoes
+        if (candidateMove.end.fromDir === 'N') { // Plaatsen naar het noorden, nieuw end komt zuidelijk
+          newEndPosition = { x: candidateMove.x, y: candidateMove.y + 1 };
+        } else { // Plaatsen naar het zuiden, nieuw end komt noordelijk
+          newEndPosition = { x: candidateMove.x, y: candidateMove.y };
+        }
+      }
+      
+      // Check of het nieuwe end te dicht bij andere open ends komt
+      const tooClose = otherEnds.some(otherEnd => {
+        const distance = Math.abs(newEndPosition.x - otherEnd.x) + Math.abs(newEndPosition.y - otherEnd.y);
+        console.log(`🎲 📏 Distance from NEW END (${newEndPosition.x},${newEndPosition.y}) to existing end (${otherEnd.x},${otherEnd.y}): ${distance} (min required: ${currentState.headTailDistance + 1})`);
+        return distance <= currentState.headTailDistance;
       });
       
       if (tooClose) {
