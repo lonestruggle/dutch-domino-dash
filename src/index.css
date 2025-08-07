@@ -398,20 +398,20 @@
     
     /* Dunnere frame op mobile */
     .game-board::before {
-      top: calc(-4px * var(--frame-size-multiplier));
-      left: calc(-4px * var(--frame-size-multiplier));
-      right: calc(-4px * var(--frame-size-multiplier));
-      bottom: calc(-4px * var(--frame-size-multiplier));
-      border-radius: calc(6px * var(--frame-size-multiplier));
+      top: calc(-8px * var(--frame-size-multiplier));
+      left: calc(-8px * var(--frame-size-multiplier));
+      right: calc(-8px * var(--frame-size-multiplier));
+      bottom: calc(-8px * var(--frame-size-multiplier));
+      border-radius: calc(4px * var(--frame-size-multiplier));
     }
     
     .game-board::after {
-      top: calc(-4px * var(--frame-size-multiplier));
-      left: calc(-4px * var(--frame-size-multiplier));
-      right: calc(-4px * var(--frame-size-multiplier));
-      bottom: calc(-4px * var(--frame-size-multiplier));
+      top: calc(-8px * var(--frame-size-multiplier));
+      left: calc(-8px * var(--frame-size-multiplier));
+      right: calc(-8px * var(--frame-size-multiplier));
+      bottom: calc(-8px * var(--frame-size-multiplier));
       border-width: calc(1px * var(--frame-size-multiplier));
-      border-radius: calc(4px * var(--frame-size-multiplier));
+      border-radius: calc(3px * var(--frame-size-multiplier));
     }
     
     /* Larger touch targets for mobile */
