@@ -38,7 +38,6 @@ export default function Lobby() {
   const [lobby, setLobby] = useState<LobbyDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedBackground, setSelectedBackground] = useState<string>('domino-table-2');
-  const [showGrid, setShowGrid] = useState<boolean>(false);
   
   console.log('Lobby params:', params);
   console.log('Lobby ID extracted:', lobbyId);
@@ -460,8 +459,6 @@ export default function Lobby() {
             <BackgroundSelector
               selectedBackground={selectedBackground}
               onBackgroundChange={setSelectedBackground}
-              showGrid={showGrid}
-              onGridToggle={setShowGrid}
             />
           )}
 
