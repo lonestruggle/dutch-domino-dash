@@ -329,18 +329,18 @@
       transform: scale(0.95);
     }
     
-    /* 2x Groter dominostenen op mobile */
+    /* 4x Groter dominostenen op mobile */
     .domino-tile {
-      transform: scale(2);
+      transform: scale(4);
       transform-origin: center;
     }
     
     .domino-tile.selected {
-      transform: scale(2.1);
+      transform: scale(4.2);
     }
     
     .domino-tile:hover {
-      transform: scale(2) translateY(-2px);
+      transform: scale(4) translateY(-2px);
     }
     
     /* Dunnere frame op mobile */
