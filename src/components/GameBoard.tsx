@@ -370,6 +370,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               orientation={orientation}
               isDouble={isDouble}
               onClick={() => onMoveExecute(move)}
+              validateMove={() => {
+                // Check if the domino from this move is still in the player's hand
+                const handIndex = move.handIndex || move.index;
+                if (handIndex === undefined) return false;
+                const dominoInHand = gameState.playerHand?.[handIndex];
+                if (!dominoInHand) return false;
+                return (dominoInHand.value1 === dominoData.value1 && dominoInHand.value2 === dominoData.value2) ||
+                       (dominoInHand.value1 === dominoData.value2 && dominoInHand.value2 === dominoData.value1);
+              }}
               dominoData={dominoData}
               flipped={move.flipped}
               isSelected={move.isSelected}

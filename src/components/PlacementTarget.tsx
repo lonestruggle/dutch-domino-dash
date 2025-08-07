@@ -12,6 +12,7 @@ interface PlacementTargetProps {
   orientation: 'horizontal' | 'vertical';
   isDouble: boolean;
   onClick: () => void;
+  validateMove?: () => boolean;
   style?: React.CSSProperties;
   className?: string;
   dominoData?: DominoData;
@@ -27,6 +28,7 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   orientation,
   isDouble,
   onClick,
+  validateMove,
   style,
   className,
   dominoData,
@@ -57,6 +59,11 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
       }}
       onClick={(e) => {
         e.stopPropagation();
+        // Validate move before executing
+        if (validateMove && !validateMove()) {
+          console.warn('❌ Move validation failed - domino may not be in hand anymore');
+          return;
+        }
         onClick();
       }}
       onTouchStart={isMobile ? (e) => e.stopPropagation() : undefined}
