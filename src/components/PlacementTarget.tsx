@@ -43,8 +43,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         'placement-target absolute z-10 transform -translate-x-1/2 -translate-y-1/2',
         'border-2 rounded transition-colors cursor-pointer',
         isSelected 
-          ? 'bg-yellow-500/40 border-yellow-400 hover:bg-yellow-500/60' 
-          : 'bg-blue-500/40 border-blue-400 hover:bg-blue-500/60',
+          ? 'bg-yellow-500/60 border-yellow-400 hover:bg-yellow-500/80 z-20' 
+          : 'bg-blue-500/40 border-blue-400 hover:bg-blue-500/60 z-10',
         isDouble && orientation === 'vertical' && '-mt-6',
         isDouble && orientation === 'horizontal' && '-ml-6',
         isMobile && 'active:bg-opacity-80 !scale-[0.7] transform',
