@@ -186,9 +186,10 @@ export default function Lobby() {
         });
 
       if (createError) {
+        console.error('Game creation error:', createError);
         toast({
           title: "Error",
-          description: "Could not create game",
+          description: `Could not create game: ${createError.message}`,
           variant: "destructive"
         });
         return;
