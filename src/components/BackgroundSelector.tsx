@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useCustomBackgrounds } from '@/hooks/useCustomBackgrounds';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import dominoTable1 from '@/assets/domino-table-1.webp';
@@ -40,24 +41,52 @@ export const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({
   useEffect(() => {
     if (loading) return;
 
-    // Filter custom backgrounds based on user permissions
-    const availableCustomBackgrounds = customBackgrounds
-      .filter(bg => {
-        if (!bg.is_active) return false;
-        
-        if (bg.permission_level === 'user') return true;
-        if (bg.permission_level === 'moderator') return isModerator || isAdmin;
-        if (bg.permission_level === 'admin') return isAdmin;
-        
-        return false;
-      })
-      .map(bg => ({
-        id: bg.id,
-        name: bg.name,
-        image: bg.image_url
-      }));
+    const checkPermissions = async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
 
-    setAllBackgrounds([...defaultBackgroundOptions, ...availableCustomBackgrounds]);
+      // Get user-specific permissions
+      const { data: permissions, error: permError } = await supabase
+        .from('background_user_permissions')
+        .select('background_id, can_use')
+        .eq('user_id', user.user.id);
+
+      if (permError) {
+        console.error('Error fetching permissions:', permError);
+      }
+
+      const permissionsMap = new Map(
+        permissions?.map(p => [p.background_id, p.can_use]) || []
+      );
+
+      // Filter custom backgrounds based on user permissions
+      const availableCustomBackgrounds = customBackgrounds
+        .filter(bg => {
+          if (!bg.is_active) return false;
+          
+          // Check user-specific permissions first
+          const userPermission = permissionsMap.get(bg.id);
+          if (userPermission !== undefined) {
+            return userPermission; // Use explicit permission
+          }
+          
+          // Fall back to role-based permissions
+          if (bg.permission_level === 'user') return true;
+          if (bg.permission_level === 'moderator') return isModerator || isAdmin;
+          if (bg.permission_level === 'admin') return isAdmin;
+          
+          return false;
+        })
+        .map(bg => ({
+          id: bg.id,
+          name: bg.name,
+          image: bg.image_url
+        }));
+
+      setAllBackgrounds([...defaultBackgroundOptions, ...availableCustomBackgrounds]);
+    };
+
+    checkPermissions();
   }, [customBackgrounds, loading, isAdmin, isModerator]);
 
   return (

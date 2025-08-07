@@ -98,6 +98,41 @@ export type Database = {
         }
         Relationships: []
       }
+      background_user_permissions: {
+        Row: {
+          background_id: string
+          can_use: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          background_id: string
+          can_use?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          background_id?: string
+          can_use?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "background_user_permissions_background_id_fkey"
+            columns: ["background_id"]
+            isOneToOne: false
+            referencedRelation: "custom_backgrounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_backgrounds: {
         Row: {
           created_at: string
