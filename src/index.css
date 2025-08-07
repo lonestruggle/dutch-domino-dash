@@ -329,22 +329,22 @@
       transform: scale(0.95);
     }
     
-    /* 3x Kleiner dominostenen op mobile - op het bord */
+    /* 4x Groter dominostenen op mobile - alleen op het bord */
     .domino-tile-board {
-      transform: scale(0.33);
+      transform: scale(6);
       transform-origin: top left;
     }
     
     .domino-tile-board.selected {
-      transform: scale(0.35);
+      transform: scale(6.3);
     }
     
     .domino-tile-board:hover {
-      transform: scale(0.33) translateY(-2px);
+      transform: scale(6) translateY(-2px);
     }
     
     .domino-tile-board:active {
-      transform: scale(0.31);
+      transform: scale(5.8);
     }
     
     /* Dunnere frame op mobile */
