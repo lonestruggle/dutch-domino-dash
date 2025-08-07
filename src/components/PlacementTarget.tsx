@@ -12,6 +12,7 @@ interface PlacementTargetProps {
   onClick: () => void;
   style?: React.CSSProperties;
   className?: string;
+  isInitialPlacement?: boolean;
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -23,7 +24,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   isDouble,
   onClick,
   style,
-  className
+  className,
+  isInitialPlacement = false
 }) => {
   const isMobile = useIsMobile();
   const CELL_SIZE = 48;
@@ -35,7 +37,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         'placement-target absolute z-10 transform -translate-x-1/2 -translate-y-1/2',
         isDouble && orientation === 'vertical' && '-mt-6',
         isDouble && orientation === 'horizontal' && '-ml-6',
-        isMobile && 'cursor-pointer active:bg-opacity-80 !scale-[0.7] transform',
+        isMobile && 'cursor-pointer active:bg-opacity-80',
+        isMobile && isInitialPlacement && '!scale-[0.5] transform',
+        isMobile && !isInitialPlacement && '!scale-[0.7] transform',
         className
       )}
       style={{

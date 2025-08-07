@@ -526,6 +526,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           if (orientation === "vertical" && end.fromDir === "N") y -= 1;
 
           const size = orientation === "horizontal" ? [2, 1] : [1, 2];
+          
+          // Check if this is initial placement (no dominoes on board yet)
+          const isInitialPlacement = Object.keys(gameState.dominoes).length === 0;
 
           return (
             <PlacementTarget
@@ -536,6 +539,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               height={size[1]}
               orientation={orientation}
               isDouble={isDouble}
+              isInitialPlacement={isInitialPlacement}
               onClick={() => onMoveExecute(move)}
               style={{
                 left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
