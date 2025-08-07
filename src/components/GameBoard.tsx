@@ -362,6 +362,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           const size = orientation === "horizontal" ? [2, 1] : [1, 2];
 
+          // Check if preview would overlap with existing dominoes
+          const wouldOverlap = () => {
+            for (let dx = 0; dx < size[0]; dx++) {
+              for (let dy = 0; dy < size[1]; dy++) {
+                const checkX = x + dx;
+                const checkY = y + dy;
+                const cellKey = `${checkX},${checkY}`;
+                if (gameState.board[cellKey]) {
+                  return true; // This cell is occupied by an existing domino
+                }
+              }
+            }
+            return false;
+          };
+
+          // Skip rendering if would overlap
+          if (wouldOverlap()) return null;
+
           return (
             <PlacementTarget
               key={`${end.x}-${end.y}-${index}`}
