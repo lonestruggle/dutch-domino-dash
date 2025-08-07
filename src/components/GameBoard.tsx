@@ -9,6 +9,7 @@ import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 import dominoTable3 from '@/assets/domino-table-3.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
+const premiumWoodTable = '/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.png';
 
 interface GameBoardProps {
   gameState: GameState;
@@ -182,60 +183,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardSize = calculateBoardSize();
   const dynamicScale = calculateOptimalScale();
 
-  // Get the background style based on the choice (supports custom backgrounds)
-  const getBackgroundStyle = (backgroundChoice?: string) => {
+  // Get the background image URL based on the choice
+  const getBackgroundImage = (backgroundChoice?: string) => {
     const backgroundMap: { [key: string]: string } = {
       'domino-table-1': dominoTable1,
       'domino-table-2': dominoTable2,
       'domino-table-3': dominoTable3,
       'curacao-flag-table': curacaoFlagTable,
-      'premium-wood-table': '/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.png'
+      'premium-wood-table': premiumWoodTable
     };
     
-    // First check if it's a built-in background
-    const builtInImage = backgroundMap[backgroundChoice || 'domino-table-2'];
-    if (builtInImage) {
-      return `
-        linear-gradient(
-          45deg,
-          rgba(101, 67, 33, 0.15) 0%,
-          rgba(160, 82, 45, 0.05) 50%,
-          rgba(139, 69, 19, 0.1) 100%
-        ),
-        url(${builtInImage})
-      `;
-    }
-    
-    // If it's not a built-in background, treat it as a custom background URL
-    // The backgroundChoice could be a UUID that gets resolved by the BackgroundSelector
-    return `
-      linear-gradient(
-        45deg,
-        rgba(101, 67, 33, 0.15) 0%,
-        rgba(160, 82, 45, 0.05) 50%,
-        rgba(139, 69, 19, 0.1) 100%
-      ),
-      url(${backgroundChoice || dominoTable2})
-    `;
+    return backgroundMap[backgroundChoice || 'domino-table-2'] || dominoTable2;
   };
 
-  // Get the background image based on the choice (legacy support)
-  const getBackgroundImage = () => {
-    switch (backgroundChoice) {
-      case 'domino-table-1':
-        return dominoTable1;
-      case 'domino-table-2':
-        return dominoTable2;
-      case 'domino-table-3':
-        return dominoTable3;
-      case 'curacao-flag-table':
-        return curacaoFlagTable;
-      default:
-        return dominoTable2; // Default to table 2 (walnoot)
-    }
-  };
+  const backgroundImage = getBackgroundImage(backgroundChoice);
 
-  const backgroundImage = getBackgroundImage();
 
   // Auto-center wanneer stenen of legal moves te dicht bij de rand komen
   useEffect(() => {
@@ -317,7 +279,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       {/* Dynamische Tafel Achtergrond */}
       <div className="absolute inset-0 rounded-2xl shadow-2xl p-20"
            style={{
-             background: getBackgroundStyle(backgroundChoice),
+             background: `
+               linear-gradient(
+                 45deg,
+                 rgba(101, 67, 33, 0.15) 0%,
+                 rgba(160, 82, 45, 0.05) 50%,
+                 rgba(139, 69, 19, 0.1) 100%
+               ),
+               url(${backgroundImage})
+             `,
              backgroundSize: 'cover',
              backgroundPosition: 'center',
              backgroundRepeat: 'no-repeat',
@@ -337,7 +307,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     rgba(62, 39, 35, 0.8) 0%, 
                     rgba(42, 26, 23, 0.9) 100%
                   ),
-                  ${getBackgroundStyle(backgroundChoice)}
+                  url(${backgroundImage})
                 `,
                backgroundSize: 'auto, cover',
                backgroundPosition: 'center, center',
@@ -353,7 +323,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     rgba(62, 39, 35, 0.8) 0%, 
                     rgba(42, 26, 23, 0.9) 100%
                   ),
-                  ${getBackgroundStyle(backgroundChoice)}
+                  url(${backgroundImage})
                 `,
                backgroundSize: 'auto, cover',
                backgroundPosition: 'center, center',
@@ -369,7 +339,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     rgba(62, 39, 35, 0.8) 0%, 
                     rgba(42, 26, 23, 0.9) 100%
                   ),
-                  ${getBackgroundStyle(backgroundChoice)}
+                  url(${backgroundImage})
                 `,
                backgroundSize: 'auto, cover',
                backgroundPosition: 'center, center',
@@ -385,7 +355,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     rgba(62, 39, 35, 0.8) 0%, 
                     rgba(42, 26, 23, 0.9) 100%
                   ),
-                  ${getBackgroundStyle(backgroundChoice)}
+                  url(${backgroundImage})
                 `,
                backgroundSize: 'auto, cover',
                backgroundPosition: 'center, center',
@@ -459,19 +429,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                `
              }}></div>
         
-        {/* Speelveld BINNEN de tafel - dynamische achtergrond */}
-        <div 
-          ref={containerRef}
-          className="w-full h-full game-board rounded-lg border-2 overflow-hidden"
-          style={{ 
-            background: getBackgroundStyle(backgroundChoice),
-            borderColor: 'rgba(42, 26, 23, 0.8)',
-            boxShadow: `
-              inset 0 3px 12px rgba(0,0,0,0.4),
-              inset 0 0 0 1px rgba(139, 114, 98, 0.2)
-            `
-          }}
-         >
+         {/* Speelveld BINNEN de tafel - dynamische achtergrond */}
+         <div 
+           ref={containerRef}
+           className="w-full h-full game-board rounded-lg border-2 overflow-hidden"
+           style={{ 
+             background: `
+               linear-gradient(
+                 45deg,
+                 rgba(101, 67, 33, 0.15) 0%,
+                 rgba(160, 82, 45, 0.05) 50%,
+                 rgba(139, 69, 19, 0.1) 100%
+               ),
+               url(${backgroundImage})
+             `,
+             borderColor: 'rgba(42, 26, 23, 0.8)',
+             boxShadow: `
+               inset 0 3px 12px rgba(0,0,0,0.4),
+               inset 0 0 0 1px rgba(139, 114, 98, 0.2)
+             `
+           }}
+          >
            <div 
              ref={boardRef}
              className="relative"
