@@ -10,6 +10,7 @@ interface SyncedGameState {
   allPlayers: Array<{ username: string; position: number; is_bot: boolean }>;
   gameState: GameState | null;
   currentPlayer: number;
+  gameData: any;
 }
 
 export const useSyncedDominoGameState = (gameId: string, userId: string, ignoringSync = false) => {
@@ -20,7 +21,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     playerPosition: 0,
     allPlayers: [],
     gameState: null,
-    currentPlayer: 0
+    currentPlayer: 0,
+    gameData: null
   });
 
   // Load initial game state from database
@@ -130,7 +132,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         playerPosition: playerData?.player_position || 0,
         allPlayers,
         gameState: localGameState,
-        currentPlayer: gameData?.current_player_turn || 0 // ALWAYS use database column as source of truth
+        currentPlayer: gameData?.current_player_turn || 0, // ALWAYS use database column as source of truth
+        gameData: gameData
       });
 
       console.log('Sync state updated:', {
@@ -139,7 +142,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         playerPosition: playerData?.player_position || 0,
         allPlayers,
         gameState: localGameState,
-        currentPlayer: gameData?.current_player_turn || 0 // ALWAYS use database column as source of truth
+        currentPlayer: gameData?.current_player_turn || 0, // ALWAYS use database column as source of truth
+        gameData: gameData
       });
 
       console.log('🎯 CURRENT PLAYER DEBUG:', {

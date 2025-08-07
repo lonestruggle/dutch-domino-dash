@@ -223,7 +223,7 @@ export default function Game() {
           manualBlockedCheck,
           startNewGame: syncedStartNewGame,
           syncState,
-          gameData: syncState.gameState || { background_choice: null }
+          gameData: syncState.gameData || { background_choice: null }
         }}
       />
     </div>
