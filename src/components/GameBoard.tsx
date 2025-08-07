@@ -314,10 +314,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
-      {/* Realistische Eikenhout Tafel */}
+      {/* Dynamische Tafel Achtergrond */}
       <div className="absolute inset-0 rounded-2xl shadow-2xl p-20"
            style={{
-             background: `url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)`,
+             background: getBackgroundStyle(backgroundChoice),
              backgroundSize: 'cover',
              backgroundPosition: 'center',
              backgroundRepeat: 'no-repeat',
@@ -332,13 +332,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {/* Top vak voor dominostenen - ingelegd hout */}
         <div className="absolute top-6 left-20 right-20 h-20 rounded-lg shadow-inner border-2"
              style={{
-               background: `
-                 linear-gradient(180deg, 
-                   rgba(62, 39, 35, 0.8) 0%, 
-                   rgba(42, 26, 23, 0.9) 100%
-                 ),
-                 url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)
-               `,
+                background: `
+                  linear-gradient(180deg, 
+                    rgba(62, 39, 35, 0.8) 0%, 
+                    rgba(42, 26, 23, 0.9) 100%
+                  ),
+                  ${getBackgroundStyle(backgroundChoice)}
+                `,
                backgroundSize: 'auto, cover',
                backgroundPosition: 'center, center',
                borderColor: 'rgba(42, 26, 23, 0.8)',
@@ -348,13 +348,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {/* Right vak voor dominostenen - ingelegd hout */}
         <div className="absolute top-20 bottom-20 right-6 w-20 rounded-lg shadow-inner border-2"
              style={{
-               background: `
-                 linear-gradient(90deg, 
-                   rgba(62, 39, 35, 0.8) 0%, 
-                   rgba(42, 26, 23, 0.9) 100%
-                 ),
-                 url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)
-               `,
+                background: `
+                  linear-gradient(90deg, 
+                    rgba(62, 39, 35, 0.8) 0%, 
+                    rgba(42, 26, 23, 0.9) 100%
+                  ),
+                  ${getBackgroundStyle(backgroundChoice)}
+                `,
                backgroundSize: 'auto, cover',
                backgroundPosition: 'center, center',
                borderColor: 'rgba(42, 26, 23, 0.8)',
@@ -364,13 +364,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {/* Bottom vak voor dominostenen - ingelegd hout */}
         <div className="absolute bottom-6 left-20 right-20 h-20 rounded-lg shadow-inner border-2"
              style={{
-               background: `
-                 linear-gradient(0deg, 
-                   rgba(62, 39, 35, 0.8) 0%, 
-                   rgba(42, 26, 23, 0.9) 100%
-                 ),
-                 url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)
-               `,
+                background: `
+                  linear-gradient(0deg, 
+                    rgba(62, 39, 35, 0.8) 0%, 
+                    rgba(42, 26, 23, 0.9) 100%
+                  ),
+                  ${getBackgroundStyle(backgroundChoice)}
+                `,
                backgroundSize: 'auto, cover',
                backgroundPosition: 'center, center',
                borderColor: 'rgba(42, 26, 23, 0.8)',
@@ -380,13 +380,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {/* Left vak voor dominostenen - ingelegd hout */}
         <div className="absolute top-20 bottom-20 left-6 w-20 rounded-lg shadow-inner border-2"
              style={{
-               background: `
-                 linear-gradient(270deg, 
-                   rgba(62, 39, 35, 0.8) 0%, 
-                   rgba(42, 26, 23, 0.9) 100%
-                 ),
-                 url(/lovable-uploads/9796cba8-eb1d-430c-8b3f-9877deb6895e.png)
-               `,
+                background: `
+                  linear-gradient(270deg, 
+                    rgba(62, 39, 35, 0.8) 0%, 
+                    rgba(42, 26, 23, 0.9) 100%
+                  ),
+                  ${getBackgroundStyle(backgroundChoice)}
+                `,
                backgroundSize: 'auto, cover',
                backgroundPosition: 'center, center',
                borderColor: 'rgba(42, 26, 23, 0.8)',
