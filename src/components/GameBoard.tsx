@@ -276,18 +276,47 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [gameState.dominoes, dynamicScale, boardSize]);
 
   return (
-    <div className="relative p-4">
-      {/* Wooden Frame */}
+    <div className="relative p-8">
+      {/* Thick Wooden Frame with Stone Compartments */}
       <div className="absolute inset-0 bg-gradient-to-br from-amber-700 via-amber-800 to-amber-900 rounded-xl shadow-2xl">
-        {/* Inner frame detail */}
-        <div className="absolute inset-2 border-2 border-amber-600 rounded-lg">
-          <div className="absolute inset-1 border border-amber-500 rounded-md"></div>
+        {/* Frame border */}
+        <div className="absolute inset-4 border-4 border-amber-600 rounded-lg">
+          <div className="absolute inset-2 border-2 border-amber-500 rounded-md"></div>
         </div>
-        {/* Frame corners */}
-        <div className="absolute top-2 left-2 w-4 h-4 bg-amber-600 rounded-full"></div>
-        <div className="absolute top-2 right-2 w-4 h-4 bg-amber-600 rounded-full"></div>
-        <div className="absolute bottom-2 left-2 w-4 h-4 bg-amber-600 rounded-full"></div>
-        <div className="absolute bottom-2 right-2 w-4 h-4 bg-amber-600 rounded-full"></div>
+        
+        {/* Top side - domino compartments */}
+        <div className="absolute top-8 left-12 right-12 h-12 flex justify-center space-x-2">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={`top-${i}`} className="w-8 h-10 bg-amber-900 border border-amber-600 rounded-sm shadow-inner"></div>
+          ))}
+        </div>
+        
+        {/* Right side - domino compartments */}
+        <div className="absolute top-12 bottom-12 right-8 w-12 flex flex-col justify-center space-y-2">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={`right-${i}`} className="w-10 h-8 bg-amber-900 border border-amber-600 rounded-sm shadow-inner"></div>
+          ))}
+        </div>
+        
+        {/* Bottom side - domino compartments */}
+        <div className="absolute bottom-8 left-12 right-12 h-12 flex justify-center space-x-2">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={`bottom-${i}`} className="w-8 h-10 bg-amber-900 border border-amber-600 rounded-sm shadow-inner"></div>
+          ))}
+        </div>
+        
+        {/* Left side - domino compartments */}
+        <div className="absolute top-12 bottom-12 left-8 w-12 flex flex-col justify-center space-y-2">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={`left-${i}`} className="w-10 h-8 bg-amber-900 border border-amber-600 rounded-sm shadow-inner"></div>
+          ))}
+        </div>
+        
+        {/* Corner decorations */}
+        <div className="absolute top-4 left-4 w-6 h-6 bg-amber-600 rounded-full shadow-md"></div>
+        <div className="absolute top-4 right-4 w-6 h-6 bg-amber-600 rounded-full shadow-md"></div>
+        <div className="absolute bottom-4 left-4 w-6 h-6 bg-amber-600 rounded-full shadow-md"></div>
+        <div className="absolute bottom-4 right-4 w-6 h-6 bg-amber-600 rounded-full shadow-md"></div>
       </div>
       
       {/* Game Board */}
@@ -300,7 +329,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          height: isMobile ? '50vh' : 'auto'
+          height: isMobile ? '50vh' : 'auto',
+          margin: '32px' // Extra margin voor de dikke frame
         }}
       >
       <div 
