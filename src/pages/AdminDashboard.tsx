@@ -783,7 +783,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Overzicht
@@ -795,6 +795,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="lobbies" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Lobbies
+            </TabsTrigger>
+            <TabsTrigger value="backgrounds" className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Achtergronden
             </TabsTrigger>
             <TabsTrigger value="moderation" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -1237,6 +1241,10 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="backgrounds">
+            <BackgroundManager onBackgroundsChange={loadDashboardData} />
           </TabsContent>
 
           <TabsContent value="moderation">

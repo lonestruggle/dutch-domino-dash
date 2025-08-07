@@ -71,6 +71,42 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_backgrounds: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          name: string
+          permission_level: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          name: string
+          permission_level?: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          name?: string
+          permission_level?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           background_choice: string | null

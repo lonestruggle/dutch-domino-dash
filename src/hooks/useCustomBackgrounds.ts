@@ -19,7 +19,7 @@ export const useCustomBackgrounds = () => {
 
   const fetchBackgrounds = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('custom_backgrounds')
         .select('*')
         .order('created_at', { ascending: false });

@@ -74,7 +74,7 @@ export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ onBackgrou
         .getPublicUrl(fileName);
 
       // Save to database
-      const { error: dbError } = await supabase
+      const { error: dbError } = await (supabase as any)
         .from('custom_backgrounds')
         .insert({
           name: formData.name,
@@ -117,7 +117,7 @@ export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ onBackgrou
 
   const handleDelete = async (backgroundId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('custom_backgrounds')
         .delete()
         .eq('id', backgroundId);
@@ -143,7 +143,7 @@ export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ onBackgrou
 
   const toggleActive = async (backgroundId: string, currentlyActive: boolean) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('custom_backgrounds')
         .update({ is_active: !currentlyActive })
         .eq('id', backgroundId);
