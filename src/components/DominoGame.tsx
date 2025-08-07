@@ -197,80 +197,150 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     const seenPositions = new Set<string>(); // Track positions to avoid duplicates
     
     firstLevelMoves.forEach(firstMove => {
-      // Simulate placing this domino and calculate new open ends
-      const simulatedOpenEnds = calculateOpenEndsAfterMove(firstMove);
+      // Simulate the placement of this first move by temporarily updating the game state
+      const originalDominoes = { ...gameState.dominoes };
+      const originalBoard = { ...gameState.board };
+      const originalOpenEnds = [...gameState.openEnds];
       
-      // Check remaining dominoes for moves against new open ends
+      // Temporarily add the first move domino to the game state
+      const tempDominoId = `temp_${Date.now()}_${Math.random()}`;
+      const tempDomino = {
+        data: firstMove.dominoData,
+        x: firstMove.x,
+        y: firstMove.y,
+        orientation: firstMove.orientation,
+        flipped: firstMove.flipped,
+        isSpinner: false,
+        rotation: 0
+      };
+      
+      // Update temporary game state
+      const tempGameState = {
+        ...gameState,
+        dominoes: { ...originalDominoes, [tempDominoId]: tempDomino },
+        board: { ...originalBoard },
+        openEnds: [...originalOpenEnds]
+      };
+      
+      // Add the domino to the board
+      const width = firstMove.orientation === 'horizontal' ? 2 : 1;
+      const height = firstMove.orientation === 'vertical' ? 2 : 1;
+      
+      for (let dx = 0; dx < width; dx++) {
+        for (let dy = 0; dy < height; dy++) {
+          const cellKey = `${firstMove.x + dx},${firstMove.y + dy}`;
+          const value = firstMove.orientation === 'horizontal' 
+            ? (dx === 0 ? (firstMove.flipped ? firstMove.dominoData.value2 : firstMove.dominoData.value1) 
+                        : (firstMove.flipped ? firstMove.dominoData.value1 : firstMove.dominoData.value2))
+            : (dy === 0 ? (firstMove.flipped ? firstMove.dominoData.value2 : firstMove.dominoData.value1) 
+                        : (firstMove.flipped ? firstMove.dominoData.value1 : firstMove.dominoData.value2));
+          tempGameState.board[cellKey] = { dominoId: tempDominoId, value };
+        }
+      }
+      
+      // Update open ends by removing the one that was connected to
+      tempGameState.openEnds = tempGameState.openEnds.filter(end => 
+        !(end.x === firstMove.end.x && end.y === firstMove.end.y)
+      );
+      
+      // Add new open ends from the placed domino
+      if (firstMove.orientation === 'horizontal') {
+        const leftValue = firstMove.flipped ? firstMove.dominoData.value2 : firstMove.dominoData.value1;
+        const rightValue = firstMove.flipped ? firstMove.dominoData.value1 : firstMove.dominoData.value2;
+        
+        // Left end
+        const leftKey = `${firstMove.x - 1},${firstMove.y}`;
+        if (!tempGameState.board[leftKey]) {
+          tempGameState.openEnds.push({
+            x: firstMove.x - 1,
+            y: firstMove.y,
+            value: leftValue,
+            fromDir: 'W'
+          });
+        }
+        
+        // Right end  
+        const rightKey = `${firstMove.x + 2},${firstMove.y}`;
+        if (!tempGameState.board[rightKey]) {
+          tempGameState.openEnds.push({
+            x: firstMove.x + 2,
+            y: firstMove.y,
+            value: rightValue,
+            fromDir: 'E'
+          });
+        }
+      } else {
+        const topValue = firstMove.flipped ? firstMove.dominoData.value2 : firstMove.dominoData.value1;
+        const bottomValue = firstMove.flipped ? firstMove.dominoData.value1 : firstMove.dominoData.value2;
+        
+        // Top end
+        const topKey = `${firstMove.x},${firstMove.y - 1}`;
+        if (!tempGameState.board[topKey]) {
+          tempGameState.openEnds.push({
+            x: firstMove.x,
+            y: firstMove.y - 1,
+            value: topValue,
+            fromDir: 'N'
+          });
+        }
+        
+        // Bottom end
+        const bottomKey = `${firstMove.x},${firstMove.y + 2}`;
+        if (!tempGameState.board[bottomKey]) {
+          tempGameState.openEnds.push({
+            x: firstMove.x,
+            y: firstMove.y + 2,
+            value: bottomValue,
+            fromDir: 'S'
+          });
+        }
+      }
+      
+      // Now find legal moves for remaining dominoes using the original logic
       gameState.playerHand.forEach((domino, handIndex) => {
         if (handIndex === firstMove.handIndex) return; // Skip the domino we just placed
         
-        simulatedOpenEnds.forEach(openEnd => {
-          if (openEnd.value === domino.value1 || openEnd.value === domino.value2) {
-            // This domino can connect to the new open end
-            const flipped = openEnd.value === domino.value2;
-            const orientation = getOrientationForConnection(openEnd);
-            const { x, y } = calculatePositionFromOpenEnd(openEnd, orientation);
+        // Use the original findLegalMoves logic with the temporary game state
+        const moves = findLegalMoves(domino, tempGameState);
+        moves.forEach(move => {
+          const positionKey = `${move.x},${move.y},${move.orientation}`;
+          if (seenPositions.has(positionKey)) return; // Skip duplicates
+          
+          // Check for overlap with first-level moves
+          const moveWidth = move.orientation === 'horizontal' ? 2 : 1;
+          const moveHeight = move.orientation === 'vertical' ? 2 : 1;
+          let overlapsWithFirstLevel = false;
+          
+          firstLevelMoves.forEach(otherFirstMove => {
+            const otherWidth = otherFirstMove.orientation === 'horizontal' ? 2 : 1;
+            const otherHeight = otherFirstMove.orientation === 'vertical' ? 2 : 1;
             
-            // Create unique position key
-            const positionKey = `${x},${y},${orientation}`;
-            if (seenPositions.has(positionKey)) return; // Skip duplicates
-            
-            // Check for overlap with first-level moves
-            const moveWidth = orientation === 'horizontal' ? 2 : 1;
-            const moveHeight = orientation === 'vertical' ? 2 : 1;
-            let overlapsWithFirstLevel = false;
-            
-            // Check against all first-level moves
-            firstLevelMoves.forEach(otherFirstMove => {
-              const otherWidth = otherFirstMove.orientation === 'horizontal' ? 2 : 1;
-              const otherHeight = otherFirstMove.orientation === 'vertical' ? 2 : 1;
-              
-              for (let dx = 0; dx < moveWidth && !overlapsWithFirstLevel; dx++) {
-                for (let dy = 0; dy < moveHeight && !overlapsWithFirstLevel; dy++) {
-                  const checkX = x + dx;
-                  const checkY = y + dy;
-                  
-                  for (let odx = 0; odx < otherWidth && !overlapsWithFirstLevel; odx++) {
-                    for (let ody = 0; ody < otherHeight && !overlapsWithFirstLevel; ody++) {
-                      const otherX = otherFirstMove.x + odx;
-                      const otherY = otherFirstMove.y + ody;
-                      
-                      if (checkX === otherX && checkY === otherY) {
-                        overlapsWithFirstLevel = true;
-                      }
+            for (let dx = 0; dx < moveWidth && !overlapsWithFirstLevel; dx++) {
+              for (let dy = 0; dy < moveHeight && !overlapsWithFirstLevel; dy++) {
+                const checkX = move.x + dx;
+                const checkY = move.y + dy;
+                
+                for (let odx = 0; odx < otherWidth && !overlapsWithFirstLevel; odx++) {
+                  for (let ody = 0; ody < otherHeight && !overlapsWithFirstLevel; ody++) {
+                    const otherX = otherFirstMove.x + odx;
+                    const otherY = otherFirstMove.y + ody;
+                    
+                    if (checkX === otherX && checkY === otherY) {
+                      overlapsWithFirstLevel = true;
                     }
                   }
                 }
               }
+            }
+          });
+          
+          if (!overlapsWithFirstLevel) {
+            seenPositions.add(positionKey);
+            secondLevelMoves.push({
+              ...move,
+              handIndex,
+              isSelected: false // These are always yellow/secondary
             });
-            
-            // Check if position would overlap with existing dominoes
-            let overlapsWithBoard = false;
-            for (let dx = 0; dx < moveWidth && !overlapsWithBoard; dx++) {
-              for (let dy = 0; dy < moveHeight && !overlapsWithBoard; dy++) {
-                const checkX = x + dx;
-                const checkY = y + dy;
-                const cellKey = `${checkX},${checkY}`;
-                if (gameState.board[cellKey]) {
-                  overlapsWithBoard = true;
-                }
-              }
-            }
-            
-            // Only add if no overlap with first-level moves or existing board
-            if (!overlapsWithFirstLevel && !overlapsWithBoard) {
-              seenPositions.add(positionKey);
-              secondLevelMoves.push({
-                end: openEnd,
-                dominoData: domino,
-                flipped,
-                orientation,
-                x,
-                y,
-                handIndex,
-                isSelected: false // These are always yellow/secondary
-              });
-            }
           }
         });
       });
@@ -279,72 +349,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     return secondLevelMoves;
   };
 
-  // Helper function to calculate open ends after a move
-  const calculateOpenEndsAfterMove = (move: ExtendedLegalMove) => {
-    // Create a simulated game state with this move applied
-    const simulatedState = { ...gameState };
-    
-    // Add the domino to the simulated board
-    const { dominoData, x, y, orientation, flipped } = move;
-    const width = orientation === 'horizontal' ? 2 : 1;
-    const height = orientation === 'vertical' ? 2 : 1;
-    
-    // Create simulated board with this domino added
-    const simulatedBoard = { ...simulatedState.board };
-    for (let dx = 0; dx < width; dx++) {
-      for (let dy = 0; dy < height; dy++) {
-        const cellKey = `${x + dx},${y + dy}`;
-        const value = orientation === 'horizontal' 
-          ? (dx === 0 ? (flipped ? dominoData.value2 : dominoData.value1) : (flipped ? dominoData.value1 : dominoData.value2))
-          : (dy === 0 ? (flipped ? dominoData.value2 : dominoData.value1) : (flipped ? dominoData.value1 : dominoData.value2));
-        simulatedBoard[cellKey] = { dominoId: 'simulated', value };
-      }
-    }
-    
-    // Calculate all open ends from the simulated board
-    const newOpenEnds = [];
-    
-    // Check all cells in the simulated board for open ends
-    Object.entries(simulatedBoard).forEach(([cellKey, cellData]) => {
-      const [cellX, cellY] = cellKey.split(',').map(Number);
-      const value = (cellData as any).value;
-      
-      // Check all 4 directions for open ends
-      const directions = [
-        { dx: -1, dy: 0, fromDir: 'W' as const },
-        { dx: 1, dy: 0, fromDir: 'E' as const },
-        { dx: 0, dy: -1, fromDir: 'N' as const },
-        { dx: 0, dy: 1, fromDir: 'S' as const }
-      ];
-      
-      directions.forEach(({ dx, dy, fromDir }) => {
-        const adjacentKey = `${cellX + dx},${cellY + dy}`;
-        if (!simulatedBoard[adjacentKey]) {
-          // This is an open end
-          newOpenEnds.push({
-            x: cellX + dx,
-            y: cellY + dy,
-            value: value,
-            fromDir: fromDir
-          });
-        }
-      });
-    });
-    
-    return newOpenEnds;
-  };
-
-  const getOrientationForConnection = (openEnd: any) => {
-    return (openEnd.fromDir === 'N' || openEnd.fromDir === 'S') ? 'vertical' : 'horizontal';
-  };
-
-  const calculatePositionFromOpenEnd = (openEnd: any, orientation: string) => {
-    let { x, y } = openEnd;
-    if (orientation === "horizontal" && openEnd.fromDir === "W") x -= 1;
-    if (orientation === "vertical" && openEnd.fromDir === "N") y -= 1;
-    return { x, y };
-  };
-  
   const legalMoves = getAllLegalMoves();
   const secondLevelMoves = getSecondLevelMoves();
 
