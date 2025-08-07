@@ -131,6 +131,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     
     // Helper function to check if a position is too close to existing dominoes
     const isTooCloseToExistingDominoes = (x: number, y: number, orientation: string) => {
+      // Exception: allow placement if there are 3 or fewer dominoes on the board
+      if (Object.keys(gameState.dominoes).length <= 3) {
+        return false;
+      }
       const moveWidth = orientation === 'horizontal' ? 2 : 1;
       const moveHeight = orientation === 'vertical' ? 2 : 1;
       
