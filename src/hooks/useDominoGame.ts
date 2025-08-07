@@ -334,7 +334,7 @@ export const useDominoGame = () => {
       let validMove: LegalMove | null = null;
       
       const check = (value: number, flipped: boolean) => {
-        if (end.value === value && !validMove) { // Only check if we haven't found a valid move yet
+        if (end.value === value) { // Check if this value matches the open end
           const fromCellKey = {
             N: `${end.x},${end.y + 1}`,
             S: `${end.x},${end.y - 1}`,
