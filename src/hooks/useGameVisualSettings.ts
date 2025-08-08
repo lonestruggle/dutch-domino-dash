@@ -32,7 +32,17 @@ export const useGameVisualSettings = () => {
   const [allSettings, setAllSettings] = useState<DeviceSpecificSettings>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? { ...DEFAULT_DEVICE_SETTINGS, ...JSON.parse(stored) } : DEFAULT_DEVICE_SETTINGS;
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Ensure all properties exist by merging with defaults
+        const merged = {
+          desktop: { ...DEFAULT_DEVICE_SETTINGS.desktop, ...parsed.desktop },
+          tablet: { ...DEFAULT_DEVICE_SETTINGS.tablet, ...parsed.tablet },
+          mobile: { ...DEFAULT_DEVICE_SETTINGS.mobile, ...parsed.mobile },
+        };
+        return merged;
+      }
+      return DEFAULT_DEVICE_SETTINGS;
     } catch {
       return DEFAULT_DEVICE_SETTINGS;
     }
