@@ -371,10 +371,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       {/* Visual Controls Button */}
       <GameVisualControls />
       
-      {/* Dynamische Tafel Achtergrond met aparte achtergrond achter de tafel */}
+      {/* Unifieke Tafel - één samenhangende oppervlak */}
       <div 
-        className="absolute inset-0 rounded-2xl shadow-2xl p-20"
-        style={{
+        ref={containerRef}
+        className="w-full h-full game-board overflow-hidden rounded-2xl shadow-2xl"
+        style={{ 
           background: tableBackgroundUrl 
             ? `linear-gradient(
                 45deg,
@@ -382,7 +383,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 rgba(160, 82, 45, 0.05) 50%,
                 rgba(139, 69, 19, 0.1) 100%
               ),
-              url(${tableBackgroundUrl})` 
+              url(${tableBackgroundUrl})`
             : `
               linear-gradient(
                 45deg,
@@ -403,41 +404,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           `
         }}
       >
-         
-          {/* Speelveld - gewoon de groene tafel zonder frame */}
-         <div 
-           ref={containerRef}
-           className="w-full h-full game-board overflow-hidden"
-           style={{ 
-             background: tableBackgroundUrl 
-               ? `url(${tableBackgroundUrl})`
-               : `
-                 linear-gradient(
-                   45deg,
-                   rgba(101, 67, 33, 0.15) 0%,
-                   rgba(160, 82, 45, 0.05) 50%,
-                   rgba(139, 69, 19, 0.1) 100%
-                 ),
-                 url(${backgroundImage})
-               `,
-             backgroundSize: 'cover',
-             backgroundPosition: 'center',
-             backgroundRepeat: 'no-repeat'
-           }}
-          >
-           <div 
-             ref={boardRef}
-             className="relative"
-             style={{ 
-               width: boardSize, 
-               height: boardSize,
-               backgroundSize: 'auto, cover',
-               backgroundPosition: 'center, center',
-               backgroundRepeat: 'repeat, no-repeat',
-               backgroundBlendMode: 'multiply',
-          transform: `scale(${dynamicScale})`,
-          transformOrigin: 'center'
-        }}
+        <div 
+          ref={boardRef}
+          className="relative w-full h-full"
+          style={{ 
+            width: boardSize, 
+            height: boardSize,
+            transform: `scale(${dynamicScale})`,
+            transformOrigin: 'center'
+          }}
       >
         {/* Render placed dominoes */}
         {Object.entries(gameState.dominoes).map(([id, domino]) => {
@@ -501,8 +476,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             />
           );
         })}
-      </div>
-      </div>
+        </div>
       </div>
     </div>
   );
