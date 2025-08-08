@@ -99,26 +99,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     document.documentElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
     document.documentElement.style.setProperty('--domino-target-scale', targetScale.toString());
     
-    // Update frame size based on user settings
-    document.documentElement.style.setProperty('--frame-size-multiplier', settings.frameSize.toString());
-    
-    // Update frame visibility using class toggle instead of CSS variables
-    const gameBoard = document.querySelector('.game-board');
-    if (gameBoard) {
-      if (settings.frameVisible) {
-        gameBoard.classList.remove('frame-hidden');
-      } else {
-        gameBoard.classList.add('frame-hidden');
-      }
-    }
     
     // Debug logging
     console.log('Visual settings applied:', {
-      frameSize: settings.frameSize,
-      frameVisible: settings.frameVisible,
       dominoScale: settings.dominoScale,
-      deviceType: 'current device',
-      frameHiddenClass: gameBoard ? gameBoard.classList.contains('frame-hidden') : 'no-board-found'
+      deviceType: 'current device'
     });
   };
 
@@ -132,7 +117,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isMobile, settings.dominoScale, settings.frameSize, settings.frameVisible]);
+  }, [isMobile, settings.dominoScale]);
 
   // Update scaling when container size changes
   useEffect(() => {
@@ -144,12 +129,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [settings.dominoScale, settings.frameSize, settings.frameVisible]);
+  }, [settings.dominoScale]);
 
   // Update scaling when game state changes (more dominoes = potentially different optimal scale)
   useEffect(() => {
     updateDominoScaling();
-  }, [gameState.dominoes, settings.dominoScale, settings.frameSize]);
+  }, [gameState.dominoes, settings.dominoScale]);
 
   // Calculate dynamic board size based on domino positions
   const calculateOptimalScale = () => {

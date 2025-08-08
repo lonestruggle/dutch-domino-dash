@@ -53,16 +53,6 @@
     --domino-scale-selected: 1.05;
     --domino-scale-hover: 1;
     --domino-target-scale: 1;
-    --frame-size-multiplier: 1;
-    --frame-visible: 1;
-    
-    /* Table Frame Colors */
-    --frame-wood-light: 35 25% 60%;
-    --frame-wood-medium: 28 20% 45%;
-    --frame-wood-dark: 25 18% 30%;
-    --frame-wood-shadow: 20 15% 20%;
-    --frame-border-light: 30 30% 75%;
-    --frame-border-dark: 25 15% 25%;
 
     /* Animations */
     --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -159,53 +149,6 @@
     position: relative;
   }
 
-  /* Wooden Frame Effect */
-  .game-board::before {
-    content: '';
-    position: absolute;
-    top: calc(-8px * var(--frame-size-multiplier));
-    left: calc(-8px * var(--frame-size-multiplier));
-    right: calc(-8px * var(--frame-size-multiplier));
-    bottom: calc(-8px * var(--frame-size-multiplier));
-    background: linear-gradient(135deg, 
-      hsl(var(--frame-wood-light)) 0%,
-      hsl(var(--frame-wood-medium)) 25%,
-      hsl(var(--frame-wood-dark)) 50%,
-      hsl(var(--frame-wood-medium)) 75%,
-      hsl(var(--frame-wood-light)) 100%
-    );
-    border-radius: 12px;
-    z-index: -1;
-    box-shadow: 
-      inset 0 2px 4px hsl(var(--frame-border-light)),
-      inset 0 -2px 4px hsl(var(--frame-border-dark)),
-      0 8px 24px rgba(0, 0, 0, 0.3);
-  }
-  
-  /* Hide frame when frame-hidden class is present */
-  .game-board.frame-hidden::before {
-    display: none;
-  }
-  
-  .game-board.frame-hidden::after {
-    display: none;
-  }
-
-  .game-board::after {
-    content: '';
-    position: absolute;
-    top: calc(-6px * var(--frame-size-multiplier));
-    left: calc(-6px * var(--frame-size-multiplier));
-    right: calc(-6px * var(--frame-size-multiplier));
-    bottom: calc(-6px * var(--frame-size-multiplier));
-    border: 2px solid hsl(var(--frame-wood-dark));
-    border-radius: 8px;
-    z-index: -1;
-    box-shadow: 
-      inset 0 1px 2px hsl(var(--frame-border-light)),
-      inset 0 -1px 2px hsl(var(--frame-border-dark));
-  }
-  
   .domino-tile {
     background: hsl(var(--domino-bg));
     border: 1px solid hsl(var(--domino-border));
@@ -405,24 +348,6 @@
 
   /* Mobile-specific adjustments */
   @media (max-width: 768px) {
-    
-    /* Dunnere frame op mobile */
-    .game-board::before {
-      top: calc(-8px * var(--frame-size-multiplier));
-      left: calc(-8px * var(--frame-size-multiplier));
-      right: calc(-8px * var(--frame-size-multiplier));
-      bottom: calc(-8px * var(--frame-size-multiplier));
-      border-radius: calc(4px * var(--frame-size-multiplier));
-    }
-    
-    .game-board::after {
-      top: calc(-8px * var(--frame-size-multiplier));
-      left: calc(-8px * var(--frame-size-multiplier));
-      right: calc(-8px * var(--frame-size-multiplier));
-      bottom: calc(-8px * var(--frame-size-multiplier));
-      border-width: calc(1px * var(--frame-size-multiplier));
-      border-radius: calc(3px * var(--frame-size-multiplier));
-    }
     
     /* Larger touch targets for mobile */
     .placement-target {
