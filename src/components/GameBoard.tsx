@@ -407,7 +407,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           {/* Speelveld - gewoon de groene tafel zonder frame */}
          <div 
            ref={containerRef}
-           className="w-full h-full game-board rounded-lg border-2 overflow-hidden"
+           className="w-full h-full game-board overflow-hidden"
            style={{ 
              background: tableBackgroundUrl 
                ? `url(${tableBackgroundUrl})`
@@ -422,12 +422,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                `,
              backgroundSize: 'cover',
              backgroundPosition: 'center',
-             backgroundRepeat: 'no-repeat',
-             borderColor: 'rgba(42, 26, 23, 0.8)',
-             boxShadow: `
-               inset 0 3px 12px rgba(0,0,0,0.4),
-               inset 0 0 0 1px rgba(139, 114, 98, 0.2)
-             `
+             backgroundRepeat: 'no-repeat'
            }}
           >
            <div 
