@@ -96,7 +96,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const finalScale = baseScale * userScale;
     const selectedScale = finalScale * 1.05;
     const hoverScale = finalScale;
-    const targetScale = finalScale * 0.8; // Placement targets scale less for better visibility
+    const targetScale = finalScale; // Placement targets same size as dominoes
     
     // Force immediate updates with direct DOM manipulation
     const rootElement = document.documentElement;

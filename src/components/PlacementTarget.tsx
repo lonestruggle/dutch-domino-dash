@@ -31,7 +31,7 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   const DESKTOP_CELL_SIZE = 48;
   const MOBILE_CELL_SIZE = 28;
   
-  // Get responsive cell size
+  // Get responsive cell size - same as domino cells
   const cellSize = isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;
   
   return (
@@ -48,10 +48,11 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         height: `${cellSize * height - 1}px`,
         left: style?.left,
         top: style?.top,
-        transform: 'translate(-50%, -50%)',
-        ...style,
-        // Override any style props that might interfere
+        // Use same scaling as domino tiles
+        transform: 'scale(var(--domino-scale, 1)) translate(-50%, -50%)',
+        transformOrigin: 'center',
         transition: 'background-color 0.2s ease',
+        ...style,
       }}
       onClick={(e) => {
         e.stopPropagation();
