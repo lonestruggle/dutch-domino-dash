@@ -60,26 +60,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     const containerRect = containerRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
     
-    // Base scale factors
+    // Base scale factors - much smaller for mobile to match the compact grid
     let baseScale = 1;
     
     if (isMobile) {
-      // On mobile, scale based on screen size
-      // Smaller screens get bigger dominoes for better visibility
+      // On mobile, use much smaller dominoes to match the compact grid
       if (viewportWidth < 400) {
-        baseScale = 2.5;
+        baseScale = 0.6; // Very small dominoes
       } else if (viewportWidth < 500) {
-        baseScale = 2.2;
+        baseScale = 0.7; // Small dominoes
       } else if (viewportWidth < 600) {
-        baseScale = 1.8;
+        baseScale = 0.8; // Medium-small dominoes
       } else {
-        baseScale = 1.5;
+        baseScale = 0.9; // Still smaller for mobile
       }
     } else {
       // On desktop, scale based on container size
-      // Smaller containers get slightly bigger dominoes
       if (containerRect.width < 400) {
         baseScale = 1.3;
       } else if (containerRect.width < 600) {
@@ -99,7 +96,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const finalScale = baseScale * userScale;
     const selectedScale = finalScale * 1.05;
     const hoverScale = finalScale;
-    const targetScale = finalScale * 0.8; // Placement targets schaalt iets minder voor betere visibility
+    const targetScale = finalScale * 0.8; // Placement targets scale less for better visibility
     
     // Force immediate updates with direct DOM manipulation
     const rootElement = document.documentElement;
@@ -108,16 +105,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
     rootElement.style.setProperty('--domino-target-scale', targetScale.toString());
     
+    // Also update hand domino scale for consistency
+    rootElement.style.setProperty('--hand-domino-scale', finalScale.toString());
+    
     // Force reflow to ensure immediate visual update
     if (boardRef.current) {
       boardRef.current.offsetHeight;
     }
-    
-    // Debug logging
-    console.log('Visual settings applied:', {
-      dominoScale: settings.dominoScale,
-      deviceType: 'current device'
-    });
   };
 
   // Update scaling on mount and when viewport changes
