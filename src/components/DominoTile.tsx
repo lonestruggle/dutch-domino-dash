@@ -64,7 +64,6 @@ export const DominoTile: React.FC<DominoTileProps> = ({
           'absolute inset-0 flex',
           orientation === 'vertical' ? 'flex-col' : 'flex-row'
         )}
-        style={{ transform: `rotate(${rotation}deg)` }}
       >
         <div className={cn(
           'flex-1 relative flex items-center justify-center',

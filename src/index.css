@@ -159,16 +159,19 @@
     touch-action: manipulation;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+    /* Apply natural rotation to make dominoes look realistic */
+    transform: rotate(var(--domino-rotation, 0deg));
+    transform-origin: center;
   }
   
   .domino-tile:hover {
-    transform: translateY(-2px);
+    transform: translateY(-2px) rotate(var(--domino-rotation, 0deg));
     box-shadow: var(--shadow-elevated);
   }
   
   .domino-tile.selected {
     box-shadow: 0 0 0 3px hsl(var(--hover-glow)), var(--shadow-elevated);
-    transform: scale(1.05);
+    transform: scale(1.05) rotate(var(--domino-rotation, 0deg));
   }
   
   .domino-pip {
@@ -282,7 +285,7 @@
     }
     
     .domino-tile:active {
-      transform: scale(0.95);
+      transform: scale(0.95) rotate(var(--domino-rotation, 0deg));
     }
   }
   

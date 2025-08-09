@@ -978,11 +978,12 @@ export const useDominoGame = () => {
       }));
     },
     hardSlam: () => {
+      console.log('🔥 Hard Slam activated!');
       // Activate hard slam for next move (don't apply immediately)
       setGameState(prevState => ({
         ...prevState,
         hardSlamNextMove: true,
-        hardSlamUsesRemaining: Math.max(0, (prevState.hardSlamUsesRemaining || 0) - 1)
+        hardSlamUsesRemaining: Math.max(0, (prevState.hardSlamUsesRemaining || 3) - 1)
       }));
     },
   };
