@@ -334,11 +334,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         >
           {/* Original PC domino rendering */}
           {Object.entries(gameState.dominoes).map(([id, domino]) => {
-            // Gebruik shake instellingen uit visual settings
-            const individualAngle = settings.shakeAngle + Math.random() * 5; // basis angle + wat variatie
-            const shakeDuration = settings.shakeDuration; // Gebruik de ingestelde snelheid
+            // Elke dominosteen krijgt zijn eigen willekeurige rotatie hoek (tussen 5 en 20 graden)
+            const individualAngle = 5 + Math.random() * 15; // 5-20 graden
+            // Elke dominosteen krijgt zijn eigen willekeurige duur (tussen 1 en 3 seconden)
+            const individualDuration = 1 + Math.random() * 2; // 1-3 seconden
             
-            console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, angle: ${individualAngle}, duration: ${shakeDuration}`);
+            console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, angle: ${individualAngle}, duration: ${individualDuration}`);
             
             return (
               <div
@@ -359,7 +360,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   className="domino-tile-board"
                   style={{
                     '--individual-angle': `${individualAngle}deg`,
-                    '--shake-duration': `${shakeDuration}s`,
+                    '--individual-duration': `${individualDuration}s`,
                   } as React.CSSProperties}
                 />
               </div>

@@ -28,7 +28,7 @@ const deviceLabels = {
 
 export const GameVisualControls: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { currentDeviceType, getSettingsForDevice, updateDominoScale, updateHandDominoScale, updateShakeAngle, updateShakeDuration, resetToDefaults } = useGameVisualSettings();
+  const { currentDeviceType, getSettingsForDevice, updateDominoScale, updateHandDominoScale, resetToDefaults } = useGameVisualSettings();
   const [activeTab, setActiveTab] = useState<DeviceType>(currentDeviceType);
 
   const handleDominoScaleChange = (values: number[], device: DeviceType) => {
@@ -39,14 +39,6 @@ export const GameVisualControls: React.FC = () => {
     updateHandDominoScale(values[0], device);
   };
 
-  const handleShakeAngleChange = (values: number[], device: DeviceType) => {
-    updateShakeAngle(values[0], device);
-  };
-
-  const handleShakeDurationChange = (values: number[], device: DeviceType) => {
-    updateShakeDuration(values[0], device);
-  };
-
   const adjustDominoScale = (delta: number, device: DeviceType) => {
     const currentSettings = getSettingsForDevice(device);
     updateDominoScale(currentSettings.dominoScale + delta, device);
@@ -55,16 +47,6 @@ export const GameVisualControls: React.FC = () => {
   const adjustHandDominoScale = (delta: number, device: DeviceType) => {
     const currentSettings = getSettingsForDevice(device);
     updateHandDominoScale(currentSettings.handDominoScale + delta, device);
-  };
-
-  const adjustShakeAngle = (delta: number, device: DeviceType) => {
-    const currentSettings = getSettingsForDevice(device);
-    updateShakeAngle(currentSettings.shakeAngle + delta, device);
-  };
-
-  const adjustShakeDuration = (delta: number, device: DeviceType) => {
-    const currentSettings = getSettingsForDevice(device);
-    updateShakeDuration(currentSettings.shakeDuration + delta, device);
   };
 
   const renderDeviceControls = (device: DeviceType) => {
@@ -158,88 +140,6 @@ export const GameVisualControls: React.FC = () => {
                 className="h-8 w-8 shrink-0"
                 onClick={() => adjustHandDominoScale(0.1, device)}
                 disabled={settings.handDominoScale >= 2.0}
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Hard Slam Trilhoek */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">
-              Hard Slam Trilhoek ({Math.round(settings.shakeAngle)}°)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => adjustShakeAngle(-1, device)}
-                disabled={settings.shakeAngle <= 5}
-              >
-                <Minus className="h-3 w-3" />
-              </Button>
-              <div className="flex-1">
-                <Slider
-                  value={[settings.shakeAngle]}
-                  onValueChange={(values) => handleShakeAngleChange(values, device)}
-                  min={5}
-                  max={30}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => adjustShakeAngle(1, device)}
-                disabled={settings.shakeAngle >= 30}
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Hard Slam Snelheid */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">
-              Hard Slam Snelheid ({(settings.shakeDuration * 1000).toFixed(0)}ms)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => adjustShakeDuration(-0.01, device)}
-                disabled={settings.shakeDuration <= 0.05}
-              >
-                <Minus className="h-3 w-3" />
-              </Button>
-              <div className="flex-1">
-                <Slider
-                  value={[settings.shakeDuration]}
-                  onValueChange={(values) => handleShakeDurationChange(values, device)}
-                  min={0.05}
-                  max={0.5}
-                  step={0.01}
-                  className="w-full"
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => adjustShakeDuration(0.01, device)}
-                disabled={settings.shakeDuration >= 0.5}
               >
                 <Plus className="h-3 w-3" />
               </Button>

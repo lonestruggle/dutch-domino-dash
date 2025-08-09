@@ -5,8 +5,6 @@ import { useAuth } from './useAuth';
 export interface GameVisualSettings {
   dominoScale: number; // 0.5 to 2.0 multiplier for board dominoes
   handDominoScale: number; // 0.5 to 2.0 multiplier for hand dominoes
-  shakeAngle: number; // 5 to 30 degrees for hard slam shake
-  shakeDuration: number; // 0.05 to 0.5 seconds for shake speed
 }
 
 export interface DeviceSpecificSettings {
@@ -18,14 +16,12 @@ export interface DeviceSpecificSettings {
 const DEFAULT_SETTINGS: GameVisualSettings = {
   dominoScale: 1.0,
   handDominoScale: 1.0,
-  shakeAngle: 10, // degrees
-  shakeDuration: 0.1, // seconds
 };
 
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
-  desktop: { dominoScale: 1.0, handDominoScale: 1.0, shakeAngle: 10, shakeDuration: 0.1 },
-  tablet: { dominoScale: 0.9, handDominoScale: 0.9, shakeAngle: 10, shakeDuration: 0.1 },
-  mobile: { dominoScale: 0.8, handDominoScale: 0.8, shakeAngle: 8, shakeDuration: 0.12 },
+  desktop: { dominoScale: 1.0, handDominoScale: 1.0 },
+  tablet: { dominoScale: 0.9, handDominoScale: 0.9 },
+  mobile: { dominoScale: 0.8, handDominoScale: 0.8 },
 };
 
 export const useGameVisualSettings = () => {
@@ -87,24 +83,6 @@ export const useGameVisualSettings = () => {
     }));
   };
 
-  const updateShakeAngle = (angle: number, targetDevice?: DeviceType) => {
-    const clampedAngle = Math.max(5, Math.min(30, angle));
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], shakeAngle: clampedAngle }
-    }));
-  };
-
-  const updateShakeDuration = (duration: number, targetDevice?: DeviceType) => {
-    const clampedDuration = Math.max(0.05, Math.min(0.5, duration));
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], shakeDuration: clampedDuration }
-    }));
-  };
-
   const resetToDefaults = (targetDevice?: DeviceType) => {
     if (targetDevice) {
       setAllSettings(prev => ({
@@ -124,8 +102,6 @@ export const useGameVisualSettings = () => {
     currentDeviceType: deviceType,
     updateDominoScale,
     updateHandDominoScale,
-    updateShakeAngle,
-    updateShakeDuration,
     resetToDefaults,
     getSettingsForDevice,
   };
