@@ -182,7 +182,7 @@ export const GameVisualControls: React.FC = () => {
                   size="icon"
                   className="h-8 w-8 shrink-0"
                   onClick={() => adjustHardSlamDuration(-0.1, device)}
-                  disabled={settings.hardSlamDuration <= 1.0}
+                  disabled={settings.hardSlamDuration <= 0.5}
                 >
                   <Minus className="h-3 w-3" />
                 </Button>
@@ -190,7 +190,7 @@ export const GameVisualControls: React.FC = () => {
                   <Slider
                     value={[settings.hardSlamDuration]}
                     onValueChange={(values) => handleHardSlamDurationChange(values, device)}
-                    min={1.0}
+                    min={0.5}
                     max={3.0}
                     step={0.1}
                     className="w-full"
