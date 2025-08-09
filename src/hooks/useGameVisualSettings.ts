@@ -5,6 +5,8 @@ import { useAuth } from './useAuth';
 export interface GameVisualSettings {
   dominoScale: number; // 0.5 to 2.0 multiplier for board dominoes
   handDominoScale: number; // 0.5 to 2.0 multiplier for hand dominoes
+  hardSlamDuration: number; // 1.0 to 3.0 seconds
+  hardSlamSpeed: number; // 0.1 to 0.3 seconds per vibration
 }
 
 export interface DeviceSpecificSettings {
@@ -16,12 +18,14 @@ export interface DeviceSpecificSettings {
 const DEFAULT_SETTINGS: GameVisualSettings = {
   dominoScale: 1.0,
   handDominoScale: 1.0,
+  hardSlamDuration: 2.0,
+  hardSlamSpeed: 0.2,
 };
 
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
-  desktop: { dominoScale: 1.0, handDominoScale: 1.0 },
-  tablet: { dominoScale: 0.9, handDominoScale: 0.9 },
-  mobile: { dominoScale: 0.8, handDominoScale: 0.8 },
+  desktop: { dominoScale: 1.0, handDominoScale: 1.0, hardSlamDuration: 2.0, hardSlamSpeed: 0.2 },
+  tablet: { dominoScale: 0.9, handDominoScale: 0.9, hardSlamDuration: 2.0, hardSlamSpeed: 0.2 },
+  mobile: { dominoScale: 0.8, handDominoScale: 0.8, hardSlamDuration: 2.0, hardSlamSpeed: 0.2 },
 };
 
 export const useGameVisualSettings = () => {
@@ -94,6 +98,24 @@ export const useGameVisualSettings = () => {
     }
   };
 
+  const updateHardSlamDuration = (duration: number, targetDevice?: DeviceType) => {
+    const clampedDuration = Math.max(1.0, Math.min(3.0, duration));
+    const device = targetDevice || deviceType;
+    setAllSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], hardSlamDuration: clampedDuration }
+    }));
+  };
+
+  const updateHardSlamSpeed = (speed: number, targetDevice?: DeviceType) => {
+    const clampedSpeed = Math.max(0.1, Math.min(0.3, speed));
+    const device = targetDevice || deviceType;
+    setAllSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], hardSlamSpeed: clampedSpeed }
+    }));
+  };
+
   const getSettingsForDevice = (device: DeviceType) => allSettings[device];
 
   return {
@@ -102,6 +124,8 @@ export const useGameVisualSettings = () => {
     currentDeviceType: deviceType,
     updateDominoScale,
     updateHandDominoScale,
+    updateHardSlamDuration,
+    updateHardSlamSpeed,
     resetToDefaults,
     getSettingsForDevice,
   };

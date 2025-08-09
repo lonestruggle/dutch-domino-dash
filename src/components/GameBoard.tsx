@@ -69,6 +69,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--domino-target-scale', targetScale.toString());
     rootElement.style.setProperty('--hand-domino-scale', finalScale.toString());
     
+    // Hard slam settings
+    rootElement.style.setProperty('--hard-slam-duration', `${settings.hardSlamDuration}s`);
+    rootElement.style.setProperty('--hard-slam-speed', `${settings.hardSlamSpeed}s`);
+    
     if (boardRef.current) {
       boardRef.current.offsetHeight;
     }
@@ -79,18 +83,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const handleResize = () => updateDominoScaling();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isMobile, settings.dominoScale]);
+  }, [isMobile, settings.dominoScale, settings.hardSlamDuration, settings.hardSlamSpeed]);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(() => updateDominoScaling());
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [settings.dominoScale]);
+  }, [settings.dominoScale, settings.hardSlamDuration, settings.hardSlamSpeed]);
 
   useEffect(() => {
     updateDominoScaling();
-  }, [gameState.dominoes, settings.dominoScale]);
+  }, [gameState.dominoes, settings.dominoScale, settings.hardSlamDuration, settings.hardSlamSpeed]);
 
   // Original PC logic for board size calculation
   const calculateOptimalScale = () => {

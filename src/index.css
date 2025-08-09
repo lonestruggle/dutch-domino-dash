@@ -238,18 +238,16 @@
   .pip-pattern-6 .domino-pip:nth-child(5) { top: 75%; left: 33.3%; }
   .pip-pattern-6 .domino-pip:nth-child(6) { top: 75%; left: 66.6%; }
 
-  /* Hard Slam Shake Animation - snelle trilbeweging zoals in jouw HTML voorbeeld */
+  /* Hard Slam Shake Animation - aanpasbare trilbeweging */
   .hard-slam-shake {
-    animation: dominoVibrate 0.1s ease-in-out infinite alternate !important;
-    /* Tijdelijke visuele indicator dat de animatie actief is */
-    box-shadow: 0 0 20px red !important;
+    animation: dominoVibrate var(--hard-slam-speed, 0.2s) ease-in-out infinite alternate !important;
+    animation-duration: var(--hard-slam-duration, 2s) !important;
   }
   
-  /* Zorg ervoor dat board dominostenen ook trillen met snelle trilbeweging */
+  /* Zorg ervoor dat board dominostenen ook trillen met aanpasbare trilbeweging */
   .domino-tile-board.hard-slam-shake {
-    animation: dominoVibrate 0.1s ease-in-out infinite alternate !important;
-    /* Tijdelijke visuele indicator dat de animatie actief is */
-    box-shadow: 0 0 20px red !important;
+    animation: dominoVibrate var(--hard-slam-speed, 0.2s) ease-in-out infinite alternate !important;
+    animation-duration: var(--hard-slam-duration, 2s) !important;
   }
 
   @keyframes fade-in {
