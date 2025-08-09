@@ -28,8 +28,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   isInitialPlacement = false
 }) => {
   const isMobile = useIsMobile();
-  const DESKTOP_CELL_SIZE = 48;
-  const MOBILE_CELL_SIZE = 28;
+  const DESKTOP_CELL_SIZE = 44; // Match domino tile width/height
+  const MOBILE_CELL_SIZE = 22; // Half size for mobile
   
   // Get responsive cell size - same as domino cells
   const cellSize = isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;

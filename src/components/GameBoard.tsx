@@ -23,9 +23,9 @@ interface GameBoardProps {
   onRotateDomino?: (dominoId: string) => void;
 }
 
-// Mobile-responsive grid sizing constants
-const DESKTOP_CELL_SIZE = 48;
-const MOBILE_CELL_SIZE = 28; // Much smaller cells on mobile for compact grid  
+// Mobile-responsive grid sizing constants - matched to domino tile actual sizes
+const DESKTOP_CELL_SIZE = 44; // Match domino tile width/height (44px = w-11)
+const MOBILE_CELL_SIZE = 22; // Half size for mobile to fit more dominoes
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 1.0;
 const DESKTOP_MIN_BOARD_SIZE = 1200;
