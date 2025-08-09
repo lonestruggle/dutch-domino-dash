@@ -39,9 +39,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         className
       )}
       style={{
-        // Original PC dimensions - calc(var(--cell-size) * width - 4px)
-        width: `calc(var(--cell-size) * ${width} - 4px)`,
-        height: `calc(var(--cell-size) * ${height} - 4px)`,
+        // Exact grid size - no border offset: width = cells * 48px, height = cells * 48px
+        width: `${width * 48}px`,
+        height: `${height * 48}px`,
         left: style?.left,
         top: style?.top,
         // Original PC transform logic
