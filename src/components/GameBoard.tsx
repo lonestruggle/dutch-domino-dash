@@ -427,6 +427,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               key={id}
               className="absolute"
               style={{
+                // Position domino at its grid coordinates
+                // Horizontal dominos: position at left edge of their 2-cell span
+                // Vertical dominos: position at top edge of their 2-cell span
                 left: boardSize / 2 + domino.x * CELL_SIZE,
                 top: boardSize / 2 + domino.y * CELL_SIZE,
               }}
@@ -476,6 +479,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               isInitialPlacement={isInitialPlacement}
               onClick={() => onMoveExecute(move)}
               style={{
+                // Position placement target at center of the space it will occupy
+                // For horizontal: center of 2-cell width span
+                // For vertical: center of 2-cell height span
                 left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
                 top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,
               }}
