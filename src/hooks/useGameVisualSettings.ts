@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useDeviceType, DeviceType } from './useDeviceType';
 
 export interface GameVisualSettings {
-  dominoScale: number; // 0.5 to 2.0 multiplier
+  dominoScale: number; // 0.5 to 2.0 multiplier for board dominoes
+  handDominoScale: number; // 0.5 to 2.0 multiplier for hand dominoes
 }
 
 export interface DeviceSpecificSettings {
@@ -13,12 +14,13 @@ export interface DeviceSpecificSettings {
 
 const DEFAULT_SETTINGS: GameVisualSettings = {
   dominoScale: 1.0,
+  handDominoScale: 1.0,
 };
 
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
-  desktop: { dominoScale: 1.0 },
-  tablet: { dominoScale: 0.9 },
-  mobile: { dominoScale: 0.8 },
+  desktop: { dominoScale: 1.0, handDominoScale: 1.0 },
+  tablet: { dominoScale: 0.9, handDominoScale: 0.9 },
+  mobile: { dominoScale: 0.8, handDominoScale: 0.8 },
 };
 
 const STORAGE_KEY = 'domino-game-visual-settings-v2';
@@ -64,6 +66,15 @@ export const useGameVisualSettings = () => {
     }));
   };
 
+  const updateHandDominoScale = (scale: number, targetDevice?: DeviceType) => {
+    const clampedScale = Math.max(0.5, Math.min(2.0, scale));
+    const device = targetDevice || deviceType;
+    setAllSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], handDominoScale: clampedScale }
+    }));
+  };
+
   const resetToDefaults = (targetDevice?: DeviceType) => {
     if (targetDevice) {
       setAllSettings(prev => ({
@@ -82,6 +93,7 @@ export const useGameVisualSettings = () => {
     allSettings,
     currentDeviceType: deviceType,
     updateDominoScale,
+    updateHandDominoScale,
     resetToDefaults,
     getSettingsForDevice,
   };

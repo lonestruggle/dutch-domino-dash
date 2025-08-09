@@ -346,8 +346,35 @@
     transform: scale(calc(var(--domino-scale) * 0.95)) translateX(-1.5rem);
   }
 
+  /* Hand domino scaling - separate from board dominoes */
+  .domino-tile-hand {
+    transform: scale(var(--hand-domino-scale, 1));
+    transform-origin: center center;
+  }
+  
+  .domino-tile-hand.selected {
+    transform: scale(calc(var(--hand-domino-scale, 1) * 1.05));
+  }
+  
+  .domino-tile-hand:hover {
+    transform: scale(calc(var(--hand-domino-scale, 1) * 1.1));
+  }
+  
+  .domino-tile-hand:active {
+    transform: scale(calc(var(--hand-domino-scale, 1) * 0.95));
+  }
+
   /* Mobile-specific adjustments */
   @media (max-width: 768px) {
+    
+    /* Mobile hand domino adjustments */
+    .domino-tile-hand:hover {
+      transform: scale(calc(var(--hand-domino-scale, 1) * 0.9));
+    }
+    
+    .domino-tile-hand:active {
+      transform: scale(calc(var(--hand-domino-scale, 1) * 0.85));
+    }
     
     /* Larger touch targets for mobile */
     .placement-target {

@@ -28,16 +28,25 @@ const deviceLabels = {
 
 export const GameVisualControls: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { currentDeviceType, getSettingsForDevice, updateDominoScale, resetToDefaults } = useGameVisualSettings();
+  const { currentDeviceType, getSettingsForDevice, updateDominoScale, updateHandDominoScale, resetToDefaults } = useGameVisualSettings();
   const [activeTab, setActiveTab] = useState<DeviceType>(currentDeviceType);
 
   const handleDominoScaleChange = (values: number[], device: DeviceType) => {
     updateDominoScale(values[0], device);
   };
 
+  const handleHandDominoScaleChange = (values: number[], device: DeviceType) => {
+    updateHandDominoScale(values[0], device);
+  };
+
   const adjustDominoScale = (delta: number, device: DeviceType) => {
     const currentSettings = getSettingsForDevice(device);
     updateDominoScale(currentSettings.dominoScale + delta, device);
+  };
+
+  const adjustHandDominoScale = (delta: number, device: DeviceType) => {
+    const currentSettings = getSettingsForDevice(device);
+    updateHandDominoScale(currentSettings.handDominoScale + delta, device);
   };
 
   const renderDeviceControls = (device: DeviceType) => {
@@ -56,11 +65,11 @@ export const GameVisualControls: React.FC = () => {
           )}
         </div>
         
-        {/* Domino Grootte */}
+        {/* Board Domino Grootte */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">
-              Domino Grootte ({Math.round(settings.dominoScale * 100)}%)
+              Bord Domino Grootte ({Math.round(settings.dominoScale * 100)}%)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -90,6 +99,47 @@ export const GameVisualControls: React.FC = () => {
                 className="h-8 w-8 shrink-0"
                 onClick={() => adjustDominoScale(0.1, device)}
                 disabled={settings.dominoScale >= 2.0}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Hand Domino Grootte */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">
+              Hand Domino Grootte ({Math.round(settings.handDominoScale * 100)}%)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => adjustHandDominoScale(-0.1, device)}
+                disabled={settings.handDominoScale <= 0.5}
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
+              <div className="flex-1">
+                <Slider
+                  value={[settings.handDominoScale]}
+                  onValueChange={(values) => handleHandDominoScaleChange(values, device)}
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  className="w-full"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => adjustHandDominoScale(0.1, device)}
+                disabled={settings.handDominoScale >= 2.0}
               >
                 <Plus className="h-3 w-3" />
               </Button>
