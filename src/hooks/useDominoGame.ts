@@ -647,8 +647,74 @@ export const useDominoGame = () => {
       const newPlayerHand = [...prev.playerHand];
       newPlayerHand.splice(index, 1);
 
-      // Genereer rotatie tussen -20 en +20 graden voor elke geplaatste steen
-      const dominoRotation = (Math.random() - 0.5) * 40; // Random rotation tussen -20 en +20 graden
+      // COLLISION DETECTION - Genereer rotatie die geen overlaps veroorzaakt
+      const getRotationWithoutOverlap = () => {
+        const maxAttempts = 15;
+        let attempts = 0;
+        
+        const checkOverlapWithPosition = (rotation: number) => {
+          // Bereken bounding box met rotatie
+          const radians = (rotation * Math.PI) / 180;
+          const cos = Math.abs(Math.cos(radians));
+          const sin = Math.abs(Math.sin(radians));
+          
+          // Domino afmetingen in pixels
+          const baseWidth = orientation === 'horizontal' ? 96 : 48;
+          const baseHeight = orientation === 'horizontal' ? 48 : 96;
+          
+          // Rotated bounding box
+          const rotatedWidth = baseWidth * cos + baseHeight * sin;
+          const rotatedHeight = baseWidth * sin + baseHeight * cos;
+          
+          // Positie van nieuwe domino (in pixels)
+          const newX = x * CELL_SIZE;
+          const newY = y * CELL_SIZE;
+          
+          // Check tegen alle bestaande dominoes
+          for (const existingId in prev.dominoes) {
+            const existing = prev.dominoes[existingId];
+            const existingRadians = ((existing.rotation || 0) * Math.PI) / 180;
+            const existingCos = Math.abs(Math.cos(existingRadians));
+            const existingSin = Math.abs(Math.sin(existingRadians));
+            
+            const existingBaseWidth = existing.orientation === 'horizontal' ? 96 : 48;
+            const existingBaseHeight = existing.orientation === 'horizontal' ? 48 : 96;
+            const existingRotatedWidth = existingBaseWidth * existingCos + existingBaseHeight * existingSin;
+            const existingRotatedHeight = existingBaseWidth * existingSin + existingBaseHeight * existingCos;
+            
+            const existingX = existing.x * CELL_SIZE;
+            const existingY = existing.y * CELL_SIZE;
+            
+            // Distance tussen centers
+            const dx = Math.abs(newX - existingX);
+            const dy = Math.abs(newY - existingY);
+            
+            // Minimum afstand om overlap te voorkomen (met padding)
+            const minDistanceX = (rotatedWidth + existingRotatedWidth) / 2 + 8;
+            const minDistanceY = (rotatedHeight + existingRotatedHeight) / 2 + 8;
+            
+            if (dx < minDistanceX && dy < minDistanceY) {
+              return true; // Overlap detected
+            }
+          }
+          return false; // Geen overlap
+        };
+        
+        // Probeer verschillende rotaties
+        while (attempts < maxAttempts) {
+          const rotation = (Math.random() - 0.5) * 40; // -20 tot +20 graden
+          
+          if (!checkOverlapWithPosition(rotation)) {
+            return rotation; // Veilige rotatie gevonden
+          }
+          attempts++;
+        }
+        
+        // Als geen veilige rotatie gevonden, gebruik kleine rotatie
+        return (Math.random() - 0.5) * 15; // Kleinere rotatie als fallback
+      };
+
+      const dominoRotation = getRotationWithoutOverlap();
 
       const dominoState: DominoState = {
         data: dominoData,
@@ -684,64 +750,79 @@ export const useDominoGame = () => {
       let newState;
       
       if (prev.hardSlamNextMove) {
-        console.log('💥 HARD SLAM EFFECT - Starting shake animation and randomizing rotations!');
+        console.log('💥 HARD SLAM EFFECT - Starting smooth shake animation with new rotations!');
         
-        // Helper function to check if two dominoes overlap after rotation
-        const checkOverlap = (domino1: any, domino2: any) => {
-          // Simple bounding box check with rotation consideration
-          const size1 = domino1.orientation === 'horizontal' ? { w: 88, h: 44 } : { w: 44, h: 88 };
-          const size2 = domino2.orientation === 'horizontal' ? { w: 88, h: 44 } : { w: 44, h: 88 };
+        // Verbeterde collision detection voor rotaties
+        const checkRotationOverlap = (domino1: any, domino2: any, rotation1: number, rotation2: number) => {
+          const distance = Math.sqrt(
+            Math.pow((domino1.x - domino2.x) * CELL_SIZE, 2) + 
+            Math.pow((domino1.y - domino2.y) * CELL_SIZE, 2)
+          );
           
-          // Add some padding to prevent tight overlaps
-          const padding = 10;
-          const distance = Math.sqrt(Math.pow(domino1.x - domino2.x, 2) + Math.pow(domino1.y - domino2.y, 2));
-          const minDistance = Math.max(size1.w + size2.w, size1.h + size2.h) / 2 + padding;
+          // Bereken benodigde ruimte op basis van rotatie
+          const baseSize = 96; // Grootste domino afmeting
+          const rotationFactor1 = Math.abs(Math.sin((rotation1 * Math.PI) / 180)) + Math.abs(Math.cos((rotation1 * Math.PI) / 180));
+          const rotationFactor2 = Math.abs(Math.sin((rotation2 * Math.PI) / 180)) + Math.abs(Math.cos((rotation2 * Math.PI) / 180));
           
-          return distance < minDistance / 48; // Convert to grid units
+          const effectiveSize1 = baseSize * rotationFactor1;
+          const effectiveSize2 = baseSize * rotationFactor2;
+          const minSafeDistance = (effectiveSize1 + effectiveSize2) / 2 + 15; // Extra padding
+          
+          return distance < minSafeDistance;
         };
         
-        // Apply new random rotations to all existing dominoes (not the new one)
+        // Geef alle dominostenen nieuwe rotaties met vloeiende transities
         const dominoIds = Object.keys(prev.dominoes);
-        dominoIds.forEach((dominoId, index) => {
-          let attempts = 0;
-          let newRotation;
-          let hasOverlap;
+        const newRotations: Record<string, number> = {};
+        
+        // Genereer nieuwe rotaties voor alle bestaande dominoes
+        dominoIds.forEach((dominoId) => {
+          let bestRotation = 0;
+          let minOverlaps = Infinity;
           
-          do {
-            newRotation = (Math.random() - 0.5) * 60; // Random rotation between -30 and +30 degrees
+          // Probeer meerdere rotaties en kies de beste
+          for (let attempt = 0; attempt < 12; attempt++) {
+            const candidateRotation = (Math.random() - 0.5) * 40; // -20 tot +20 graden
+            let overlapCount = 0;
             
-            // Create temp domino with new rotation
-            const tempDomino = {
-              ...finalDominoes[dominoId],
-              rotation: newRotation
-            };
-            
-            // Check for overlaps with other dominoes
-            hasOverlap = false;
-            for (let i = 0; i < dominoIds.length; i++) {
-              if (i !== index && dominoIds[i] !== dominoId) {
-                const otherDomino = finalDominoes[dominoIds[i]];
-                if (checkOverlap(tempDomino, otherDomino)) {
-                  hasOverlap = true;
-                  break;
+            // Check overlaps met andere dominoes
+            for (const otherId of dominoIds) {
+              if (otherId !== dominoId) {
+                const otherRotation = newRotations[otherId] || (Math.random() - 0.5) * 40;
+                const domino1 = finalDominoes[dominoId];
+                const domino2 = finalDominoes[otherId];
+                
+                if (checkRotationOverlap(domino1, domino2, candidateRotation, otherRotation)) {
+                  overlapCount++;
                 }
               }
             }
             
-            attempts++;
-          } while (hasOverlap && attempts < 10); // Max 10 attempts to find non-overlapping rotation
+            // Bewaar beste rotatie (met minste overlaps)
+            if (overlapCount < minOverlaps) {
+              minOverlaps = overlapCount;
+              bestRotation = candidateRotation;
+            }
+            
+            // Perfect? Stop zoeken
+            if (overlapCount === 0) break;
+          }
           
-          // Apply the rotation (even if it still overlaps after 10 attempts, use smaller rotation)
+          newRotations[dominoId] = bestRotation;
+        });
+        
+        // Pas alle nieuwe rotaties toe
+        dominoIds.forEach((dominoId) => {
           finalDominoes[dominoId] = {
             ...finalDominoes[dominoId],
-            rotation: hasOverlap ? (Math.random() - 0.5) * 30 : newRotation // Smaller rotation if still overlapping
+            rotation: newRotations[dominoId]
           };
         });
         
-        // Geef nieuwe domino ook een rotatie om consistent te zijn
+        // Ook nieuwe domino een mooie rotatie geven
         finalDominoes[id] = {
           ...finalDominoes[id],
-          rotation: (Math.random() - 0.5) * 15 // Kleine rotatie voor nieuwe domino
+          rotation: (Math.random() - 0.5) * 40
         };
         
         // Create state with hard slam animation active
@@ -757,13 +838,13 @@ export const useDominoGame = () => {
           isHardSlamming: true, // Start shake animation
         };
         
-        // Stop the shake animation after 1 second
+        // Stop de shake animatie na 1.2 seconden voor vloeiendere beweging
         setTimeout(() => {
           setGameState(currentState => ({
             ...currentState,
             isHardSlamming: false
           }));
-        }, 1000);
+        }, 1200);
         
       } else {
         // Regular move without hard slam
