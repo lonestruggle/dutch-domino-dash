@@ -240,7 +240,8 @@
 
   /* Hard Slam Shake Animation - vloeiende beweging */
   .hard-slam-shake {
-    animation: hardSlamShake var(--shake-duration, 2s) cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    animation: hardSlamShake var(--shake-duration, 2s) cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    animation-fill-mode: both !important;
   }
 
   @keyframes fade-in {
@@ -354,6 +355,11 @@
     transform-origin: center center;
     transition: transform 0.1s ease-out !important;
     will-change: transform;
+  }
+  
+  /* Hard slam animation overrides all other transforms */
+  .domino-tile-board.hard-slam-shake {
+    transition: none !important;
   }
   
   /* Dubbele dominostenen met translate + scale + rotation gecombineerd */
