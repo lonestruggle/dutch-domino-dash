@@ -295,8 +295,10 @@
   
   /* Responsive dominostenen op het bord - werkt op alle apparaten */
   .domino-tile-board {
-    transform: scale(var(--domino-scale));
+    transform: scale(var(--domino-scale)) !important;
     transform-origin: center center;
+    transition: transform 0.1s ease-out !important;
+    will-change: transform;
   }
   
   /* Dubbele dominostenen met translate + scale gecombineerd */
@@ -311,7 +313,8 @@
   }
   
   .domino-tile-board.selected {
-    transform: scale(var(--domino-scale-selected));
+    transform: scale(var(--domino-scale-selected)) !important;
+    z-index: 30 !important;
   }
   
   .domino-tile-board.selected.double-vertical-offset {
@@ -350,18 +353,21 @@
   .domino-tile-hand {
     transform: scale(var(--hand-domino-scale, 1)) !important;
     transform-origin: center center;
-    transition: transform 0.2s ease-in-out;
+    transition: transform 0.1s ease-out !important;
+    will-change: transform;
+    backface-visibility: hidden;
   }
   
   .domino-tile-hand.selected {
     transform: scale(calc(var(--hand-domino-scale, 1) * 1.05)) !important;
-    box-shadow: 0 0 12px hsl(var(--dutch-orange-glow));
-    border-color: hsl(var(--dutch-orange));
+    box-shadow: 0 0 12px hsl(var(--dutch-orange-glow)) !important;
+    border-color: hsl(var(--dutch-orange)) !important;
+    z-index: 30 !important;
   }
   
   .domino-tile-hand:hover {
-    transform: scale(calc(var(--hand-domino-scale, 1) * 1.1)) !important;
-    z-index: 10;
+    transform: scale(calc(var(--hand-domino-scale, 1) * 1.08)) !important;
+    z-index: 20 !important;
   }
   
   .domino-tile-hand:active {

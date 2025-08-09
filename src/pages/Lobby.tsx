@@ -371,27 +371,42 @@ export default function Lobby() {
   });
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-2 sm:p-4">
       <div className="max-w-2xl mx-auto">
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <Users className="h-5 w-5" />
-                {lobby.name}
+                <span className="truncate">{lobby.name}</span>
               </CardTitle>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={copyLobbyLink}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Share Link
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <Button 
+                  variant="outline" 
+                  onClick={copyLobbyLink}
+                  size="sm"
+                  className="flex-1 sm:flex-none"
+                >
+                  <Copy className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">Share Link</span>
+                  <span className="xs:hidden">Share</span>
                 </Button>
-                <Button variant="outline" onClick={leaveLobby}>
-                  <LogOut className="h-4 w-4 mr-2" />
+                <Button 
+                  variant="outline" 
+                  onClick={leaveLobby}
+                  size="sm"
+                  className="flex-1 sm:flex-none"
+                >
+                  <LogOut className="h-4 w-4 mr-1 sm:mr-2" />
                   Leave
                 </Button>
                 {isLobbyCreator && (
-                  <Button onClick={startGame}>
-                    <Play className="h-4 w-4 mr-2" />
+                  <Button 
+                    onClick={startGame}
+                    size="sm"
+                    className="w-full sm:w-auto"
+                  >
+                    <Play className="h-4 w-4 mr-1 sm:mr-2" />
                     Start Game
                   </Button>
                 )}
@@ -399,11 +414,6 @@ export default function Lobby() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-2">
-              <p className="text-sm text-muted-foreground">
-                Players: {lobby.players.length}/{lobby.max_players}
-              </p>
-              
             <div className="space-y-2">
               {playerSlots.map(({ position, player }) => (
                 <div
@@ -457,7 +467,6 @@ export default function Lobby() {
                 </div>
               ))}
             </div>
-          </div>
 
             {/* Background selectors for lobby creator */}
             {isLobbyCreator && (

@@ -26,10 +26,12 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const { settings } = useGameVisualSettings();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Update hand domino scale CSS variables
+  // Update hand domino scale CSS variables - force immediate update
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.style.setProperty('--hand-domino-scale', settings.handDominoScale.toString());
+      // Force reflow to ensure immediate visual update
+      containerRef.current.offsetHeight;
     }
   }, [settings.handDominoScale]);
   
@@ -39,7 +41,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         Jouw Hand
       </h2>
       
-      <div className={`flex flex-wrap justify-center gap-1 min-h-[48px] ${isMobile ? "p-0 -space-x-3" : "p-2 gap-2"}`}>
+      <div className={`flex flex-wrap justify-center min-h-[48px] ${isMobile ? "gap-1 px-2" : "gap-3 p-2"}`}>
         {hand.map((domino, index) => (
           <DominoTile
             key={getDominoKey(domino, index)}
@@ -47,11 +49,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             orientation={isDouble(domino) ? "vertical" : "horizontal"}
             selected={index === selectedIndex}
             onClick={() => onDominoSelect(index)}
-            className={`relative transition-transform domino-tile-hand ${
-              isMobile 
-                ? "hover:z-10" 
-                : "m-1"
-            }`}
+            className="relative transition-all duration-200 domino-tile-hand hover:z-20"
           />
         ))}
       </div>

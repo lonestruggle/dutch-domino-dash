@@ -94,11 +94,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const hoverScale = finalScale;
     const targetScale = finalScale * 0.8; // Placement targets schaalt iets minder voor betere visibility
     
-    document.documentElement.style.setProperty('--domino-scale', finalScale.toString());
-    document.documentElement.style.setProperty('--domino-scale-selected', selectedScale.toString());
-    document.documentElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
-    document.documentElement.style.setProperty('--domino-target-scale', targetScale.toString());
+    // Force immediate updates with direct DOM manipulation
+    const rootElement = document.documentElement;
+    rootElement.style.setProperty('--domino-scale', finalScale.toString());
+    rootElement.style.setProperty('--domino-scale-selected', selectedScale.toString());
+    rootElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
+    rootElement.style.setProperty('--domino-target-scale', targetScale.toString());
     
+    // Force reflow to ensure immediate visual update
+    if (boardRef.current) {
+      boardRef.current.offsetHeight;
+    }
     
     // Debug logging
     console.log('Visual settings applied:', {
