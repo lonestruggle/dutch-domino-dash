@@ -284,6 +284,7 @@
     .domino-tile:active {
       transform: scale(0.95);
     }
+  }
   
   /* Responsive dominostenen op het bord - werkt op alle apparaten */
   .domino-tile-board {
