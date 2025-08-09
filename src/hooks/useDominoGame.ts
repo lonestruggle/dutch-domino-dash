@@ -253,33 +253,46 @@ export const useDominoGame = () => {
           }
         }
 
-        // Determine the outward-facing value
-        const dominoData = domino.data;
-        const isHorizontal = domino.orientation === 'horizontal';
-        const isFlipped = domino.flipped;
-        
+        // FIXED: Correct edge value calculation
         let edgeValue = cell.value;
         
-        // For non-double dominoes, determine which value faces which direction
-        if (!isDouble(dominoData)) {
-          const [leftTopValue, rightBottomValue] = isFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
+        // For doubles, the edge value is always the same (both sides are identical)
+        if (isDouble(domino.data)) {
+          edgeValue = domino.data.value1; // or value2, they're the same for doubles
+        } else {
+          // For non-doubles, we need to determine which value is facing outward
+          // This is crucial for correct open end calculation
+          const dominoData = domino.data;
+          const isHorizontal = domino.orientation === 'horizontal';
+          const isFlipped = domino.flipped;
+          
+          // Get the values in the correct order
+          const [value1, value2] = isFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
           
           if (isHorizontal) {
+            // For horizontal dominoes: value1 on left, value2 on right
             const isLeftCell = coord === `${domino.x},${domino.y}`;
             const isRightCell = coord === `${domino.x + 1},${domino.y}`;
             
-            if (dir === 'W' && isLeftCell) edgeValue = leftTopValue;
-            else if (dir === 'E' && isRightCell) edgeValue = rightBottomValue;
-            else if (dir === 'W' && isRightCell) edgeValue = rightBottomValue;
-            else if (dir === 'E' && isLeftCell) edgeValue = rightBottomValue;
+            if ((dir === 'W' && isLeftCell) || (dir === 'E' && isRightCell)) {
+              // Outward facing from the respective ends
+              edgeValue = isLeftCell ? value1 : value2;
+            } else {
+              // Internal connections (shouldn't happen in valid open ends)
+              edgeValue = cell.value;
+            }
           } else {
+            // For vertical dominoes: value1 on top, value2 on bottom  
             const isTopCell = coord === `${domino.x},${domino.y}`;
             const isBottomCell = coord === `${domino.x},${domino.y + 1}`;
             
-            if (dir === 'N' && isTopCell) edgeValue = leftTopValue;
-            else if (dir === 'S' && isBottomCell) edgeValue = rightBottomValue;
-            else if (dir === 'N' && isBottomCell) edgeValue = rightBottomValue;
-            else if (dir === 'S' && isTopCell) edgeValue = rightBottomValue;
+            if ((dir === 'N' && isTopCell) || (dir === 'S' && isBottomCell)) {
+              // Outward facing from the respective ends
+              edgeValue = isTopCell ? value1 : value2;
+            } else {
+              // Internal connections (shouldn't happen in valid open ends)
+              edgeValue = cell.value;
+            }
           }
         }
         
