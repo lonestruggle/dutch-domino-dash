@@ -23,9 +23,9 @@ interface GameBoardProps {
   onRotateDomino?: (dominoId: string) => void;
 }
 
-// Mobile-responsive grid sizing
+// Mobile-responsive grid sizing constants
 const DESKTOP_CELL_SIZE = 48;
-const MOBILE_CELL_SIZE = 28; // Much smaller cells on mobile for compact grid
+const MOBILE_CELL_SIZE = 28; // Much smaller cells on mobile for compact grid  
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 1.0;
 const DESKTOP_MIN_BOARD_SIZE = 1200;
