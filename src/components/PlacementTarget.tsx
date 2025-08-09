@@ -28,10 +28,10 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   isInitialPlacement = false
 }) => {
   const isMobile = useIsMobile();
-  const DESKTOP_CELL_SIZE = 44; // Match domino tile width/height
-  const MOBILE_CELL_SIZE = 22; // Half size for mobile
+  const DESKTOP_CELL_SIZE = 48; // Original logic cell size
+  const MOBILE_CELL_SIZE = 32; // Proportionally smaller for mobile
   
-  // Get responsive cell size - same as domino cells
+  // Get responsive cell size - matching original logic
   const cellSize = isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;
   
   return (
@@ -44,8 +44,11 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         className
       )}
       style={{
-        width: `${cellSize * width - 1}px`,
-        height: `${cellSize * height - 1}px`,
+        // Original logic: domino dimensions = (cellSize * cells - 4px) 
+        // Horizontal: width = cellSize * 2 - 4, height = cellSize - 4
+        // Vertical: width = cellSize - 4, height = cellSize * 2 - 4
+        width: `${cellSize * width - 4}px`,
+        height: `${cellSize * height - 4}px`,
         left: style?.left,
         top: style?.top,
         // Use same scaling as domino tiles

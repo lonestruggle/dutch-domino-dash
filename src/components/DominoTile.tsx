@@ -42,7 +42,9 @@ export const DominoTile: React.FC<DominoTileProps> = ({
     <div
       className={cn(
         'domino-tile cursor-pointer relative',
-        orientation === 'vertical' ? 'w-11 h-[88px]' : 'w-[88px] h-11',
+        // Original logic: horizontal = 2 cells wide x 1 cell high, vertical = 1 cell wide x 2 cells high
+        // With 48px cells: horizontal = 92px x 44px (2*48-4 x 48-4), vertical = 44px x 92px (48-4 x 2*48-4)
+        orientation === 'vertical' ? 'w-[44px] h-[92px]' : 'w-[92px] h-[44px]',
         double && orientation === 'vertical' && 'double-vertical-offset',
         double && orientation === 'horizontal' && 'double-horizontal-offset',
         selected && 'selected',

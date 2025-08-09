@@ -23,16 +23,16 @@ interface GameBoardProps {
   onRotateDomino?: (dominoId: string) => void;
 }
 
-// Mobile-responsive grid sizing constants - matched to domino tile actual sizes
-const DESKTOP_CELL_SIZE = 44; // Match domino tile width/height (44px = w-11)
-const MOBILE_CELL_SIZE = 22; // Half size for mobile to fit more dominoes
+// Mobile-responsive grid sizing constants - based on original logic
+const DESKTOP_CELL_SIZE = 48; // Original logic uses 48px cells
+const MOBILE_CELL_SIZE = 32; // Smaller for mobile but maintaining ratio
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 1.0;
 const DESKTOP_MIN_BOARD_SIZE = 1200;
-const MOBILE_MIN_BOARD_SIZE = 600; // Much smaller board on mobile
+const MOBILE_MIN_BOARD_SIZE = 600;
 const DESKTOP_PADDING = 400;
-const MOBILE_PADDING = 100; // Much less padding on mobile
-const SCROLL_PADDING = 50; // Smaller scroll padding for mobile
+const MOBILE_PADDING = 100;
+const SCROLL_PADDING = 50;
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameState, 
