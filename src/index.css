@@ -275,11 +275,14 @@
   }
 
   @keyframes dominoVibrate {
-    from {
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - var(--individual-angle, 10deg)));
+    0% {
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - var(--individual-angle, 10deg))) !important;
     }
-    to {
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + var(--individual-angle, 10deg)));
+    50% {
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + var(--individual-angle, 10deg))) !important;
+    }
+    100% {
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - var(--individual-angle, 10deg))) !important;
     }
   }
 
@@ -305,6 +308,7 @@
   /* Hard slam animation overrides all other transforms */
   .domino-tile-board.hard-slam-shake {
     transition: none !important;
+    animation: dominoVibrate 0.1s ease-in-out infinite alternate !important;
   }
   
   /* Dubbele dominostenen met translate + scale + rotation gecombineerd */
