@@ -241,11 +241,15 @@
   /* Hard Slam Shake Animation - individuele trilbeweging voor elke steen */
   .hard-slam-shake {
     animation: dominoVibrate var(--individual-duration, 1.5s) ease-in-out infinite alternate !important;
+    /* Tijdelijke visuele indicator dat de animatie actief is */
+    box-shadow: 0 0 20px red !important;
   }
   
   /* Zorg ervoor dat board dominostenen ook trillen met individuele instellingen */
   .domino-tile-board.hard-slam-shake {
     animation: dominoVibrate var(--individual-duration, 1.5s) ease-in-out infinite alternate !important;
+    /* Tijdelijke visuele indicator dat de animatie actief is */
+    box-shadow: 0 0 20px red !important;
   }
 
   @keyframes fade-in {
