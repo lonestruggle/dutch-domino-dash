@@ -44,9 +44,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         height: `${height * 48}px`,
         left: style?.left,
         top: style?.top,
-        // Original PC transform logic
-        transform: 'scale(var(--domino-scale, 1)) translate(-50%, -50%)',
-        transformOrigin: 'center',
+        // Position exactly on grid boundaries - no centering offset
+        transform: 'scale(var(--domino-scale, 1))',
+        transformOrigin: 'top left',
         transition: 'background-color 0.2s ease',
         ...style,
       }}
