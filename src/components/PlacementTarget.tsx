@@ -46,9 +46,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         height: `calc(var(--cell-size) * ${height} - 4px)`,
         left: style?.left,
         top: style?.top,
-        // Use same scaling as domino tiles
-        transform: 'scale(var(--domino-scale, 1)) translate(-50%, -50%)',
-        transformOrigin: 'center',
+        // Position at exact coordinates like dominos - no centering transform
+        transform: 'scale(var(--domino-scale, 1))',
+        transformOrigin: 'top left',
         transition: 'background-color 0.2s ease',
         ...style,
       }}

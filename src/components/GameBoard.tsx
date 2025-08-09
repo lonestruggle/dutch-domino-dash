@@ -476,11 +476,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               isInitialPlacement={isInitialPlacement}
               onClick={() => onMoveExecute(move)}
               style={{
-                // Position placement target at center of the space it will occupy
-                // For horizontal: center of 2-cell width span
-                // For vertical: center of 2-cell height span
-                left: boardSize / 2 + (x + size[0] / 2) * cellSize,
-                top: boardSize / 2 + (y + size[1] / 2) * cellSize,
+                // Position placement target at exact grid coordinates - like dominos
+                // This ensures they align perfectly with adjacent dominos
+                left: boardSize / 2 + x * cellSize,
+                top: boardSize / 2 + y * cellSize,
               }}
             />
           );
