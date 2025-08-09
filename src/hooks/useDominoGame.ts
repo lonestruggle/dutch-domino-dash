@@ -647,9 +647,73 @@ export const useDominoGame = () => {
       const newPlayerHand = [...prev.playerHand];
       newPlayerHand.splice(index, 1);
 
-      // ROTATIE FIX: Genereer rotatie hier in lokale state
-      // Deze rotatie wordt later ook gebruikt voor database synchronisatie
-      const dominoRotation = (Math.random() - 0.5) * 15; // Random rotation tussen -7.5 en +7.5 graden
+      // COLLISION DETECTION helper function
+      const checkDominoOverlap = (domino1: any, domino2: any) => {
+        // Convert grid coordinates to pixel coordinates for overlap check
+        const gridToPixel = (x: number, y: number) => ({ x: x * CELL_SIZE, y: y * CELL_SIZE });
+        
+        const pos1 = gridToPixel(domino1.x, domino1.y);
+        const pos2 = gridToPixel(domino2.x, domino2.y);
+        
+        // Domino dimensions in pixels
+        const size1 = domino1.orientation === 'horizontal' ? { w: 96, h: 48 } : { w: 48, h: 96 };
+        const size2 = domino2.orientation === 'horizontal' ? { w: 96, h: 48 } : { w: 48, h: 96 };
+        
+        // Factor in rotation for collision detection
+        const rotation1 = Math.abs(domino1.rotation || 0);
+        const rotation2 = Math.abs(domino2.rotation || 0);
+        
+        // Add padding based on rotation - more rotation = more space needed
+        const padding1 = Math.max(10, rotation1 * 0.8);
+        const padding2 = Math.max(10, rotation2 * 0.8);
+        
+        // Calculate distance between centers
+        const centerX1 = pos1.x + size1.w / 2;
+        const centerY1 = pos1.y + size1.h / 2;
+        const centerX2 = pos2.x + size2.w / 2;
+        const centerY2 = pos2.y + size2.h / 2;
+        
+        const distance = Math.sqrt(Math.pow(centerX1 - centerX2, 2) + Math.pow(centerY1 - centerY2, 2));
+        const minSafeDistance = (Math.max(size1.w, size1.h) + Math.max(size2.w, size2.h)) / 2 + padding1 + padding2;
+        
+        return distance < minSafeDistance;
+      };
+
+      // VERBETERDE ROTATIE LOGICA met collision detection
+      let dominoRotation = 0;
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      // Generate natural rotation, checking for overlaps
+      do {
+        dominoRotation = (Math.random() - 0.5) * 15; // Random rotation tussen -7.5 en +7.5 graden
+        attempts++;
+        
+        // Check if this rotation would cause overlap with existing dominoes
+        let hasOverlap = false;
+        const tempDomino = {
+          x, y, orientation, 
+          rotation: dominoRotation,
+          data: dominoData
+        };
+        
+        // Check against all existing dominoes
+        for (const existingId in prev.dominoes) {
+          if (checkDominoOverlap(tempDomino, prev.dominoes[existingId])) {
+            hasOverlap = true;
+            break;
+          }
+        }
+        
+        if (!hasOverlap || attempts >= maxAttempts) {
+          break;
+        }
+      } while (attempts < maxAttempts);
+      
+      // If still overlapping after max attempts, use smaller rotation
+      if (attempts >= maxAttempts) {
+        dominoRotation = (Math.random() - 0.5) * 8; // Smaller rotation
+      }
 
       const dominoState: DominoState = {
         data: dominoData,
