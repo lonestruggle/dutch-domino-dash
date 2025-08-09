@@ -23,14 +23,16 @@ interface GameBoardProps {
   onRotateDomino?: (dominoId: string) => void;
 }
 
-const CELL_SIZE = 48;
-const MIN_SCALE = 0.25; // Maximum 4x smaller
-const MAX_SCALE = 1.0; // Original size
-const MIN_BOARD_SIZE = 1200; // Increased for more scroll space
-const MIN_MOBILE_BOARD_SIZE = 1400; // Veel groter board op mobile voor initial placement
-const PADDING = 400; // Increased padding for better scroll area
-const MOBILE_PADDING = 200; // Meer padding op mobile
-const SCROLL_PADDING = 200; // Extra padding for scroll calculations
+// Mobile-responsive grid sizing
+const DESKTOP_CELL_SIZE = 48;
+const MOBILE_CELL_SIZE = 28; // Much smaller cells on mobile for compact grid
+const MIN_SCALE = 0.25;
+const MAX_SCALE = 1.0;
+const DESKTOP_MIN_BOARD_SIZE = 1200;
+const MOBILE_MIN_BOARD_SIZE = 600; // Much smaller board on mobile
+const DESKTOP_PADDING = 400;
+const MOBILE_PADDING = 100; // Much less padding on mobile
+const SCROLL_PADDING = 50; // Smaller scroll padding for mobile
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameState, 
@@ -46,6 +48,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
+
+  // Get responsive values based on device
+  const CELL_SIZE = isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;
+  const MIN_BOARD_SIZE = isMobile ? MOBILE_MIN_BOARD_SIZE : DESKTOP_MIN_BOARD_SIZE;
+  const PADDING = isMobile ? MOBILE_PADDING : DESKTOP_PADDING;
 
   // Calculate responsive domino scale based on viewport size
   const calculateDominoScale = () => {
@@ -180,7 +187,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const calculateBoardSize = () => {
     if (Object.keys(gameState.dominoes).length === 0) {
-      return isMobile ? MIN_MOBILE_BOARD_SIZE : MIN_BOARD_SIZE;
+      return MIN_BOARD_SIZE;
     }
 
     let minX = 0, maxX = 0, minY = 0, maxY = 0;
@@ -195,11 +202,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       maxY = Math.max(maxY, domino.y + dominoHeight - 1);
     });
 
-    const padding = isMobile ? MOBILE_PADDING : PADDING;
-    const minBoardSize = isMobile ? MIN_MOBILE_BOARD_SIZE : MIN_BOARD_SIZE;
+    const minBoardSize = MIN_BOARD_SIZE;
     
-    const requiredWidth = (maxX - minX + 1) * CELL_SIZE + padding * 2;
-    const requiredHeight = (maxY - minY + 1) * CELL_SIZE + padding * 2;
+    const requiredWidth = (maxX - minX + 1) * CELL_SIZE + PADDING * 2;
+    const requiredHeight = (maxY - minY + 1) * CELL_SIZE + PADDING * 2;
     const requiredSize = Math.max(requiredWidth, requiredHeight, minBoardSize);
     
     return Math.max(requiredSize, minBoardSize);
