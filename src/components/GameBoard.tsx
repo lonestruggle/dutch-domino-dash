@@ -51,15 +51,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     const viewportWidth = window.innerWidth;
     
-    // Scale down for mobile to create tight grid like reference image
+    // Larger scale for mobile to make dominoes more visible and playable
     if (viewportWidth < 400) {
-      return 0.25; // Very compact grid
+      return 0.6; // Bigger grid for small screens
     } else if (viewportWidth < 500) {
-      return 0.35; // Compact grid
+      return 0.7; // Good size for medium screens  
     } else if (viewportWidth < 600) {
-      return 0.45; // Medium compact grid
+      return 0.8; // Larger for bigger mobile screens
     } else {
-      return 0.55; // Slightly compact grid
+      return 0.9; // Almost full size for tablets
     }
   };
 
