@@ -45,22 +45,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
 
-  // Mobile-specific scaling to create perfect grid like reference image
+  // Standard domino size for mobile - like real dominoes
   const calculateDominoScale = () => {
     if (!isMobile) return 1; // PC unchanged
     
-    const viewportWidth = window.innerWidth;
-    
-    // Larger scale for mobile to make dominoes more visible and playable
-    if (viewportWidth < 400) {
-      return 0.6; // Bigger grid for small screens
-    } else if (viewportWidth < 500) {
-      return 0.7; // Good size for medium screens  
-    } else if (viewportWidth < 600) {
-      return 0.8; // Larger for bigger mobile screens
-    } else {
-      return 0.9; // Almost full size for tablets
-    }
+    // Standard domino size for mobile - readable and playable like real dominoes
+    return 1.0; // Full size dominoes on mobile for best visibility and usability
   };
 
   // Update CSS scaling
