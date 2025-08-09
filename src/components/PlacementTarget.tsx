@@ -39,7 +39,7 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         className
       )}
       style={{
-        // Perfect grid size - exactly 48px per grid cell with no gaps
+        // Perfect grid alignment - exactly like reference image with no gaps
         width: `${width * 48}px`,
         height: `${height * 48}px`,
         left: style?.left,

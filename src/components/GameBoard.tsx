@@ -45,21 +45,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
 
-  // Mobile-only scaling - no responsive logic, just scale down for mobile
+  // Mobile-specific scaling to create perfect grid like reference image
   const calculateDominoScale = () => {
-    if (!isMobile) return 1; // PC stays at 1
+    if (!isMobile) return 1; // PC unchanged
     
     const viewportWidth = window.innerWidth;
     
-    // Mobile scaling to fit screen properly
+    // Scale down for mobile to create tight grid like reference image
     if (viewportWidth < 400) {
-      return 0.3; // Very small screens
+      return 0.25; // Very compact grid
     } else if (viewportWidth < 500) {
-      return 0.4; // Small screens  
+      return 0.35; // Compact grid
     } else if (viewportWidth < 600) {
-      return 0.5; // Medium screens
+      return 0.45; // Medium compact grid
     } else {
-      return 0.6; // Larger mobile screens
+      return 0.55; // Slightly compact grid
     }
   };
 
