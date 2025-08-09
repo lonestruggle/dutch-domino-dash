@@ -27,7 +27,7 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   rotation = 0,
   isShaking = false
 }) => {
-  console.log(`🎯 DominoTile render - rotation: ${rotation}, data: ${data.value1}|${data.value2}`);
+  console.log(`🎯 DominoTile render - rotation: ${rotation}, data: ${data.value1}|${data.value2}, isShaking: ${isShaking}`);
   const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
   const double = isDouble(data);
 
@@ -57,6 +57,11 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         ...style,
         '--domino-rotation': `${rotation}deg`,
         '--shake-duration': `${1 + Math.random()}s`,
+        // Zorg dat de style properties van de GameBoard worden doorgegeven
+        ...(style && style['--individual-angle'] ? {
+          '--individual-angle': style['--individual-angle'],
+          '--individual-duration': style['--individual-duration']
+        } : {}),
       } as React.CSSProperties}
     >
       <div

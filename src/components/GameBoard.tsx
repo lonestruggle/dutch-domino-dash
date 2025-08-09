@@ -339,6 +339,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // Elke dominosteen krijgt zijn eigen willekeurige duur (tussen 1 en 3 seconden)
             const individualDuration = 1 + Math.random() * 2; // 1-3 seconden
             
+            console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, angle: ${individualAngle}, duration: ${individualDuration}`);
+            
             return (
               <div
                 key={id}
