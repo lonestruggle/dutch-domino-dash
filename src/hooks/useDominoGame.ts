@@ -145,6 +145,8 @@ export const useDominoGame = () => {
     console.log('🔍 REGENERATE OPEN ENDS - Starting calculation');
     console.log('🔍 Total dominoes on board:', Object.keys(state.dominoes).length);
     console.log('🔍 Board cells:', Object.keys(state.board).length);
+    console.log('🔍 All dominoes on board:', Object.entries(state.dominoes).map(([id, domino]) => `${id}: ${domino.data.value1}|${domino.data.value2} at (${domino.x},${domino.y}) ${domino.orientation} flipped:${domino.flipped}`));
+    console.log('🔍 All board cells:', Object.entries(state.board).map(([coord, cell]) => `${coord}: dominoId=${cell.dominoId} value=${cell.value}`));
     
     const openEnds: OpenEnd[] = [];
     const boardCoords = Object.keys(state.board);
