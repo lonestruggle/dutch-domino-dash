@@ -28,8 +28,6 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   isInitialPlacement = false
 }) => {
   const isMobile = useIsMobile();
-  // Original constants - exactly as in PC version
-  const CELL_SIZE = 48;
   
   return (
     <div
@@ -41,12 +39,12 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         className
       )}
       style={{
-        // Original PC dimensions and positioning - exactly as in original HTML
+        // Original PC dimensions - calc(var(--cell-size) * width - 4px)
         width: `calc(var(--cell-size) * ${width} - 4px)`,
         height: `calc(var(--cell-size) * ${height} - 4px)`,
         left: style?.left,
         top: style?.top,
-        // Original transform logic with mobile scaling
+        // Original PC transform logic
         transform: 'scale(var(--domino-scale, 1)) translate(-50%, -50%)',
         transformOrigin: 'center',
         transition: 'background-color 0.2s ease',
