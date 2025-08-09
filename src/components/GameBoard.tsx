@@ -45,31 +45,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
 
-  // Calculate domino scale - PC logic + mobile scaling
+  // Mobile-only scaling - no responsive logic, just scale down for mobile
   const calculateDominoScale = () => {
-    if (!containerRef.current) return 1;
+    if (!isMobile) return 1; // PC stays at 1
     
     const viewportWidth = window.innerWidth;
     
-    // Base scale - only smaller for mobile
-    let baseScale = 1;
-    
-    if (isMobile) {
-      // Scale down for mobile to fit more content
-      if (viewportWidth < 400) {
-        baseScale = 0.4;
-      } else if (viewportWidth < 500) {
-        baseScale = 0.5;
-      } else if (viewportWidth < 600) {
-        baseScale = 0.6;
-      } else {
-        baseScale = 0.7;
-      }
+    // Mobile scaling to fit screen properly
+    if (viewportWidth < 400) {
+      return 0.3; // Very small screens
+    } else if (viewportWidth < 500) {
+      return 0.4; // Small screens  
+    } else if (viewportWidth < 600) {
+      return 0.5; // Medium screens
     } else {
-      baseScale = 1; // PC stays original
+      return 0.6; // Larger mobile screens
     }
-    
-    return baseScale;
   };
 
   // Update CSS scaling

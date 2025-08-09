@@ -42,7 +42,9 @@ export const DominoTile: React.FC<DominoTileProps> = ({
     <div
       className={cn(
         'domino-tile cursor-pointer relative',
-        // Exact grid size - no border offset: horizontal = 2*48px x 1*48px, vertical = 1*48px x 2*48px
+        // Perfect grid alignment - dominos exactly fill their grid cells (48px per cell)
+        // Horizontal: 2 cells wide × 1 cell high = 96px × 48px
+        // Vertical: 1 cell wide × 2 cells high = 48px × 96px
         orientation === 'vertical' ? 'w-12 h-24' : 'w-24 h-12',
         double && orientation === 'vertical' && 'double-vertical-offset',
         double && orientation === 'horizontal' && 'double-horizontal-offset',
