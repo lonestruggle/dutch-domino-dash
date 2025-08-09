@@ -267,40 +267,58 @@
 
   @keyframes hardSlamShake {
     0% { 
-      transform: scale(var(--domino-scale)) rotate(var(--domino-rotation, 0deg)); 
+      transform: scale(var(--domino-scale)) rotate(var(--domino-rotation, 0deg)) translateY(0px); 
     }
-    5% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 8deg)) translate(-2px, -1px); 
+    3% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 3deg)) translateY(-8px) translateX(-1px); 
     }
-    10% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 6deg)) translate(3px, 1px); 
+    6% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 2deg)) translateY(-12px) translateX(2px); 
+    }
+    9% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 4deg)) translateY(-6px) translateX(-2px); 
+    }
+    12% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 3deg)) translateY(-10px) translateX(1px); 
     }
     15% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 10deg)) translate(-1px, 2px); 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 2deg)) translateY(-4px) translateX(-1px); 
     }
-    20% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 7deg)) translate(4px, -2px); 
+    18% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 4deg)) translateY(-8px) translateX(2px); 
     }
-    25% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 9deg)) translate(-3px, 3px); 
+    21% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 3deg)) translateY(-3px) translateX(-1px); 
+    }
+    24% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 2deg)) translateY(-6px) translateX(1px); 
+    }
+    27% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 1deg)) translateY(-2px) translateX(-1px); 
     }
     30% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 5deg)) translate(2px, -1px); 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 1deg)) translateY(-4px) translateX(1px); 
+    }
+    40% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 2deg)) translateY(-3px) translateX(-1px); 
     }
     50% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 12deg)) translate(-4px, 2px); 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 1deg)) translateY(-2px) translateX(1px); 
+    }
+    60% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 1deg)) translateY(-1px) translateX(0px); 
     }
     70% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 8deg)) translate(3px, -3px); 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 1deg)) translateY(-1px) translateX(0px); 
     }
-    85% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 4deg)) translate(-1px, 1px); 
+    80% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 0.5deg)) translateY(-0.5px) translateX(0px); 
     }
-    95% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 2deg)) translate(1px, -1px); 
+    90% { 
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 0.5deg)) translateY(-0.5px) translateX(0px); 
     }
     100% { 
-      transform: scale(var(--domino-scale)) rotate(var(--domino-rotation, 0deg)); 
+      transform: scale(var(--domino-scale)) rotate(var(--domino-rotation, 0deg)) translateY(0px); 
     }
   }
 
