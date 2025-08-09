@@ -238,10 +238,9 @@
   .pip-pattern-6 .domino-pip:nth-child(5) { top: 75%; left: 33.3%; }
   .pip-pattern-6 .domino-pip:nth-child(6) { top: 75%; left: 66.6%; }
 
-  /* Hard Slam Shake Animation - vloeiende beweging */
+  /* Hard Slam Shake Animation - simpele trilbeweging */
   .hard-slam-shake {
-    animation: hardSlamShake var(--shake-duration, 2s) cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-    animation-fill-mode: both !important;
+    animation: dominoVibrate 0.1s ease-in-out infinite alternate !important;
   }
 
   @keyframes fade-in {
@@ -266,75 +265,12 @@
     }
   }
 
-  @keyframes hardSlamShake {
-    0% { 
-      transform: scale(var(--domino-scale)) rotate(var(--domino-rotation, 0deg)) translateY(0px) translateX(0px); 
+  @keyframes dominoVibrate {
+    from {
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 10deg));
     }
-    2% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 5deg)) translateY(-12px) translateX(-3px); 
-    }
-    4% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 3deg)) translateY(-18px) translateX(4px); 
-    }
-    6% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 7deg)) translateY(-10px) translateX(-5px); 
-    }
-    8% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 4deg)) translateY(-15px) translateX(3px); 
-    }
-    10% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 6deg)) translateY(-8px) translateX(-4px); 
-    }
-    12% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 5deg)) translateY(-12px) translateX(6px); 
-    }
-    14% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 4deg)) translateY(-6px) translateX(-2px); 
-    }
-    16% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 6deg)) translateY(-10px) translateX(3px); 
-    }
-    18% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 3deg)) translateY(-4px) translateX(-4px); 
-    }
-    20% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 2deg)) translateY(-8px) translateX(2px); 
-    }
-    25% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 4deg)) translateY(-6px) translateX(-3px); 
-    }
-    30% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 3deg)) translateY(-4px) translateX(2px); 
-    }
-    35% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 2deg)) translateY(-3px) translateX(-2px); 
-    }
-    40% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 2deg)) translateY(-2px) translateX(1px); 
-    }
-    45% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 1deg)) translateY(-2px) translateX(-1px); 
-    }
-    50% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 1deg)) translateY(-1px) translateX(1px); 
-    }
-    60% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 1deg)) translateY(-1px) translateX(0px); 
-    }
-    70% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 0.5deg)) translateY(-0.5px) translateX(0px); 
-    }
-    80% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 0.5deg)) translateY(-0.3px) translateX(0px); 
-    }
-    90% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 0.3deg)) translateY(-0.2px) translateX(0px); 
-    }
-    95% { 
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 0.2deg)) translateY(-0.1px) translateX(0px); 
-    }
-    100% { 
-      transform: scale(var(--domino-scale)) rotate(var(--domino-rotation, 0deg)) translateY(0px) translateX(0px); 
+    to {
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 10deg));
     }
   }
 
