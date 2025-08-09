@@ -23,16 +23,13 @@ interface GameBoardProps {
   onRotateDomino?: (dominoId: string) => void;
 }
 
-// Mobile-responsive grid sizing constants - based on original logic
-const DESKTOP_CELL_SIZE = 48; // Original logic uses 48px cells
-const MOBILE_CELL_SIZE = 32; // Smaller for mobile but maintaining ratio
-const MIN_SCALE = 0.25;
+// Original domino game constants - exactly as in original HTML
+const CELL_SIZE = 48;
+const MIN_SCALE = 0.25; 
 const MAX_SCALE = 1.0;
-const DESKTOP_MIN_BOARD_SIZE = 1200;
-const MOBILE_MIN_BOARD_SIZE = 600;
-const DESKTOP_PADDING = 400;
-const MOBILE_PADDING = 100;
-const SCROLL_PADDING = 50;
+const MIN_BOARD_SIZE = 1200;
+const PADDING = 400;
+const SCROLL_PADDING = 200;
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameState, 
@@ -49,10 +46,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
 
-  // Get responsive values based on device
-  const CELL_SIZE = isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;
-  const MIN_BOARD_SIZE = isMobile ? MOBILE_MIN_BOARD_SIZE : DESKTOP_MIN_BOARD_SIZE;
-  const PADDING = isMobile ? MOBILE_PADDING : DESKTOP_PADDING;
+  // Original constants - no responsive values needed
+  const cellSize = CELL_SIZE;
+  const minBoardSize = MIN_BOARD_SIZE;
+  const padding = PADDING;
 
   // Calculate responsive domino scale based on viewport size
   const calculateDominoScale = () => {
@@ -167,8 +164,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     // Add padding for future moves
     const extraPadding = 4; // cells for future expansion
-    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * CELL_SIZE;
-    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * CELL_SIZE;
+    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * cellSize;
+    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * cellSize;
 
     // Calculate scale needed to fit
     const scaleX = availableWidth / requiredWidth;
@@ -181,7 +178,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const calculateBoardSize = () => {
     if (Object.keys(gameState.dominoes).length === 0) {
-      return MIN_BOARD_SIZE;
+      return minBoardSize;
     }
 
     let minX = 0, maxX = 0, minY = 0, maxY = 0;
@@ -196,13 +193,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       maxY = Math.max(maxY, domino.y + dominoHeight - 1);
     });
 
-    const minBoardSize = MIN_BOARD_SIZE;
+    const minBoardSizeLocal = minBoardSize;
     
-    const requiredWidth = (maxX - minX + 1) * CELL_SIZE + PADDING * 2;
-    const requiredHeight = (maxY - minY + 1) * CELL_SIZE + PADDING * 2;
-    const requiredSize = Math.max(requiredWidth, requiredHeight, minBoardSize);
+    const requiredWidth = (maxX - minX + 1) * cellSize + padding * 2;
+    const requiredHeight = (maxY - minY + 1) * cellSize + padding * 2;
+    const requiredSize = Math.max(requiredWidth, requiredHeight, minBoardSizeLocal);
     
-    return Math.max(requiredSize, minBoardSize);
+    return Math.max(requiredSize, minBoardSizeLocal);
   };
 
   // Calculate optimal viewport center based on all dominoes and legal moves
@@ -251,9 +248,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const containerRect = containerRef.current.getBoundingClientRect();
     const boardSize = calculateBoardSize();
     
-    // Convert grid coordinates to pixel coordinates
-    const pixelCenterX = boardSize / 2 + centerX * CELL_SIZE;
-    const pixelCenterY = boardSize / 2 + centerY * CELL_SIZE;
+    // Convert grid coordinates to pixel coordinates  
+    const pixelCenterX = boardSize / 2 + centerX * cellSize;
+    const pixelCenterY = boardSize / 2 + centerY * cellSize;
     
     // Calculate optimal scroll position (center the viewport on the content center)
     const optimalScrollX = pixelCenterX - containerRect.width / 2;
@@ -333,8 +330,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const centerY = (minY + maxY) / 2;
       
       // Converteer naar pixel coördinaten
-      const pixelCenterX = boardSize / 2 + centerX * CELL_SIZE * currentScale;
-      const pixelCenterY = boardSize / 2 + centerY * CELL_SIZE * currentScale;
+      const pixelCenterX = boardSize / 2 + centerX * cellSize * currentScale;
+      const pixelCenterY = boardSize / 2 + centerY * cellSize * currentScale;
       
       // Bereken optimale scroll positie om alles gecentreerd te houden
       const optimalScrollX = pixelCenterX - containerRect.width / 2;
@@ -358,8 +355,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       // Voor de eerste domino, hercentreer het grid op de positie van de eerste steen
       const firstDomino = Object.values(gameState.dominoes)[0];
-      const firstDominoX = firstDomino.x * CELL_SIZE * dynamicScale;
-      const firstDominoY = firstDomino.y * CELL_SIZE * dynamicScale;
+      const firstDominoX = firstDomino.x * cellSize * dynamicScale;
+      const firstDominoY = firstDomino.y * cellSize * dynamicScale;
       
       // Centreer de view op de eerste domino
       setTimeout(() => {
@@ -430,8 +427,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 // Position domino at its grid coordinates
                 // Horizontal dominos: position at left edge of their 2-cell span
                 // Vertical dominos: position at top edge of their 2-cell span
-                left: boardSize / 2 + domino.x * CELL_SIZE,
-                top: boardSize / 2 + domino.y * CELL_SIZE,
+                left: boardSize / 2 + domino.x * cellSize,
+                top: boardSize / 2 + domino.y * cellSize,
               }}
             >
                <DominoTile
@@ -482,8 +479,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 // Position placement target at center of the space it will occupy
                 // For horizontal: center of 2-cell width span
                 // For vertical: center of 2-cell height span
-                left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
-                top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,
+                left: boardSize / 2 + (x + size[0] / 2) * cellSize,
+                top: boardSize / 2 + (y + size[1] / 2) * cellSize,
               }}
             />
           );
