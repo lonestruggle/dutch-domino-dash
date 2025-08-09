@@ -28,23 +28,27 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   isInitialPlacement = false
 }) => {
   const isMobile = useIsMobile();
-  const CELL_SIZE = 48;
-  const MOBILE_CELL_SIZE = 30;
+  const DESKTOP_CELL_SIZE = 48;
+  const MOBILE_CELL_SIZE = 28;
+  
+  // Get responsive cell size
+  const cellSize = isMobile ? MOBILE_CELL_SIZE : DESKTOP_CELL_SIZE;
   
   return (
     <div
       className={cn(
-        'placement-target absolute z-10 transform -translate-x-1/2 -translate-y-1/2',
+        'placement-target absolute z-10',
         isDouble && orientation === 'vertical' && 'double-vertical-offset',
         isDouble && orientation === 'horizontal' && 'double-horizontal-offset',
         isMobile && 'cursor-pointer active:bg-opacity-80',
         className
       )}
       style={{
-        width: `calc(var(--cell-size) * ${width} - 1px)`,
-        height: `calc(var(--cell-size) * ${height} - 1px)`,
-        transform: `scale(var(--domino-target-scale)) translate(-50%, -50%)`,
+        width: `${cellSize * width - 1}px`,
+        height: `${cellSize * height - 1}px`,
+        transform: `scale(var(--domino-target-scale, 1)) translate(-50%, -50%)`,
         transformOrigin: 'center',
+        transition: 'none', // Remove transition to prevent size jumping
         ...style
       }}
       onClick={(e) => {
