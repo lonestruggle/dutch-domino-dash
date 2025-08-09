@@ -184,25 +184,20 @@
     background: hsl(var(--target-bg));
     border: 2px dashed hsl(var(--target-border));
     border-radius: var(--domino-radius);
-    transition: var(--transition-smooth);
     cursor: pointer;
+    position: absolute;
+    z-index: 10;
     /* Mobile touch optimizations */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    /* Fade in animation */
-    animation: fade-in 0.4s ease-out;
-    opacity: 1;
-    /* Ensure proper scaling with domino scale */
+    /* Remove animations and transitions to prevent size jumping */
+    transition: background-color 0.2s ease;
+    /* Use transform-origin center without initial transform */
     transform-origin: center;
-  }
-  
-  .placement-target.fade-out {
-    animation: fade-out 0.3s ease-out forwards;
   }
   
   .placement-target:hover {
     background: hsl(var(--selected-glow));
-    transform: translate(-50%, -50%) scale(calc(1.02 * var(--domino-scale)));
   }
   
   .game-ui {
@@ -284,14 +279,11 @@
   @media (max-width: 768px) {
     .placement-target:active {
       background: hsl(var(--selected-glow));
-      transform: translate(-50%, -50%) scale(calc(0.95 * var(--domino-scale)));
     }
     
     .domino-tile:active {
       transform: scale(0.95);
     }
-    
-  }
   
   /* Responsive dominostenen op het bord - werkt op alle apparaten */
   .domino-tile-board {

@@ -37,7 +37,7 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   return (
     <div
       className={cn(
-        'placement-target absolute z-10',
+        'placement-target',
         isDouble && orientation === 'vertical' && 'double-vertical-offset',
         isDouble && orientation === 'horizontal' && 'double-horizontal-offset',
         isMobile && 'cursor-pointer active:bg-opacity-80',
@@ -46,10 +46,12 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
       style={{
         width: `${cellSize * width - 1}px`,
         height: `${cellSize * height - 1}px`,
-        transform: `scale(var(--domino-target-scale, 1)) translate(-50%, -50%)`,
-        transformOrigin: 'center',
-        transition: 'none', // Remove transition to prevent size jumping
-        ...style
+        left: style?.left,
+        top: style?.top,
+        transform: 'translate(-50%, -50%)',
+        ...style,
+        // Override any style props that might interfere
+        transition: 'background-color 0.2s ease',
       }}
       onClick={(e) => {
         e.stopPropagation();
