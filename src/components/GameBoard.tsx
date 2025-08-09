@@ -23,9 +23,9 @@ interface GameBoardProps {
   onRotateDomino?: (dominoId: string) => void;
 }
 
-// Original domino game constants - exactly as in original HTML
+// Original constants - exactly as in PC version
 const CELL_SIZE = 48;
-const MIN_SCALE = 0.25; 
+const MIN_SCALE = 0.25;
 const MAX_SCALE = 1.0;
 const MIN_BOARD_SIZE = 1200;
 const PADDING = 400;
@@ -46,45 +46,33 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
 
-  // Original constants - no responsive values needed
-  const cellSize = CELL_SIZE;
-  const minBoardSize = MIN_BOARD_SIZE;
-  const padding = PADDING;
-
   // Calculate responsive domino scale based on viewport size
   const calculateDominoScale = () => {
     if (!containerRef.current) return 1;
     
-    const containerRect = containerRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     
-    // Base scale factors - much smaller for mobile to match the compact grid
+    // Only scale down for mobile to fit more content
     let baseScale = 1;
     
     if (isMobile) {
-      // On mobile, use much smaller dominoes to match the compact grid
+      // Much smaller scaling for mobile to fit the same grid logic
       if (viewportWidth < 400) {
-        baseScale = 0.6; // Very small dominoes
+        baseScale = 0.5;  // Very small for tiny screens
       } else if (viewportWidth < 500) {
-        baseScale = 0.7; // Small dominoes
+        baseScale = 0.6;  // Small scaling  
       } else if (viewportWidth < 600) {
-        baseScale = 0.8; // Medium-small dominoes
+        baseScale = 0.7;  // Medium scaling
       } else {
-        baseScale = 0.9; // Still smaller for mobile
+        baseScale = 0.8;  // Slightly smaller for larger mobile
       }
     } else {
-      // On desktop, scale based on container size
-      if (containerRect.width < 400) {
-        baseScale = 1.3;
-      } else if (containerRect.width < 600) {
-        baseScale = 1.1;
-      } else {
-        baseScale = 1;
-      }
+      baseScale = 1; // PC stays at original scale
     }
     
     return baseScale;
   };
+
 
   // Update CSS custom properties for responsive scaling
   const updateDominoScaling = () => {
@@ -164,8 +152,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     // Add padding for future moves
     const extraPadding = 4; // cells for future expansion
-    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * cellSize;
-    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * cellSize;
+    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * CELL_SIZE;
+    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * CELL_SIZE;
 
     // Calculate scale needed to fit
     const scaleX = availableWidth / requiredWidth;
@@ -178,7 +166,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const calculateBoardSize = () => {
     if (Object.keys(gameState.dominoes).length === 0) {
-      return minBoardSize;
+      return MIN_BOARD_SIZE;
     }
 
     let minX = 0, maxX = 0, minY = 0, maxY = 0;
@@ -193,13 +181,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       maxY = Math.max(maxY, domino.y + dominoHeight - 1);
     });
 
-    const minBoardSizeLocal = minBoardSize;
+    const minBoardSize = MIN_BOARD_SIZE;
     
-    const requiredWidth = (maxX - minX + 1) * cellSize + padding * 2;
-    const requiredHeight = (maxY - minY + 1) * cellSize + padding * 2;
-    const requiredSize = Math.max(requiredWidth, requiredHeight, minBoardSizeLocal);
+    const requiredWidth = (maxX - minX + 1) * CELL_SIZE + PADDING * 2;
+    const requiredHeight = (maxY - minY + 1) * CELL_SIZE + PADDING * 2;
+    const requiredSize = Math.max(requiredWidth, requiredHeight, minBoardSize);
     
-    return Math.max(requiredSize, minBoardSizeLocal);
+    return Math.max(requiredSize, minBoardSize);
   };
 
   // Calculate optimal viewport center based on all dominoes and legal moves
@@ -249,8 +237,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const boardSize = calculateBoardSize();
     
     // Convert grid coordinates to pixel coordinates  
-    const pixelCenterX = boardSize / 2 + centerX * cellSize;
-    const pixelCenterY = boardSize / 2 + centerY * cellSize;
+    const pixelCenterX = boardSize / 2 + centerX * CELL_SIZE;
+    const pixelCenterY = boardSize / 2 + centerY * CELL_SIZE;
     
     // Calculate optimal scroll position (center the viewport on the content center)
     const optimalScrollX = pixelCenterX - containerRect.width / 2;
@@ -330,8 +318,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const centerY = (minY + maxY) / 2;
       
       // Converteer naar pixel coördinaten
-      const pixelCenterX = boardSize / 2 + centerX * cellSize * currentScale;
-      const pixelCenterY = boardSize / 2 + centerY * cellSize * currentScale;
+      const pixelCenterX = boardSize / 2 + centerX * CELL_SIZE * currentScale;
+      const pixelCenterY = boardSize / 2 + centerY * CELL_SIZE * currentScale;
       
       // Bereken optimale scroll positie om alles gecentreerd te houden
       const optimalScrollX = pixelCenterX - containerRect.width / 2;
@@ -355,8 +343,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       // Voor de eerste domino, hercentreer het grid op de positie van de eerste steen
       const firstDomino = Object.values(gameState.dominoes)[0];
-      const firstDominoX = firstDomino.x * cellSize * dynamicScale;
-      const firstDominoY = firstDomino.y * cellSize * dynamicScale;
+      const firstDominoX = firstDomino.x * CELL_SIZE * dynamicScale;
+      const firstDominoY = firstDomino.y * CELL_SIZE * dynamicScale;
       
       // Centreer de view op de eerste domino
       setTimeout(() => {
@@ -427,8 +415,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 // Position domino at its grid coordinates
                 // Horizontal dominos: position at left edge of their 2-cell span
                 // Vertical dominos: position at top edge of their 2-cell span
-                left: boardSize / 2 + domino.x * cellSize,
-                top: boardSize / 2 + domino.y * cellSize,
+                left: boardSize / 2 + domino.x * CELL_SIZE,
+                top: boardSize / 2 + domino.y * CELL_SIZE,
               }}
             >
                <DominoTile
@@ -476,10 +464,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               isInitialPlacement={isInitialPlacement}
               onClick={() => onMoveExecute(move)}
               style={{
-                // Position placement target at exact grid coordinates - like dominos
-                // This ensures they align perfectly with adjacent dominos
-                left: boardSize / 2 + x * cellSize,
-                top: boardSize / 2 + y * cellSize,
+                // Original PC positioning logic - exactly as in original HTML
+                left: boardSize / 2 + (x + size[0] / 2) * CELL_SIZE,
+                top: boardSize / 2 + (y + size[1] / 2) * CELL_SIZE,
               }}
             />
           );
