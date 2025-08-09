@@ -242,6 +242,11 @@
   .hard-slam-shake {
     animation: dominoVibrate 0.1s ease-in-out infinite alternate !important;
   }
+  
+  /* Zorg ervoor dat board dominostenen ook trillen */
+  .domino-tile-board.hard-slam-shake {
+    animation: dominoVibrate 0.1s ease-in-out infinite alternate !important;
+  }
 
   @keyframes fade-in {
     0% {
