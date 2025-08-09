@@ -291,58 +291,58 @@
   
   /* Responsive dominostenen op het bord - werkt op alle apparaten */
   .domino-tile-board {
-    transform: scale(var(--domino-scale)) !important;
+    transform: scale(var(--domino-scale)) rotate(var(--domino-rotation, 0deg)) !important;
     transform-origin: center center;
     transition: transform 0.1s ease-out !important;
     will-change: transform;
   }
   
-  /* Dubbele dominostenen met translate + scale gecombineerd */
+  /* Dubbele dominostenen met translate + scale + rotation gecombineerd */
   .domino-tile-board.double-vertical-offset {
-    transform: scale(var(--domino-scale)) translateY(-1.5rem);
+    transform: scale(var(--domino-scale)) rotate(var(--domino-rotation, 0deg)) translateY(-1.5rem);
     transform-origin: center center;
   }
   
   .domino-tile-board.double-horizontal-offset {
-    transform: scale(var(--domino-scale)) translateX(-1.5rem);
+    transform: scale(var(--domino-scale)) rotate(var(--domino-rotation, 0deg)) translateX(-1.5rem);
     transform-origin: center center;
   }
   
   .domino-tile-board.selected {
-    transform: scale(var(--domino-scale-selected)) !important;
+    transform: scale(var(--domino-scale-selected)) rotate(var(--domino-rotation, 0deg)) !important;
     z-index: 30 !important;
   }
   
   .domino-tile-board.selected.double-vertical-offset {
-    transform: scale(var(--domino-scale-selected)) translateY(-1.5rem);
+    transform: scale(var(--domino-scale-selected)) rotate(var(--domino-rotation, 0deg)) translateY(-1.5rem);
   }
   
   .domino-tile-board.selected.double-horizontal-offset {
-    transform: scale(var(--domino-scale-selected)) translateX(-1.5rem);
+    transform: scale(var(--domino-scale-selected)) rotate(var(--domino-rotation, 0deg)) translateX(-1.5rem);
   }
   
   .domino-tile-board:hover {
-    transform: scale(var(--domino-scale-hover)) translateY(-2px);
+    transform: scale(var(--domino-scale-hover)) rotate(var(--domino-rotation, 0deg)) translateY(-2px);
   }
   
   .domino-tile-board:hover.double-vertical-offset {
-    transform: scale(var(--domino-scale-hover)) translateY(-1.5rem) translateY(-2px);
+    transform: scale(var(--domino-scale-hover)) rotate(var(--domino-rotation, 0deg)) translateY(-1.5rem) translateY(-2px);
   }
   
   .domino-tile-board:hover.double-horizontal-offset {
-    transform: scale(var(--domino-scale-hover)) translateX(-1.5rem) translateY(-2px);
+    transform: scale(var(--domino-scale-hover)) rotate(var(--domino-rotation, 0deg)) translateX(-1.5rem) translateY(-2px);
   }
   
   .domino-tile-board:active {
-    transform: scale(calc(var(--domino-scale) * 0.95));
+    transform: scale(calc(var(--domino-scale) * 0.95)) rotate(var(--domino-rotation, 0deg));
   }
   
   .domino-tile-board:active.double-vertical-offset {
-    transform: scale(calc(var(--domino-scale) * 0.95)) translateY(-1.5rem);
+    transform: scale(calc(var(--domino-scale) * 0.95)) rotate(var(--domino-rotation, 0deg)) translateY(-1.5rem);
   }
   
   .domino-tile-board:active.double-horizontal-offset {
-    transform: scale(calc(var(--domino-scale) * 0.95)) translateX(-1.5rem);
+    transform: scale(calc(var(--domino-scale) * 0.95)) rotate(var(--domino-rotation, 0deg)) translateX(-1.5rem);
   }
 
   /* Hand domino scaling - separate from board dominoes */
