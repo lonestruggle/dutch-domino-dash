@@ -341,7 +341,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // Elke dominosteen krijgt zijn eigen willekeurige rotatie hoek (tussen 5 en 20 graden)
             const individualAngle = 5 + Math.random() * 15; // 5-20 graden
             
-            console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, angle: ${individualAngle}`);
+            // Select a random vibration animation for each domino during hard slam
+            const vibrationAnimations = [
+              'dominoVibrate_horizontal',
+              'dominoVibrate_left_diagonal', 
+              'dominoVibrate_right_diagonal',
+              'dominoVibrate_vertical',
+              'dominoVibrate_subtle',
+              'dominoVibrate_shake'
+            ];
+            
+            // Use domino index and consistent seed for stable animation selection
+            const dominoIndex = Object.keys(gameState.dominoes).indexOf(id);
+            const animationIndex = dominoIndex % vibrationAnimations.length;
+            const selectedAnimation = vibrationAnimations[animationIndex];
+            
+            console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, animation: ${selectedAnimation}`);
             
             return (
               <div
@@ -362,6 +377,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   className="domino-tile-board"
                   style={{
                     '--individual-angle': `${individualAngle}deg`,
+                    '--vibration-animation': selectedAnimation,
                   } as React.CSSProperties}
                 />
               </div>
