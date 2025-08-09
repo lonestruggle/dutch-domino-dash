@@ -238,14 +238,14 @@
   .pip-pattern-6 .domino-pip:nth-child(5) { top: 75%; left: 33.3%; }
   .pip-pattern-6 .domino-pip:nth-child(6) { top: 75%; left: 66.6%; }
 
-  /* Hard Slam Shake Animation - simpele trilbeweging */
+  /* Hard Slam Shake Animation - individuele trilbeweging voor elke steen */
   .hard-slam-shake {
-    animation: dominoVibrate 0.1s ease-in-out infinite alternate !important;
+    animation: dominoVibrate var(--individual-duration, 1.5s) ease-in-out infinite alternate !important;
   }
   
-  /* Zorg ervoor dat board dominostenen ook trillen */
+  /* Zorg ervoor dat board dominostenen ook trillen met individuele instellingen */
   .domino-tile-board.hard-slam-shake {
-    animation: dominoVibrate 0.1s ease-in-out infinite alternate !important;
+    animation: dominoVibrate var(--individual-duration, 1.5s) ease-in-out infinite alternate !important;
   }
 
   @keyframes fade-in {
@@ -272,10 +272,10 @@
 
   @keyframes dominoVibrate {
     from {
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - 10deg));
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) - var(--individual-angle, 10deg)));
     }
     to {
-      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + 10deg));
+      transform: scale(var(--domino-scale)) rotate(calc(var(--domino-rotation, 0deg) + var(--individual-angle, 10deg)));
     }
   }
 

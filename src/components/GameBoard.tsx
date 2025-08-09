@@ -334,6 +334,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         >
           {/* Original PC domino rendering */}
           {Object.entries(gameState.dominoes).map(([id, domino]) => {
+            // Elke dominosteen krijgt zijn eigen willekeurige rotatie hoek (tussen 5 en 20 graden)
+            const individualAngle = 5 + Math.random() * 15; // 5-20 graden
+            // Elke dominosteen krijgt zijn eigen willekeurige duur (tussen 1 en 3 seconden)
+            const individualDuration = 1 + Math.random() * 2; // 1-3 seconden
+            
             return (
               <div
                 key={id}
@@ -351,6 +356,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   isShaking={gameState.isHardSlamming}
                   onClick={undefined}
                   className="domino-tile-board"
+                  style={{
+                    '--individual-angle': `${individualAngle}deg`,
+                    '--individual-duration': `${individualDuration}s`,
+                  } as React.CSSProperties}
                 />
               </div>
             );

@@ -838,13 +838,13 @@ export const useDominoGame = () => {
           isHardSlamming: true, // Start shake animation
         };
         
-        // Stop de shake animatie na 1.4 seconden (zoals in jouw HTML voorbeeld)
+        // Stop de shake animatie na maximaal 3 seconden (langste individuele duur)
         setTimeout(() => {
           setGameState(currentState => ({
             ...currentState,
             isHardSlamming: false
           }));
-        }, 1400);
+        }, 3000);
         
       } else {
         // Regular move without hard slam
