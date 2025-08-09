@@ -192,72 +192,65 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   return (
     <div className="min-h-screen bg-background p-2 md:p-4">
       <div className="max-w-6xl mx-auto space-y-3 md:space-y-6">
-        {/* Mobile Header - Compact */}
-        {isMobile ? (
-          <Card className="p-3">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold">Domino Game</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="p-2"
-              >
-                {showMobileMenu ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <Badge variant={isMyTurn ? "default" : "secondary"} className="text-xs">
+        {/* Top Navigation - Always visible */}
+        <Card className="p-3 md:p-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <h2 className={`font-bold ${isMobile ? "text-lg" : "text-2xl"}`}>Domino Game</h2>
+              <Badge variant={isMyTurn ? "default" : "secondary"} className={isMobile ? "text-xs" : ""}>
                 {isMyTurn ? "Your Turn" : `${currentPlayerName}'s Turn`}
               </Badge>
-              <span className="text-xs text-muted-foreground">
-                Boneyard: {gameState?.boneyard?.length || 0}
-              </span>
             </div>
-            {/* Mobile Menu */}
-            {showMobileMenu && (
-              <div className="mt-3 pt-3 border-t space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="mobile-boneyard-view" className="text-sm text-muted-foreground">
-                    Boneyard view
-                  </label>
-                  <Switch 
-                    checked={boneyardViewEnabled}
-                    onCheckedChange={setBoneyardViewEnabled}
-                    id="mobile-boneyard-view"
-                  />
-                </div>
-              </div>
-            )}
-          </Card>
-        ) : (
-          /* Desktop Header */
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <h2 className="text-2xl font-bold">Domino Game</h2>
-                <Badge variant={isMyTurn ? "default" : "secondary"}>
-                  {isMyTurn ? "Your Turn" : `${currentPlayerName}'s Turn`}
-                </Badge>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-muted-foreground">
-                  Boneyard: {gameState?.boneyard?.length || 0} tiles
+            <div className="flex items-center space-x-2">
+              <Button 
+                onClick={() => navigate('/lobbies')}
+                variant="outline"
+                size={isMobile ? "sm" : "default"}
+                className="flex items-center space-x-1 md:space-x-2"
+              >
+                <ArrowLeft className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
+                <span className={isMobile ? "text-xs" : ""}>
+                  {isMobile ? "Lobby" : "Back to Lobby"}
                 </span>
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    checked={boneyardViewEnabled}
-                    onCheckedChange={setBoneyardViewEnabled}
-                    id="boneyard-view"
-                  />
-                  <label htmlFor="boneyard-view" className="text-sm text-muted-foreground">
-                    Boneyard view
-                  </label>
-                </div>
-              </div>
+              </Button>
+              <Button 
+                onClick={startNewGame}
+                variant="default"
+                size={isMobile ? "sm" : "default"}
+                className={isMobile ? "text-xs" : ""}
+              >
+                {isMobile ? "Nieuw Spel" : "Start New Game"}
+              </Button>
+              {!isMobile && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="p-2"
+                >
+                  {showMobileMenu ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                </Button>
+              )}
             </div>
-          </Card>
-        )}
+          </div>
+          
+          {/* Game Info Row */}
+          <div className="flex items-center justify-between mt-3 pt-3 border-t">
+            <span className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
+              Boneyard: {gameState?.boneyard?.length || 0} {isMobile ? "" : "tiles"}
+            </span>
+            <div className="flex items-center space-x-2">
+              <Switch 
+                checked={boneyardViewEnabled}
+                onCheckedChange={setBoneyardViewEnabled}
+                id="boneyard-view"
+              />
+              <label htmlFor="boneyard-view" className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
+                Boneyard view
+              </label>
+            </div>
+          </div>
+        </Card>
 
         {/* Players List */}
         <Card className={isMobile ? "p-3" : "p-4"}>
@@ -300,27 +293,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         {/* Game Actions */}
         <Card className={isMobile ? "p-3" : "p-4"}>
           {isMobile ? (
-            /* Mobile Actions - Stacked Layout */
+            /* Mobile Actions - Compact Layout */
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <Button 
-                  onClick={() => navigate('/lobbies')}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center justify-center"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-1" />
-                  <span className="text-xs">Lobby</span>
-                </Button>
-                <Button 
-                  onClick={startNewGame}
-                  variant="default"
-                  size="sm"
-                  className="text-xs"
-                >
-                  Nieuw Spel
-                </Button>
-              </div>
               <div className="grid grid-cols-2 gap-2">
                 <Button 
                   onClick={boneyardViewEnabled ? () => setShowBoneyardDialog(true) : drawFromBoneyard}
@@ -380,20 +354,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             /* Desktop Actions - Horizontal Layout */
             <div className="flex items-center justify-between">
               <div className="flex space-x-2">
-                <Button 
-                  onClick={() => navigate('/lobbies')}
-                  variant="outline"
-                  className="flex items-center space-x-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Back to Lobby</span>
-                </Button>
-                <Button 
-                  onClick={startNewGame}
-                  variant="default"
-                >
-                  Start New Game
-                </Button>
                 <Button 
                   onClick={boneyardViewEnabled ? () => setShowBoneyardDialog(true) : drawFromBoneyard}
                   disabled={!gameState?.boneyard?.length}
