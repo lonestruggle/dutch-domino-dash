@@ -348,32 +348,36 @@
 
   /* Hand domino scaling - separate from board dominoes */
   .domino-tile-hand {
-    transform: scale(var(--hand-domino-scale, 1));
+    transform: scale(var(--hand-domino-scale, 1)) !important;
     transform-origin: center center;
+    transition: transform 0.2s ease-in-out;
   }
   
   .domino-tile-hand.selected {
-    transform: scale(calc(var(--hand-domino-scale, 1) * 1.05));
+    transform: scale(calc(var(--hand-domino-scale, 1) * 1.05)) !important;
+    box-shadow: 0 0 12px hsl(var(--dutch-orange-glow));
+    border-color: hsl(var(--dutch-orange));
   }
   
   .domino-tile-hand:hover {
-    transform: scale(calc(var(--hand-domino-scale, 1) * 1.1));
+    transform: scale(calc(var(--hand-domino-scale, 1) * 1.1)) !important;
+    z-index: 10;
   }
   
   .domino-tile-hand:active {
-    transform: scale(calc(var(--hand-domino-scale, 1) * 0.95));
+    transform: scale(calc(var(--hand-domino-scale, 1) * 0.95)) !important;
   }
 
   /* Mobile-specific adjustments */
   @media (max-width: 768px) {
     
-    /* Mobile hand domino adjustments */
+    /* Mobile hand domino adjustments - smaller hover effects for touch */
     .domino-tile-hand:hover {
-      transform: scale(calc(var(--hand-domino-scale, 1) * 0.9));
+      transform: scale(calc(var(--hand-domino-scale, 1) * 1.02)) !important;
     }
     
     .domino-tile-hand:active {
-      transform: scale(calc(var(--hand-domino-scale, 1) * 0.85));
+      transform: scale(calc(var(--hand-domino-scale, 1) * 0.9)) !important;
     }
     
     /* Larger touch targets for mobile */

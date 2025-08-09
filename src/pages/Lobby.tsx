@@ -432,57 +432,57 @@ export default function Lobby() {
                       )}
                     </span>
                   </div>
-                  {isLobbyCreator && (
-                    <div>
-                      {player && player.is_bot ? (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleRemoveBot(position)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                      ) : !player ? (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={handleAddBot}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          <Bot className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  )}
+                      {isLobbyCreator && (
+                        <div className="shrink-0">
+                          {player && player.is_bot ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleRemoveBot(position)}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                          ) : !player ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={handleAddBot}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              <Bot className="h-4 w-4" />
+                            </Button>
+                          ) : null}
+                        </div>
+                      )}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Background selectors for lobby creator */}
-          {isLobbyCreator && (
-            <div className="space-y-4">
-              <BackgroundSelector
-                selectedBackground={selectedBackground}
-                onBackgroundChange={setSelectedBackground}
-              />
-              <TableBackgroundSelector
-                selectedTableBackground={selectedTableBackground}
-                onTableBackgroundChange={setSelectedTableBackground}
-              />
-            </div>
-          )}
+            {/* Background selectors for lobby creator */}
+            {isLobbyCreator && (
+              <div className="space-y-3 sm:space-y-4">
+                <BackgroundSelector
+                  selectedBackground={selectedBackground}
+                  onBackgroundChange={setSelectedBackground}
+                />
+                <TableBackgroundSelector
+                  selectedTableBackground={selectedTableBackground}
+                  onTableBackgroundChange={setSelectedTableBackground}
+                />
+              </div>
+            )}
 
-          {lobby.status === 'waiting' && (
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                {isLobbyCreator 
-                  ? "Waiting for players to join. Click 'Start Game' when ready!"
-                  : "Waiting for the lobby creator to start the game..."
-                }
-              </p>
-            </div>
-          )}
+            {lobby.status === 'waiting' && (
+              <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  {isLobbyCreator 
+                    ? "Waiting for players to join. Click 'Start Game' when ready!"
+                    : "Waiting for the lobby creator to start the game..."
+                  }
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

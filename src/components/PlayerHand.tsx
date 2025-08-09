@@ -39,7 +39,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         Jouw Hand
       </h2>
       
-      <div className={`flex flex-wrap justify-center gap-0.5 min-h-[48px] -space-y-2 ${isMobile ? "p-0" : "p-2"}`}>
+      <div className={`flex flex-wrap justify-center gap-1 min-h-[48px] ${isMobile ? "p-0 -space-x-3" : "p-2 gap-2"}`}>
         {hand.map((domino, index) => (
           <DominoTile
             key={getDominoKey(domino, index)}
@@ -47,9 +47,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             orientation={isDouble(domino) ? "vertical" : "horizontal"}
             selected={index === selectedIndex}
             onClick={() => onDominoSelect(index)}
-            className={`relative transition-transform active:scale-95 domino-tile-hand ${
+            className={`relative transition-transform domino-tile-hand ${
               isMobile 
-                ? "-mr-6 hover:z-10" 
+                ? "hover:z-10" 
                 : "m-1"
             }`}
           />

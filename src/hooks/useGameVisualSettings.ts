@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDeviceType, DeviceType } from './useDeviceType';
+import { useAuth } from './useAuth';
 
 export interface GameVisualSettings {
   dominoScale: number; // 0.5 to 2.0 multiplier for board dominoes
@@ -23,13 +24,19 @@ const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
   mobile: { dominoScale: 0.8, handDominoScale: 0.8 },
 };
 
-const STORAGE_KEY = 'domino-game-visual-settings-v2';
-
 export const useGameVisualSettings = () => {
   const deviceType = useDeviceType();
+  const { user } = useAuth();
+  
+  // Make settings personal per user
+  const getStorageKey = () => {
+    const userId = user?.id || 'anonymous';
+    return `domino-game-visual-settings-v2-${userId}`;
+  };
   const [allSettings, setAllSettings] = useState<DeviceSpecificSettings>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const storageKey = getStorageKey();
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
         // Ensure all properties exist by merging with defaults
@@ -48,11 +55,12 @@ export const useGameVisualSettings = () => {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(allSettings));
+      const storageKey = getStorageKey();
+      localStorage.setItem(storageKey, JSON.stringify(allSettings));
     } catch (error) {
       console.warn('Failed to save visual settings:', error);
     }
-  }, [allSettings]);
+  }, [allSettings, user?.id]);
 
   // Current device settings
   const settings = allSettings[deviceType];
