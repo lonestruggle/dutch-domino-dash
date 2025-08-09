@@ -240,14 +240,25 @@
 
   /* Hard Slam Shake Animation - aanpasbare trilbeweging */
   .hard-slam-shake {
-    animation: dominoVibrate var(--hard-slam-speed, 0.2s) ease-in-out infinite alternate !important;
-    animation-duration: var(--hard-slam-duration, 2s) !important;
+    animation-name: dominoVibrate !important;
+    animation-duration: var(--hard-slam-speed, 0.2s) !important;
+    animation-timing-function: ease-in-out !important;
+    animation-iteration-count: infinite !important;
+    animation-direction: alternate !important;
+    animation-fill-mode: forwards !important;
+    /* Stop animatie na de ingestelde duur */
+    animation-play-state: running !important;
   }
   
   /* Zorg ervoor dat board dominostenen ook trillen met aanpasbare trilbeweging */
   .domino-tile-board.hard-slam-shake {
-    animation: dominoVibrate var(--hard-slam-speed, 0.2s) ease-in-out infinite alternate !important;
-    animation-duration: var(--hard-slam-duration, 2s) !important;
+    animation-name: dominoVibrate !important;
+    animation-duration: var(--hard-slam-speed, 0.2s) !important;
+    animation-timing-function: ease-in-out !important;
+    animation-iteration-count: infinite !important;
+    animation-direction: alternate !important;
+    animation-fill-mode: forwards !important;
+    animation-play-state: running !important;
   }
 
   @keyframes fade-in {
@@ -306,8 +317,14 @@
   /* Hard slam animation overrides ALL other transforms */
   .domino-tile-board.hard-slam-shake {
     transition: none !important;
-    animation: dominoVibrate 0.1s ease-in-out infinite alternate !important;
-    /* Behoud de normale transforms maar voeg trillen toe */
+    /* Gebruik de custom animation properties in plaats van hardcoded waarden */
+    animation-name: dominoVibrate !important;
+    animation-duration: var(--hard-slam-speed, 0.2s) !important;
+    animation-timing-function: ease-in-out !important;
+    animation-iteration-count: infinite !important;
+    animation-direction: alternate !important;
+    animation-fill-mode: forwards !important;
+    animation-play-state: running !important;
   }
   
   /* Dubbele dominostenen met translate + scale + rotation gecombineerd */

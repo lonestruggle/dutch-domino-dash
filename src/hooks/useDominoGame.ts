@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { GameState, DominoData, OpenEnd, LegalMove, DominoState } from '@/types/domino';
+import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 
 const CELL_SIZE = 48;
 
@@ -13,6 +14,7 @@ const shuffleArray = <T>(array: T[]): void => {
 };
 
 export const useDominoGame = () => {
+  const { settings } = useGameVisualSettings();
   const [gameState, setGameState] = useState<GameState>({
     dominoes: {},
     board: {},
@@ -840,7 +842,8 @@ export const useDominoGame = () => {
         
         console.log('🔥 HARD SLAM ACTIVATED - isHardSlamming:', true);
         
-        // Stop de shake animatie na maximaal 3 seconden (langste individuele duur)
+        // Stop de shake animatie na de ingestelde duur uit de instellingen
+        const hardSlamDurationMs = settings.hardSlamDuration * 1000; // Convert to milliseconds
         setTimeout(() => {
           setGameState(currentState => {
             console.log('🔥 HARD SLAM STOPPED - isHardSlamming:', false);
@@ -849,7 +852,7 @@ export const useDominoGame = () => {
               isHardSlamming: false
             };
           });
-        }, 3000);
+        }, hardSlamDurationMs);
         
       } else {
         // Regular move without hard slam
