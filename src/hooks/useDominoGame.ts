@@ -843,7 +843,9 @@ export const useDominoGame = () => {
         console.log('🔥 HARD SLAM ACTIVATED - isHardSlamming:', true);
         
         // Stop de shake animatie na de ingestelde duur uit de instellingen
-        const hardSlamDurationMs = settings.hardSlamDuration * 1000; // Convert to milliseconds
+        // Use the adjusted duration from visual settings
+        const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
+        const hardSlamDurationMs = adjustedDuration * 1000; // Convert to milliseconds
         setTimeout(() => {
           setGameState(currentState => {
             console.log('🔥 HARD SLAM STOPPED - isHardSlamming:', false);

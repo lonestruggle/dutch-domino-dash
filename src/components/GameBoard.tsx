@@ -59,9 +59,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
     };
 
+    const handleTestHardSlam = () => {
+      // Trigger a test hard slam via parent component callback
+      // This will be implemented at the parent level that has access to game state management
+      console.log('🎯 Test hard slam requested - implement at parent level');
+    };
+
     window.addEventListener('vibrationSettingsUpdated', handleVibrationUpdate);
-    return () => window.removeEventListener('vibrationSettingsUpdated', handleVibrationUpdate);
-  }, []);
+    window.addEventListener('testHardSlam', handleTestHardSlam);
+    return () => {
+      window.removeEventListener('vibrationSettingsUpdated', handleVibrationUpdate);
+      window.removeEventListener('testHardSlam', handleTestHardSlam);
+    };
+  }, [settings, gameState]);
 
   // Standard domino size for mobile - like real dominoes
   const calculateDominoScale = () => {

@@ -333,7 +333,7 @@ export const GameVisualControls: React.FC = () => {
             </div>
 
             {/* Live Update knop */}
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <Button
                 onClick={handleLiveUpdate}
                 disabled={isUpdating}
@@ -347,6 +347,11 @@ export const GameVisualControls: React.FC = () => {
                 )}
                 {isUpdating ? 'Toegepast!' : 'Live Update Toepassen'}
               </Button>
+              
+              {/* Instructie voor test */}
+              <div className="text-xs text-muted-foreground text-center p-2 bg-muted rounded">
+                💡 Speel een domino met Hard Slam om de trillingen te testen
+              </div>
             </div>
           </CardContent>
         </Card>

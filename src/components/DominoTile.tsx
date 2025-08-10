@@ -55,7 +55,7 @@ export const DominoTile: React.FC<DominoTileProps> = ({
       onClick={onClick}
       style={{
         '--domino-rotation': `${rotation}deg`,
-        '--shake-duration': `${1 + Math.random()}s`,
+        // Remove the hardcoded shake duration - let settings control it
         // Zorg dat ALLE style properties van de GameBoard worden doorgegeven
         ...style,
       } as React.CSSProperties}
