@@ -48,6 +48,9 @@ export const GameVisualControls: React.FC = () => {
     resetToDefaults 
   } = useGameVisualSettings();
   const [activeTab, setActiveTab] = useState<DeviceType>(currentDeviceType);
+  
+  // Get current settings for the active device
+  const settings = getSettingsForDevice(activeTab);
 
   const handleLiveUpdate = async () => {
     setIsUpdating(true);
@@ -348,10 +351,49 @@ export const GameVisualControls: React.FC = () => {
                 {isUpdating ? 'Toegepast!' : 'Live Update Toepassen'}
               </Button>
               
-              {/* Instructie voor test */}
-              <div className="text-xs text-muted-foreground text-center p-2 bg-muted rounded">
-                💡 Speel een domino met Hard Slam om de trillingen te testen
-              </div>
+              {/* Test trillingen knop */}
+              <Button
+                onClick={() => {
+                  // Direct test via CSS animatie trigger
+                  const dominoes = document.querySelectorAll('.domino-tile-board');
+                  dominoes.forEach((domino: any) => {
+                    const enabledAnimations = [];
+                    if (settings.enableHorizontalVibration) enabledAnimations.push('dominoVibrate_horizontal');
+                    if (settings.enableLeftDiagonalVibration) enabledAnimations.push('dominoVibrate_left_diagonal');
+                    if (settings.enableRightDiagonalVibration) enabledAnimations.push('dominoVibrate_right_diagonal');
+                    if (settings.enableVerticalVibration) enabledAnimations.push('dominoVibrate_vertical');
+                    if (settings.enableSubtleVibration) enabledAnimations.push('dominoVibrate_subtle');
+                    if (settings.enableShakeVibration) enabledAnimations.push('dominoVibrate_shake');
+                    
+                    if (enabledAnimations.length > 0) {
+                      const randomAnimation = enabledAnimations[Math.floor(Math.random() * enabledAnimations.length)];
+                      const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
+                      const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
+                      
+                      // Apply test animation
+                      domino.style.animationName = randomAnimation;
+                      domino.style.animationDuration = `${adjustedSpeed}s`;
+                      domino.style.animationIterationCount = 'infinite';
+                      domino.style.animationDirection = 'alternate';
+                      domino.style.animationTimingFunction = 'ease-in-out';
+                      
+                      console.log(`🧪 Test trilling: ${randomAnimation}, duur: ${adjustedDuration}s, snelheid: ${adjustedSpeed}s`);
+                      
+                      // Stop after test duration
+                      setTimeout(() => {
+                        domino.style.animation = '';
+                      }, adjustedDuration * 1000);
+                    } else {
+                      console.log('🧪 Geen trillingen actief - alle instellingen uit');
+                    }
+                  });
+                }}
+                className="w-full flex items-center gap-2"
+                variant="outline"
+                size="sm"
+              >
+                🧪 Test Trillingen (3s)
+              </Button>
             </div>
           </CardContent>
         </Card>
