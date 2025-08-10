@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshCw, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshCw, Check, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -15,6 +15,7 @@ import {
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { DeviceType } from '@/hooks/useDeviceType';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const deviceIcons = {
   desktop: Monitor,
@@ -31,6 +32,10 @@ const deviceLabels = {
 export const GameVisualControls: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const dialogRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { 
     currentDeviceType, 
@@ -51,6 +56,47 @@ export const GameVisualControls: React.FC = () => {
   
   // Get current settings for the active device
   const settings = getSettingsForDevice(activeTab);
+
+  // Drag functionality
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        const newX = e.clientX - dragStart.x;
+        const newY = e.clientY - dragStart.y;
+        
+        // Keep within viewport bounds
+        const maxX = window.innerWidth - 400; // dialog width
+        const maxY = window.innerHeight - 600; // dialog height
+        
+        setPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY))
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragStart]);
 
   const handleLiveUpdate = async () => {
     setIsUpdating(true);
@@ -425,9 +471,26 @@ export const GameVisualControls: React.FC = () => {
           <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent 
+        ref={dialogRef}
+        className="max-w-lg max-h-[90vh] overflow-y-auto"
+        style={{
+          position: 'fixed',
+          left: `${position.x}px`,
+          top: `${position.y}px`,
+          transform: 'none',
+          margin: 0
+        }}
+      >
+        <DialogHeader 
+          className={cn(
+            "cursor-move flex flex-row items-center gap-2 border-b pb-3",
+            isDragging && "cursor-grabbing"
+          )}
+          onMouseDown={handleMouseDown}
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <DialogTitle className="flex items-center gap-2 flex-1">
             <Settings className="h-5 w-5" />
             Visuele Instellingen
           </DialogTitle>
