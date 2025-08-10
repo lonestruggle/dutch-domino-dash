@@ -371,16 +371,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               if (settings.enableSubtleVibration) animations.push('dominoVibrate_subtle');
               if (settings.enableShakeVibration) animations.push('dominoVibrate_shake');
               
-              // Fallback to horizontal if none enabled
-              return animations.length > 0 ? animations : ['dominoVibrate_horizontal'];
+              // Return empty array if no animations enabled
+              return animations;
             };
             
             const enabledAnimations = getEnabledAnimations();
             
-            // Use domino index and consistent seed for stable animation selection
+            // Use domino index for consistent animation selection
             const dominoIndex = Object.keys(gameState.dominoes).indexOf(id);
-            const animationIndex = dominoIndex % enabledAnimations.length;
-            const selectedAnimation = enabledAnimations[animationIndex];
+            
+            // Only animate if vibrations are enabled and hard slamming
+            const shouldAnimate = gameState.isHardSlamming && enabledAnimations.length > 0;
+            const selectedAnimation = shouldAnimate ? enabledAnimations[dominoIndex % enabledAnimations.length] : 'none';
+            
+            // Calculate adjusted duration and speed
+            const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
+            const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
             
             console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, animation: ${selectedAnimation}`);
             
@@ -398,12 +404,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   orientation={domino.orientation}
                   flipped={domino.flipped}
                   rotation={domino.rotation || 0}
-                  isShaking={gameState.isHardSlamming}
+                  isShaking={shouldAnimate}
                   onClick={undefined}
                   className="domino-tile-board"
                   style={{
                     '--individual-angle': `${individualAngle}deg`,
                     '--vibration-animation': selectedAnimation,
+                    '--shake-duration': `${adjustedDuration}s`,
+                    '--hard-slam-duration': `${adjustedDuration}s`,
+                    '--hard-slam-speed': `${adjustedSpeed}s`,
                   } as React.CSSProperties}
                 />
               </div>

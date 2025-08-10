@@ -358,9 +358,9 @@
   /* Hard slam animation overrides ALL other transforms */
   .domino-tile-board.hard-slam-shake {
     transition: none !important;
-    /* Gebruik de custom animation properties in plaats van hardcoded waarden */
-    animation-name: var(--vibration-animation, dominoVibrate) !important;
-    animation-duration: var(--hard-slam-speed, 0.2s) !important;
+    /* Gebruik de custom animation properties en settings */
+    animation-name: var(--vibration-animation, none) !important;
+    animation-duration: var(--shake-duration, var(--hard-slam-duration, 1.5s)) !important;
     animation-timing-function: ease-in-out !important;
     animation-iteration-count: infinite !important;
     animation-direction: alternate !important;
