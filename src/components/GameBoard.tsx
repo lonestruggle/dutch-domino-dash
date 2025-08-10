@@ -69,9 +69,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--domino-target-scale', targetScale.toString());
     rootElement.style.setProperty('--hand-domino-scale', finalScale.toString());
     
-    // Hard slam settings
-    rootElement.style.setProperty('--hard-slam-duration', `${settings.hardSlamDuration}s`);
-    rootElement.style.setProperty('--hard-slam-speed', `${settings.hardSlamSpeed}s`);
+    // Hard slam settings with adjustments
+    const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
+    const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
+    rootElement.style.setProperty('--hard-slam-duration', `${adjustedDuration}s`);
+    rootElement.style.setProperty('--hard-slam-speed', `${adjustedSpeed}s`);
     
     if (boardRef.current) {
       boardRef.current.offsetHeight;
@@ -341,20 +343,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // Elke dominosteen krijgt zijn eigen willekeurige rotatie hoek (tussen 5 en 20 graden)
             const individualAngle = 5 + Math.random() * 15; // 5-20 graden
             
-            // Select a random vibration animation for each domino during hard slam
-            const vibrationAnimations = [
-              'dominoVibrate_horizontal',
-              'dominoVibrate_left_diagonal', 
-              'dominoVibrate_right_diagonal',
-              'dominoVibrate_vertical',
-              'dominoVibrate_subtle',
-              'dominoVibrate_shake'
-            ];
+            // Select enabled vibration animations based on settings
+            const getEnabledAnimations = () => {
+              const animations = [];
+              if (settings.enableHorizontalVibration) animations.push('dominoVibrate_horizontal');
+              if (settings.enableLeftDiagonalVibration) animations.push('dominoVibrate_left_diagonal');
+              if (settings.enableRightDiagonalVibration) animations.push('dominoVibrate_right_diagonal');
+              if (settings.enableVerticalVibration) animations.push('dominoVibrate_vertical');
+              if (settings.enableSubtleVibration) animations.push('dominoVibrate_subtle');
+              if (settings.enableShakeVibration) animations.push('dominoVibrate_shake');
+              
+              // Fallback to horizontal if none enabled
+              return animations.length > 0 ? animations : ['dominoVibrate_horizontal'];
+            };
+            
+            const enabledAnimations = getEnabledAnimations();
             
             // Use domino index and consistent seed for stable animation selection
             const dominoIndex = Object.keys(gameState.dominoes).indexOf(id);
-            const animationIndex = dominoIndex % vibrationAnimations.length;
-            const selectedAnimation = vibrationAnimations[animationIndex];
+            const animationIndex = dominoIndex % enabledAnimations.length;
+            const selectedAnimation = enabledAnimations[animationIndex];
             
             console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, animation: ${selectedAnimation}`);
             
