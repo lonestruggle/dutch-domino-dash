@@ -842,18 +842,44 @@ export const useDominoGame = () => {
         
         console.log('🔥 HARD SLAM ACTIVATED - isHardSlamming:', true);
         
-        // Stop de shake animatie na de ingestelde duur uit de instellingen
-        // Use the adjusted duration from visual settings
+        // Use the same logic as the working test vibrations
         const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
-        const hardSlamDurationMs = Math.max(500, adjustedDuration * 1000); // Minimum 500ms, convert to milliseconds
-        console.log('🔥 HARD SLAM DURATION SET TO:', hardSlamDurationMs, 'ms (adjusted:', adjustedDuration, 'settings:', settings.hardSlamDuration, ')');
+        const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.1);
         
+        // Apply vibrations directly to domino elements like test trillingen does
+        const dominoes = document.querySelectorAll('.domino-tile-board');
+        dominoes.forEach((domino: any) => {
+          const enabledAnimations = [];
+          if (settings.enableHorizontalVibration) enabledAnimations.push('dominoVibrate_horizontal');
+          if (settings.enableLeftDiagonalVibration) enabledAnimations.push('dominoVibrate_left_diagonal');
+          if (settings.enableRightDiagonalVibration) enabledAnimations.push('dominoVibrate_right_diagonal');
+          
+          if (enabledAnimations.length > 0) {
+            const randomAnimation = enabledAnimations[Math.floor(Math.random() * enabledAnimations.length)];
+            console.log('🔥 HARD SLAM: applying', randomAnimation, 'duration:', adjustedDuration + 's', 'speed:', adjustedSpeed + 's');
+            
+            domino.style.setProperty('--vibration-animation', randomAnimation);
+            domino.style.setProperty('--shake-duration', adjustedDuration + 's');
+            domino.style.setProperty('--hard-slam-duration', adjustedDuration + 's');
+            domino.style.setProperty('--hard-slam-speed', adjustedSpeed + 's');
+            
+            // Reset after duration
+            setTimeout(() => {
+              domino.style.setProperty('--vibration-animation', 'none');
+              console.log('🔥 HARD SLAM: animation stopped for domino');
+            }, adjustedDuration * 1000);
+          }
+        });
+        
+        // Stop de hard slam status na de ingestelde duur
+        const hardSlamDurationMs = adjustedDuration * 1000;
         setTimeout(() => {
           setGameState(currentState => {
             console.log('🔥 HARD SLAM STOPPED - isHardSlamming:', false);
             return {
               ...currentState,
-              isHardSlamming: false
+              isHardSlamming: false,
+              hardSlamNextMove: false
             };
           });
         }, hardSlamDurationMs);
