@@ -154,38 +154,46 @@ export const useDominoGame = () => {
     const openEnds: OpenEnd[] = [];
     const boardCoords = Object.keys(state.board);
     
-    // Special case: first placed non-double domino should have 6 open ends (3 on each side)
-    const dominoCount = Object.keys(state.dominoes).length;
-    if (dominoCount === 1) {
-      const [onlyId, onlyDomino] = Object.entries(state.dominoes)[0];
-      const d = onlyDomino as DominoState;
-      if (!isDouble(d.data)) {
-        const open: OpenEnd[] = [];
-        const [firstVal, secondVal] = d.flipped
-          ? [d.data.value2, d.data.value1]
-          : [d.data.value1, d.data.value2];
-
-        if (d.orientation === 'horizontal') {
-          // Left half (x,y) -> three ends: W, N, S with firstVal
-          open.push({ x: d.x - 1, y: d.y, value: firstVal, fromDir: 'W' });
-          open.push({ x: d.x, y: d.y - 1, value: firstVal, fromDir: 'N' });
-          open.push({ x: d.x, y: d.y + 1, value: firstVal, fromDir: 'S' });
-          // Right half (x+1,y) -> three ends: E, N, S with secondVal
-          open.push({ x: d.x + 2, y: d.y, value: secondVal, fromDir: 'E' });
-          open.push({ x: d.x + 1, y: d.y - 1, value: secondVal, fromDir: 'N' });
-          open.push({ x: d.x + 1, y: d.y + 1, value: secondVal, fromDir: 'S' });
+    // Special case: first domino should have two open ends
+    if (boardCoords.length === 1) {
+      const coord = boardCoords[0];
+      const [x, y] = coord.split(',').map(Number);
+      const cell = state.board[coord];
+      const domino = state.dominoes[cell.dominoId];
+      
+      console.log(`🔍 Single domino case: ${domino.data.value1}|${domino.data.value2}`);
+      
+      if (!isDouble(domino.data)) {
+        // First non-double domino has two open ends
+        if (domino.orientation === 'horizontal') {
+          openEnds.push({
+            x: x + 1,
+            y: y,
+            value: domino.flipped ? domino.data.value1 : domino.data.value2,
+            fromDir: 'E',
+          });
+          openEnds.push({
+            x: x - 1,
+            y: y,
+            value: domino.flipped ? domino.data.value2 : domino.data.value1,
+            fromDir: 'W',
+          });
         } else {
-          // Top half (x,y) -> three ends: N, W, E with firstVal
-          open.push({ x: d.x, y: d.y - 1, value: firstVal, fromDir: 'N' });
-          open.push({ x: d.x - 1, y: d.y, value: firstVal, fromDir: 'W' });
-          open.push({ x: d.x + 1, y: d.y, value: firstVal, fromDir: 'E' });
-          // Bottom half (x,y+1) -> three ends: S, W, E with secondVal
-          open.push({ x: d.x, y: d.y + 2, value: secondVal, fromDir: 'S' });
-          open.push({ x: d.x - 1, y: d.y + 1, value: secondVal, fromDir: 'W' });
-          open.push({ x: d.x + 1, y: d.y + 1, value: secondVal, fromDir: 'E' });
+          openEnds.push({
+            x: x,
+            y: y - 1,
+            value: domino.flipped ? domino.data.value1 : domino.data.value2,
+            fromDir: 'N',
+          });
+          openEnds.push({
+            x: x,
+            y: y + 1,
+            value: domino.flipped ? domino.data.value2 : domino.data.value1,
+            fromDir: 'S',
+          });
         }
-        console.log('🔍 Single non-double domino special case: 6 open ends', open);
-        return open;
+        console.log(`🔍 Single domino open ends:`, openEnds);
+        return openEnds;
       }
     }
     
