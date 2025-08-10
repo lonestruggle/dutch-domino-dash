@@ -16,6 +16,7 @@ import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { DeviceType } from '@/hooks/useDeviceType';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { applyBoardVibration } from '@/lib/vibration';
 
 const deviceIcons = {
   desktop: Monitor,
@@ -400,45 +401,14 @@ export const GameVisualControls: React.FC = () => {
               {/* Test trillingen knop */}
               <Button
                 onClick={() => {
-                  // Direct test via CSS animatie trigger
-                  const dominoes = document.querySelectorAll('.domino-tile-board');
-                  dominoes.forEach((domino: any) => {
-                    const enabledAnimations = [];
-                    if (settings.enableHorizontalVibration) enabledAnimations.push('dominoVibrate_horizontal');
-                    if (settings.enableLeftDiagonalVibration) enabledAnimations.push('dominoVibrate_left_diagonal');
-                    if (settings.enableRightDiagonalVibration) enabledAnimations.push('dominoVibrate_right_diagonal');
-                    if (settings.enableVerticalVibration) enabledAnimations.push('dominoVibrate_vertical');
-                    if (settings.enableSubtleVibration) enabledAnimations.push('dominoVibrate_subtle');
-                    if (settings.enableShakeVibration) enabledAnimations.push('dominoVibrate_shake');
-                    
-                    if (enabledAnimations.length > 0) {
-                      const randomAnimation = enabledAnimations[Math.floor(Math.random() * enabledAnimations.length)];
-                      const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
-                      const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
-                      
-                      // Apply test animation
-                      domino.style.animationName = randomAnimation;
-                      domino.style.animationDuration = `${adjustedSpeed}s`;
-                      domino.style.animationIterationCount = 'infinite';
-                      domino.style.animationDirection = 'alternate';
-                      domino.style.animationTimingFunction = 'ease-in-out';
-                      
-                      console.log(`🧪 Test trilling: ${randomAnimation}, duur: ${adjustedDuration}s, snelheid: ${adjustedSpeed}s`);
-                      
-                      // Stop after test duration
-                      setTimeout(() => {
-                        domino.style.animation = '';
-                      }, adjustedDuration * 1000);
-                    } else {
-                      console.log('🧪 Geen trillingen actief - alle instellingen uit');
-                    }
-                  });
+                  console.log('🧪 Test Trillingen via util');
+                  applyBoardVibration(settings);
                 }}
                 className="w-full flex items-center gap-2"
                 variant="outline"
                 size="sm"
               >
-                🧪 Test Trillingen (3s)
+                🧪 Test Trillingen
               </Button>
             </div>
           </CardContent>

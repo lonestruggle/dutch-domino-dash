@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { GameState, DominoData, OpenEnd, LegalMove, DominoState } from '@/types/domino';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
+import { applyBoardVibration } from '@/lib/vibration';
 
 const CELL_SIZE = 48;
 
@@ -827,7 +828,7 @@ export const useDominoGame = () => {
           rotation: (Math.random() - 0.5) * 40
         };
         
-        // Create state with hard slam animation active
+        // Create state with hard slam animation active (apply AFTER placement)
         newState = {
           ...prev,
           dominoes: finalDominoes,
@@ -837,52 +838,17 @@ export const useDominoGame = () => {
           nextDominoId: prev.nextDominoId + 1,
           isGameOver: isGameWon,
           hardSlamNextMove: false, // Reset hard slam flag
-          isHardSlamming: true, // Start shake animation
+          isHardSlamming: false, // Do not rely on CSS class; we use direct animations like Test Trillingen
         };
         
-        console.log('🔥 HARD SLAM ACTIVATED - isHardSlamming:', true);
+        console.log('💥 HARD SLAM EFFECT - applying test-like vibrations AFTER placement');
         
-        // Use the same logic as the working test vibrations
-        const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
-        const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.1);
-        
-        // Apply vibrations directly to domino elements like test trillingen does
-        const dominoes = document.querySelectorAll('.domino-tile-board');
-        dominoes.forEach((domino: any) => {
-          const enabledAnimations = [];
-          if (settings.enableHorizontalVibration) enabledAnimations.push('dominoVibrate_horizontal');
-          if (settings.enableLeftDiagonalVibration) enabledAnimations.push('dominoVibrate_left_diagonal');
-          if (settings.enableRightDiagonalVibration) enabledAnimations.push('dominoVibrate_right_diagonal');
-          
-          if (enabledAnimations.length > 0) {
-            const randomAnimation = enabledAnimations[Math.floor(Math.random() * enabledAnimations.length)];
-            console.log('🔥 HARD SLAM: applying', randomAnimation, 'duration:', adjustedDuration + 's', 'speed:', adjustedSpeed + 's');
-            
-            domino.style.setProperty('--vibration-animation', randomAnimation);
-            domino.style.setProperty('--shake-duration', adjustedDuration + 's');
-            domino.style.setProperty('--hard-slam-duration', adjustedDuration + 's');
-            domino.style.setProperty('--hard-slam-speed', adjustedSpeed + 's');
-            
-            // Reset after duration
-            setTimeout(() => {
-              domino.style.setProperty('--vibration-animation', 'none');
-              console.log('🔥 HARD SLAM: animation stopped for domino');
-            }, adjustedDuration * 1000);
-          }
-        });
-        
-        // Stop de hard slam status na de ingestelde duur
-        const hardSlamDurationMs = adjustedDuration * 1000;
+        // Schedule vibrations just after DOM update so the new tile is present
         setTimeout(() => {
-          setGameState(currentState => {
-            console.log('🔥 HARD SLAM STOPPED - isHardSlamming:', false);
-            return {
-              ...currentState,
-              isHardSlamming: false,
-              hardSlamNextMove: false
-            };
-          });
-        }, hardSlamDurationMs);
+          applyBoardVibration(settings);
+          console.log('✅ Hard Slam vibration triggered via util');
+        }, 50);
+
         
       } else {
         // Regular move without hard slam
