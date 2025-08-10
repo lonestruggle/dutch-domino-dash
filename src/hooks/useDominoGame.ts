@@ -555,91 +555,20 @@ export const useDominoGame = () => {
       const isFirstDomino = Object.keys(prev.dominoes).length === 0;
       
       if (!isFirstDomino) {
-        if (isDouble(dominoData)) {
-          // Mark the double domino positions themselves as forbidden first
-          prev.forbiddens[`${x},${y}`] = true;
-          if (orientation === 'horizontal') {
-            prev.forbiddens[`${x + 1},${y}`] = true;
-          } else {
-            prev.forbiddens[`${x},${y + 1}`] = true;
-          }
-          
-          // Then add comprehensive forbidden positions around it
-          let dir = end.fromDir;
-          if (dir === 'N') {
-            // Forbidden positions around North direction for doubles
-            prev.forbiddens[`${x - 1},${y + 2}`] = true;
-            prev.forbiddens[`${x + 1},${y + 2}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y + 3}`] = true;
-            prev.forbiddens[`${x},${y + 2}`] = true;
-          }
-          if (dir === 'S') {
-            // Forbidden positions around South direction for doubles
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y - 2}`] = true;
-            prev.forbiddens[`${x + 1},${y - 2}`] = true;
-            prev.forbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y - 2}`] = true;
-            prev.forbiddens[`${x},${y - 3}`] = true;
-          }
-          if (dir === 'E') {
-            // Forbidden positions around East direction for doubles
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 2},${y + 1}`] = true;
-            prev.forbiddens[`${x - 2},${y - 1}`] = true;
-            prev.forbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x - 2},${y}`] = true;
-            prev.forbiddens[`${x - 3},${y}`] = true;
-          }
-          if (dir === 'W') {
-            // Forbidden positions around West direction for doubles
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            prev.forbiddens[`${x + 2},${y + 1}`] = true;
-            prev.forbiddens[`${x + 2},${y - 1}`] = true;
-            prev.forbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x + 2},${y}`] = true;
-            prev.forbiddens[`${x + 3},${y}`] = true;
-          }
+        // Simplified forbidden mask to prevent crossings but allow natural chains
+        // Only block immediate orthogonal neighbors around the placed domino body
+        if (orientation === 'horizontal') {
+          // Forbid cells directly above and below both halves
+          prev.forbiddens[`${x},${y - 1}`] = true;
+          prev.forbiddens[`${x + 1},${y - 1}`] = true;
+          prev.forbiddens[`${x},${y + 1}`] = true;
+          prev.forbiddens[`${x + 1},${y + 1}`] = true;
         } else {
-          let dir = end.fromDir;
-          if (dir === 'N') {
-            prev.forbiddens[`${x - 1},${y + 2}`] = true;
-            prev.forbiddens[`${x + 1},${y + 2}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x},${y + 3}`] = true;
-          }
-          if (dir === 'S') {
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y}`] = true;
-            prev.forbiddens[`${x + 1},${y}`] = true;
-            prev.forbiddens[`${x},${y - 2}`] = true;
-          }
-          if (dir === 'W') {
-            prev.forbiddens[`${x + 2},${y + 1}`] = true;
-            prev.forbiddens[`${x + 2},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            if (`${x + 3},${y}` !== '1,0') prev.forbiddens[`${x + 3},${y}`] = true;
-          }
-          if (dir === 'E') {
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x},${y - 1}`] = true;
-            prev.forbiddens[`${x},${y + 1}`] = true;
-            if (`${x - 2},${y}` !== '-1,0') prev.forbiddens[`${x - 2},${y}`] = true;
-          }
+          // Forbid cells directly left and right of both halves
+          prev.forbiddens[`${x - 1},${y}`] = true;
+          prev.forbiddens[`${x + 1},${y}`] = true;
+          prev.forbiddens[`${x - 1},${y + 1}`] = true;
+          prev.forbiddens[`${x + 1},${y + 1}`] = true;
         }
       }
 
