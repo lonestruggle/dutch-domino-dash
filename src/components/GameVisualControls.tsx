@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshCw } from 'lucide-react';
+import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshCw, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { DeviceType } from '@/hooks/useDeviceType';
+import { useToast } from '@/hooks/use-toast';
 
 const deviceIcons = {
   desktop: Monitor,
@@ -29,6 +30,8 @@ const deviceLabels = {
 
 export const GameVisualControls: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { toast } = useToast();
   const { 
     currentDeviceType, 
     getSettingsForDevice, 
@@ -45,6 +48,24 @@ export const GameVisualControls: React.FC = () => {
     resetToDefaults 
   } = useGameVisualSettings();
   const [activeTab, setActiveTab] = useState<DeviceType>(currentDeviceType);
+
+  const handleLiveUpdate = async () => {
+    setIsUpdating(true);
+    applyLiveUpdate();
+    
+    // Show success state briefly
+    setTimeout(() => {
+      setIsUpdating(false);
+      toast({
+        title: "Instellingen bijgewerkt",
+        description: "De trillingsinstellingen zijn toegepast.",
+      });
+      // Close dialog after showing success
+      setTimeout(() => {
+        setIsOpen(false);
+      }, 500);
+    }, 300);
+  };
 
   const handleDominoScaleChange = (values: number[], device: DeviceType) => {
     updateDominoScale(values[0], device);
@@ -314,12 +335,17 @@ export const GameVisualControls: React.FC = () => {
             {/* Live Update knop */}
             <div className="pt-2">
               <Button
-                onClick={applyLiveUpdate}
+                onClick={handleLiveUpdate}
+                disabled={isUpdating}
                 className="w-full flex items-center gap-2"
                 variant="secondary"
               >
-                <RefreshCw className="h-4 w-4" />
-                Live Update Toepassen
+                {isUpdating ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {isUpdating ? 'Toegepast!' : 'Live Update Toepassen'}
               </Button>
             </div>
           </CardContent>
