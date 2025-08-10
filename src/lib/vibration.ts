@@ -1,10 +1,28 @@
 import { GameVisualSettings } from '@/hooks/useGameVisualSettings';
 
+// Helper: get the latest settings (prefer param, then global window store)
+const getLatestSettings = (settings?: GameVisualSettings): GameVisualSettings | null => {
+  if (settings) return settings;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const globalSettings = (window as any).__dominoVibrationSettings as GameVisualSettings | undefined;
+    if (globalSettings) return globalSettings;
+  } catch {}
+  return null;
+};
+
 // Applies the same vibration logic used by the Test Trillingen button to all
 // board domino elements ('.domino-tile-board'). Automatically stops after the
-// adjusted duration derived from the settings.
-export const applyBoardVibration = (settings: GameVisualSettings) => {
+// adjusted duration derived from the settings. If no settings passed, it will
+// try the latest settings from window.__dominoVibrationSettings.
+export const applyBoardVibration = (maybeSettings?: GameVisualSettings) => {
   try {
+    const settings = getLatestSettings(maybeSettings);
+    if (!settings) {
+      console.warn('applyBoardVibration: no settings available');
+      return;
+    }
+
     const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
     const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
 

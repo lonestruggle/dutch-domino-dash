@@ -57,6 +57,14 @@ export const GameVisualControls: React.FC = () => {
   
   // Get current settings for the active device
   const settings = getSettingsForDevice(activeTab);
+  
+  // Expose latest settings globally so other modules (Hard Slam) always read fresh values
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).__dominoVibrationSettings = settings;
+    } catch {}
+  }, [settings]);
 
   // Drag functionality
   const handleMouseDown = (e: React.MouseEvent) => {

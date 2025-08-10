@@ -845,7 +845,7 @@ export const useDominoGame = () => {
         
         // Schedule vibrations just after DOM update so the new tile is present
         setTimeout(() => {
-          applyBoardVibration(settings);
+          applyBoardVibration();
           console.log('✅ Hard Slam vibration triggered via util');
         }, 50);
 
