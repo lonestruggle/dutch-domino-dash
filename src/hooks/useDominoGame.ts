@@ -330,6 +330,36 @@ export const useDominoGame = () => {
     return openEnds;
   }, [hasDifferentNeighbor]);
 
+  // Dynamisch herberekenen van verboden cellen (alleen orthogonale buren van bezette cellen, exclusief open eindes)
+  const recomputeForbiddens = useCallback((state: GameState): Record<string, boolean> => {
+    const forb: Record<string, boolean> = {};
+    // Markeer orthogonale buren van alle bezette cellen
+    for (const coord in state.board) {
+      const [x, y] = coord.split(',').map(Number);
+      const neighbors: Array<[number, number]> = [
+        [x, y - 1], // N
+        [x, y + 1], // S
+        [x - 1, y], // W
+        [x + 1, y], // E
+      ];
+      for (const [nx, ny] of neighbors) {
+        const key = `${nx},${ny}`;
+        if (!state.board[key]) {
+          forb[key] = true;
+        }
+      }
+    }
+
+    // Open eindes moeten NIET in forbiddens zitten
+    const ends = regenerateOpenEnds(state);
+    ends.forEach((end) => {
+      delete forb[`${end.x},${end.y}`];
+    });
+
+    return forb;
+  }, [regenerateOpenEnds]);
+
+
   // EXACT COPY FROM YOUR ORIGINAL CODE
   const findLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
     const moves: LegalMove[] = [];
@@ -452,6 +482,33 @@ export const useDominoGame = () => {
             if (wouldCreateSideContact(cells, currentState.board, allowedNeighbors)) {
               return;
             }
+
+            // Final value match verification at the actual connecting half
+            const pips = flipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
+            let matches = true;
+            if (finalOrientation === 'horizontal') {
+              // connecting cell is left half for from:E, right half for from:W
+              if (end.fromDir === 'E') matches = (pips[0] === end.value);
+              if (end.fromDir === 'W') matches = (pips[1] === end.value);
+            } else {
+              // connecting cell is top half for from:S, bottom half for from:N
+              if (end.fromDir === 'S') matches = (pips[0] === end.value);
+              if (end.fromDir === 'N') matches = (pips[1] === end.value);
+            }
+            if (!matches) {
+              return;
+            }
+
+            // Minimal forbidden-zone filter: block placements entering forbidden cells except the open-end itself
+            const forb = (currentState.forbiddens && Object.keys(currentState.forbiddens).length > 0)
+              ? currentState.forbiddens
+              : recomputeForbiddens(currentState);
+            for (const [cx, cy] of cells) {
+              const key = `${cx},${cy}`;
+              if (forb[key] && key !== `${end.x},${end.y}`) {
+                return;
+              }
+            }
           }
 
           // Store the valid move but don't add it yet
@@ -479,7 +536,7 @@ export const useDominoGame = () => {
     });
 
     return moves;
-  }, [regenerateOpenEnds, hasDifferentNeighbor]);
+  }, [regenerateOpenEnds, hasDifferentNeighbor, recomputeForbiddens]);
 
   // BLOCKED GAME CHECK: Game is only blocked if NO moves possible AND boneyard is empty
   const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
@@ -797,6 +854,8 @@ export const useDominoGame = () => {
       // Generate new open ends and check for blocked game
       const newOpenEnds = regenerateOpenEnds(newState);
       newState.openEnds = newOpenEnds; // FIXED: Actually store the open ends in state
+      // Recompute minimal forbiddens based on new board state
+      newState.forbiddens = recomputeForbiddens(newState);
       
       if (!isGameWon) {
         // For single player mode, create array with just the player hand
@@ -807,7 +866,7 @@ export const useDominoGame = () => {
       
       return newState;
     });
-  }, [regenerateOpenEnds, checkBlockedGame]);
+  }, [regenerateOpenEnds, checkBlockedGame, recomputeForbiddens]);
 
   const drawFromBoneyard = useCallback(() => {
     console.log('🎯 LOCAL DRAW START - boneyard size:', gameStateRef.current.boneyard.length);
