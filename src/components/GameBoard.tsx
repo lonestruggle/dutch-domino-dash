@@ -45,6 +45,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
 
+  // Listen for live vibration settings updates
+  useEffect(() => {
+    const handleVibrationUpdate = () => {
+      // Force re-render by triggering a state update
+      if (boardRef.current) {
+        boardRef.current.style.opacity = '0.99';
+        setTimeout(() => {
+          if (boardRef.current) {
+            boardRef.current.style.opacity = '1';
+          }
+        }, 10);
+      }
+    };
+
+    window.addEventListener('vibrationSettingsUpdated', handleVibrationUpdate);
+    return () => window.removeEventListener('vibrationSettingsUpdated', handleVibrationUpdate);
+  }, []);
+
   // Standard domino size for mobile - like real dominoes
   const calculateDominoScale = () => {
     if (!isMobile) return 1; // PC unchanged
