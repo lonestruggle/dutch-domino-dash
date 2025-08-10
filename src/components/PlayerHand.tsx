@@ -26,13 +26,33 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const { settings } = useGameVisualSettings();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Update hand domino scale CSS variables - force immediate update
+  // Update hand domino scale CSS variables - force immediate update and listen for global changes
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.style.setProperty('--hand-domino-scale', settings.handDominoScale.toString());
-      // Force reflow to ensure immediate visual update
-      containerRef.current.offsetHeight;
-    }
+    const applyScale = (scale: number) => {
+      if (containerRef.current) {
+        containerRef.current.style.setProperty('--hand-domino-scale', scale.toString());
+        // Force reflow to ensure immediate visual update
+        containerRef.current.offsetHeight;
+      }
+    };
+
+    // Initial apply from local hook
+    applyScale(settings.handDominoScale);
+
+    // Listen for globally broadcast updates from controls
+    const handleUpdate = (e: Event) => {
+      try {
+        const custom = e as CustomEvent;
+        const newScale = (custom.detail?.settings?.handDominoScale) ?? (window as any).__dominoVibrationSettings?.handDominoScale;
+        if (typeof newScale === 'number') applyScale(newScale);
+      } catch {}
+    };
+
+    window.addEventListener('visualSettingsUpdated', handleUpdate);
+
+    return () => {
+      window.removeEventListener('visualSettingsUpdated', handleUpdate);
+    };
   }, [settings.handDominoScale]);
   
   return (

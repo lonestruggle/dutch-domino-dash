@@ -45,33 +45,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
 
-  // Listen for live vibration settings updates
+  // Listen for live settings updates and reapply scaling
   useEffect(() => {
-    const handleVibrationUpdate = () => {
-      // Force re-render by triggering a state update
-      if (boardRef.current) {
-        boardRef.current.style.opacity = '0.99';
-        setTimeout(() => {
-          if (boardRef.current) {
-            boardRef.current.style.opacity = '1';
-          }
-        }, 10);
-      }
+    const handleAnyUpdate = () => {
+      updateDominoScaling();
     };
 
     const handleTestHardSlam = () => {
       // Trigger a test hard slam via parent component callback
-      // This will be implemented at the parent level that has access to game state management
       console.log('🎯 Test hard slam requested - implement at parent level');
     };
 
-    window.addEventListener('vibrationSettingsUpdated', handleVibrationUpdate);
+    window.addEventListener('vibrationSettingsUpdated', handleAnyUpdate);
+    window.addEventListener('visualSettingsUpdated', handleAnyUpdate);
     window.addEventListener('testHardSlam', handleTestHardSlam);
     return () => {
-      window.removeEventListener('vibrationSettingsUpdated', handleVibrationUpdate);
+      window.removeEventListener('vibrationSettingsUpdated', handleAnyUpdate);
+      window.removeEventListener('visualSettingsUpdated', handleAnyUpdate);
       window.removeEventListener('testHardSlam', handleTestHardSlam);
     };
-  }, [settings, gameState]);
+  }, [gameState]);
 
   // Standard domino size for mobile - like real dominoes
   const calculateDominoScale = () => {
@@ -83,8 +76,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Update CSS scaling
   const updateDominoScaling = () => {
+    // Prefer globally broadcast settings to ensure live updates across components
+    const latest = (() => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (window as any).__dominoVibrationSettings || settings;
+      } catch {
+        return settings;
+      }
+    })();
+
     const baseScale = calculateDominoScale();
-    const userScale = settings.dominoScale;
+    const userScale = latest.dominoScale;
     const finalScale = baseScale * userScale;
     const selectedScale = finalScale * 1.05;
     const hoverScale = finalScale;
@@ -95,11 +98,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--domino-scale-selected', selectedScale.toString());
     rootElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
     rootElement.style.setProperty('--domino-target-scale', targetScale.toString());
-    rootElement.style.setProperty('--hand-domino-scale', finalScale.toString());
+    // IMPORTANT: Hand domino scale must be independent from board scale
+    rootElement.style.setProperty('--hand-domino-scale', (latest.handDominoScale || 1).toString());
     
     // Hard slam settings with adjustments
-    const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
-    const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
+    const adjustedDuration = latest.hardSlamDuration + (latest.durationAdjustment * 0.5);
+    const adjustedSpeed = latest.hardSlamSpeed + (latest.speedAdjustment * 0.01);
     rootElement.style.setProperty('--hard-slam-duration', `${adjustedDuration}s`);
     rootElement.style.setProperty('--hard-slam-speed', `${adjustedSpeed}s`);
     

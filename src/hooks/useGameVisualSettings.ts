@@ -99,6 +99,27 @@ export const useGameVisualSettings = () => {
     }
   }, [allSettings, user?.id]);
 
+  // Broadcast and apply live visual settings globally on any change
+  useEffect(() => {
+    const currentSettings = allSettings[deviceType];
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).__dominoVibrationSettings = currentSettings;
+    } catch {}
+
+    // Update global CSS vars for hard slam so animations pick up instantly
+    const root = document.documentElement;
+    const adjustedDuration = currentSettings.hardSlamDuration + (currentSettings.durationAdjustment * 0.5);
+    const adjustedSpeed = currentSettings.hardSlamSpeed + (currentSettings.speedAdjustment * 0.01);
+    root.style.setProperty('--hard-slam-duration', `${adjustedDuration}s`);
+    root.style.setProperty('--hard-slam-speed', `${adjustedSpeed}s`);
+
+    // Notify listeners (GameBoard, PlayerHand, etc.)
+    window.dispatchEvent(new CustomEvent('visualSettingsUpdated', {
+      detail: { settings: currentSettings, deviceType, adjustedDuration, adjustedSpeed }
+    }));
+  }, [allSettings, deviceType]);
+
   // Current device settings
   const settings = allSettings[deviceType];
 
