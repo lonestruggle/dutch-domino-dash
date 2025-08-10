@@ -144,6 +144,30 @@ export const useDominoGame = () => {
     return false;
   }, []);
 
+  // Side-contact detection: forbid side-adjacent touching except at the connecting cell
+  const wouldCreateSideContact = (
+    cells: Array<[number, number]>,
+    board: Record<string, { dominoId: string; value: number }>,
+    allowedNeighbors: Set<string>
+  ): boolean => {
+    const cellSet = new Set(cells.map(c => `${c[0]},${c[1]}`));
+    for (const [cx, cy] of cells) {
+      const neighbors: Array<[number, number]> = [
+        [cx, cy - 1], // N
+        [cx, cy + 1], // S
+        [cx - 1, cy], // W
+        [cx + 1, cy], // E
+      ];
+      for (const [nx, ny] of neighbors) {
+        const key = `${nx},${ny}`;
+        if (cellSet.has(key)) continue; // ignore the other half of the same domino
+        if (allowedNeighbors.has(key)) continue; // allow the connecting neighbor
+        if (board[key]) return true; // illegal side contact
+      }
+    }
+    return false;
+  };
+
   const regenerateOpenEnds = useCallback((state: GameState): OpenEnd[] => {
     console.log('🔍 REGENERATE OPEN ENDS - Starting calculation');
     console.log('🔍 Total dominoes on board:', Object.keys(state.dominoes).length);
@@ -221,15 +245,7 @@ export const useDominoGame = () => {
 
         // Apply the same validation as findLegalMoves
         
-        // Check if forbidden
-        if (state.forbiddens[neighborKey]) {
-          continue;
-        }
-
-        // Check hasDifferentNeighbor (more than 3 neighbors blocks placement)
-        if (hasDifferentNeighbor(nx, ny)) {
-          continue;
-        }
+        // Side-contact rules are enforced later; do not filter here
 
         // Check collision with forward position (same as findLegalMoves)
         const toCellKeyForward = {
@@ -388,13 +404,7 @@ export const useDominoGame = () => {
             return;
           }
 
-          if (currentState.forbiddens[toCellKey]) {
-            return;
-          }
-
-          if (hasDifferentNeighbor(end.x, end.y)) {
-            return;
-          }
+          // Side-contact and neighbor rules validated after position is adjusted
 
           const orientation = end.fromDir === 'N' || end.fromDir === 'S' ? 'vertical' : 'horizontal';
 
@@ -430,6 +440,17 @@ export const useDominoGame = () => {
             if (end.fromDir === 'N') {
               y -= 1; // Plaats boven
               flipped = !flipped; // Belangrijk: Flip de steen voor noordelijke richting
+            }
+          }
+
+          // Side-contact rule: prevent illegal side touching with existing tiles (except the connecting cell)
+          {
+            const cells: Array<[number, number]> = finalOrientation === 'horizontal'
+              ? [[x, y], [x + 1, y]]
+              : [[x, y], [x, y + 1]];
+            const allowedNeighbors = new Set<string>([fromCellKey]);
+            if (wouldCreateSideContact(cells, currentState.board, allowedNeighbors)) {
+              return;
             }
           }
 
@@ -551,97 +572,7 @@ export const useDominoGame = () => {
 
       // Use the pre-calculated position and flipped values from findLegalMoves
 
-      // Skip forbidden positions for the very first domino
-      const isFirstDomino = Object.keys(prev.dominoes).length === 0;
-      
-      if (!isFirstDomino) {
-        if (isDouble(dominoData)) {
-          // Mark the double domino positions themselves as forbidden first
-          prev.forbiddens[`${x},${y}`] = true;
-          if (orientation === 'horizontal') {
-            prev.forbiddens[`${x + 1},${y}`] = true;
-          } else {
-            prev.forbiddens[`${x},${y + 1}`] = true;
-          }
-          
-          // Then add comprehensive forbidden positions around it
-          let dir = end.fromDir;
-          if (dir === 'N') {
-            // Forbidden positions around North direction for doubles
-            prev.forbiddens[`${x - 1},${y + 2}`] = true;
-            prev.forbiddens[`${x + 1},${y + 2}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y + 3}`] = true;
-            prev.forbiddens[`${x},${y + 2}`] = true;
-          }
-          if (dir === 'S') {
-            // Forbidden positions around South direction for doubles
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y - 2}`] = true;
-            prev.forbiddens[`${x + 1},${y - 2}`] = true;
-            prev.forbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y - 2}`] = true;
-            prev.forbiddens[`${x},${y - 3}`] = true;
-          }
-          if (dir === 'E') {
-            // Forbidden positions around East direction for doubles
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 2},${y + 1}`] = true;
-            prev.forbiddens[`${x - 2},${y - 1}`] = true;
-            prev.forbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x - 2},${y}`] = true;
-            prev.forbiddens[`${x - 3},${y}`] = true;
-          }
-          if (dir === 'W') {
-            // Forbidden positions around West direction for doubles
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            prev.forbiddens[`${x + 2},${y + 1}`] = true;
-            prev.forbiddens[`${x + 2},${y - 1}`] = true;
-            prev.forbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x + 2},${y}`] = true;
-            prev.forbiddens[`${x + 3},${y}`] = true;
-          }
-        } else {
-          let dir = end.fromDir;
-          if (dir === 'N') {
-            prev.forbiddens[`${x - 1},${y + 2}`] = true;
-            prev.forbiddens[`${x + 1},${y + 2}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x},${y + 3}`] = true;
-          }
-          if (dir === 'S') {
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y}`] = true;
-            prev.forbiddens[`${x + 1},${y}`] = true;
-            prev.forbiddens[`${x},${y - 2}`] = true;
-          }
-          if (dir === 'W') {
-            prev.forbiddens[`${x + 2},${y + 1}`] = true;
-            prev.forbiddens[`${x + 2},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            if (`${x + 3},${y}` !== '1,0') prev.forbiddens[`${x + 3},${y}`] = true;
-          }
-          if (dir === 'E') {
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x},${y - 1}`] = true;
-            prev.forbiddens[`${x},${y + 1}`] = true;
-            if (`${x - 2},${y}` !== '-1,0') prev.forbiddens[`${x - 2},${y}`] = true;
-          }
-        }
-      }
+      // Forbiddens logic removed - side-contact validation in findLegalMoves handles illegal placements
 
       if (!prev.spinnerId && isDouble(dominoData)) {
         prev.spinnerId = id;
