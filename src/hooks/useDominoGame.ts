@@ -363,14 +363,17 @@ export const useDominoGame = () => {
             const anchorY = freeEnd.cellY;
             const existing = new Set(openEnds.map((e) => `${e.x},${e.y},${e.fromDir}`));
 
-            // Generate 3 inline positions at distance 1, 2, 3 from the anchor, along freeDir
-            for (let dist = 1; dist <= 3; dist++) {
-              const tx = anchorX + ddx * dist;
-              const ty = anchorY + ddy * dist;
+            // Generate 3 adjacent forced ends around the free side: forward + perpendiculars
+            const perps = (freeDir === 'N' || freeDir === 'S') ? (['W','E'] as const) : (['N','S'] as const);
+            const dirs: Array<'N' | 'S' | 'E' | 'W'> = [freeDir, perps[0], perps[1]];
+            for (const ddir of dirs) {
+              const [px, py] = delta[ddir];
+              const tx = anchorX + px;
+              const ty = anchorY + py;
               if (state.board[`${tx},${ty}`]) continue; // skip if already occupied
-              const key = `${tx},${ty},${freeDir}`;
+              const key = `${tx},${ty},${ddir}`;
               if (!existing.has(key)) {
-                openEnds.unshift({ x: tx, y: ty, value: edgeValue, fromDir: freeDir, forced: true, anchorX, anchorY });
+                openEnds.unshift({ x: tx, y: ty, value: edgeValue, fromDir: ddir, forced: true, anchorX, anchorY });
                 existing.add(key);
               }
             }
