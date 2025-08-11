@@ -205,12 +205,12 @@ const Profile = () => {
               </h1>
               <p className="text-muted-foreground">Beheer je account en statistieken</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" onClick={() => navigate('/')} className="w-full sm:w-auto">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate('/')}>
                 <Home className="mr-2 h-4 w-4" />
                 Home
               </Button>
-              <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full sm:w-auto">
+              <Button variant="outline" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Uitloggen
               </Button>
