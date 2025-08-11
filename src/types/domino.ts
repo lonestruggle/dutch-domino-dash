@@ -19,6 +19,8 @@ export interface OpenEnd {
   value: number;
   fromDir: 'N' | 'S' | 'E' | 'W';
   forced?: boolean; // Mark special high-priority open ends that bypass forbiddens/neighbor checks
+  anchorX?: number; // For forced ends: the occupied cell used as the connection source
+  anchorY?: number; // For forced ends: the occupied cell used as the connection source
 }
 
 export interface LegalMove {
