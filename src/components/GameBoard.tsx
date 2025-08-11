@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { DominoTile } from './DominoTile';
 import { PlacementTarget } from './PlacementTarget';
 import { GameVisualControls } from './GameVisualControls';
-import { GameState, LegalMove } from '@/types/domino';
+import { GameState, LegalMove, OpenEnd } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,8 @@ interface GameBoardProps {
   backgroundChoice?: string;
   tableBackgroundUrl?: string;
   onRotateDomino?: (dominoId: string) => void;
+  showOpenEnds?: boolean;
+  openEnds?: OpenEnd[];
 }
 
 // Original PC constants - exactly as in original HTML domino game
@@ -38,7 +40,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
   tableBackgroundUrl,
-  onRotateDomino
+  onRotateDomino,
+  showOpenEnds = false,
+  openEnds = []
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -466,6 +470,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   left: boardSize / 2 + x * cellPx,
                   top: boardSize / 2 + y * cellPx,
                 }}
+              />
+            );
+          })}
+
+          {showOpenEnds && openEnds.map((end, idx) => {
+            const x = end.x;
+            const y = end.y;
+            return (
+              <div
+                key={`end-${x}-${y}-${idx}`]
+                className="absolute border border-primary/40 bg-primary/20 rounded-sm pointer-events-none"
+                style={{
+                  left: boardSize / 2 + x * cellPx,
+                  top: boardSize / 2 + y * cellPx,
+                  width: cellPx,
+                  height: cellPx,
+                }}
+                aria-label={`open-end-${end.value}-${end.fromDir}`}
               />
             );
           })}
