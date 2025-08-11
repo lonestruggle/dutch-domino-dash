@@ -46,6 +46,8 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         // Horizontal: 2×48px (96px) × 1×48px (48px)
         // Vertical: 1×48px (48px) × 2×48px (96px)
         orientation === 'vertical' ? 'w-12 h-24' : 'w-24 h-12',
+        double && orientation === 'vertical' && 'double-vertical-offset',
+        double && orientation === 'horizontal' && 'double-horizontal-offset',
         selected && 'selected',
         isShaking && 'hard-slam-shake',
         className

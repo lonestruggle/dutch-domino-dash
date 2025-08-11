@@ -62,7 +62,7 @@ export const useDominoGame = () => {
       orientation,
       flipped,
       isSpinner: isDouble(data),
-      rotation: 0, // Disable random rotation to avoid visual overlap; keep tiles perfectly aligned
+      rotation: (Math.random() - 0.5) * 15, // Random rotation between -7.5 and +7.5 degrees
     };
 
     const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
