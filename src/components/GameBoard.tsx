@@ -479,7 +479,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const y = end.y;
             return (
               <div
-                key={`end-${x}-${y}-${idx}`]
+                key={`end-${x}-${y}-${idx}`}
                 className="absolute border border-primary/40 bg-primary/20 rounded-sm pointer-events-none"
                 style={{
                   left: boardSize / 2 + x * cellPx,
