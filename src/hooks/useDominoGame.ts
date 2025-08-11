@@ -202,6 +202,67 @@ export const useDominoGame = () => {
       }
     }
     
+    // After-double special case: keep 3 open ends on the first non-double when a double is attached to it
+    if (dominoCount >= 2 && state.dominoes['d0'] && !isDouble(state.dominoes['d0'].data)) {
+      const firstDomino = state.dominoes['d0'];
+      const [v1, v2] = firstDomino.flipped
+        ? [firstDomino.data.value2, firstDomino.data.value1]
+        : [firstDomino.data.value1, firstDomino.data.value2];
+
+      if (firstDomino.orientation === 'horizontal') {
+        const leftKey = `${firstDomino.x - 1},${firstDomino.y}`;
+        const rightKey = `${firstDomino.x + 2},${firstDomino.y}`;
+        const leftOcc = state.board[leftKey];
+        const rightOcc = state.board[rightKey];
+        const leftHasDouble = leftOcc ? isDouble(state.dominoes[leftOcc.dominoId].data) : false;
+        const rightHasDouble = rightOcc ? isDouble(state.dominoes[rightOcc.dominoId].data) : false;
+
+        // Exactly one side has a double attached -> force 3-in-a-row on the opposite side
+        if (leftHasDouble !== rightHasDouble) {
+          if (rightHasDouble) {
+            openEnds.push(
+              { x: firstDomino.x - 1, y: firstDomino.y, value: v1, fromDir: 'W' },
+              { x: firstDomino.x - 1, y: firstDomino.y - 1, value: v1, fromDir: 'W' },
+              { x: firstDomino.x - 1, y: firstDomino.y + 1, value: v1, fromDir: 'W' },
+            );
+          } else { // leftHasDouble
+            openEnds.push(
+              { x: firstDomino.x + 2, y: firstDomino.y, value: v2, fromDir: 'E' },
+              { x: firstDomino.x + 2, y: firstDomino.y - 1, value: v2, fromDir: 'E' },
+              { x: firstDomino.x + 2, y: firstDomino.y + 1, value: v2, fromDir: 'E' },
+            );
+          }
+          console.log('🔍 Forced 3 open ends after double attached:', openEnds.map(e => `(${e.x},${e.y}) val:${e.value} from:${e.fromDir}`));
+          return openEnds;
+        }
+      } else { // vertical first domino
+        const topKey = `${firstDomino.x},${firstDomino.y - 1}`;
+        const bottomKey = `${firstDomino.x},${firstDomino.y + 2}`;
+        const topOcc = state.board[topKey];
+        const bottomOcc = state.board[bottomKey];
+        const topHasDouble = topOcc ? isDouble(state.dominoes[topOcc.dominoId].data) : false;
+        const bottomHasDouble = bottomOcc ? isDouble(state.dominoes[bottomOcc.dominoId].data) : false;
+
+        if (topHasDouble !== bottomHasDouble) {
+          if (bottomHasDouble) {
+            openEnds.push(
+              { x: firstDomino.x, y: firstDomino.y - 1, value: v1, fromDir: 'N' },
+              { x: firstDomino.x - 1, y: firstDomino.y - 1, value: v1, fromDir: 'N' },
+              { x: firstDomino.x + 1, y: firstDomino.y - 1, value: v1, fromDir: 'N' },
+            );
+          } else { // topHasDouble
+            openEnds.push(
+              { x: firstDomino.x, y: firstDomino.y + 2, value: v2, fromDir: 'S' },
+              { x: firstDomino.x - 1, y: firstDomino.y + 2, value: v2, fromDir: 'S' },
+              { x: firstDomino.x + 1, y: firstDomino.y + 2, value: v2, fromDir: 'S' },
+            );
+          }
+          console.log('🔍 Forced 3 open ends after double attached:', openEnds.map(e => `(${e.x},${e.y}) val:${e.value} from:${e.fromDir}`));
+          return openEnds;
+        }
+      }
+    }
+
     // Find true chain ends - only cells that can actually have dominoes placed
     for (const coord in state.board) {
       const [x, y] = coord.split(',').map(Number);
@@ -349,6 +410,50 @@ export const useDominoGame = () => {
     
     const openEnds = regenerateOpenEnds(currentState);
 
+    // Compute forced initial-end coordinates to bypass forbiddens/neighbor rules
+    const forcedEndKeys = new Set<string>();
+    const dominoCount = Object.keys(currentState.dominoes).length;
+    const firstDomino = currentState.dominoes['d0'];
+    if (firstDomino && !isDouble(firstDomino.data)) {
+      if (dominoCount === 1) {
+        if (firstDomino.orientation === 'horizontal') {
+          [[firstDomino.x - 1, firstDomino.y], [firstDomino.x - 1, firstDomino.y - 1], [firstDomino.x - 1, firstDomino.y + 1],
+           [firstDomino.x + 2, firstDomino.y], [firstDomino.x + 2, firstDomino.y - 1], [firstDomino.x + 2, firstDomino.y + 1]]
+          .forEach(([fx, fy]) => forcedEndKeys.add(`${fx},${fy}`));
+        } else {
+          [[firstDomino.x, firstDomino.y - 1], [firstDomino.x - 1, firstDomino.y - 1], [firstDomino.x + 1, firstDomino.y - 1],
+           [firstDomino.x, firstDomino.y + 2], [firstDomino.x - 1, firstDomino.y + 2], [firstDomino.x + 1, firstDomino.y + 2]]
+          .forEach(([fx, fy]) => forcedEndKeys.add(`${fx},${fy}`));
+        }
+      } else if (dominoCount >= 2) {
+        if (firstDomino.orientation === 'horizontal') {
+          const leftOcc = currentState.board[`${firstDomino.x - 1},${firstDomino.y}`];
+          const rightOcc = currentState.board[`${firstDomino.x + 2},${firstDomino.y}`];
+          const leftHasDouble = !!(leftOcc && isDouble(currentState.dominoes[leftOcc.dominoId]?.data));
+          const rightHasDouble = !!(rightOcc && isDouble(currentState.dominoes[rightOcc.dominoId]?.data));
+          if (leftHasDouble !== rightHasDouble) {
+            const useLeft = rightHasDouble;
+            const baseX = useLeft ? firstDomino.x - 1 : firstDomino.x + 2;
+            const baseY = firstDomino.y;
+            [[baseX, baseY], [baseX, baseY - 1], [baseX, baseY + 1]]
+            .forEach(([fx, fy]) => forcedEndKeys.add(`${fx},${fy}`));
+          }
+        } else {
+          const topOcc = currentState.board[`${firstDomino.x},${firstDomino.y - 1}`];
+          const bottomOcc = currentState.board[`${firstDomino.x},${firstDomino.y + 2}`];
+          const topHasDouble = !!(topOcc && isDouble(currentState.dominoes[topOcc.dominoId]?.data));
+          const bottomHasDouble = !!(bottomOcc && isDouble(currentState.dominoes[bottomOcc.dominoId]?.data));
+          if (topHasDouble !== bottomHasDouble) {
+            const useTop = bottomHasDouble;
+            const baseX = firstDomino.x;
+            const baseY = useTop ? firstDomino.y - 1 : firstDomino.y + 2;
+            [[baseX, baseY], [baseX - 1, baseY], [baseX + 1, baseY]]
+            .forEach(([fx, fy]) => forcedEndKeys.add(`${fx},${fy}`));
+          }
+        }
+      }
+    }
+
     openEnds.forEach((end) => {
       if (uniqueEnds[`${end.x},${end.y}`]) {
         return;
@@ -357,6 +462,7 @@ export const useDominoGame = () => {
       let validMove: LegalMove | null = null;
       
       const check = (value: number, flipped: boolean) => {
+        const isForced = forcedEndKeys.has(`${end.x},${end.y}`);
         if (end.value === value) { // Check if this value matches the open end
           const fromCellKey = {
             N: `${end.x},${end.y + 1}`,
