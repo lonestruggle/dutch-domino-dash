@@ -53,7 +53,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     const handleTestHardSlam = () => {
       // Trigger a test hard slam via parent component callback
-      console.log('🎯 Test hard slam requested - implement at parent level');
+      // Test hard slam requested - implement at parent level
     };
 
     window.addEventListener('vibrationSettingsUpdated', handleAnyUpdate);
@@ -402,7 +402,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
             const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
             
-            console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, animation: ${selectedAnimation}`);
+            // Debug: hard slam animation selection
             
             return (
               <div

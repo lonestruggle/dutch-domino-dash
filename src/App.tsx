@@ -15,7 +15,7 @@ import Game from "./pages/Game";
 import NotFound from "./pages/NotFound";
 import { GameVisualControls } from "@/components/GameVisualControls";
 
-console.log('App.tsx: Creating QueryClient...');
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -24,10 +24,10 @@ const queryClient = new QueryClient({
     },
   },
 });
-console.log('App.tsx: QueryClient created successfully');
+
 
 const App = () => {
-  console.log('App component rendering...');
+  
   
   try {
     return (

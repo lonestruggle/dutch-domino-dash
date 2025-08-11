@@ -33,8 +33,6 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
     <div
       className={cn(
         'placement-target',
-        isDouble && orientation === 'vertical' && 'double-vertical-offset',
-        isDouble && orientation === 'horizontal' && 'double-horizontal-offset',
         isMobile && 'cursor-pointer active:bg-opacity-80',
         className
       )}
