@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 interface LMPSettingsState {
   enabled: boolean; // toggle LMP overlays on/off
+  showEnds: boolean; // show regenerateOpenEnds overlays regardless of hand
 }
 
 const STORAGE_KEY = 'domino-lmp-settings-v1';
@@ -12,8 +13,8 @@ export function useLMPSettings() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
     } catch {}
-    // Default: LMP enabled and always visible behavior handled by consumer
-    return { enabled: true };
+    // Default: LMP enabled and open-ends visible
+    return { enabled: true, showEnds: true };
   });
 
   useEffect(() => {
@@ -23,10 +24,14 @@ export function useLMPSettings() {
   }, [settings]);
 
   const toggleEnabled = () => setSettings((s) => ({ ...s, enabled: !s.enabled }));
+  const toggleShowEnds = () => setSettings((s) => ({ ...s, showEnds: !s.showEnds }));
 
   return {
     enabled: settings.enabled,
+    showEnds: settings.showEnds,
     toggleEnabled,
+    toggleShowEnds,
     setEnabled: (val: boolean) => setSettings((s) => ({ ...s, enabled: val })),
+    setShowEnds: (val: boolean) => setSettings((s) => ({ ...s, showEnds: val })),
   };
 }

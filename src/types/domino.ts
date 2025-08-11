@@ -32,6 +32,7 @@ export interface LegalMove {
   y: number;
   fromDomino?: DominoState;
   index?: number;
+  previewOnly?: boolean; // if true, render as non-interactive preview (e.g., open-ends)
 }
 
 export interface GameState {

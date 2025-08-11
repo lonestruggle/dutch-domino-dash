@@ -18,8 +18,6 @@ interface DominoGameProps {
 
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const { enabled: lmpEnabled } = useLMPSettings();
   
   const {
     gameState,
@@ -116,6 +114,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   });
   
   // LMP: bereken legal moves (alle stenen wanneer LMP aan staat, anders alleen geselecteerde)
+  const { enabled: lmpEnabled, showEnds } = useLMPSettings();
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMovesWithIndex = lmpEnabled
     ? (gameState?.playerHand || []).flatMap((domino, idx) =>
@@ -125,33 +124,40 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         ? findLegalMoves(selectedDomino).map((m: any) => ({ ...m, index: gameState?.selectedHandIndex }))
         : []);
 
+  // Open-Ends previews (niet-clickbaar) – altijd beschikbaar wanneer showEnds aan staat
+  const openEndPreviewMoves = (showEnds && gameState?.openEnds)
+    ? gameState.openEnds.map((end: any) => {
+        const orientation = (end.fromDir === 'N' || end.fromDir === 'S') ? 'vertical' : 'horizontal';
+        let x = end.x, y = end.y;
+        if (orientation === 'horizontal' && end.fromDir === 'W') x -= 1;
+        if (orientation === 'vertical' && end.fromDir === 'N') y -= 1;
+        return {
+          end,
+          dominoData: { value1: end.value, value2: end.value },
+          flipped: false,
+          orientation,
+          x,
+          y,
+          previewOnly: true,
+        } as any;
+      })
+    : [];
+
   // Enhanced pass logic - knop altijd zichtbaar, enabled wanneer speler kan passen
   let canPass = false;
   let hasAnyLegalMoves = false;
   
   if (isMyTurn && gameState?.playerHand && gameState.playerHand.length > 0) {
-    console.log('🔍 Checking pass conditions for player...');
-    
     // Check if any domino in hand has legal moves
     for (const domino of gameState.playerHand) {
       const moves = findLegalMoves(domino);
-      console.log(`🔍 Domino ${domino.value1}|${domino.value2}: ${moves.length} moves`);
       if (moves.length > 0) {
         hasAnyLegalMoves = true;
         break;
       }
     }
-    
     const boneyardEmpty = !gameState?.boneyard?.length || gameState.boneyard.length === 0;
     canPass = !hasAnyLegalMoves && boneyardEmpty;
-    
-    console.log('🔍 Pass check result:', {
-      isMyTurn,
-      hasAnyLegalMoves,
-      boneyardEmpty,
-      boneyardSize: gameState?.boneyard?.length || 0,
-      canPass
-    });
   }
 
   // Pas knop is altijd zichtbaar maar alleen enabled wanneer speler kan passen
@@ -278,7 +284,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         {/* Game Board */}
         <GameBoard 
           gameState={gameState}
-          legalMoves={legalMovesWithIndex}
+          legalMoves={[...openEndPreviewMoves, ...legalMovesWithIndex]}
           onMoveExecute={executeMove}
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}

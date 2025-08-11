@@ -4,17 +4,24 @@ import { Card } from '@/components/ui/card';
 import { useLMPSettings } from '@/hooks/useLMPSettings';
 
 export const LMPToggle: React.FC = () => {
-  const { enabled, toggleEnabled } = useLMPSettings();
+  const { enabled, toggleEnabled, showEnds, toggleShowEnds } = useLMPSettings();
 
   return (
     <Card
       className="absolute left-[-3.5rem] top-1/2 -translate-y-1/2 z-40 p-2 shadow-md backdrop-blur-sm bg-background/90 border"
       role="region"
-      aria-label="Legal Move Preview schakelaar"
+      aria-label="Legal Move Preview schakelaars"
     >
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium">LMP</span>
-        <Switch checked={enabled} onCheckedChange={toggleEnabled} aria-label="LMP aan/uit" />
+      <div className="flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium">LMP</span>
+          <Switch checked={enabled} onCheckedChange={toggleEnabled} aria-label="LMP aan/uit" />
+        </div>
+        <div className="h-px w-full bg-border" />
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium">Ends</span>
+          <Switch checked={showEnds} onCheckedChange={toggleShowEnds} aria-label="Open Ends aan/uit" />
+        </div>
       </div>
     </Card>
   );
