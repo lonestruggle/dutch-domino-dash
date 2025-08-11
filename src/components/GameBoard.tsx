@@ -404,7 +404,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
             const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
             
-            console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, animation: ${selectedAnimation}`);
+            
             
             return (
               <div
@@ -462,7 +462,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 orientation={orientation}
                 isDouble={isDouble}
                 isInitialPlacement={isInitialPlacement}
-                onClick={() => onMoveExecute(move)}
+                onClick={('previewOnly' in move && (move as any).previewOnly) ? undefined : () => onMoveExecute(move)}
+                className={('previewOnly' in move && (move as any).previewOnly) ? 'opacity-50' : undefined}
                 style={{
                   // Position exactly on grid coordinates - like dominos, no centering
                   left: boardSize / 2 + x * CELL_SIZE,

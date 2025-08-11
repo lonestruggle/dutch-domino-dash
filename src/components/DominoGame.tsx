@@ -18,6 +18,8 @@ interface DominoGameProps {
 
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const { enabled: lmpEnabled, showEnds } = useLMPSettings();
   
   const {
     gameState,
@@ -114,7 +116,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   });
   
   // LMP: bereken legal moves (alle stenen wanneer LMP aan staat, anders alleen geselecteerde)
-  const { enabled: lmpEnabled, showEnds } = useLMPSettings();
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMovesWithIndex = lmpEnabled
     ? (gameState?.playerHand || []).flatMap((domino, idx) =>
