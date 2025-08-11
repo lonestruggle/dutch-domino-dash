@@ -153,9 +153,10 @@ export const useDominoGame = () => {
     
     const openEnds: OpenEnd[] = [];
     const boardCoords = Object.keys(state.board);
+    const dominoCount = Object.keys(state.dominoes).length;
     
     // Special case: first domino should have two open ends
-    if (boardCoords.length === 1) {
+    if (dominoCount === 1) {
       const coord = boardCoords[0];
       const [x, y] = coord.split(',').map(Number);
       const cell = state.board[coord];
@@ -309,8 +310,81 @@ export const useDominoGame = () => {
         });
       }
     }
+    // Forced triple open ends: if first tile is a non-double and a double is attached to one end,
+    // ensure the opposite end has 3 high-priority open ends (one outward + two perpendicular)
+    try {
+      if (dominoCount === 2) {
+        const entries = Object.entries(state.dominoes);
+        const sorted = entries.sort((a, b) => parseInt(a[0].slice(1)) - parseInt(b[0].slice(1)));
+        const [firstId, firstDomino] = sorted[0];
+        const [secondId, secondDomino] = sorted[1];
+        if (!isDouble(firstDomino.data) && isDouble(secondDomino.data)) {
+          const isHorizontal = firstDomino.orientation === 'horizontal';
+          const ends = isHorizontal
+            ? [
+                { cellX: firstDomino.x, cellY: firstDomino.y, dir: 'W' as const },
+                { cellX: firstDomino.x + 1, cellY: firstDomino.y, dir: 'E' as const },
+              ]
+            : [
+                { cellX: firstDomino.x, cellY: firstDomino.y, dir: 'N' as const },
+                { cellX: firstDomino.x, cellY: firstDomino.y + 1, dir: 'S' as const },
+              ];
+          const moveDelta = { N: [0, -1], S: [0, 1], W: [-1, 0], E: [1, 0] } as const;
+          let attachedDir: 'N' | 'S' | 'E' | 'W' | null = null;
+          let freeEnd: { cellX: number; cellY: number; dir: 'N' | 'S' | 'E' | 'W' } | null = null;
+          for (const end of ends) {
+            const [dx, dy] = moveDelta[end.dir];
+            const nx = end.cellX + dx;
+            const ny = end.cellY + dy;
+            const neighbor = state.board[`${nx},${ny}`];
+            if (neighbor && neighbor.dominoId === secondId) {
+              attachedDir = end.dir;
+              break;
+            }
+          }
+          if (attachedDir) {
+            const opposite = { N: 'S', S: 'N', E: 'W', W: 'E' } as const;
+            const freeDir = opposite[attachedDir];
+            freeEnd = ends.find((e) => e.dir === freeDir) || null;
+            if (freeEnd) {
+              const d = firstDomino.data;
+              const [v1, v2] = firstDomino.flipped ? [d.value2, d.value1] : [d.value1, d.value2];
+              const edgeValue = freeDir === 'W' || freeDir === 'N' ? v1 : v2;
+              const existingKeys = new Set(openEnds.map((e) => `${e.x},${e.y},${e.fromDir}`));
+              // Primary outward end on the free side
+              const [dx, dy] = moveDelta[freeDir];
+              const p1x = freeEnd.cellX + dx;
+              const p1y = freeEnd.cellY + dy;
+              if (!state.board[`${p1x},${p1y}`]) {
+                const key = `${p1x},${p1y},${freeDir}`;
+                if (!existingKeys.has(key)) {
+                  openEnds.unshift({ x: p1x, y: p1y, value: edgeValue, fromDir: freeDir, forced: true });
+                  existingKeys.add(key);
+                }
+              }
+              // Two perpendicular ends adjacent to the same free end cell
+              const perpendiculars = isHorizontal ? (['N', 'S'] as const) : (['E', 'W'] as const);
+              for (const pd of perpendiculars) {
+                const [pdx, pdy] = moveDelta[pd];
+                const px = freeEnd.cellX + pdx;
+                const py = freeEnd.cellY + pdy;
+                if (!state.board[`${px},${py}`]) {
+                  const key2 = `${px},${py},${pd}`;
+                  if (!existingKeys.has(key2)) {
+                    openEnds.unshift({ x: px, y: py, value: edgeValue, fromDir: pd, forced: true });
+                    existingKeys.add(key2);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Forced open-ends logic error:', e);
+    }
 
-    console.log('🔍 FINAL OPEN ENDS (should be 2):', openEnds.map(end => `(${end.x},${end.y}) value:${end.value} from:${end.fromDir}`));
+    console.log('🔍 FINAL OPEN ENDS:', openEnds.map(end => `(${end.x},${end.y}) value:${end.value} from:${end.fromDir}${end.forced ? ' FORCED' : ''}`));
     return openEnds;
   }, [hasDifferentNeighbor]);
 
@@ -388,11 +462,11 @@ export const useDominoGame = () => {
             return;
           }
 
-          if (currentState.forbiddens[toCellKey]) {
+          if (!end.forced && currentState.forbiddens[toCellKey]) {
             return;
           }
 
-          if (hasDifferentNeighbor(end.x, end.y)) {
+          if (!end.forced && hasDifferentNeighbor(end.x, end.y)) {
             return;
           }
 

@@ -18,6 +18,7 @@ export interface OpenEnd {
   y: number;
   value: number;
   fromDir: 'N' | 'S' | 'E' | 'W';
+  forced?: boolean; // Mark special high-priority open ends that bypass forbiddens/neighbor checks
 }
 
 export interface LegalMove {
