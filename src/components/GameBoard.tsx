@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { DominoTile } from './DominoTile';
 import { PlacementTarget } from './PlacementTarget';
 import { GameVisualControls } from './GameVisualControls';
+import { LMPToggle } from '@/components/LMPToggle';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
@@ -327,6 +328,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
       <GameVisualControls />
+      <LMPToggle />
       
       <div 
         ref={containerRef}

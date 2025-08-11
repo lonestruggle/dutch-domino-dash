@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
+import { useLMPSettings } from '@/hooks/useLMPSettings';
 
 interface DominoGameProps {
   gameHook: any;
@@ -113,9 +114,16 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     playerHands: (gameState as any)?.playerHands?.map((hand: any, i: number) => ({ player: i, handSize: hand?.length || 0 }))
   });
   
-  // Calculate legal moves for selected domino
+  // LMP: bereken legal moves (alle stenen wanneer LMP aan staat, anders alleen geselecteerde)
+  const { enabled: lmpEnabled } = useLMPSettings();
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
-  const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
+  const legalMovesWithIndex = lmpEnabled
+    ? (gameState?.playerHand || []).flatMap((domino, idx) =>
+        findLegalMoves(domino).map((m: any) => ({ ...m, index: idx }))
+      )
+    : (selectedDomino
+        ? findLegalMoves(selectedDomino).map((m: any) => ({ ...m, index: gameState?.selectedHandIndex }))
+        : []);
 
   // Enhanced pass logic - knop altijd zichtbaar, enabled wanneer speler kan passen
   let canPass = false;
@@ -149,11 +157,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Pas knop is altijd zichtbaar maar alleen enabled wanneer speler kan passen
   const shouldEnablePassButton = canPass && isMyTurn && !gameState?.isGameOver;
 
-  // Add index to legal moves for executeMove
-  const legalMovesWithIndex = legalMoves.map(move => ({
-    ...move,
-    index: gameState?.selectedHandIndex
-  }));
+// legalMovesWithIndex is already prepared above based on LMP settings
 
   // Check if Hard Slam is available
   const canUseHardSlam = isMyTurn && 
