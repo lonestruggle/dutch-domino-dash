@@ -771,7 +771,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 <Crown className="h-8 w-8 text-yellow-500" />
@@ -779,7 +779,7 @@ const AdminDashboard = () => {
               </h1>
               <p className="text-muted-foreground">Wegi Domino Beheer</p>
             </div>
-            <Button variant="outline" onClick={() => navigate('/')}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/')} className="w-full sm:w-auto">
               Terug naar Site
             </Button>
           </div>
@@ -1000,7 +1000,7 @@ const AdminDashboard = () => {
                   <div className="space-y-4">
                     {filteredUsers.map((user) => (
                       <div key={user.id} className="p-4 border rounded-lg space-y-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div className="flex items-center space-x-4">
                             <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
                               {user.username[0].toUpperCase()}
@@ -1465,7 +1465,7 @@ const AdminDashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="space-y-0.5">
                       <Label className="text-base">Single Player Modus</Label>
                       <p className="text-sm text-muted-foreground">
@@ -1473,6 +1473,7 @@ const AdminDashboard = () => {
                       </p>
                     </div>
                     <Button
+                      size="sm"
                       variant={getSetting('single_player_enabled') === true ? 'default' : 'outline'}
                       onClick={async () => {
                         const currentValue = getSetting('single_player_enabled');
