@@ -62,7 +62,7 @@ export const useDominoGame = () => {
       orientation,
       flipped,
       isSpinner: isDouble(data),
-      rotation: 0, // Disable random rotation for precise positioning
+      rotation: (Math.random() - 0.5) * 15, // Random rotation between -7.5 and +7.5 degrees
     };
 
     const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
@@ -145,47 +145,55 @@ export const useDominoGame = () => {
   }, []);
 
   const regenerateOpenEnds = useCallback((state: GameState): OpenEnd[] => {
-    // Debug logs disabled
+    console.log('🔍 REGENERATE OPEN ENDS - Starting calculation');
+    console.log('🔍 Total dominoes on board:', Object.keys(state.dominoes).length);
+    console.log('🔍 Board cells:', Object.keys(state.board).length);
+    console.log('🔍 All dominoes on board:', Object.entries(state.dominoes).map(([id, domino]) => `${id}: ${domino.data.value1}|${domino.data.value2} at (${domino.x},${domino.y}) ${domino.orientation} flipped:${domino.flipped}`));
+    console.log('🔍 All board cells:', Object.entries(state.board).map(([coord, cell]) => `${coord}: dominoId=${cell.dominoId} value=${cell.value}`));
     
     const openEnds: OpenEnd[] = [];
     const boardCoords = Object.keys(state.board);
     const dominoCount = Object.keys(state.dominoes).length;
     
+    // Special case: first domino should have two open ends
     if (dominoCount === 1) {
-      const [onlyId, onlyDomino] = Object.entries(state.dominoes)[0];
-      const d = onlyDomino;
-      if (!isDouble(d.data)) {
-        if (d.orientation === 'horizontal') {
-          // Left end (west) is immediately left of left cell
+      const coord = boardCoords[0];
+      const [x, y] = coord.split(',').map(Number);
+      const cell = state.board[coord];
+      const domino = state.dominoes[cell.dominoId];
+      
+      console.log(`🔍 Single domino case: ${domino.data.value1}|${domino.data.value2}`);
+      
+      if (!isDouble(domino.data)) {
+        // First non-double domino has two open ends
+        if (domino.orientation === 'horizontal') {
           openEnds.push({
-            x: d.x - 1,
-            y: d.y,
-            value: d.flipped ? d.data.value2 : d.data.value1,
-            fromDir: 'W',
-          });
-          // Right end (east) is immediately right of right cell
-          openEnds.push({
-            x: d.x + 2,
-            y: d.y,
-            value: d.flipped ? d.data.value1 : d.data.value2,
+            x: x + 1,
+            y: y,
+            value: domino.flipped ? domino.data.value1 : domino.data.value2,
             fromDir: 'E',
           });
-        } else {
-          // Top end (north) is above top cell
           openEnds.push({
-            x: d.x,
-            y: d.y - 1,
-            value: d.flipped ? d.data.value2 : d.data.value1,
+            x: x - 1,
+            y: y,
+            value: domino.flipped ? domino.data.value2 : domino.data.value1,
+            fromDir: 'W',
+          });
+        } else {
+          openEnds.push({
+            x: x,
+            y: y - 1,
+            value: domino.flipped ? domino.data.value1 : domino.data.value2,
             fromDir: 'N',
           });
-          // Bottom end (south) is below bottom cell
           openEnds.push({
-            x: d.x,
-            y: d.y + 2,
-            value: d.flipped ? d.data.value1 : d.data.value2,
+            x: x,
+            y: y + 1,
+            value: domino.flipped ? domino.data.value2 : domino.data.value1,
             fromDir: 'S',
           });
         }
+        console.log(`🔍 Single domino open ends:`, openEnds);
         return openEnds;
       }
     }
@@ -292,7 +300,7 @@ export const useDominoGame = () => {
           }
         }
         
-        // Debug: valid chain end
+        console.log(`🔍 VALID CHAIN END: (${nx},${ny}) value:${edgeValue} from:${dir}`);
         
         openEnds.push({
           x: nx,
@@ -302,58 +310,72 @@ export const useDominoGame = () => {
         });
       }
     }
-    // Forced triple open ends around the placed double (second domino)
+    // Forced triple open ends: ensure 3-in-a-row along the free side of the first non-double,
+    // when a double is attached on the opposite side. These ends ignore forbiddens/neighbor checks
+    // and use the free end cell as anchor for matching.
     try {
       if (dominoCount === 2) {
-        const entries = Object.entries(state.dominoes).sort((a,b)=>parseInt(a[0].slice(1))-parseInt(b[0].slice(1)));
-        const [firstId, firstDomino] = entries[0];
-        const [secondId, secondDomino] = entries[1];
+        const entries = Object.entries(state.dominoes);
+        const sorted = entries.sort((a, b) => parseInt(a[0].slice(1)) - parseInt(b[0].slice(1)));
+        const [firstId, firstDomino] = sorted[0];
+        const [secondId, secondDomino] = sorted[1];
         if (!isDouble(firstDomino.data) && isDouble(secondDomino.data)) {
+          const isHorizontal = firstDomino.orientation === 'horizontal';
+          const ends = isHorizontal
+            ? [
+                { cellX: firstDomino.x, cellY: firstDomino.y, dir: 'W' as const },
+                { cellX: firstDomino.x + 1, cellY: firstDomino.y, dir: 'E' as const },
+              ]
+            : [
+                { cellX: firstDomino.x, cellY: firstDomino.y, dir: 'N' as const },
+                { cellX: firstDomino.x, cellY: firstDomino.y + 1, dir: 'S' as const },
+              ];
           const delta = { N: [0, -1], S: [0, 1], W: [-1, 0], E: [1, 0] } as const;
-          // Determine which side of firstDomino is connected to the double
-          const connectionDirs = firstDomino.orientation === 'horizontal'
-            ? [{ cellX:firstDomino.x, cellY:firstDomino.y, dir:'W' as const }, { cellX:firstDomino.x+1, cellY:firstDomino.y, dir:'E' as const }]
-            : [{ cellX:firstDomino.x, cellY:firstDomino.y, dir:'N' as const }, { cellX:firstDomino.x, cellY:firstDomino.y+1, dir:'S' as const }];
-          let attachedDir: 'N'|'S'|'E'|'W'|null = null;
-          for (const end of connectionDirs) {
-            const occ = state.board[`${end.cellX},${end.cellY}`];
-            if (occ && occ.dominoId === secondId) { attachedDir = end.dir; break; }
-            const [dx,dy] = delta[end.dir];
-            const nx = end.cellX + dx, ny = end.cellY + dy;
-            const neigh = state.board[`${nx},${ny}`];
-            if (neigh && neigh.dominoId === secondId) { attachedDir = end.dir; break; }
+          let attachedDir: 'N' | 'S' | 'E' | 'W' | null = null;
+          // Determine which end is attached to the double
+          for (const end of ends) {
+            // Prefer: the end cell itself is occupied by the second (double) domino (perpendicular attachment overwrites this cell)
+            const occupant = state.board[`${end.cellX},${end.cellY}`];
+            if (occupant && occupant.dominoId === secondId) {
+              attachedDir = end.dir;
+              break;
+            }
+            // Fallback: also check the immediate outward neighbor cell
+            const [dx, dy] = delta[end.dir];
+            const nx = end.cellX + dx;
+            const ny = end.cellY + dy;
+            const neighbor = state.board[`${nx},${ny}`];
+            if (neighbor && neighbor.dominoId === secondId) {
+              attachedDir = end.dir;
+              break;
+            }
           }
           if (attachedDir) {
-            const s = secondDomino;
-            const val = s.data.value1;
-            const existing = new Set(openEnds.map(e=>`${e.x},${e.y},${e.fromDir}`));
-            const pushForced = (x:number,y:number,fromDir:'N'|'S'|'E'|'W') => {
-              const key = `${x},${y},${fromDir}`;
-              if (!state.board[`${x},${y}`] && !existing.has(key)) {
-                openEnds.unshift({ x, y, value: val, fromDir, forced: true });
+            const opposite = { N: 'S', S: 'N', E: 'W', W: 'E' } as const;
+            const freeDir = opposite[attachedDir];
+            const freeEnd = ends.find((e) => e.dir === freeDir)!;
+            const d = firstDomino.data;
+            const [v1, v2] = firstDomino.flipped ? [d.value2, d.value1] : [d.value1, d.value2];
+            const edgeValue = freeDir === 'W' || freeDir === 'N' ? v1 : v2;
+
+            const [ddx, ddy] = delta[freeDir];
+            const anchorX = freeEnd.cellX; // occupied cell at the free end
+            const anchorY = freeEnd.cellY;
+            const existing = new Set(openEnds.map((e) => `${e.x},${e.y},${e.fromDir}`));
+
+            // Generate 3 adjacent forced ends around the free side: forward + perpendiculars
+            const perps = (freeDir === 'N' || freeDir === 'S') ? (['W','E'] as const) : (['N','S'] as const);
+            const dirs: Array<'N' | 'S' | 'E' | 'W'> = [freeDir, perps[0], perps[1]];
+            for (const ddir of dirs) {
+              const [px, py] = delta[ddir];
+              const tx = anchorX + px;
+              const ty = anchorY + py;
+              if (state.board[`${tx},${ty}`]) continue; // skip if already occupied
+              const key = `${tx},${ty},${ddir}`;
+              if (!existing.has(key)) {
+                openEnds.unshift({ x: tx, y: ty, value: edgeValue, fromDir: ddir, forced: true, anchorX, anchorY });
                 existing.add(key);
               }
-            };
-            if (attachedDir === 'E') {
-              // Double attached on right side of first domino
-              // Assume double is vertical placed at (s.x,s.y) and (s.x, s.y+1)
-              pushForced(s.x + 1, s.y, 'E');   // east of top cell
-              pushForced(s.x, s.y - 1, 'N');   // north of top cell
-              pushForced(s.x, s.y + 2, 'S');   // south of bottom cell
-            } else if (attachedDir === 'W') {
-              pushForced(s.x - 1, s.y, 'W');
-              pushForced(s.x, s.y - 1, 'N');
-              pushForced(s.x, s.y + 2, 'S');
-            } else if (attachedDir === 'N') {
-              // Double attached above the first domino
-              // Assume double is horizontal at (s.x,s.y)
-              pushForced(s.x, s.y - 1, 'N');
-              pushForced(s.x - 1, s.y, 'W');
-              pushForced(s.x + 2, s.y, 'E');
-            } else if (attachedDir === 'S') {
-              pushForced(s.x, s.y + 2, 'S');
-              pushForced(s.x - 1, s.y, 'W');
-              pushForced(s.x + 2, s.y, 'E');
             }
           }
         }
@@ -362,7 +384,7 @@ export const useDominoGame = () => {
       console.warn('⚠️ Forced open-ends logic error:', e);
     }
 
-    // Debug: final open ends computed
+    console.log('🔍 FINAL OPEN ENDS:', openEnds.map(end => `(${end.x},${end.y}) value:${end.value} from:${end.fromDir}${end.forced ? ' FORCED' : ''}`));
     return openEnds;
   }, [hasDifferentNeighbor]);
 

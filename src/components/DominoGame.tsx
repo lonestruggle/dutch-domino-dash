@@ -100,7 +100,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   
   const isBlockedGame = boardHasDominoes && gameState?.isGameOver && allPlayersHaveDominoes && gameState?.winner_position !== undefined;
   
-  // Debug disabled: blocked game detection snapshot
+  console.log('🔍 DominoGame - Blocked game detection:', {
+    boardHasDominoes: boardHasDominoes,
+    isGameOver: gameState?.isGameOver,
+    allPlayersHaveDominoes: allPlayersHaveDominoes,
+    winnerPosition: gameState?.winner_position,
+    isBlockedGame: isBlockedGame,
+    didIWin: didIWin,
+    playerHandLength: gameState?.playerHand?.length,
+    playerPosition: syncState?.playerPosition,
+    showGameOverDialog: showGameOverDialog,
+    playerHands: (gameState as any)?.playerHands?.map((hand: any, i: number) => ({ player: i, handSize: hand?.length || 0 }))
+  });
   
   // Calculate legal moves for selected domino
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
@@ -111,7 +122,28 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   let hasAnyLegalMoves = false;
   
   if (isMyTurn && gameState?.playerHand && gameState.playerHand.length > 0) {
-    // Debug disabled: pass condition checks
+    console.log('🔍 Checking pass conditions for player...');
+    
+    // Check if any domino in hand has legal moves
+    for (const domino of gameState.playerHand) {
+      const moves = findLegalMoves(domino);
+      console.log(`🔍 Domino ${domino.value1}|${domino.value2}: ${moves.length} moves`);
+      if (moves.length > 0) {
+        hasAnyLegalMoves = true;
+        break;
+      }
+    }
+    
+    const boneyardEmpty = !gameState?.boneyard?.length || gameState.boneyard.length === 0;
+    canPass = !hasAnyLegalMoves && boneyardEmpty;
+    
+    console.log('🔍 Pass check result:', {
+      isMyTurn,
+      hasAnyLegalMoves,
+      boneyardEmpty,
+      boneyardSize: gameState?.boneyard?.length || 0,
+      canPass
+    });
   }
 
   // Pas knop is altijd zichtbaar maar alleen enabled wanneer speler kan passen
