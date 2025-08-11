@@ -28,7 +28,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     startNewGame,
     hasDifferentNeighbor,
     rotateDomino,
-    regenerateOpenEnds,
     syncState,
     gameData
   } = gameHook;
@@ -39,8 +38,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showAllTargets, setShowAllTargets] = useState(true); // LMP: toon alle legale plaatsen
-  const [showOpenEnds, setShowOpenEnds] = useState(true);     // Ends: toon open ends markers
   
   // Reset dialog shown flag when game starts new
   useEffect(() => {
@@ -152,41 +149,19 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Pas knop is altijd zichtbaar maar alleen enabled wanneer speler kan passen
   const shouldEnablePassButton = canPass && isMyTurn && !gameState?.isGameOver;
 
-// Add index to legal moves for executeMove
-const legalMovesWithIndex = legalMoves.map(move => ({
-  ...move,
-  index: gameState?.selectedHandIndex
-}));
+  // Add index to legal moves for executeMove
+  const legalMovesWithIndex = legalMoves.map(move => ({
+    ...move,
+    index: gameState?.selectedHandIndex
+  }));
 
-// LMP: toon alle legale plaatsen, ook zonder selectie
-let movesToShow = legalMovesWithIndex;
-if (showAllTargets) {
-  const hand = gameState?.playerHand || [];
-  const seen = new Set<string>();
-  const aggregated: typeof legalMovesWithIndex = [] as any;
-  hand.forEach((domino, idx) => {
-    const ms = findLegalMoves(domino);
-    ms.forEach(m => {
-      const key = `${m.end.x},${m.end.y},${m.orientation},${m.end.fromDir}`;
-      if (!seen.has(key)) {
-        aggregated.push({ ...m, index: idx });
-        seen.add(key);
-      }
-    });
-  });
-  movesToShow = aggregated;
-}
-
-// Ends: bereken markers voor open ends (geforceerde triple-einden inbegrepen)
-const openEndsForMarkers = showOpenEnds && regenerateOpenEnds ? regenerateOpenEnds(gameState) : [];
-
-// Check if Hard Slam is available
-const canUseHardSlam = isMyTurn && 
-  !gameState?.isGameOver && 
-  Object.keys(gameState?.dominoes || {}).length > 0; // At least one domino on board
-
-// Check if Hard Slam is activated for next move
-const hardSlamActive = gameState?.hardSlamNextMove === true;
+  // Check if Hard Slam is available
+  const canUseHardSlam = isMyTurn && 
+    !gameState?.isGameOver && 
+    Object.keys(gameState?.dominoes || {}).length > 0; // At least one domino on board
+  
+  // Check if Hard Slam is activated for next move
+  const hardSlamActive = gameState?.hardSlamNextMove === true;
 
   // Handle boneyard stone preview
   const handleStonePreview = (domino: any, index: number) => {
@@ -264,7 +239,7 @@ const hardSlamActive = gameState?.hardSlamNextMove === true;
             <span className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
               Boneyard: {gameState?.boneyard?.length || 0} {isMobile ? "" : "tiles"}
             </span>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
               <Switch 
                 checked={boneyardViewEnabled}
                 onCheckedChange={setBoneyardViewEnabled}
@@ -272,24 +247,6 @@ const hardSlamActive = gameState?.hardSlamNextMove === true;
               />
               <label htmlFor="boneyard-view" className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
                 Boneyard view
-              </label>
-
-              <Switch 
-                checked={showAllTargets}
-                onCheckedChange={setShowAllTargets}
-                id="toggle-lmp"
-              />
-              <label htmlFor="toggle-lmp" className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
-                LMP
-              </label>
-
-              <Switch 
-                checked={showOpenEnds}
-                onCheckedChange={setShowOpenEnds}
-                id="toggle-ends"
-              />
-              <label htmlFor="toggle-ends" className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
-                Ends
               </label>
             </div>
           </div>
@@ -317,15 +274,13 @@ const hardSlamActive = gameState?.hardSlamNextMove === true;
         {/* Game Board */}
         <GameBoard 
           gameState={gameState}
-          legalMoves={movesToShow}
+          legalMoves={legalMovesWithIndex}
           onMoveExecute={executeMove}
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}
           tableBackgroundUrl={gameData?.table_background_url}
           onRotateDomino={rotateDomino}
-          showOpenEnds={showOpenEnds}
-          openEnds={openEndsForMarkers}
         />
 
         {/* Player Hand */}
