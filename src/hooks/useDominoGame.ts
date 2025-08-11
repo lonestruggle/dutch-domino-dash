@@ -154,46 +154,51 @@ export const useDominoGame = () => {
     const openEnds: OpenEnd[] = [];
     const boardCoords = Object.keys(state.board);
     
-    // Special case: first domino should have two open ends
-    if (boardCoords.length === 1) {
-      const coord = boardCoords[0];
-      const [x, y] = coord.split(',').map(Number);
-      const cell = state.board[coord];
-      const domino = state.dominoes[cell.dominoId];
-      
-      console.log(`🔍 Single domino case: ${domino.data.value1}|${domino.data.value2}`);
-      
-      if (!isDouble(domino.data)) {
-        // First non-double domino has two open ends
-        if (domino.orientation === 'horizontal') {
-          openEnds.push({
-            x: x + 1,
-            y: y,
-            value: domino.flipped ? domino.data.value1 : domino.data.value2,
-            fromDir: 'E',
-          });
-          openEnds.push({
-            x: x - 1,
-            y: y,
-            value: domino.flipped ? domino.data.value2 : domino.data.value1,
-            fromDir: 'W',
-          });
+    // Special case: brute-force open ends for the very first placed non-double domino (Option 1: 3-in-a-row)
+    // We trigger this when exactly ONE domino exists on the board.
+    const dominoCount = Object.keys(state.dominoes).length;
+    if (dominoCount === 1) {
+      const [firstDominoId, firstDomino] = Object.entries(state.dominoes)[0];
+      console.log(`🔍 Single domino case: ${firstDominoId} => ${firstDomino.data.value1}|${firstDomino.data.value2} at (${firstDomino.x},${firstDomino.y}) ${firstDomino.orientation} flipped:${firstDomino.flipped}`);
+
+      if (!isDouble(firstDomino.data)) {
+        // Determine outward values based on orientation + flipped
+        const [v1, v2] = firstDomino.flipped
+          ? [firstDomino.data.value2, firstDomino.data.value1]
+          : [firstDomino.data.value1, firstDomino.data.value2];
+
+        if (firstDomino.orientation === 'horizontal') {
+          // Base ends (adjacent to each half)
+          const leftEnd = { x: firstDomino.x - 1, y: firstDomino.y, value: v1, fromDir: 'W' as const };
+          const rightEnd = { x: firstDomino.x + 2, y: firstDomino.y, value: v2, fromDir: 'E' as const };
+
+          // Option 1: "3 in a row" per side (same column as the base end, above/center/below)
+          openEnds.push(
+            { ...leftEnd },
+            { x: leftEnd.x, y: leftEnd.y - 1, value: v1, fromDir: 'W' },
+            { x: leftEnd.x, y: leftEnd.y + 1, value: v1, fromDir: 'W' },
+            { ...rightEnd },
+            { x: rightEnd.x, y: rightEnd.y - 1, value: v2, fromDir: 'E' },
+            { x: rightEnd.x, y: rightEnd.y + 1, value: v2, fromDir: 'E' },
+          );
         } else {
-          openEnds.push({
-            x: x,
-            y: y - 1,
-            value: domino.flipped ? domino.data.value1 : domino.data.value2,
-            fromDir: 'N',
-          });
-          openEnds.push({
-            x: x,
-            y: y + 1,
-            value: domino.flipped ? domino.data.value2 : domino.data.value1,
-            fromDir: 'S',
-          });
+          // vertical
+          const topEnd = { x: firstDomino.x, y: firstDomino.y - 1, value: v1, fromDir: 'N' as const };
+          const bottomEnd = { x: firstDomino.x, y: firstDomino.y + 2, value: v2, fromDir: 'S' as const };
+
+          // Option 1: "3 in a row" per side (same row as the base end, left/center/right)
+          openEnds.push(
+            { ...topEnd },
+            { x: topEnd.x - 1, y: topEnd.y, value: v1, fromDir: 'N' },
+            { x: topEnd.x + 1, y: topEnd.y, value: v1, fromDir: 'N' },
+            { ...bottomEnd },
+            { x: bottomEnd.x - 1, y: bottomEnd.y, value: v2, fromDir: 'S' },
+            { x: bottomEnd.x + 1, y: bottomEnd.y, value: v2, fromDir: 'S' },
+          );
         }
-        console.log(`🔍 Single domino open ends:`, openEnds);
-        return openEnds;
+
+        console.log('🔍 Brute-forced initial open ends (Option 1):', openEnds.map(e => `(${e.x},${e.y}) val:${e.value} from:${e.fromDir}`));
+        return openEnds; // Return early to bypass standard filtering for the first domino
       }
     }
     
