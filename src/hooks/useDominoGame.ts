@@ -334,6 +334,13 @@ export const useDominoGame = () => {
           let attachedDir: 'N' | 'S' | 'E' | 'W' | null = null;
           // Determine which end is attached to the double
           for (const end of ends) {
+            // Prefer: the end cell itself is occupied by the second (double) domino (perpendicular attachment overwrites this cell)
+            const occupant = state.board[`${end.cellX},${end.cellY}`];
+            if (occupant && occupant.dominoId === secondId) {
+              attachedDir = end.dir;
+              break;
+            }
+            // Fallback: also check the immediate outward neighbor cell
             const [dx, dy] = delta[end.dir];
             const nx = end.cellX + dx;
             const ny = end.cellY + dy;
