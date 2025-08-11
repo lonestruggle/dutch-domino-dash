@@ -9,7 +9,7 @@ interface PlacementTargetProps {
   height: number;
   orientation: 'horizontal' | 'vertical';
   isDouble: boolean;
-  onClick?: () => void;
+  onClick: () => void;
   style?: React.CSSProperties;
   className?: string;
   isInitialPlacement?: boolean;
@@ -50,7 +50,10 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         transition: 'background-color 0.2s ease',
         ...style,
       }}
-      onClick={onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       onTouchStart={isMobile ? (e) => e.stopPropagation() : undefined}
     />
   );
