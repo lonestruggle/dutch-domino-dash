@@ -137,18 +137,18 @@ export default function Lobbies() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold">Multiplayer Lobbies</h1>
             <p className="text-muted-foreground">Welcome, {displayUsername || user?.email}!</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/')}>
+          <div className="flex w-full sm:w-auto gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => navigate('/')} className="w-full sm:w-auto">
               Back to Home
             </Button>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Lobby
                 </Button>
@@ -216,11 +216,11 @@ export default function Lobbies() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="text-sm text-muted-foreground">
                         Status: {lobby.status}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 w-full sm:w-auto">
                         {user?.id === lobby.created_by && (
                           <Button
                             onClick={() => handleDeleteLobby(lobby.id)}
@@ -234,6 +234,7 @@ export default function Lobbies() {
                           onClick={() => handleJoinLobby(lobby.id)}
                           disabled={lobby.player_count >= lobby.max_players}
                           size="sm"
+                          className="w-full sm:w-auto"
                         >
                           {lobby.player_count >= lobby.max_players ? 'Full' : 'Join'}
                         </Button>
