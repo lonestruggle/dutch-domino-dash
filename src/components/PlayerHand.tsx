@@ -61,12 +61,12 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         Jouw Hand
       </h2>
       
-      <div className={`grid grid-cols-6 place-items-center min-h-[48px] ${isMobile ? "gap-1 px-2" : "gap-3 p-2"}`}>
+      <div className={`flex flex-wrap justify-center min-h-[48px] ${isMobile ? "gap-1 px-2" : "gap-3 p-2"}`}>
         {hand.map((domino, index) => (
           <DominoTile
             key={getDominoKey(domino, index)}
             data={domino}
-            orientation="vertical"
+            orientation={isDouble(domino) ? "vertical" : "horizontal"}
             selected={index === selectedIndex}
             onClick={() => onDominoSelect(index)}
             className="relative transition-all duration-200 domino-tile-hand hover:z-20"
