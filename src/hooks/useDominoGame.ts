@@ -296,7 +296,7 @@ export const useDominoGame = () => {
           }
         }
 
-        // FIXED: Correct edge value calculation
+        // FIXED: Correct edge value calculation and only allow OUTWARD directions for non-doubles
         let edgeValue = cell.value;
         
         // For doubles, the edge value is always the same (both sides are identical)
@@ -304,7 +304,7 @@ export const useDominoGame = () => {
           edgeValue = domino.data.value1; // or value2, they're the same for doubles
         } else {
           // For non-doubles, we need to determine which value is facing outward
-          // This is crucial for correct open end calculation
+          // and SKIP any internal/side directions that are not true chain ends
           const dominoData = domino.data;
           const isHorizontal = domino.orientation === 'horizontal';
           const isFlipped = domino.flipped;
@@ -317,25 +317,23 @@ export const useDominoGame = () => {
             const isLeftCell = coord === `${domino.x},${domino.y}`;
             const isRightCell = coord === `${domino.x + 1},${domino.y}`;
             
-            if ((dir === 'W' && isLeftCell) || (dir === 'E' && isRightCell)) {
-              // Outward facing from the respective ends
-              edgeValue = isLeftCell ? value1 : value2;
-            } else {
-              // Internal connections (shouldn't happen in valid open ends)
-              edgeValue = cell.value;
+            const isOutward = (dir === 'W' && isLeftCell) || (dir === 'E' && isRightCell);
+            if (!isOutward) {
+              // Not a true chain end direction for this cell; skip
+              continue;
             }
+            edgeValue = isLeftCell ? value1 : value2;
           } else {
             // For vertical dominoes: value1 on top, value2 on bottom  
             const isTopCell = coord === `${domino.x},${domino.y}`;
             const isBottomCell = coord === `${domino.x},${domino.y + 1}`;
             
-            if ((dir === 'N' && isTopCell) || (dir === 'S' && isBottomCell)) {
-              // Outward facing from the respective ends
-              edgeValue = isTopCell ? value1 : value2;
-            } else {
-              // Internal connections (shouldn't happen in valid open ends)
-              edgeValue = cell.value;
+            const isOutward = (dir === 'N' && isTopCell) || (dir === 'S' && isBottomCell);
+            if (!isOutward) {
+              // Not a true chain end direction for this cell; skip
+              continue;
             }
+            edgeValue = isTopCell ? value1 : value2;
           }
         }
         
