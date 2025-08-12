@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { GameState } from '@/types/domino';
@@ -24,6 +24,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     currentPlayer: 0,
     gameData: null
   });
+  const startLockRef = useRef(false);
+
 
   // Load initial game state from database
   const loadGameState = useCallback(async () => {
@@ -192,110 +194,129 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
   // Start new game (updates database)
   const startNewGame = useCallback(async () => {
     if (!gameId || !syncState.isHost) return;
-
-    // Create full domino set and shuffle
-    const fullSet = [];
-    for (let i = 0; i <= 6; i++) {
-      for (let j = i; j <= 6; j++) {
-        fullSet.push({ value1: i, value2: j });
-      }
+    if (startLockRef.current) {
+      console.log('🚫 startNewGame ignored - already in progress');
+      return;
     }
-    
-    // Shuffle the domino set
-    for (let i = fullSet.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [fullSet[i], fullSet[j]] = [fullSet[j], fullSet[i]];
-    }
+    startLockRef.current = true;
 
-    // Create hands for each player
-    const playerHands = [];
-    const playersCount = syncState.allPlayers.length;
-    
-    for (let p = 0; p < playersCount; p++) {
-      playerHands.push(fullSet.slice(p * 7, (p + 1) * 7));
-    }
-    
-    const boneyard = fullSet.slice(playersCount * 7);
-
-    // Bepaal wie mag beginnen volgens domino regels
-    let starterPlayerIndex = 0;
-    
-    // Helper functie om te checken of een speler een specifieke domino heeft
-    const hasDoubleValue = (playerHand: any[], value: number) => {
-      return playerHand.some(domino => domino.value1 === value && domino.value2 === value);
-    };
-    
-    const hasHighestNonDouble = (playerHand: any[], value1: number, value2: number) => {
-      return playerHand.some(domino => 
-        (domino.value1 === value1 && domino.value2 === value2) ||
-        (domino.value1 === value2 && domino.value2 === value1)
-      );
-    };
-    
-    // Stap 1: Zoek naar dubbele stenen van hoog naar laag (6|6, 5|5, 4|4, 3|3, 2|2, 1|1, 0|0)
-    let foundStarter = false;
-    for (let doubleValue = 6; doubleValue >= 0 && !foundStarter; doubleValue--) {
-      for (let i = 0; i < playersCount; i++) {
-        if (hasDoubleValue(playerHands[i], doubleValue)) {
-          starterPlayerIndex = i;
-          foundStarter = true;
-          console.log(`🎯 Speler ${i} begint met dubbel ${doubleValue}`);
-          break;
+    try {
+      // Create full domino set and shuffle
+      const fullSet = [] as Array<{ value1: number; value2: number }>;
+      for (let i = 0; i <= 6; i++) {
+        for (let j = i; j <= 6; j++) {
+          fullSet.push({ value1: i, value2: j });
         }
       }
-    }
-    
-    // Stap 2: Als niemand een dubbele heeft, zoek naar hoogste enkele steen
-    if (!foundStarter) {
-      // Zoek van hoog naar laag: 6|5, 6|4, 6|3, 6|2, 6|1, 6|0, dan 5|4, 5|3, etc.
-      for (let high = 6; high >= 0 && !foundStarter; high--) {
-        for (let low = high - 1; low >= 0 && !foundStarter; low--) {
-          for (let i = 0; i < playersCount; i++) {
-            if (hasHighestNonDouble(playerHands[i], high, low)) {
-              starterPlayerIndex = i;
-              foundStarter = true;
-              console.log(`🎯 Speler ${i} begint met hoogste steen ${high}|${low}`);
-              break;
+      
+      // Shuffle the domino set
+      for (let i = fullSet.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [fullSet[i], fullSet[j]] = [fullSet[j], fullSet[i]];
+      }
+  
+      // Create hands for each player
+      const playerHands: any[] = [];
+      const playersCount = syncState.allPlayers.length;
+      
+      for (let p = 0; p < playersCount; p++) {
+        playerHands.push(fullSet.slice(p * 7, (p + 1) * 7));
+      }
+      
+      const boneyard = fullSet.slice(playersCount * 7);
+  
+      // Bepaal wie mag beginnen volgens domino regels
+      let starterPlayerIndex = 0;
+      
+      // Helper functie om te checken of een speler een specifieke domino heeft
+      const hasDoubleValue = (playerHand: any[], value: number) => {
+        return playerHand.some(domino => domino.value1 === value && domino.value2 === value);
+      };
+      
+      const hasHighestNonDouble = (playerHand: any[], value1: number, value2: number) => {
+        return playerHand.some(domino => 
+          (domino.value1 === value1 && domino.value2 === value2) ||
+          (domino.value1 === value2 && domino.value2 === value1)
+        );
+      };
+      
+      // Stap 1: Zoek naar dubbele stenen van hoog naar laag (6|6, 5|5, 4|4, 3|3, 2|2, 1|1, 0|0)
+      let foundStarter = false;
+      for (let doubleValue = 6; doubleValue >= 0 && !foundStarter; doubleValue--) {
+        for (let i = 0; i < playersCount; i++) {
+          if (hasDoubleValue(playerHands[i], doubleValue)) {
+            starterPlayerIndex = i;
+            foundStarter = true;
+            console.log(`🎯 Speler ${i} begint met dubbel ${doubleValue}`);
+            break;
+          }
+        }
+      }
+      
+      // Stap 2: Als niemand een dubbele heeft, zoek naar hoogste enkele steen
+      if (!foundStarter) {
+        // Zoek van hoog naar laag: 6|5, 6|4, 6|3, 6|2, 6|1, 6|0, dan 5|4, 5|3, etc.
+        for (let high = 6; high >= 0 && !foundStarter; high--) {
+          for (let low = high - 1; low >= 0 && !foundStarter; low--) {
+            for (let i = 0; i < playersCount; i++) {
+              if (hasHighestNonDouble(playerHands[i], high, low)) {
+                starterPlayerIndex = i;
+                foundStarter = true;
+                console.log(`🎯 Speler ${i} begint met hoogste steen ${high}|${low}`);
+                break;
+              }
             }
           }
         }
       }
+      
+      // Fallback: als er iets misgaat, begin gewoon met eerste speler
+      if (!foundStarter) {
+        console.log('🎯 Fallback: Speler 0 begint');
+      }
+      
+      // Start met VOLLEDIG leeg bord - FORCE RESET + METADATA
+      const myName = syncState.allPlayers.find(p => p.position === syncState.playerPosition)?.username || 'Unknown';
+      const newGameState: any = {
+        dominoes: {}, // VOLLEDIG LEEG
+        board: {}, // VOLLEDIG LEEG  
+        playerHands,
+        boneyard,
+        openEnds: [], // GEEN OPEN ENDS
+        forbiddens: {},
+        nextDominoId: 0, // Start bij 0
+        spinnerId: null,
+        isGameOver: false,
+        selectedHandIndex: null,
+        playerHand: playerHands[syncState.playerPosition] || [],
+        // Reset metadata for logging/audit
+        lastResetById: userId,
+        lastResetByName: myName,
+        lastResetAt: new Date().toISOString(),
+        resetCounter: ((syncState.gameData?.game_state as any)?.resetCounter || 0) + 1,
+        resetReason: 'manual'
+      };
+  
+      console.log('🔥 FORCING EMPTY BOARD - startNewGame:', {
+        dominoes: Object.keys(newGameState.dominoes),
+        board: Object.keys(newGameState.board),
+        openEnds: newGameState.openEnds.length,
+        starterPlayer: starterPlayerIndex,
+        resetBy: myName,
+        resetCounter: newGameState.resetCounter
+      });
+  
+      await updateGameState(newGameState, starterPlayerIndex);
+      
+      // FORCE herlaad van de game state na het opslaan
+      setTimeout(() => {
+        loadGameState();
+      }, 500);
+    } finally {
+      startLockRef.current = false;
     }
-    
-    // Fallback: als er iets misgaat, begin gewoon met eerste speler
-    if (!foundStarter) {
-      console.log('🎯 Fallback: Speler 0 begint');
-    }
-    
-    // Start met VOLLEDIG leeg bord - FORCE RESET
-    const newGameState = {
-      dominoes: {}, // VOLLEDIG LEEG
-      board: {}, // VOLLEDIG LEEG  
-      playerHands,
-      boneyard,
-      openEnds: [], // GEEN OPEN ENDS
-      forbiddens: {},
-      nextDominoId: 0, // Start bij 0
-      spinnerId: null,
-      isGameOver: false,
-      selectedHandIndex: null,
-      playerHand: playerHands[syncState.playerPosition] || []
-    };
-
-    console.log('🔥 FORCING EMPTY BOARD - startNewGame:', {
-      dominoes: Object.keys(newGameState.dominoes),
-      board: Object.keys(newGameState.board),
-      openEnds: newGameState.openEnds.length,
-      starterPlayer: starterPlayerIndex
-    });
-
-    await updateGameState(newGameState, starterPlayerIndex);
-    
-    // FORCE herlaad van de game state na het opslaan
-    setTimeout(() => {
-      loadGameState();
-    }, 500);
   }, [gameId, syncState.isHost, syncState.allPlayers, syncState.playerPosition, updateGameState]);
+
 
   // Load initial game state and listen for updates
   useEffect(() => {
