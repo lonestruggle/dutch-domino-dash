@@ -225,44 +225,74 @@ export default function Game() {
 
     savedRef.current = true;
 
-    const hands = gameState.playerHands || [];
-    const winnerPos = (gameState as any).winner_position !== undefined
-      ? (gameState as any).winner_position
-      : hands.findIndex(h => Array.isArray(h) && h.length === 0);
+    (async () => {
+      try {
+        // Zorg dat er een actief seizoen bestaat (maak er één aan indien nodig en toegestaan)
+        const { data: season, error: seasonErr } = await supabase
+          .from('seasons')
+          .select('id')
+          .eq('is_active', true)
+          .maybeSingle();
 
-    const winnerUserId = winnerPos >= 0 && (syncState.allPlayers[winnerPos] as any)?.user_id
-      ? (syncState.allPlayers[winnerPos] as any).user_id
-      : null;
+        if (!season && !seasonErr) {
+          const defaultName = `Seizoen ${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+          const { error: createSeasonErr } = await supabase.rpc('start_new_season', { _name: defaultName });
+          if (createSeasonErr) {
+            console.warn('start_new_season failed (non-blocking):', createSeasonErr);
+          }
+        }
 
-    const players = syncState.allPlayers.map((p: any, index: number) => {
-      const hand = hands[index] || [];
-      const pips_remaining = hand.reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
-      if (!p.user_id) return null; // sla bots of onbekenden over
-      return {
-        user_id: p.user_id,
-        player_position: index,
-        points_scored: 0,
-        pips_remaining,
-        won: index === winnerPos,
-        hard_slams_used: 0,
-        turns_played: 0,
-      };
-    }).filter(Boolean);
+        const hands = gameState.playerHands || [];
+        const winnerPos = (gameState as any).winner_position !== undefined
+          ? (gameState as any).winner_position
+          : hands.findIndex(h => Array.isArray(h) && h.length === 0);
 
-    supabase.rpc('record_game_outcome', {
-      _game_id: syncState.gameData.id,
-      _lobby_id: syncState.gameData.lobby_id,
-      _winner_user_id: winnerUserId,
-      _is_blocked: (gameState as any).gameEndReason === 'blocked',
-      _players: players,
-    }).then(({ error }) => {
-      if (error) {
-        console.error('record_game_outcome error', error);
-        toast({ title: 'Opslaan mislukt', description: 'Kon uitslag niet opslaan.', variant: 'destructive' });
-      } else {
-        toast({ title: 'Uitslag opgeslagen', description: 'Scorebord bijgewerkt.' });
+        const winnerUserId = winnerPos >= 0 && (syncState.allPlayers[winnerPos] as any)?.user_id
+          ? (syncState.allPlayers[winnerPos] as any).user_id
+          : null;
+
+        const players = syncState.allPlayers.map((p: any, index: number) => {
+          const hand = hands[index] || [];
+          const pips_remaining = hand.reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
+          if (!p.user_id) return null; // sla bots of onbekenden over
+          return {
+            user_id: p.user_id,
+            player_position: index,
+            points_scored: 0,
+            pips_remaining,
+            won: index === winnerPos,
+            hard_slams_used: 0,
+            turns_played: 0,
+          };
+        }).filter(Boolean);
+
+        const { error } = await supabase.rpc('record_game_outcome', {
+          _game_id: syncState.gameData.id,
+          _lobby_id: syncState.gameData.lobby_id,
+          _winner_user_id: winnerUserId,
+          _is_blocked: (gameState as any).gameEndReason === 'blocked',
+          _players: players,
+        });
+
+        if (error) {
+          console.error('record_game_outcome error', error);
+          toast({
+            title: 'Opslaan mislukt',
+            description: error.message || 'Kon uitslag niet opslaan.',
+            variant: 'destructive'
+          });
+        } else {
+          toast({ title: 'Uitslag opgeslagen', description: 'Scorebord bijgewerkt.' });
+        }
+      } catch (err: any) {
+        console.error('Result save flow error', err);
+        toast({
+          title: 'Opslaan mislukt',
+          description: err?.message || 'Onbekende fout bij opslaan.',
+          variant: 'destructive'
+        });
       }
-    });
+    })();
   }, [gameState?.isGameOver, syncState?.gameData]);
 
   return (

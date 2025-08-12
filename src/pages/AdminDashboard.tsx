@@ -509,7 +509,8 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
     const name = newSeasonName?.trim() || `Seizoen ${new Date().getFullYear()}-${new Date().getMonth()+1}`;
     const { data, error } = await supabase.rpc('start_new_season', { _name: name });
     if (error) {
-      toast({ title: 'Fout', description: 'Kon nieuw seizoen niet starten', variant: 'destructive' });
+      console.error('start_new_season error', error);
+      toast({ title: 'Fout', description: `Kon nieuw seizoen niet starten: ${error.message}`, variant: 'destructive' });
       return;
     }
     toast({ title: 'Nieuw seizoen gestart', description: name });
