@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { BackgroundManager } from '@/components/BackgroundManager';
 import { TableBackgroundManager } from '@/components/TableBackgroundManager';
 import { UserPermissionsDialog } from '@/components/UserPermissionsDialog';
+import { ManageUserDialog } from '@/components/ManageUserDialog';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { 
   Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
@@ -115,9 +116,10 @@ const AdminDashboard = () => {
   const [activeSeason, setActiveSeason] = useState<any | null>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [newSeasonName, setNewSeasonName] = useState<string>('');
-  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
-  const [permissionsUser, setPermissionsUser] = useState<UserProfile | null>(null);
-
+const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
+const [permissionsUser, setPermissionsUser] = useState<UserProfile | null>(null);
+const [manageDialogOpen, setManageDialogOpen] = useState(false);
+const [manageUser, setManageUser] = useState<UserProfile | null>(null);
   const checkAdminStatus = useCallback(async () => {
     if (!user) return;
     
@@ -1098,7 +1100,13 @@ const AdminDashboard = () => {
                             </div>
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <p className="font-medium text-lg">{user.username}</p>
+                                <button
+                                  type="button"
+                                  className="font-medium text-lg underline-offset-2 hover:underline"
+                                  onClick={() => { setManageUser(user); setManageDialogOpen(true); }}
+                                >
+                                  {user.username}
+                                </button>
                                 {getRoleBadge(user.user_roles || [])}
                               </div>
                               <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -1291,6 +1299,12 @@ const AdminDashboard = () => {
             onOpenChange={setPermissionsDialogOpen}
             userId={permissionsUser?.user_id || ''}
             username={permissionsUser?.username || ''}
+          />
+
+          <ManageUserDialog
+            open={manageDialogOpen}
+            onOpenChange={(v) => { setManageDialogOpen(v); if (!v) setManageUser(null); }}
+            user={manageUser}
           />
 
           <TabsContent value="lobbies">
