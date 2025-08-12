@@ -353,7 +353,7 @@ export const useDominoGame = () => {
     // when a double is attached on the opposite side. These ends ignore forbiddens/neighbor checks
     // and use the free end cell as anchor for matching.
     try {
-      if (dominoCount === 2) {
+      if (dominoCount >= 2) {
         const entries = Object.entries(state.dominoes);
         const sorted = entries.sort((a, b) => parseInt(a[0].slice(1)) - parseInt(b[0].slice(1)));
         const [firstId, firstDomino] = sorted[0];
