@@ -262,6 +262,7 @@ export type Database = {
           id: string
           max_players: number
           name: string
+          player_count: number
           status: string
           updated_at: string
         }
@@ -274,6 +275,7 @@ export type Database = {
           id?: string
           max_players?: number
           name: string
+          player_count?: number
           status?: string
           updated_at?: string
         }
@@ -286,6 +288,7 @@ export type Database = {
           id?: string
           max_players?: number
           name?: string
+          player_count?: number
           status?: string
           updated_at?: string
         }
@@ -535,6 +538,10 @@ export type Database = {
       is_moderator: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      recalc_lobby_player_count: {
+        Args: { _lobby_id: string }
+        Returns: undefined
       }
       validate_game_move: {
         Args: { _game_id: string; _player_position: number; _move_data: Json }
