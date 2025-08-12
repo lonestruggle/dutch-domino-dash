@@ -296,15 +296,14 @@ export const useDominoGame = () => {
           }
         }
 
-        // FIXED: Correct edge value calculation and only allow OUTWARD directions for non-doubles
+        // FIX: Correct edge value and allow OUTWARD + perpendiculars only at true chain ends
         let edgeValue = cell.value;
         
         // For doubles, the edge value is always the same (both sides are identical)
         if (isDouble(domino.data)) {
           edgeValue = domino.data.value1; // or value2, they're the same for doubles
         } else {
-          // For non-doubles, we need to determine which value is facing outward
-          // and SKIP any internal/side directions that are not true chain ends
+          // For non-doubles, determine the free end and allow its outward + perpendicular directions
           const dominoData = domino.data;
           const isHorizontal = domino.orientation === 'horizontal';
           const isFlipped = domino.flipped;
@@ -317,9 +316,20 @@ export const useDominoGame = () => {
             const isLeftCell = coord === `${domino.x},${domino.y}`;
             const isRightCell = coord === `${domino.x + 1},${domino.y}`;
             
-            const isOutward = (dir === 'W' && isLeftCell) || (dir === 'E' && isRightCell);
-            if (!isOutward) {
-              // Not a true chain end direction for this cell; skip
+            const outwardDir: 'W' | 'E' = isLeftCell ? 'W' : 'E';
+            const perpDirs: Array<'N' | 'S'> = ['N', 'S'];
+            
+            // Confirm this side is truly an end: outward neighbor must be empty
+            const [outNx, outNy] = neighbors[outwardDir as keyof typeof neighbors];
+            const outwardOccupied = Boolean(state.board[`${outNx},${outNy}`]);
+            if (outwardOccupied) {
+              // Not a free chain end; skip any directions for this cell
+              continue;
+            }
+            
+            const allowed = [outwardDir, ...perpDirs] as Array<'N' | 'S' | 'E' | 'W'>;
+            if (!allowed.includes(dir as 'N' | 'S' | 'E' | 'W')) {
+              // Only outward + perpendiculars allowed at a free end
               continue;
             }
             edgeValue = isLeftCell ? value1 : value2;
@@ -328,9 +338,20 @@ export const useDominoGame = () => {
             const isTopCell = coord === `${domino.x},${domino.y}`;
             const isBottomCell = coord === `${domino.x},${domino.y + 1}`;
             
-            const isOutward = (dir === 'N' && isTopCell) || (dir === 'S' && isBottomCell);
-            if (!isOutward) {
-              // Not a true chain end direction for this cell; skip
+            const outwardDir: 'N' | 'S' = isTopCell ? 'N' : 'S';
+            const perpDirs: Array<'W' | 'E'> = ['W', 'E'];
+            
+            // Confirm this side is truly an end: outward neighbor must be empty
+            const [outNx, outNy] = neighbors[outwardDir as keyof typeof neighbors];
+            const outwardOccupied = Boolean(state.board[`${outNx},${outNy}`]);
+            if (outwardOccupied) {
+              // Not a free chain end; skip any directions for this cell
+              continue;
+            }
+            
+            const allowed = [outwardDir, ...perpDirs] as Array<'N' | 'S' | 'E' | 'W'>;
+            if (!allowed.includes(dir as 'N' | 'S' | 'E' | 'W')) {
+              // Only outward + perpendiculars allowed at a free end
               continue;
             }
             edgeValue = isTopCell ? value1 : value2;
