@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -40,7 +41,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [startingNewGame, setStartingNewGame] = useState(false);
+  const [confirmNewGameOpen, setConfirmNewGameOpen] = useState(false);
   const { toast } = useToast();
+
+  const actuallyStartNewGame = async () => {
+    setStartingNewGame(true);
+    try {
+      await startNewGame();
+    } finally {
+      setTimeout(() => setStartingNewGame(false), 800);
+      setConfirmNewGameOpen(false);
+    }
+  };
 
   const handleStartNewGame = async () => {
     if (!syncState?.isHost) {
@@ -51,16 +63,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
     const boardHasDominoes = Boolean(gameState && gameState.board && Object.keys(gameState.board).length > 0);
     if (boardHasDominoes) {
-      const ok = window.confirm('Nieuw spel starten? Dit reset het huidige spel voor iedereen.');
-      if (!ok) return;
+      setConfirmNewGameOpen(true);
+      return;
     }
 
-    setStartingNewGame(true);
-    try {
-      await startNewGame();
-    } finally {
-      setTimeout(() => setStartingNewGame(false), 800);
-    }
+    await actuallyStartNewGame();
   };
 
   
@@ -627,6 +634,24 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Bevestiging nieuw spel */}
+        <AlertDialog open={confirmNewGameOpen} onOpenChange={setConfirmNewGameOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Nieuw spel starten?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Dit reset het huidige spel voor alle spelers en wist het bord. Weet je het zeker?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex justify-end gap-2">
+              <AlertDialogCancel>Annuleren</AlertDialogCancel>
+              <AlertDialogAction onClick={actuallyStartNewGame} disabled={startingNewGame}>
+                {startingNewGame ? 'Starten...' : 'Start nieuw spel'}
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
