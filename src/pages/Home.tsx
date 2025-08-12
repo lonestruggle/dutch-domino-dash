@@ -83,13 +83,6 @@ export default function Home() {
                       <UserCircle className="mr-2 h-4 w-4" />
                       Profiel
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => {
-                      const btn = document.querySelector('button[title="Visuele instellingen"]') as HTMLButtonElement | null;
-                      btn?.click();
-                    }} className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Instellingen
-                    </Button>
                     <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20">
                       <LogOut className="mr-2 h-4 w-4" />
                       Uitloggen
