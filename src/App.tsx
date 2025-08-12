@@ -14,6 +14,7 @@ import Lobby from "./pages/Lobby";
 import Game from "./pages/Game";
 import NotFound from "./pages/NotFound";
 import { GameVisualControls } from "@/components/GameVisualControls";
+import Scoreboard from "./pages/Scoreboard";
 
 console.log('App.tsx: Creating QueryClient...');
 const queryClient = new QueryClient({
@@ -45,6 +46,7 @@ const App = () => {
               <Route path="/lobbies" element={<Lobbies />} />
               <Route path="/lobby/:lobbyId" element={<Lobby />} />
               <Route path="/game/:gameId" element={<Game />} />
+              <Route path="/scoreboard" element={<Scoreboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

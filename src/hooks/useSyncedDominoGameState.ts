@@ -7,7 +7,7 @@ interface SyncedGameState {
   isLoading: boolean;
   isHost: boolean;
   playerPosition: number;
-  allPlayers: Array<{ username: string; position: number; is_bot: boolean }>;
+  allPlayers: Array<{ username: string; position: number; is_bot: boolean; user_id?: string }>;
   gameState: GameState | null;
   currentPlayer: number;
   gameData: any;
@@ -90,7 +90,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
       const allPlayers = allPlayersData?.map(p => ({
         username: p.username || 'Unknown',
         position: p.player_position,
-        is_bot: p.is_bot || false
+        is_bot: p.is_bot || false,
+        user_id: p.user_id || undefined
       })) || [];
 
       // Extract player's hand from game state

@@ -1,13 +1,17 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { DominoGame } from '@/components/DominoGame';
 import { useDominoGame } from '@/hooks/useDominoGame';
 import { useSyncedDominoGameState } from '@/hooks/useSyncedDominoGameState';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const savedRef = useRef(false);
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
@@ -214,6 +218,52 @@ export default function Game() {
     setGameState(updatedGameState);
     updateGameState(updatedGameState);
   }, [gameState, gameHook, syncState.allPlayers, setGameState, updateGameState]);
+
+  // Sla automatisch de uitslag op naar het scoreboard zodra het spel eindigt
+  useEffect(() => {
+    if (!gameState?.isGameOver || !syncState?.gameData || savedRef.current) return;
+
+    savedRef.current = true;
+
+    const hands = gameState.playerHands || [];
+    const winnerPos = (gameState as any).winner_position !== undefined
+      ? (gameState as any).winner_position
+      : hands.findIndex(h => Array.isArray(h) && h.length === 0);
+
+    const winnerUserId = winnerPos >= 0 && (syncState.allPlayers[winnerPos] as any)?.user_id
+      ? (syncState.allPlayers[winnerPos] as any).user_id
+      : null;
+
+    const players = syncState.allPlayers.map((p: any, index: number) => {
+      const hand = hands[index] || [];
+      const pips_remaining = hand.reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
+      if (!p.user_id) return null; // sla bots of onbekenden over
+      return {
+        user_id: p.user_id,
+        player_position: index,
+        points_scored: 0,
+        pips_remaining,
+        won: index === winnerPos,
+        hard_slams_used: 0,
+        turns_played: 0,
+      };
+    }).filter(Boolean);
+
+    supabase.rpc('record_game_outcome', {
+      _game_id: syncState.gameData.id,
+      _lobby_id: syncState.gameData.lobby_id,
+      _winner_user_id: winnerUserId,
+      _is_blocked: (gameState as any).gameEndReason === 'blocked',
+      _players: players,
+    }).then(({ error }) => {
+      if (error) {
+        console.error('record_game_outcome error', error);
+        toast({ title: 'Opslaan mislukt', description: 'Kon uitslag niet opslaan.', variant: 'destructive' });
+      } else {
+        toast({ title: 'Uitslag opgeslagen', description: 'Scorebord bijgewerkt.' });
+      }
+    });
+  }, [gameState?.isGameOver, syncState?.gameData]);
 
   return (
     <div className="min-h-screen bg-background">
