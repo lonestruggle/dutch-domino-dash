@@ -141,20 +141,20 @@ export default function Lobbies() {
         style={{ backgroundImage: "url('/lovable-uploads/c4068ec8-944f-40d1-ba31-960a50449118.png')" }}
         aria-hidden="true"
       />
-      <div className="absolute inset-0 -z-10 bg-background/80" aria-hidden="true" />
+      <div className="absolute inset-0 -z-10 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Multiplayer Lobbies</h1>
-            <p className="text-muted-foreground">Welcome, {displayUsername || user?.email}!</p>
+            <h1 className="text-3xl font-bold text-white">Multiplayer Lobbies</h1>
+            <p className="text-white/80">Welcome, {displayUsername || user?.email}!</p>
           </div>
           <div className="flex w-full sm:w-auto gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => navigate('/')} className="w-full sm:w-auto">
+            <Button variant="outline" onClick={() => navigate('/')} className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20">
               Back to Home
             </Button>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button className="w-full sm:w-auto">
+                <Button className="w-full sm:w-auto bg-primary hover:bg-primary/80 text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Lobby
                 </Button>
@@ -200,18 +200,18 @@ export default function Lobbies() {
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-muted-foreground">Loading lobbies...</p>
+            <p className="mt-2 text-white/80">Loading lobbies...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {lobbies.length === 0 ? (
               <div className="col-span-full text-center py-8">
-                <p className="text-muted-foreground">No lobbies available</p>
-                <p className="text-sm text-muted-foreground mt-1">Create a new lobby to get started!</p>
+                <p className="text-white/80">No lobbies available</p>
+                <p className="text-sm text-white/70 mt-1">Create a new lobby to get started!</p>
               </div>
             ) : (
               lobbies.map((lobby) => (
-                <Card key={lobby.id} className="hover:shadow-md transition-shadow">
+                <Card key={lobby.id} className="hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white/10 backdrop-blur-md border-white/20 text-white">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span className="truncate">{lobby.name}</span>
@@ -223,7 +223,7 @@ export default function Lobbies() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-white/80">
                         Status: {lobby.status}
                       </div>
                       <div className="flex gap-2 w-full sm:w-auto">
@@ -240,7 +240,7 @@ export default function Lobbies() {
                           onClick={() => handleJoinLobby(lobby.id)}
                           disabled={lobby.player_count >= lobby.max_players}
                           size="sm"
-                          className="w-full sm:w-auto"
+                          className="w-full sm:w-auto bg-primary hover:bg-primary/80 text-white"
                         >
                           {lobby.player_count >= lobby.max_players ? 'Full' : 'Join'}
                         </Button>

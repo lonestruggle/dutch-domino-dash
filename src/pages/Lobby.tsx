@@ -377,12 +377,12 @@ export default function Lobby() {
         style={{ backgroundImage: "url('/lovable-uploads/c4068ec8-944f-40d1-ba31-960a50449118.png')" }}
         aria-hidden="true"
       />
-      <div className="absolute inset-0 -z-10 bg-background/80" aria-hidden="true" />
+      <div className="absolute inset-0 -z-10 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
       <div className="max-w-2xl mx-auto">
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-md border-white/20 text-white">
           <CardHeader className="pb-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-white">
                 <Users className="h-5 w-5" />
                 <span className="truncate">{lobby.name}</span>
               </CardTitle>
@@ -391,7 +391,7 @@ export default function Lobby() {
                   variant="outline" 
                   onClick={copyLobbyLink}
                   size="sm"
-                  className="flex-1 sm:flex-none"
+                  className="flex-1 sm:flex-none border-white/30 bg-white/10 text-white hover:bg-white/20"
                 >
                   <Copy className="h-4 w-4 mr-1 sm:mr-2" />
                   <span className="hidden xs:inline">Share Link</span>
@@ -401,7 +401,7 @@ export default function Lobby() {
                   variant="outline" 
                   onClick={leaveLobby}
                   size="sm"
-                  className="flex-1 sm:flex-none"
+                  className="flex-1 sm:flex-none border-white/30 bg-white/10 text-white hover:bg-white/20"
                 >
                   <LogOut className="h-4 w-4 mr-1 sm:mr-2" />
                   Leave
@@ -410,7 +410,7 @@ export default function Lobby() {
                   <Button 
                     onClick={startGame}
                     size="sm"
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto bg-primary hover:bg-primary/80 text-white"
                   >
                     <Play className="h-4 w-4 mr-1 sm:mr-2" />
                     Start Game
@@ -424,7 +424,7 @@ export default function Lobby() {
               {playerSlots.map(({ position, player }) => (
                 <div
                   key={position}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="flex items-center justify-between p-3 border border-white/20 rounded-lg"
                 >
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
@@ -435,7 +435,7 @@ export default function Lobby() {
                         <div className="flex items-center gap-2">
                           <span>{player.username}</span>
                           {player.is_bot && (
-                            <Bot className="h-4 w-4 text-muted-foreground" />
+                            <Bot className="h-4 w-4 text-white/70" />
                           )}
                           {player.user_id === lobby.created_by && (
                             <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
