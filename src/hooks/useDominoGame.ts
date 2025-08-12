@@ -155,45 +155,84 @@ export const useDominoGame = () => {
     const boardCoords = Object.keys(state.board);
     const dominoCount = Object.keys(state.dominoes).length;
     
-    // Special case: first domino should have two open ends
+    // Special case: first domino — ensure 3 forced open ends per side for a non-double start
     if (dominoCount === 1) {
       const coord = boardCoords[0];
-      const [x, y] = coord.split(',').map(Number);
       const cell = state.board[coord];
       const domino = state.dominoes[cell.dominoId];
-      
+
       console.log(`🔍 Single domino case: ${domino.data.value1}|${domino.data.value2}`);
-      
+
       if (!isDouble(domino.data)) {
-        // First non-double domino has two open ends
+        const d = domino.data;
+        const [v1, v2] = domino.flipped ? [d.value2, d.value1] : [d.value1, d.value2];
+        const delta = { N: [0, -1], S: [0, 1], W: [-1, 0], E: [1, 0] } as const;
+        const existing = new Set(openEnds.map((e) => `${e.x},${e.y},${e.fromDir}`));
+
         if (domino.orientation === 'horizontal') {
-          openEnds.push({
-            x: x + 1,
-            y: y,
-            value: domino.flipped ? domino.data.value1 : domino.data.value2,
-            fromDir: 'E',
-          });
-          openEnds.push({
-            x: x - 1,
-            y: y,
-            value: domino.flipped ? domino.data.value2 : domino.data.value1,
-            fromDir: 'W',
-          });
+          // Left side (value = v1)
+          const anchorLx = domino.x; // occupied left cell
+          const anchorLy = domino.y;
+          const leftDirs: Array<'N' | 'S' | 'E' | 'W'> = ['W', 'N', 'S'];
+          for (const dir of leftDirs) {
+            const [dx, dy] = delta[dir];
+            const tx = anchorLx + dx;
+            const ty = anchorLy + dy;
+            const key = `${tx},${ty},${dir}`;
+            if (!state.board[`${tx},${ty}`] && !existing.has(key)) {
+              openEnds.push({ x: tx, y: ty, value: v1, fromDir: dir, forced: true, anchorX: anchorLx, anchorY: anchorLy });
+              existing.add(key);
+            }
+          }
+
+          // Right side (value = v2)
+          const anchorRx = domino.x + 1; // occupied right cell
+          const anchorRy = domino.y;
+          const rightDirs: Array<'N' | 'S' | 'E' | 'W'> = ['E', 'N', 'S'];
+          for (const dir of rightDirs) {
+            const [dx, dy] = delta[dir];
+            const tx = anchorRx + dx;
+            const ty = anchorRy + dy;
+            const key = `${tx},${ty},${dir}`;
+            if (!state.board[`${tx},${ty}`] && !existing.has(key)) {
+              openEnds.push({ x: tx, y: ty, value: v2, fromDir: dir, forced: true, anchorX: anchorRx, anchorY: anchorRy });
+              existing.add(key);
+            }
+          }
         } else {
-          openEnds.push({
-            x: x,
-            y: y - 1,
-            value: domino.flipped ? domino.data.value1 : domino.data.value2,
-            fromDir: 'N',
-          });
-          openEnds.push({
-            x: x,
-            y: y + 1,
-            value: domino.flipped ? domino.data.value2 : domino.data.value1,
-            fromDir: 'S',
-          });
+          // Vertical orientation
+          // Top side (value = v1)
+          const anchorTx = domino.x; // occupied top cell
+          const anchorTy = domino.y;
+          const topDirs: Array<'N' | 'S' | 'E' | 'W'> = ['N', 'W', 'E'];
+          for (const dir of topDirs) {
+            const [dx, dy] = delta[dir];
+            const tx = anchorTx + dx;
+            const ty = anchorTy + dy;
+            const key = `${tx},${ty},${dir}`;
+            if (!state.board[`${tx},${ty}`] && !existing.has(key)) {
+              openEnds.push({ x: tx, y: ty, value: v1, fromDir: dir, forced: true, anchorX: anchorTx, anchorY: anchorTy });
+              existing.add(key);
+            }
+          }
+
+          // Bottom side (value = v2)
+          const anchorBx = domino.x; // occupied bottom cell (x,y+1)
+          const anchorBy = domino.y + 1;
+          const bottomDirs: Array<'N' | 'S' | 'E' | 'W'> = ['S', 'W', 'E'];
+          for (const dir of bottomDirs) {
+            const [dx, dy] = delta[dir];
+            const tx = anchorBx + dx;
+            const ty = anchorBy + dy;
+            const key = `${tx},${ty},${dir}`;
+            if (!state.board[`${tx},${ty}`] && !existing.has(key)) {
+              openEnds.push({ x: tx, y: ty, value: v2, fromDir: dir, forced: true, anchorX: anchorBx, anchorY: anchorBy });
+              existing.add(key);
+            }
+          }
         }
-        console.log(`🔍 Single domino open ends:`, openEnds);
+
+        console.log('🔍 Single domino FORCED open ends (6 expected):', openEnds.map(e => `(${e.x},${e.y}) v:${e.value} from:${e.fromDir} anchor:${(e as any).anchorX},${(e as any).anchorY}`));
         return openEnds;
       }
     }
