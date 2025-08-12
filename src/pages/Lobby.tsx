@@ -371,7 +371,13 @@ export default function Lobby() {
   });
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-4">
+    <div className="relative min-h-screen p-2 sm:p-4">
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-center"
+        style={{ backgroundImage: "url('/lovable-uploads/c4068ec8-944f-40d1-ba31-960a50449118.png')" }}
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0 -z-10 bg-background/80" aria-hidden="true" />
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader className="pb-4">
