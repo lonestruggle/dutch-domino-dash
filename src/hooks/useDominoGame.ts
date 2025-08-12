@@ -405,15 +405,24 @@ export const useDominoGame = () => {
             // Generate 3 adjacent forced ends around the free side: forward + perpendiculars
             const perps = (freeDir === 'N' || freeDir === 'S') ? (['W','E'] as const) : (['N','S'] as const);
             const dirs: Array<'N' | 'S' | 'E' | 'W'> = [freeDir, perps[0], perps[1]];
-            for (const ddir of dirs) {
+
+            // Calculate the three target cells first
+            const targets = dirs.map((ddir) => {
               const [px, py] = delta[ddir];
-              const tx = anchorX + px;
-              const ty = anchorY + py;
-              if (state.board[`${tx},${ty}`]) continue; // skip if already occupied
-              const key = `${tx},${ty},${ddir}`;
-              if (!existing.has(key)) {
-                openEnds.unshift({ x: tx, y: ty, value: edgeValue, fromDir: ddir, forced: true, anchorX, anchorY });
-                existing.add(key);
+              return { x: anchorX + px, y: anchorY + py, dir: ddir as 'N' | 'S' | 'E' | 'W' };
+            });
+
+            // If ANY of the three cells is already occupied, suppress all forced ends for this side
+            const anyOccupied = targets.some(t => Boolean(state.board[`${t.x},${t.y}`]));
+            if (anyOccupied) {
+              console.log('🚫 Forced triple ends suppressed: one or more target cells occupied', targets);
+            } else {
+              for (const t of targets) {
+                const key = `${t.x},${t.y},${t.dir}`;
+                if (!existing.has(key)) {
+                  openEnds.unshift({ x: t.x, y: t.y, value: edgeValue, fromDir: t.dir, forced: true, anchorX, anchorY });
+                  existing.add(key);
+                }
               }
             }
           }
