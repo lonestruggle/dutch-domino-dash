@@ -26,6 +26,10 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const { settings } = useGameVisualSettings();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Dynamische gap op basis van handDominoScale
+  const baseGap = isMobile ? 4 : 12; // px
+  const gapPx = Math.max(1, Math.round(baseGap * (settings.handDominoScale ?? 1)));
+
   // Update hand domino scale CSS variables - force immediate update and listen for global changes
   useEffect(() => {
     const applyScale = (scale: number) => {
@@ -61,7 +65,10 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         Jouw Hand
       </h2>
       
-      <div className={`flex flex-wrap justify-center min-h-[48px] ${isMobile ? "gap-1 px-2" : "gap-3 p-2"}`}>
+      <div
+        className={`flex flex-wrap justify-center min-h-[48px] ${isMobile ? "px-2" : "p-2"}`}
+        style={{ gap: `${gapPx}px` }}
+      >
         {hand.map((domino, index) => (
           <DominoTile
             key={getDominoKey(domino, index)}
