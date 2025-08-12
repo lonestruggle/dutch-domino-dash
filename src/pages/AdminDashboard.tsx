@@ -111,6 +111,9 @@ const AdminDashboard = () => {
   const [passwordResetUser, setPasswordResetUser] = useState<UserProfile | null>(null);
   const [newPassword, setNewPassword] = useState<string>('');
   const [showGeneratedPassword, setShowGeneratedPassword] = useState<boolean>(false);
+  const [activeSeason, setActiveSeason] = useState<any | null>(null);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [newSeasonName, setNewSeasonName] = useState<string>('');
 
   const checkAdminStatus = useCallback(async () => {
     if (!user) return;
@@ -261,6 +264,24 @@ const AdminDashboard = () => {
         }));
         setLobbies(lobbiesWithCount);
       }
+
+      // Load active season
+      const { data: seasonData } = await supabase
+        .from('seasons')
+        .select('*')
+        .eq('is_active', true)
+        .maybeSingle();
+      setActiveSeason(seasonData || null);
+
+      // Load leaderboard (top 10)
+      const { data: lbData } = await supabase
+        .from('leaderboard_current_season')
+        .select('*')
+        .order('wins', { ascending: false })
+        .order('total_points', { ascending: false })
+        .limit(10);
+      setLeaderboard(lbData || []);
+
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     }
@@ -438,6 +459,31 @@ const AdminDashboard = () => {
         variant: "destructive",
       });
     }
+  };
+
+  // Scoreboard & Seasons actions
+  const handleStartNewSeason = async () => {
+    const name = newSeasonName?.trim() || `Seizoen ${new Date().getFullYear()}-${new Date().getMonth()+1}`;
+    const { data, error } = await supabase.rpc('start_new_season', { _name: name });
+    if (error) {
+      toast({ title: 'Fout', description: 'Kon nieuw seizoen niet starten', variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Nieuw seizoen gestart', description: name });
+    setNewSeasonName('');
+    loadDashboardData();
+  };
+
+  const handleResetSeason = async () => {
+    if (!activeSeason?.id) return;
+    if (!window.confirm('Weet je zeker dat je ALLE statistieken voor dit seizoen wilt resetten?')) return;
+    const { error } = await supabase.rpc('reset_season_stats', { _season_id: activeSeason.id });
+    if (error) {
+      toast({ title: 'Fout', description: 'Kon seizoen niet resetten', variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Seizoen gereset', description: 'Alle statistieken zijn verwijderd.' });
+    loadDashboardData();
   };
 
   // User management functions
@@ -786,7 +832,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-10">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Overzicht
@@ -814,6 +860,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="scoreboard" className="flex items-center gap-2">
+              <Crown className="h-4 w-4" />
+              Scoreboard
             </TabsTrigger>
             <TabsTrigger value="invitations" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -1344,6 +1394,79 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="scoreboard">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Actief seizoen</CardTitle>
+                  <CardDescription>
+                    Beheer seizoenen en reset stats (alleen admins/mods)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex-1 min-w-[220px]">
+                      <div className="text-sm text-muted-foreground">Naam huidig seizoen</div>
+                      <div className="text-lg font-semibold">{activeSeason?.name || '—'}</div>
+                    </div>
+                    <Button variant="destructive" disabled={!activeSeason?.id} onClick={handleResetSeason}>
+                      Reset huidig seizoen
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <input
+                      className="border rounded px-3 py-2 text-sm bg-background"
+                      placeholder="Nieuwe seizoennaam"
+                      value={newSeasonName}
+                      onChange={(e) => setNewSeasonName(e.target.value)}
+                    />
+                    <Button onClick={handleStartNewSeason}>Start nieuw seizoen</Button>
+                    <Button variant="outline" onClick={() => navigate('/scoreboard')}>Volledig Scoreboard</Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Leaderboard (top 10)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {leaderboard.length === 0 ? (
+                    <p className="text-muted-foreground">Nog geen resultaten.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-left border-b">
+                            <th className="py-2 pr-4">#</th>
+                            <th className="py-2 pr-4">Speler</th>
+                            <th className="py-2 pr-4">Gespeeld</th>
+                            <th className="py-2 pr-4">Gewonnen</th>
+                            <th className="py-2 pr-4">Punten</th>
+                            <th className="py-2 pr-4">Hard Slams</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {leaderboard.map((row: any, i: number) => (
+                            <tr key={`${row.user_id}-${i}`} className="border-b last:border-0">
+                              <td className="py-2 pr-4">{i + 1}</td>
+                              <td className="py-2 pr-4 font-medium">{row.username || row.user_id?.slice(0,8)}</td>
+                              <td className="py-2 pr-4">{row.games_played}</td>
+                              <td className="py-2 pr-4">{row.wins}</td>
+                              <td className="py-2 pr-4">{row.total_points}</td>
+                              <td className="py-2 pr-4">{row.hard_slams}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="invitations">

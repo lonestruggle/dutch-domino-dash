@@ -151,13 +151,23 @@ export default function Home() {
                   <p className="text-white/80">
                     Speel met vrienden online (maximaal 4 spelers)
                   </p>
-                  <Button 
-                    onClick={() => navigate('/lobbies')} 
-                    className="w-full bg-primary hover:bg-primary/80 text-white"
-                    size="lg"
-                  >
-                    Join Multiplayer
-                  </Button>
+                  <div className="grid gap-2">
+                    <Button 
+                      onClick={() => navigate('/lobbies')} 
+                      className="w-full bg-primary hover:bg-primary/80 text-white"
+                      size="lg"
+                    >
+                      Join Multiplayer
+                    </Button>
+                    <Button 
+                      onClick={() => navigate('/scoreboard')} 
+                      variant="outline"
+                      className="w-full border-white/30 bg-white/10 text-white hover:bg-white/20"
+                      size="lg"
+                    >
+                      Scoreboard
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
