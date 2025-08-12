@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { BackgroundManager } from '@/components/BackgroundManager';
 import { TableBackgroundManager } from '@/components/TableBackgroundManager';
+import { UserPermissionsDialog } from '@/components/UserPermissionsDialog';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { 
   Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
@@ -114,6 +115,8 @@ const AdminDashboard = () => {
   const [activeSeason, setActiveSeason] = useState<any | null>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [newSeasonName, setNewSeasonName] = useState<string>('');
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
+  const [permissionsUser, setPermissionsUser] = useState<UserProfile | null>(null);
 
   const checkAdminStatus = useCallback(async () => {
     if (!user) return;
@@ -416,6 +419,44 @@ const AdminDashboard = () => {
         description: "Er is iets misgegaan",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDeleteAllLobbies = async () => {
+    try {
+      if (lobbies.length === 0) {
+        toast({ title: 'Niets te verwijderen', description: 'Er zijn geen lobbies.' });
+        return;
+      }
+      if (!window.confirm('Weet je zeker dat je ALLE lobbies wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
+
+      const ids = lobbies.map(l => l.id);
+
+      // verwijder eerst alle lobby spelers
+      const { error: playersError } = await supabase
+        .from('lobby_players')
+        .delete()
+        .in('lobby_id', ids);
+      if (playersError) {
+        toast({ title: 'Fout', description: 'Kon lobby spelers niet verwijderen', variant: 'destructive' });
+        return;
+      }
+
+      // verwijder vervolgens alle lobbies
+      const { error: lobbiesError } = await supabase
+        .from('lobbies')
+        .delete()
+        .in('id', ids);
+      if (lobbiesError) {
+        toast({ title: 'Fout', description: 'Kon lobbies niet verwijderen', variant: 'destructive' });
+        return;
+      }
+
+      setLobbies([]);
+      toast({ title: 'Succes', description: `${ids.length} lobbies verwijderd` });
+    } catch (error) {
+      console.error('Error deleting all lobbies:', error);
+      toast({ title: 'Error', description: 'Er is iets misgegaan', variant: 'destructive' });
     }
   };
 
@@ -1121,6 +1162,15 @@ const AdminDashboard = () => {
                             <Button 
                               variant="outline" 
                               size="sm"
+                              onClick={() => { setPermissionsUser(user); setPermissionsDialogOpen(true); }}
+                            >
+                              <Shield className="h-4 w-4 mr-1" />
+                              Bevoegdheden
+                            </Button>
+                            
+                            <Button 
+                              variant="outline" 
+                              size="sm"
                               onClick={() => handleForceLogout(user.user_id, user.username)}
                             >
                               <LogOut className="h-4 w-4 mr-1" />
@@ -1236,6 +1286,13 @@ const AdminDashboard = () => {
             </div>
           </TabsContent>
 
+          <UserPermissionsDialog
+            open={permissionsDialogOpen}
+            onOpenChange={setPermissionsDialogOpen}
+            userId={permissionsUser?.user_id || ''}
+            username={permissionsUser?.username || ''}
+          />
+
           <TabsContent value="lobbies">
             <Card>
               <CardHeader>
@@ -1245,6 +1302,12 @@ const AdminDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-muted-foreground">Totaal: {lobbies.length}</div>
+                  <Button variant="destructive" size="sm" onClick={handleDeleteAllLobbies}>
+                    Alle lobbies verwijderen
+                  </Button>
+                </div>
                 <div className="space-y-4">
                   {lobbies.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">

@@ -591,6 +591,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permissions: {
+        Row: {
+          can_chat: boolean
+          can_create_lobby: boolean
+          can_hard_slam: boolean
+          can_invite: boolean
+          can_use_custom_backgrounds: boolean
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_chat?: boolean
+          can_create_lobby?: boolean
+          can_hard_slam?: boolean
+          can_invite?: boolean
+          can_use_custom_backgrounds?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_chat?: boolean
+          can_create_lobby?: boolean
+          can_hard_slam?: boolean
+          can_invite?: boolean
+          can_use_custom_backgrounds?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
