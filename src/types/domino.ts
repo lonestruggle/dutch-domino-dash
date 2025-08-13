@@ -1,3 +1,4 @@
+
 export interface DominoData {
   value1: number;
   value2: number;
@@ -50,4 +51,8 @@ export interface GameState {
   hardSlamUsesRemaining?: number; // Track hard slam uses for current player
   hardSlamNextMove?: boolean; // Track if next move should be a hard slam
   isHardSlamming?: boolean; // Track if hard slam animation is currently playing
+
+  // Nieuw voor spelafloop
+  gameEndReason?: 'blocked' | 'changa' | 'normal';
+  winner_position?: number;
 }

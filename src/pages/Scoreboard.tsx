@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,7 @@ interface LeaderRow {
   total_points: number;
   hard_slams: number;
   turns: number;
+  changa_wins: number; // Nieuw veld uit de view
 }
 
 export default function Scoreboard() {
@@ -75,6 +77,7 @@ export default function Scoreboard() {
                         <th className="py-2 pr-4">Speler</th>
                         <th className="py-2 pr-4">Gespeeld</th>
                         <th className="py-2 pr-4">Gewonnen</th>
+                        <th className="py-2 pr-4">Changa</th>
                         <th className="py-2 pr-4">Punten</th>
                         <th className="py-2 pr-4">Hard Slams</th>
                       </tr>
@@ -86,6 +89,7 @@ export default function Scoreboard() {
                           <td className="py-2 pr-4 font-medium">{row.username || row.user_id?.slice(0,8)}</td>
                           <td className="py-2 pr-4">{row.games_played}</td>
                           <td className="py-2 pr-4">{row.wins}</td>
+                          <td className="py-2 pr-4">{row.changa_wins || 0}</td>
                           <td className="py-2 pr-4">{row.total_points}</td>
                           <td className="py-2 pr-4">{row.hard_slams}</td>
                         </tr>

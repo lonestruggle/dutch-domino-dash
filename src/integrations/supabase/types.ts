@@ -182,6 +182,7 @@ export type Database = {
           user_id: string
           username: string | null
           won: boolean
+          won_by_changa: boolean
         }
         Insert: {
           created_at?: string
@@ -195,6 +196,7 @@ export type Database = {
           user_id: string
           username?: string | null
           won?: boolean
+          won_by_changa?: boolean
         }
         Update: {
           created_at?: string
@@ -208,6 +210,7 @@ export type Database = {
           user_id?: string
           username?: string | null
           won?: boolean
+          won_by_changa?: boolean
         }
         Relationships: [
           {
@@ -655,6 +658,7 @@ export type Database = {
     Views: {
       leaderboard_current_season: {
         Row: {
+          changa_wins: number | null
           games_played: number | null
           hard_slams: number | null
           total_points: number | null

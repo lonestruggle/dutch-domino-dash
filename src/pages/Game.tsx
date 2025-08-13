@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { DominoGame } from '@/components/DominoGame';
@@ -19,6 +20,9 @@ export default function Game() {
   // Use the domino game hook
   const gameHook = useDominoGame();
   const { gameState, setGameState } = gameHook;
+
+  // Ref om Changa-detectie te markeren tussen pre- en post-move
+  const changaRef = useRef(false);
   
   // Sync the game state when synced state changes
   useEffect(() => {
@@ -47,15 +51,66 @@ export default function Game() {
       isGameOver: gameState.isGameOver,
       playerHand: gameState.playerHand,
       playerHands: nextHands,
+      gameEndReason: (gameState as any).gameEndReason,
+      winner_position: (gameState as any).winner_position,
     };
     updateGameState(newStateToSave);
   }, [syncState.gameState, syncState.gameData, syncState.playerPosition, gameState, updateGameState]);
 
   // Wrap local actions and then sync
   const wrappedExecuteMove = useCallback((move: any) => {
+    // Pre-move: detecteer CHANGA (ook bij dubbel)
+    const myHand = gameState.playerHand || [];
+    const isLastStone = myHand.length === 1;
+    let isChangaCandidate = false;
+
+    if (isLastStone && move?.dominoData) {
+      const currentOpenEnds = gameHook.regenerateOpenEnds(gameState) || [];
+      const endValues = currentOpenEnds.map(e => e.value);
+      const v1 = move.dominoData.value1;
+      const v2 = move.dominoData.value2;
+
+      if (v1 === v2) {
+        // Dubbel: CHANGA als er minimaal twee open einden met deze waarde zijn
+        const sameCount = endValues.filter(v => v === v1).length;
+        isChangaCandidate = sameCount >= 2;
+      } else {
+        // Niet-dubbel: CHANGA als beide waardes aanwezig zijn in de open einden
+        const set = new Set(endValues);
+        isChangaCandidate = set.has(v1) && set.has(v2);
+      }
+    }
+
+    changaRef.current = isChangaCandidate;
+
     (gameHook as any).executeMove(move);
+
+    // Markeer eindtoestand als CHANGA wanneer dit de laatste steen was
+    setTimeout(() => {
+      if (!changaRef.current) return;
+      const myPos = syncState.playerPosition || 0;
+
+      const updatedGameState = {
+        ...gameState,
+        isGameOver: true,
+        gameEndReason: 'changa',
+        winner_position: myPos,
+      } as any;
+
+      setGameState(updatedGameState);
+      updateGameState(updatedGameState);
+
+      // Optionele feedback
+      toast({
+        title: 'CHANGA!',
+        description: 'Je hebt gewonnen met CHANGA!',
+      });
+
+      changaRef.current = false;
+    }, 120);
+
     setTimeout(syncLocalToRemote, 60);
-  }, [gameHook, syncLocalToRemote]);
+  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast]);
 
   const wrappedDrawFromBoneyard = useCallback(() => {
     (gameHook as any).drawFromBoneyard();
@@ -286,6 +341,8 @@ export default function Game() {
           ? (syncState.allPlayers[winnerPos] as any).user_id
           : null;
 
+        const wonByChanga = (gameState as any).gameEndReason === 'changa';
+
         const players = syncState.allPlayers.map((p: any, index: number) => {
           const hand = hands[index] || [];
           const pips_remaining = hand.reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
@@ -298,6 +355,7 @@ export default function Game() {
             won: index === winnerPos,
             hard_slams_used: 0,
             turns_played: 0,
+            won_by_changa: index === winnerPos ? wonByChanga : false,
           };
         }).filter(Boolean);
 
@@ -317,7 +375,10 @@ export default function Game() {
             variant: 'destructive'
           });
         } else {
-          toast({ title: 'Uitslag opgeslagen', description: 'Scorebord bijgewerkt.' });
+          toast({ 
+            title: wonByChanga ? 'Uitslag: CHANGA' : 'Uitslag opgeslagen', 
+            description: wonByChanga ? 'Scorebord bijgewerkt — gewonnen met CHANGA!' : 'Scorebord bijgewerkt.' 
+          });
         }
       } catch (err: any) {
         console.error('Result save flow error', err);
@@ -328,7 +389,7 @@ export default function Game() {
         });
       }
     })();
-  }, [gameState?.isGameOver, syncState?.gameData]);
+  }, [gameState?.isGameOver, syncState?.gameData, toast]);
 
   return (
     <div className="min-h-screen bg-background">
