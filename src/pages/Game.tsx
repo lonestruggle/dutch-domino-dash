@@ -118,6 +118,24 @@ export default function Game() {
     setTimeout(syncLocalToRemote, 60);
   }, [gameHook, syncLocalToRemote]);
 
+  const wrappedStartNewGame = useCallback(async () => {
+    const blank: GameState = {
+      dominoes: {},
+      board: {},
+      playerHand: [],
+      playerHands: [],
+      boneyard: [],
+      openEnds: [],
+      forbiddens: {},
+      nextDominoId: 0,
+      spinnerId: null,
+      isGameOver: false,
+      selectedHandIndex: null,
+    };
+    setGameState(blank);
+    await syncedStartNewGame();
+  }, [setGameState, syncedStartNewGame]);
+
   // Auto-check for blocked game after each move
   useEffect(() => {
     if (!gameState || gameState.isGameOver || !syncState.allPlayers.length) return;
@@ -400,7 +418,7 @@ export default function Game() {
           executeMove: wrappedExecuteMove,
           drawFromBoneyard: wrappedDrawFromBoneyard,
           manualBlockedCheck,
-          startNewGame: syncedStartNewGame,
+          startNewGame: wrappedStartNewGame,
           syncState,
           gameData: syncState.gameData || { background_choice: null }
         }}
