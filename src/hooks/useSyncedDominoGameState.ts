@@ -25,6 +25,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     gameData: null
   });
   const startLockRef = useRef(false);
+  const selfUpdateSuppressUntilRef = useRef<number>(0);
 
 
   // Load initial game state from database
@@ -36,6 +37,12 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     
     if (ignoringSync) {
       console.log('🚫 IGNORING LOAD GAME STATE - we are in the middle of an update');
+      return;
+    }
+
+    // Suppress immediate reloads during our own local updates to avoid state flicker
+    if (Date.now() < selfUpdateSuppressUntilRef.current) {
+      console.log('⏭️ Skipping load during local update window');
       return;
     }
     
@@ -191,6 +198,9 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     if (!gameId) return;
 
     try {
+      // Mark this as a self-initiated update to prevent immediate reload flicker
+      selfUpdateSuppressUntilRef.current = Date.now() + 1200;
+
       const { error } = await supabase
         .from('games')
         .update({
@@ -351,6 +361,12 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'games', filter: `lobby_id=eq.${gameId}` },
         (payload) => {
+          // Skip reload if this update was triggered by ourselves very recently
+          if (Date.now() < selfUpdateSuppressUntilRef.current) {
+            console.log('⏭️ Skipping realtime reload (self update in progress)');
+            return;
+          }
+
           console.log('🔄 Game updated by other player, reloading state...', payload);
           console.log('🔄 BEFORE RELOAD - Current dominoes:', Object.keys(syncState.gameState?.dominoes || {}));
           // Reload the game state when other player makes a move
