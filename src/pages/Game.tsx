@@ -86,29 +86,20 @@ export default function Game() {
 
     (gameHook as any).executeMove(move);
 
-    // Markeer eindtoestand als CHANGA wanneer dit de laatste steen was
+    // Markeer CHANGA direct en veilig op basis van de nieuwste state
     setTimeout(() => {
       if (!changaRef.current) return;
       const myPos = syncState.playerPosition || 0;
-
-      const updatedGameState = {
-        ...gameState,
-        isGameOver: true,
-        gameEndReason: 'changa',
-        winner_position: myPos,
-      } as any;
-
-      setGameState(updatedGameState);
-      updateGameState(updatedGameState);
-
-      // Optionele feedback
-      toast({
-        title: 'CHANGA!',
-        description: 'Je hebt gewonnen met CHANGA!',
+      setGameState(prev => {
+        if (prev.isGameOver) return prev;
+        const after = { ...(prev as any), isGameOver: true, gameEndReason: 'changa', winner_position: myPos } as any;
+        updateGameState(after);
+        return after;
       });
-
+      // Optionele feedback
+      toast({ title: 'CHANGA!', description: 'Je hebt gewonnen met CHANGA!' });
       changaRef.current = false;
-    }, 120);
+    }, 50);
 
     setTimeout(syncLocalToRemote, 60);
   }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast]);
@@ -147,6 +138,12 @@ export default function Game() {
   // Auto-check for blocked game after each move
   useEffect(() => {
     if (!gameState || gameState.isGameOver || !syncState.allPlayers.length) return;
+
+    // Als iemand leeg is of CHANGA reeds gemarkeerd, geen blocked-check uitvoeren
+    const anyEmptyHand =
+      (gameState.playerHand?.length === 0) ||
+      (gameState.playerHands || []).some(h => Array.isArray(h) && h.length === 0);
+    if (anyEmptyHand || (gameState as any).gameEndReason === 'changa') return;
     
     const hasValidGameState = gameState.board && Object.keys(gameState.board).length > 0;
     if (!hasValidGameState) return;
@@ -159,6 +156,13 @@ export default function Game() {
         totalBoardCells: Object.keys(gameState.board).length,
         isGameOver: gameState.isGameOver
       });
+
+      // Herhaal guard binnen timeout
+      const stateNow: any = gameState;
+      const anyEmptyNow = (stateNow.playerHand?.length === 0) || (stateNow.playerHands || []).some((h: any) => Array.isArray(h) && h.length === 0);
+      if (anyEmptyNow || stateNow.gameEndReason === 'changa') {
+        return;
+      }
       
       // Use the CURRENT game state (not a stale reference)
       const currentOpenEnds = gameHook.regenerateOpenEnds(gameState);

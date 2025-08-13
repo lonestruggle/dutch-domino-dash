@@ -560,9 +560,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                        🎉 Je hebt gewonnen! 🎉
                      </h3>
                      <p className="text-gray-600">
-                       {isBlockedGame 
-                         ? "Spel geblokkeerd! Je hebt gewonnen met de minste punten!" 
-                         : "Je hebt alle dominostenen succesvol gespeeld!"
+                       {(gameState as any)?.gameEndReason === 'changa'
+                         ? "CHANGA! Je hebt gewonnen met CHANGA!"
+                         : isBlockedGame 
+                           ? "Spel geblokkeerd! Je hebt gewonnen met de minste punten!" 
+                           : "Je hebt alle dominostenen succesvol gespeeld!"
                        }
                      </p>
                    </div>
@@ -589,9 +591,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                        Je hebt verloren!
                      </h3>
                      <p className="text-gray-600">
-                       {isBlockedGame 
-                         ? "Spel geblokkeerd! Een andere speler had minder punten." 
-                         : "Een andere speler heeft alle stenen als eerste gespeeld."
+                       {(gameState as any)?.gameEndReason === 'changa'
+                         ? "CHANGA! Een andere speler won met CHANGA."
+                         : isBlockedGame 
+                           ? "Spel geblokkeerd! Een andere speler had minder punten." 
+                           : "Een andere speler heeft alle stenen als eerste gespeeld."
                        }
                      </p>
                      <p className="text-sm text-gray-500 mt-2">
