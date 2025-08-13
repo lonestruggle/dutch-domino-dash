@@ -7,6 +7,7 @@ import { useSyncedDominoGameState } from '@/hooks/useSyncedDominoGameState';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { GameState } from '@/types/domino';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -140,13 +141,13 @@ export default function Game() {
       if (currentOpenEnds.length === 0) {
         console.log('❌ No open ends - game should be blocked');
         // Automatically end the game when blocked
-        const updatedGameState = {
+        const blockedState: GameState = {
           ...gameState,
           isGameOver: true,
           gameEndReason: 'blocked'
         };
-        setGameState(updatedGameState);
-        updateGameState(updatedGameState);
+        setGameState(blockedState);
+        updateGameState(blockedState);
         return;
       }
       
@@ -230,14 +231,14 @@ export default function Game() {
           console.log('🏆 Winner position:', winnerPosition, 'with', minPoints, 'points');
           
           // Automatically end the game when blocked
-          const updatedGameState = {
+          const blockedState: GameState = {
             ...gameState,
             isGameOver: true,
             winner_position: winnerPosition,
             gameEndReason: 'blocked'
           };
-          setGameState(updatedGameState);
-          updateGameState(updatedGameState);
+          setGameState(blockedState);
+          updateGameState(blockedState);
           return;
         }
       }
