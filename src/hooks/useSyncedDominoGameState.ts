@@ -225,10 +225,10 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
 
   // Start new game (updates database)
   const startNewGame = useCallback(async () => {
-    if (!gameId || !syncState.isHost) return;
+    if (!gameId || !syncState.isHost) return undefined;
     if (startLockRef.current) {
       console.log('🚫 startNewGame ignored - already in progress');
-      return;
+      return undefined;
     }
     startLockRef.current = true;
 
@@ -340,14 +340,18 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
   
       await updateGameState(newGameState, starterPlayerIndex);
       
-      // FORCE herlaad van de game state na het opslaan
+      // FORCE herlaad van de game state na het opslaan (na suppressie-venster)
       setTimeout(() => {
         loadGameState();
-      }, 500);
+      }, 1300);
+
+      // Geef de nieuwe state terug zodat de UI direct kan updaten
+      return newGameState as GameState;
     } finally {
       startLockRef.current = false;
     }
-  }, [gameId, syncState.isHost, syncState.allPlayers, syncState.playerPosition, updateGameState]);
+  }, [gameId, syncState.isHost, syncState.allPlayers, syncState.playerPosition, updateGameState, loadGameState, userId]);
+
 
 
   // Load initial game state and listen for updates

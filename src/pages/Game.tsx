@@ -119,6 +119,9 @@ export default function Game() {
   }, [gameHook, syncLocalToRemote]);
 
   const wrappedStartNewGame = useCallback(async () => {
+    // Reset opslagvlag voor scorebord zodat nieuwe uitslag later kan worden opgeslagen
+    savedRef.current = false;
+
     const blank: GameState = {
       dominoes: {},
       board: {},
@@ -132,8 +135,13 @@ export default function Game() {
       isGameOver: false,
       selectedHandIndex: null,
     };
+    // Optimistische reset van UI
     setGameState(blank);
-    await syncedStartNewGame();
+    // Start nieuw spel in backend en gebruik de teruggegeven state voor directe UI update
+    const newState = await syncedStartNewGame();
+    if (newState) {
+      setGameState(newState);
+    }
   }, [setGameState, syncedStartNewGame]);
 
   // Auto-check for blocked game after each move
