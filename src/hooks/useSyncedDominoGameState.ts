@@ -104,7 +104,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
       }
 
       // Create local game state from database state
-      const localGameState = gameState ? {
+      let localGameState = gameState ? {
         dominoes: gameState.dominoes || {},
         board: gameState.board || {},
         playerHand: [...playerHand], // Create a copy to avoid circular reference
@@ -122,6 +122,27 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         hardSlamNextMove: gameState.hardSlamNextMove,
         isHardSlamming: gameState.isHardSlamming
       } : null;
+
+      // Defensive fix: remove any tiles from hands/boneyard that already appear on the table
+      if (localGameState) {
+        const keyOf = (d: any) => `${Math.min(d.value1, d.value2)}|${Math.max(d.value1, d.value2)}`;
+        const placedKeys = new Set<string>();
+        for (const id in localGameState.dominoes) {
+          placedKeys.add(keyOf(localGameState.dominoes[id].data));
+        }
+        if (placedKeys.size > 0) {
+          // Filter from all player hands
+          const sanitizedHands = (localGameState.playerHands || []).map((hand: any[] = []) =>
+            hand.filter((d) => !placedKeys.has(keyOf(d)))
+          );
+          // Ensure array length at least up to current player position
+          localGameState.playerHands = sanitizedHands;
+          // Sync my visible hand too
+          localGameState.playerHand = sanitizedHands[playerPosition] || [];
+          // Filter boneyard as well
+          localGameState.boneyard = (localGameState.boneyard || []).filter((d) => !placedKeys.has(keyOf(d)));
+        }
+      }
       
       console.log('🔍 LOADED FROM DATABASE:', {
         dominoes: Object.keys(gameState?.dominoes || {}),

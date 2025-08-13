@@ -13,9 +13,9 @@ interface PlayerHandProps {
 
 const isDouble = (data: DominoData) => data.value1 === data.value2;
 
-// Generate a stable key for each domino based on its values
+// Generate a stable key for each domino based on its values (canonical order)
 const getDominoKey = (domino: DominoData, index: number) => 
-  `${domino.value1}-${domino.value2}-${index}`;
+  `${Math.min(domino.value1, domino.value2)}-${Math.max(domino.value1, domino.value2)}-${index}`;
 
 export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   hand,

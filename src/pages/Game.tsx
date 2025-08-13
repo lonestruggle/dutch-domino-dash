@@ -27,6 +27,41 @@ export default function Game() {
     }
   }, [syncState.gameState, syncState.isLoading, setGameState]);
 
+  // Sync my local hand/boneyard/board to Supabase after local actions to avoid duplicates
+  const syncLocalToRemote = useCallback(() => {
+    if (!syncState.gameState || !syncState.gameData) return;
+    const remote = syncState.gameState as any;
+    const myPos = syncState.playerPosition || 0;
+    const nextHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
+    nextHands[myPos] = gameState.playerHand || [];
+
+    const newStateToSave = {
+      ...remote,
+      dominoes: gameState.dominoes,
+      board: gameState.board,
+      boneyard: gameState.boneyard,
+      forbiddens: gameState.forbiddens,
+      openEnds: gameState.openEnds,
+      nextDominoId: gameState.nextDominoId,
+      spinnerId: gameState.spinnerId,
+      isGameOver: gameState.isGameOver,
+      playerHand: gameState.playerHand,
+      playerHands: nextHands,
+    };
+    updateGameState(newStateToSave);
+  }, [syncState.gameState, syncState.gameData, syncState.playerPosition, gameState, updateGameState]);
+
+  // Wrap local actions and then sync
+  const wrappedExecuteMove = useCallback((move: any) => {
+    (gameHook as any).executeMove(move);
+    setTimeout(syncLocalToRemote, 60);
+  }, [gameHook, syncLocalToRemote]);
+
+  const wrappedDrawFromBoneyard = useCallback(() => {
+    (gameHook as any).drawFromBoneyard();
+    setTimeout(syncLocalToRemote, 60);
+  }, [gameHook, syncLocalToRemote]);
+
   // Auto-check for blocked game after each move
   useEffect(() => {
     if (!gameState || gameState.isGameOver || !syncState.allPlayers.length) return;
@@ -300,6 +335,8 @@ export default function Game() {
       <DominoGame 
         gameHook={{
           ...gameHook, 
+          executeMove: wrappedExecuteMove,
+          drawFromBoneyard: wrappedDrawFromBoneyard,
           manualBlockedCheck,
           startNewGame: syncedStartNewGame,
           syncState,
