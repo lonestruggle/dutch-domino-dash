@@ -100,6 +100,7 @@ export const useGameVisualSettings = () => {
   const animationRef = useRef<{ current: number | null; stopFunction?: (() => void) | null }>({ current: null });
   const startTimeRef = useRef<number | null>(null);
   const baseRotationRef = useRef({ X: 0, Y: 0, Z: 0 });
+  const randomSeedsRef = useRef<number[]>([]); // Store random seeds for each domino
 
   useEffect(() => {
     try {
@@ -200,6 +201,10 @@ export const useGameVisualSettings = () => {
       cancelAnimationFrame(animationRef.current.current);
     }
     
+    // Generate new random seeds for each domino
+    const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
+    randomSeedsRef.current = Array.from({ length: boardDominoes.length }, () => Math.random() * 10000);
+    
     setIsAnimating(true);
     setAnimationMode('shake');
     
@@ -236,8 +241,8 @@ export const useGameVisualSettings = () => {
         boardDominoes.forEach((domino: Element, index: number) => {
           const htmlDomino = domino as HTMLElement;
           
-          // Generate unique random values for each domino based on index and time
-          const seed = index * 1000 + elapsedTime * 0.1;
+          // Use stored random seed for this domino to maintain consistency during animation
+          const seed = randomSeedsRef.current[index] || (index * 1000);
           const randomPhaseX = Math.sin(seed * 0.001) * 2 * Math.PI;
           const randomPhaseY = Math.cos(seed * 0.001) * 2 * Math.PI;
           const randomPhaseZ = Math.sin(seed * 0.002) * 2 * Math.PI;
@@ -246,7 +251,7 @@ export const useGameVisualSettings = () => {
           const waveY = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000 + randomPhaseY);
           const waveZ = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000 + randomPhaseZ);
           
-          // Individual random amplitude multipliers (0.5 to 1.5)
+          // Individual random amplitude multipliers based on stored seed (0.5 to 1.5)
           const amplitudeMultX = 0.5 + Math.sin(seed * 0.003);
           const amplitudeMultY = 0.5 + Math.cos(seed * 0.003);
           const amplitudeMultZ = 0.5 + Math.sin(seed * 0.004);
@@ -300,6 +305,10 @@ export const useGameVisualSettings = () => {
       cancelAnimationFrame(animationRef.current.current);
     }
     
+    // Generate new random seeds for each domino
+    const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
+    randomSeedsRef.current = Array.from({ length: boardDominoes.length }, () => Math.random() * 10000);
+    
     // Set state - maar vertrouw niet op deze waarden in de animatie loop
     setIsAnimating(true);
     setAnimationMode('rotate');
@@ -337,8 +346,8 @@ export const useGameVisualSettings = () => {
         boardDominoes.forEach((domino: Element, index: number) => {
           const htmlDomino = domino as HTMLElement;
           
-          // Generate unique random values for each domino based on index
-          const seed = index * 1000 + elapsedMilliseconds * 0.001;
+          // Use stored random seed for this domino to maintain consistency during animation
+          const seed = randomSeedsRef.current[index] || (index * 1000);
           const randomPhaseX = Math.sin(seed * 0.001) * 2 * Math.PI;
           const randomPhaseY = Math.cos(seed * 0.001) * 2 * Math.PI;
           const randomPhaseZ = Math.sin(seed * 0.002) * 2 * Math.PI;
@@ -347,7 +356,7 @@ export const useGameVisualSettings = () => {
           const waveY = Math.sin(angle + randomPhaseY);
           const waveZ = Math.sin(angle + randomPhaseZ);
           
-          // Individual random amplitude multipliers (0.5 to 1.5)
+          // Individual random amplitude multipliers based on stored seed (0.5 to 1.5)
           const amplitudeMultX = 0.5 + Math.sin(seed * 0.003);
           const amplitudeMultY = 0.5 + Math.cos(seed * 0.003);
           const amplitudeMultZ = 0.5 + Math.sin(seed * 0.004);
