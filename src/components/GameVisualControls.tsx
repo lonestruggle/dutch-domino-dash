@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshCw, Check, GripVertical } from 'lucide-react';
+import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshCw, Check, GripVertical, RotateCw, Hand, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -45,13 +45,108 @@ export const GameVisualControls: React.FC = () => {
     updateHandDominoScale, 
     updateDurationAdjustment,
     updateSpeedAdjustment,
+    updateRotation,
+    updateRotationSpeed,
+    updateRotationAmplitude,
+    updateAnimationDuration,
     applyLiveUpdate,
     resetToDefaults 
   } = useGameVisualSettings();
   const [activeTab, setActiveTab] = useState<DeviceType>(currentDeviceType);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null);
+  const [animationMessage, setAnimationMessage] = useState('');
+  const animationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
   
   // Get current settings for the active device
   const settings = getSettingsForDevice(activeTab);
+
+  // Animation functions
+  const startShakeAnimation = () => {
+    if (settings.rotationAmplitudeX === 0 && settings.rotationAmplitudeY === 0 && settings.rotationAmplitudeZ === 0) {
+      setAnimationMessage("De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen.");
+      return;
+    }
+    setAnimationMessage("De dominostenen schudden...");
+    
+    setIsAnimating(true);
+    setAnimationMode('shake');
+    
+    startTimeRef.current = performance.now();
+    const durationInMs = settings.animationDuration * 1000;
+    
+    const animate = (timestamp: number) => {
+      if (!startTimeRef.current) return;
+      const elapsedTime = timestamp - startTimeRef.current;
+      const progress = elapsedTime / durationInMs;
+      
+      if (progress < 1) {
+        const wave = Math.cos(elapsedTime * settings.rotationSpeed * Math.PI / 1000);
+        const decayFactor = Math.pow(1 - progress, 1.5);
+        updateRotation('X', settings.rotationAmplitudeX * wave * decayFactor, activeTab);
+        updateRotation('Y', settings.rotationAmplitudeY * wave * decayFactor, activeTab);
+        updateRotation('Z', settings.rotationAmplitudeZ * wave * decayFactor, activeTab);
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        updateRotation('X', 0, activeTab);
+        updateRotation('Y', 0, activeTab);
+        updateRotation('Z', 0, activeTab);
+        setIsAnimating(false);
+        setAnimationMode(null);
+        setAnimationMessage("Klaar met schudden.");
+      }
+    };
+    animationRef.current = requestAnimationFrame(animate);
+  };
+
+  const startContinuousRotate = () => {
+    if (settings.rotationAmplitudeX === 0 && settings.rotationAmplitudeY === 0 && settings.rotationAmplitudeZ === 0) {
+      setAnimationMessage("De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen.");
+      return;
+    }
+    setIsAnimating(true);
+    setAnimationMode('rotate');
+    setAnimationMessage("De dominostenen roteren continu...");
+    
+    const initialTime = performance.now();
+
+    const animate = (timestamp: number) => {
+      const elapsedMilliseconds = timestamp - initialTime;
+      const angle = (elapsedMilliseconds / 1000) * settings.rotationSpeed * Math.PI;
+      const wave = Math.sin(angle);
+      
+      updateRotation('X', settings.rotationAmplitudeX * wave, activeTab);
+      updateRotation('Y', settings.rotationAmplitudeY * wave, activeTab);
+      updateRotation('Z', settings.rotationAmplitudeZ * wave, activeTab);
+      
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    animationRef.current = requestAnimationFrame(animate);
+  };
+
+  const stopAnimation = () => {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    setIsAnimating(false);
+    setAnimationMode(null);
+    updateRotation('X', 0, activeTab);
+    updateRotation('Y', 0, activeTab);
+    updateRotation('Z', 0, activeTab);
+    setAnimationMessage("Animatie gestopt.");
+  };
+
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+  
+  // Get current settings for the active device
+  const deviceSettings = getSettingsForDevice(activeTab);
   
   // Expose latest settings globally so other modules (Hard Slam) always read fresh values
   useEffect(() => {
@@ -140,7 +235,7 @@ export const GameVisualControls: React.FC = () => {
 
 
   const renderDeviceControls = (device: DeviceType) => {
-    const settings = getSettingsForDevice(device);
+    const deviceSettings = getSettingsForDevice(device);
     const IconComponent = deviceIcons[device];
     
     return (
@@ -159,7 +254,7 @@ export const GameVisualControls: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">
-              Bord Domino Grootte ({Math.round(settings.dominoScale * 100)}%)
+              Bord Domino Grootte ({Math.round(deviceSettings.dominoScale * 100)}%)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -169,13 +264,13 @@ export const GameVisualControls: React.FC = () => {
                 size="icon"
                 className="h-8 w-8 shrink-0"
                 onClick={() => adjustDominoScale(-0.1, device)}
-                disabled={settings.dominoScale <= 0.5}
+                disabled={deviceSettings.dominoScale <= 0.5}
               >
                 <Minus className="h-3 w-3" />
               </Button>
               <div className="flex-1">
                 <Slider
-                  value={[settings.dominoScale]}
+                  value={[deviceSettings.dominoScale]}
                   onValueChange={(values) => handleDominoScaleChange(values, device)}
                   min={0.5}
                   max={2.0}
@@ -188,7 +283,7 @@ export const GameVisualControls: React.FC = () => {
                 size="icon"
                 className="h-8 w-8 shrink-0"
                 onClick={() => adjustDominoScale(0.1, device)}
-                disabled={settings.dominoScale >= 2.0}
+                disabled={deviceSettings.dominoScale >= 2.0}
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -200,7 +295,7 @@ export const GameVisualControls: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">
-              Hand Domino Grootte ({Math.round(settings.handDominoScale * 100)}%)
+              Hand Domino Grootte ({Math.round(deviceSettings.handDominoScale * 100)}%)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -210,13 +305,13 @@ export const GameVisualControls: React.FC = () => {
                 size="icon"
                 className="h-8 w-8 shrink-0"
                 onClick={() => adjustHandDominoScale(-0.1, device)}
-                disabled={settings.handDominoScale <= 0.5}
+                disabled={deviceSettings.handDominoScale <= 0.5}
               >
                 <Minus className="h-3 w-3" />
               </Button>
               <div className="flex-1">
                 <Slider
-                  value={[settings.handDominoScale]}
+                  value={[deviceSettings.handDominoScale]}
                   onValueChange={(values) => handleHandDominoScaleChange(values, device)}
                   min={0.5}
                   max={2.0}
@@ -229,7 +324,7 @@ export const GameVisualControls: React.FC = () => {
                 size="icon"
                 className="h-8 w-8 shrink-0"
                 onClick={() => adjustHandDominoScale(0.1, device)}
-                disabled={settings.handDominoScale >= 2.0}
+                disabled={deviceSettings.handDominoScale >= 2.0}
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -237,6 +332,196 @@ export const GameVisualControls: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* 3D Rotation Controls */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <RotateCw className="h-4 w-4" />
+              3D Rotatie Instellingen
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Animation Message */}
+            {animationMessage && device === activeTab && (
+              <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                {animationMessage}
+              </div>
+            )}
+
+            {/* Animation Controls */}
+            {device === activeTab && (
+              <div className="flex gap-2">
+                {animationMode === 'rotate' ? (
+                  <Button
+                    onClick={stopAnimation}
+                    variant="destructive"
+                    size="sm"
+                    className="flex items-center gap-1"
+                  >
+                    <Square className="h-3 w-3" /> Stop Rotatie
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={startContinuousRotate}
+                    variant="outline"
+                    size="sm"
+                    disabled={isAnimating}
+                    className="flex items-center gap-1"
+                  >
+                    <Hand className="h-3 w-3" /> Continue Rotatie
+                  </Button>
+                )}
+                
+                {animationMode === 'shake' ? (
+                  <Button
+                    onClick={stopAnimation}
+                    variant="destructive"
+                    size="sm"
+                    className="flex items-center gap-1"
+                  >
+                    <Square className="h-3 w-3" /> Stop Schudden
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={startShakeAnimation}
+                    variant="outline"
+                    size="sm"
+                    disabled={isAnimating}
+                    className="flex items-center gap-1"
+                  >
+                    <Hand className="h-3 w-3" /> Schudden
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Manual Rotation Controls */}
+            <div className="space-y-3">
+              <div>
+                <div className="text-xs font-medium mb-1">
+                  Rotatie X-as: {deviceSettings.rotateX.toFixed(1)}°
+                </div>
+                <Slider
+                  min={-90}
+                  max={90}
+                  step={0.1}
+                  value={[deviceSettings.rotateX]}
+                  onValueChange={([value]) => updateRotation('X', value, device)}
+                  disabled={isAnimating && device === activeTab}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <div className="text-xs font-medium mb-1">
+                  Rotatie Y-as: {deviceSettings.rotateY.toFixed(1)}°
+                </div>
+                <Slider
+                  min={-90}
+                  max={90}
+                  step={0.1}
+                  value={[deviceSettings.rotateY]}
+                  onValueChange={([value]) => updateRotation('Y', value, device)}
+                  disabled={isAnimating && device === activeTab}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <div className="text-xs font-medium mb-1">
+                  Rotatie Z-as: {deviceSettings.rotateZ.toFixed(1)}°
+                </div>
+                <Slider
+                  min={-90}
+                  max={90}
+                  step={0.1}
+                  value={[deviceSettings.rotateZ]}
+                  onValueChange={([value]) => updateRotation('Z', value, device)}
+                  disabled={isAnimating && device === activeTab}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            {/* Animation Settings */}
+            <div className="space-y-3">
+              <div>
+                <div className="text-xs font-medium mb-1">
+                  Animatie Duur: {deviceSettings.animationDuration.toFixed(1)}s
+                </div>
+                <Slider
+                  min={0.1}
+                  max={10}
+                  step={0.1}
+                  value={[deviceSettings.animationDuration]}
+                  onValueChange={([value]) => updateAnimationDuration(value, device)}
+                  disabled={isAnimating && device === activeTab}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <div className="text-xs font-medium mb-1">
+                  Rotatie Snelheid: {deviceSettings.rotationSpeed.toFixed(1)}x
+                </div>
+                <Slider
+                  min={0.1}
+                  max={10}
+                  step={0.1}
+                  value={[deviceSettings.rotationSpeed]}
+                  onValueChange={([value]) => updateRotationSpeed(value, device)}
+                  disabled={isAnimating && device === activeTab}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <div className="text-xs font-medium mb-1">
+                  Amplitude X-as: {deviceSettings.rotationAmplitudeX.toFixed(1)}°
+                </div>
+                <Slider
+                  min={-500}
+                  max={500}
+                  step={0.1}
+                  value={[deviceSettings.rotationAmplitudeX]}
+                  onValueChange={([value]) => updateRotationAmplitude('X', value, device)}
+                  disabled={isAnimating && device === activeTab}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <div className="text-xs font-medium mb-1">
+                  Amplitude Y-as: {deviceSettings.rotationAmplitudeY.toFixed(1)}°
+                </div>
+                <Slider
+                  min={-500}
+                  max={500}
+                  step={0.1}
+                  value={[deviceSettings.rotationAmplitudeY]}
+                  onValueChange={([value]) => updateRotationAmplitude('Y', value, device)}
+                  disabled={isAnimating && device === activeTab}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <div className="text-xs font-medium mb-1">
+                  Amplitude Z-as: {deviceSettings.rotationAmplitudeZ.toFixed(1)}°
+                </div>
+                <Slider
+                  min={-500}
+                  max={500}
+                  step={0.1}
+                  value={[deviceSettings.rotationAmplitudeZ]}
+                  onValueChange={([value]) => updateRotationAmplitude('Z', value, device)}
+                  disabled={isAnimating && device === activeTab}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Live Update knop */}
         <div className="pt-2 space-y-2">
@@ -252,16 +537,6 @@ export const GameVisualControls: React.FC = () => {
               <RefreshCw className="h-4 w-4" />
             )}
             {isUpdating ? 'Toegepast!' : 'Live Update Toepassen'}
-          </Button>
-          
-          {/* Test button */}
-          <Button
-            onClick={() => console.log('Test button clicked')}
-            className="w-full flex items-center gap-2"
-            variant="outline"
-            size="sm"
-          >
-            🧪 Test Button
           </Button>
         </div>
 

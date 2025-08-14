@@ -75,6 +75,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             data={domino}
             orientation={isDouble(domino) ? "vertical" : "horizontal"}
             selected={index === selectedIndex}
+            rotateX={settings.rotateX}
+            rotateY={settings.rotateY}
+            rotateZ={settings.rotateZ}
             onClick={() => onDominoSelect(index)}
             className="relative transition-all duration-200 domino-tile-hand hover:z-20"
           />

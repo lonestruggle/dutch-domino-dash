@@ -8,6 +8,16 @@ export interface GameVisualSettings {
   // Duration and speed adjustments (-5 to +5 range)
   durationAdjustment: number; // -5 to +5, each step = 0.5s
   speedAdjustment: number; // -300 to +300ms, each step = 10ms
+  // 3D Rotation settings
+  rotateX: number; // -90 to 90 degrees
+  rotateY: number; // -90 to 90 degrees  
+  rotateZ: number; // -90 to 90 degrees
+  // Animation settings
+  rotationSpeed: number; // 0.1 to 10x speed
+  rotationAmplitudeX: number; // -500 to 500 degrees
+  rotationAmplitudeY: number; // -500 to 500 degrees
+  rotationAmplitudeZ: number; // -500 to 500 degrees
+  animationDuration: number; // 0.1 to 10 seconds
 }
 
 export interface DeviceSpecificSettings {
@@ -21,20 +31,37 @@ const DEFAULT_SETTINGS: GameVisualSettings = {
   handDominoScale: 1.0,
   durationAdjustment: 0,
   speedAdjustment: 0,
+  rotateX: 0,
+  rotateY: 0,
+  rotateZ: 0,
+  rotationSpeed: 5,
+  rotationAmplitudeX: 45,
+  rotationAmplitudeY: 45,
+  rotationAmplitudeZ: 0,
+  animationDuration: 2,
 };
 
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
   desktop: { 
     dominoScale: 1.0, handDominoScale: 1.0,
-    durationAdjustment: 0, speedAdjustment: 0
+    durationAdjustment: 0, speedAdjustment: 0,
+    rotateX: 0, rotateY: 0, rotateZ: 0,
+    rotationSpeed: 5, rotationAmplitudeX: 45, rotationAmplitudeY: 45, rotationAmplitudeZ: 0,
+    animationDuration: 2
   },
   tablet: { 
     dominoScale: 0.9, handDominoScale: 0.9,
-    durationAdjustment: 0, speedAdjustment: 0
+    durationAdjustment: 0, speedAdjustment: 0,
+    rotateX: 0, rotateY: 0, rotateZ: 0,
+    rotationSpeed: 5, rotationAmplitudeX: 45, rotationAmplitudeY: 45, rotationAmplitudeZ: 0,
+    animationDuration: 2
   },
   mobile: { 
     dominoScale: 0.8, handDominoScale: 0.8,
-    durationAdjustment: 0, speedAdjustment: 0
+    durationAdjustment: 0, speedAdjustment: 0,
+    rotateX: 0, rotateY: 0, rotateZ: 0,
+    rotationSpeed: 5, rotationAmplitudeX: 45, rotationAmplitudeY: 45, rotationAmplitudeZ: 0,
+    animationDuration: 2
   },
 };
 
@@ -152,6 +179,43 @@ export const useGameVisualSettings = () => {
 
   const getSettingsForDevice = (device: DeviceType) => allSettings[device];
 
+  const updateRotation = (axis: 'X' | 'Y' | 'Z', value: number, targetDevice?: DeviceType) => {
+    const clampedValue = Math.max(-90, Math.min(90, value));
+    const device = targetDevice || deviceType;
+    const property = `rotate${axis}` as keyof GameVisualSettings;
+    setAllSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], [property]: clampedValue }
+    }));
+  };
+
+  const updateRotationSpeed = (speed: number, targetDevice?: DeviceType) => {
+    const clampedSpeed = Math.max(0.1, Math.min(10, speed));
+    const device = targetDevice || deviceType;
+    setAllSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], rotationSpeed: clampedSpeed }
+    }));
+  };
+
+  const updateRotationAmplitude = (axis: 'X' | 'Y' | 'Z', value: number, targetDevice?: DeviceType) => {
+    const clampedValue = Math.max(-500, Math.min(500, value));
+    const device = targetDevice || deviceType;
+    const property = `rotationAmplitude${axis}` as keyof GameVisualSettings;
+    setAllSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], [property]: clampedValue }
+    }));
+  };
+
+  const updateAnimationDuration = (duration: number, targetDevice?: DeviceType) => {
+    const clampedDuration = Math.max(0.1, Math.min(10, duration));
+    const device = targetDevice || deviceType;
+    setAllSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], animationDuration: clampedDuration }
+    }));
+  };
 
   return {
     settings,
@@ -161,6 +225,10 @@ export const useGameVisualSettings = () => {
     updateHandDominoScale,
     updateDurationAdjustment,
     updateSpeedAdjustment,
+    updateRotation,
+    updateRotationSpeed,
+    updateRotationAmplitude,
+    updateAnimationDuration,
     applyLiveUpdate,
     resetToDefaults,
     getSettingsForDevice,
