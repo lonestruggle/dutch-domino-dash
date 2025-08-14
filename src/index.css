@@ -37,6 +37,11 @@
     --shadow-domino: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-domino-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     
+    /* Animation rotation variables */
+    --current-rotate-x: 0deg;
+    --current-rotate-y: 0deg;
+    --current-rotate-z: 0deg;
+    
     /* UI colors */
     --ui-bg: 42 39% 96%;
     --ui-border: 35 26% 75%;

@@ -69,13 +69,6 @@ export const useGameVisualSettings = () => {
   const deviceType = useDeviceType();
   const { user } = useAuth();
   
-  // Animation state
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null);
-  const animationRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number | null>(null);
-  const baseRotationRef = useRef({ X: 0, Y: 0, Z: 0 });
-  
   // Make settings personal per user
   const getStorageKey = () => {
     const userId = user?.id || 'anonymous';
@@ -100,6 +93,13 @@ export const useGameVisualSettings = () => {
       return DEFAULT_DEVICE_SETTINGS;
     }
   });
+
+  // Animation state - moved after initial settings
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null);
+  const animationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const baseRotationRef = useRef({ X: 0, Y: 0, Z: 0 });
 
   useEffect(() => {
     try {
@@ -186,7 +186,7 @@ export const useGameVisualSettings = () => {
 
   const getSettingsForDevice = (device: DeviceType) => allSettings[device];
 
-  // Animation functions
+  // Animation functions with better error handling
   const startShakeAnimation = () => {
     const currentSettings = allSettings[deviceType];
     if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
@@ -207,7 +207,8 @@ export const useGameVisualSettings = () => {
     const durationInMs = currentSettings.animationDuration * 1000;
     
     const animate = (timestamp: number) => {
-      if (!startTimeRef.current) return;
+      if (!startTimeRef.current || animationMode !== 'shake') return;
+      
       const elapsedTime = timestamp - startTimeRef.current;
       const progress = elapsedTime / durationInMs;
       
@@ -220,29 +221,17 @@ export const useGameVisualSettings = () => {
         const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave * decayFactor);
         const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave * decayFactor);
         
-        // Update settings and broadcast globally
-        setAllSettings(prev => ({
-          ...prev,
-          [deviceType]: { 
-            ...prev[deviceType], 
-            rotateX: newX,
-            rotateY: newY,
-            rotateZ: newZ
-          }
-        }));
+        // Direct DOM manipulation for immediate effect
+        document.documentElement.style.setProperty('--current-rotate-x', `${newX}deg`);
+        document.documentElement.style.setProperty('--current-rotate-y', `${newY}deg`);
+        document.documentElement.style.setProperty('--current-rotate-z', `${newZ}deg`);
         
         animationRef.current = requestAnimationFrame(animate);
       } else {
         // Return to base rotation
-        setAllSettings(prev => ({
-          ...prev,
-          [deviceType]: { 
-            ...prev[deviceType], 
-            rotateX: baseRotationRef.current.X,
-            rotateY: baseRotationRef.current.Y,
-            rotateZ: baseRotationRef.current.Z
-          }
-        }));
+        document.documentElement.style.setProperty('--current-rotate-x', `${baseRotationRef.current.X}deg`);
+        document.documentElement.style.setProperty('--current-rotate-y', `${baseRotationRef.current.Y}deg`);
+        document.documentElement.style.setProperty('--current-rotate-z', `${baseRotationRef.current.Z}deg`);
         setIsAnimating(false);
         setAnimationMode(null);
       }
@@ -270,6 +259,8 @@ export const useGameVisualSettings = () => {
     const initialTime = performance.now();
 
     const animate = (timestamp: number) => {
+      if (animationMode !== 'rotate') return;
+      
       const elapsedMilliseconds = timestamp - initialTime;
       const angle = (elapsedMilliseconds / 1000) * currentSettings.rotationSpeed * Math.PI;
       const wave = Math.sin(angle);
@@ -279,16 +270,10 @@ export const useGameVisualSettings = () => {
       const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave);
       const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave);
       
-      // Update settings and broadcast globally
-      setAllSettings(prev => ({
-        ...prev,
-        [deviceType]: { 
-          ...prev[deviceType], 
-          rotateX: newX,
-          rotateY: newY,
-          rotateZ: newZ
-        }
-      }));
+      // Direct DOM manipulation for immediate effect
+      document.documentElement.style.setProperty('--current-rotate-x', `${newX}deg`);
+      document.documentElement.style.setProperty('--current-rotate-y', `${newY}deg`);
+      document.documentElement.style.setProperty('--current-rotate-z', `${newZ}deg`);
       
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -302,15 +287,9 @@ export const useGameVisualSettings = () => {
     }
     
     // Return to base rotation
-    setAllSettings(prev => ({
-      ...prev,
-      [deviceType]: { 
-        ...prev[deviceType], 
-        rotateX: baseRotationRef.current.X,
-        rotateY: baseRotationRef.current.Y,
-        rotateZ: baseRotationRef.current.Z
-      }
-    }));
+    document.documentElement.style.setProperty('--current-rotate-x', `${baseRotationRef.current.X}deg`);
+    document.documentElement.style.setProperty('--current-rotate-y', `${baseRotationRef.current.Y}deg`);
+    document.documentElement.style.setProperty('--current-rotate-z', `${baseRotationRef.current.Z}deg`);
     
     setIsAnimating(false);
     setAnimationMode(null);

@@ -90,7 +90,7 @@ export const DominoTile: React.FC<DominoTileProps> = ({
       onClick={onClick}
       style={{
         '--domino-rotation': `${rotation}deg`,
-        transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`,
+        transform: `rotateX(var(--current-rotate-x, ${rotateX}deg)) rotateY(var(--current-rotate-y, ${rotateY}deg)) rotateZ(var(--current-rotate-z, ${rotateZ}deg))`,
         transformStyle: 'preserve-3d',
         // Zorg dat ALLE style properties van de GameBoard worden doorgegeven
         ...style,
