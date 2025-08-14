@@ -101,11 +101,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // IMPORTANT: Hand domino scale must be independent from board scale
     rootElement.style.setProperty('--hand-domino-scale', (latest.handDominoScale || 1).toString());
     
-    // Hard slam settings with adjustments
-    const adjustedDuration = latest.hardSlamDuration + (latest.durationAdjustment * 0.5);
-    const adjustedSpeed = latest.hardSlamSpeed + (latest.speedAdjustment * 0.01);
-    rootElement.style.setProperty('--hard-slam-duration', `${adjustedDuration}s`);
-    rootElement.style.setProperty('--hard-slam-speed', `${adjustedSpeed}s`);
     
     if (boardRef.current) {
       boardRef.current.offsetHeight;
@@ -117,18 +112,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const handleResize = () => updateDominoScaling();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isMobile, settings.dominoScale, settings.hardSlamDuration, settings.hardSlamSpeed]);
+  }, [isMobile, settings.dominoScale]);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(() => updateDominoScaling());
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [settings.dominoScale, settings.hardSlamDuration, settings.hardSlamSpeed]);
+  }, [settings.dominoScale]);
 
   useEffect(() => {
     updateDominoScaling();
-  }, [gameState.dominoes, settings.dominoScale, settings.hardSlamDuration, settings.hardSlamSpeed]);
+  }, [gameState.dominoes, settings.dominoScale]);
 
   // Original PC logic for board size calculation
   const calculateOptimalScale = () => {
@@ -394,15 +389,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // Use domino index for consistent animation selection
             const dominoIndex = Object.keys(gameState.dominoes).indexOf(id);
             
-            // Only animate if vibrations are enabled and hard slamming
-            const shouldAnimate = gameState.isHardSlamming && enabledAnimations.length > 0;
-            const selectedAnimation = shouldAnimate ? enabledAnimations[dominoIndex % enabledAnimations.length] : 'none';
-            
-            // Calculate adjusted duration and speed
-            const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
-            const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
-            
-            console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, animation: ${selectedAnimation}`);
+            // Hard slam removed - no animations
+            const shouldAnimate = false;
+            const selectedAnimation = 'none';
             
             return (
               <div
@@ -423,10 +412,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   className="domino-tile-board"
                   style={{
                     '--individual-angle': `${individualAngle}deg`,
-                    '--vibration-animation': selectedAnimation,
-                    '--shake-duration': `${adjustedDuration}s`,
-                    '--hard-slam-duration': `${adjustedDuration}s`,
-                    '--hard-slam-speed': `${adjustedSpeed}s`,
                   } as React.CSSProperties}
                 />
               </div>

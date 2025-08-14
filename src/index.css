@@ -239,15 +239,6 @@
   .pip-pattern-6 .domino-pip:nth-child(5) { top: 75%; left: 33.3%; }
   .pip-pattern-6 .domino-pip:nth-child(6) { top: 75%; left: 66.6%; }
 
-  /* Hard Slam Shake Animation - aanpasbare trilbeweging met willekeurige variaties */
-  .hard-slam-shake {
-    animation-name: var(--vibration-animation, dominoVibrate) !important;
-    animation-duration: var(--hard-slam-speed, 0.2s) !important;
-    animation-timing-function: ease-in-out !important;
-    animation-iteration-count: infinite !important;
-    animation-direction: alternate !important;
-    animation-fill-mode: forwards !important;
-    /* Stop animatie na de ingestelde duur */
     animation-play-state: running !important;
   }
   

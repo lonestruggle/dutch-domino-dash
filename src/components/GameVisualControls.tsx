@@ -43,14 +43,10 @@ export const GameVisualControls: React.FC = () => {
     getSettingsForDevice, 
     updateDominoScale, 
     updateHandDominoScale, 
-    updateHardSlamDuration, 
-    updateHardSlamSpeed,
     updateVibrationToggle,
     updateDurationAdjustment,
     updateSpeedAdjustment,
     applyLiveUpdate,
-    getAdjustedDuration,
-    getAdjustedSpeed,
     resetToDefaults 
   } = useGameVisualSettings();
   const [activeTab, setActiveTab] = useState<DeviceType>(currentDeviceType);
@@ -143,23 +139,6 @@ export const GameVisualControls: React.FC = () => {
     updateHandDominoScale(currentSettings.handDominoScale + delta, device);
   };
 
-  const handleHardSlamDurationChange = (values: number[], device: DeviceType) => {
-    updateHardSlamDuration(values[0], device);
-  };
-
-  const handleHardSlamSpeedChange = (values: number[], device: DeviceType) => {
-    updateHardSlamSpeed(values[0], device);
-  };
-
-  const adjustHardSlamDuration = (delta: number, device: DeviceType) => {
-    const currentSettings = getSettingsForDevice(device);
-    updateHardSlamDuration(currentSettings.hardSlamDuration + delta, device);
-  };
-
-  const adjustHardSlamSpeed = (delta: number, device: DeviceType) => {
-    const currentSettings = getSettingsForDevice(device);
-    updateHardSlamSpeed(currentSettings.hardSlamSpeed + delta, device);
-  };
 
   const renderDeviceControls = (device: DeviceType) => {
     const settings = getSettingsForDevice(device);
@@ -259,10 +238,10 @@ export const GameVisualControls: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Hard Slam Trilbeweging */}
+        {/* Trilbeweging Instellingen */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Hard Slam Trilbeweging</CardTitle>
+            <CardTitle className="text-sm font-medium">Trilbeweging Instellingen</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Trillingstypen */}
@@ -318,7 +297,7 @@ export const GameVisualControls: React.FC = () => {
             <div>
               <div className="text-xs text-muted-foreground mb-2">
                 Duur Aanpassing ({settings.durationAdjustment > 0 ? '+' : ''}{settings.durationAdjustment}) 
-                → {getAdjustedDuration(device).toFixed(1)}s
+                → {(1.5 + settings.durationAdjustment * 0.5).toFixed(1)}s
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -356,7 +335,7 @@ export const GameVisualControls: React.FC = () => {
             <div>
               <div className="text-xs text-muted-foreground mb-2">
                 Snelheid Aanpassing ({settings.speedAdjustment > 0 ? '+' : ''}{settings.speedAdjustment * 10}ms)
-                → {(getAdjustedSpeed(device) * 1000).toFixed(0)}ms
+                → {((0.2 + settings.speedAdjustment * 0.01) * 1000).toFixed(0)}ms
               </div>
               <div className="flex items-center gap-2">
                 <Button

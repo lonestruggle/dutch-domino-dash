@@ -95,10 +95,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     console.warn('passMove function not available');
   });
 
-  // Access the hardSlam function from Game.tsx
-  const hardSlam = gameHook.hardSlam || (() => {
-    console.warn('hardSlam function not available');
-  });
 
   if (syncState?.isLoading) {
     return (
@@ -189,13 +185,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     index: gameState?.selectedHandIndex
   }));
 
-  // Check if Hard Slam is available
-  const canUseHardSlam = isMyTurn && 
-    !gameState?.isGameOver && 
-    Object.keys(gameState?.dominoes || {}).length > 0; // At least one domino on board
-  
-  // Check if Hard Slam is activated for next move
-  const hardSlamActive = gameState?.hardSlamNextMove === true;
 
   // Handle boneyard stone preview
   const handleStonePreview = (domino: any, index: number) => {
@@ -350,24 +339,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   Pas
                 </Button>
               </div>
-              <div className="grid grid-cols-1 gap-2">
-                <Button 
-                  onClick={hardSlam}
-                  disabled={!canUseHardSlam || hardSlamActive}
-                  variant="secondary"
-                  size="sm"
-                  className={`text-xs ${
-                    hardSlamActive 
-                      ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
-                      : canUseHardSlam 
-                        ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" 
-                        : ""
-                  }`}
-                >
-                  <Zap className="h-3 w-3 mr-1" />
-                  {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
-                </Button>
-              </div>
               {gameState?.isGameOver && (
                 <div className="text-center">
                   <span className="text-sm font-semibold text-green-600 block mb-2">Game Over!</span>
@@ -405,21 +376,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
                 >
                   Pas
-                </Button>
-                <Button 
-                  onClick={hardSlam}
-                  disabled={!canUseHardSlam || hardSlamActive}
-                  variant="secondary"
-                  className={
-                    hardSlamActive 
-                      ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
-                      : canUseHardSlam 
-                        ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" 
-                        : ""
-                  }
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
                 </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}

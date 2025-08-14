@@ -11,10 +11,8 @@ const getLatestSettings = (settings?: GameVisualSettings): GameVisualSettings | 
   return null;
 };
 
-// Applies the same vibration logic used by the Test Trillingen button to all
-// board domino elements ('.domino-tile-board'). Automatically stops after the
-// adjusted duration derived from the settings. If no settings passed, it will
-// try the latest settings from window.__dominoVibrationSettings.
+// Applies vibration logic to all board domino elements ('.domino-tile-board').
+// Uses default values since hardSlam settings have been removed.
 export const applyBoardVibration = (maybeSettings?: GameVisualSettings) => {
   try {
     const settings = getLatestSettings(maybeSettings);
@@ -23,8 +21,9 @@ export const applyBoardVibration = (maybeSettings?: GameVisualSettings) => {
       return;
     }
 
-    const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
-    const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
+    // Use default duration and speed since hardSlam was removed
+    const adjustedDuration = 1.5 + (settings.durationAdjustment * 0.5);
+    const adjustedSpeed = 0.2 + (settings.speedAdjustment * 0.01);
 
     const dominoes = document.querySelectorAll<HTMLElement>('.domino-tile-board');
 

@@ -49,7 +49,7 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         double && orientation === 'vertical' && 'double-vertical-offset',
         double && orientation === 'horizontal' && 'double-horizontal-offset',
         selected && 'selected',
-        isShaking && 'hard-slam-shake',
+        
         className
       )}
       onClick={onClick}

@@ -895,116 +895,16 @@ export const useDominoGame = () => {
       let finalDominoes = { ...prev.dominoes, [id]: dominoState };
       let newState;
       
-      if (prev.hardSlamNextMove) {
-        console.log('💥 HARD SLAM EFFECT - Starting smooth shake animation with new rotations!');
-        
-        // Verbeterde collision detection voor rotaties
-        const checkRotationOverlap = (domino1: any, domino2: any, rotation1: number, rotation2: number) => {
-          const distance = Math.sqrt(
-            Math.pow((domino1.x - domino2.x) * CELL_SIZE, 2) + 
-            Math.pow((domino1.y - domino2.y) * CELL_SIZE, 2)
-          );
-          
-          // Bereken benodigde ruimte op basis van rotatie
-          const baseSize = 96; // Grootste domino afmeting
-          const rotationFactor1 = Math.abs(Math.sin((rotation1 * Math.PI) / 180)) + Math.abs(Math.cos((rotation1 * Math.PI) / 180));
-          const rotationFactor2 = Math.abs(Math.sin((rotation2 * Math.PI) / 180)) + Math.abs(Math.cos((rotation2 * Math.PI) / 180));
-          
-          const effectiveSize1 = baseSize * rotationFactor1;
-          const effectiveSize2 = baseSize * rotationFactor2;
-          const minSafeDistance = (effectiveSize1 + effectiveSize2) / 2 + 15; // Extra padding
-          
-          return distance < minSafeDistance;
-        };
-        
-        // Geef alle dominostenen nieuwe rotaties met vloeiende transities
-        const dominoIds = Object.keys(prev.dominoes);
-        const newRotations: Record<string, number> = {};
-        
-        // Genereer nieuwe rotaties voor alle bestaande dominoes
-        dominoIds.forEach((dominoId) => {
-          let bestRotation = 0;
-          let minOverlaps = Infinity;
-          
-          // Probeer meerdere rotaties en kies de beste
-          for (let attempt = 0; attempt < 12; attempt++) {
-            const candidateRotation = (Math.random() - 0.5) * 40; // -20 tot +20 graden
-            let overlapCount = 0;
-            
-            // Check overlaps met andere dominoes
-            for (const otherId of dominoIds) {
-              if (otherId !== dominoId) {
-                const otherRotation = newRotations[otherId] || (Math.random() - 0.5) * 40;
-                const domino1 = finalDominoes[dominoId];
-                const domino2 = finalDominoes[otherId];
-                
-                if (checkRotationOverlap(domino1, domino2, candidateRotation, otherRotation)) {
-                  overlapCount++;
-                }
-              }
-            }
-            
-            // Bewaar beste rotatie (met minste overlaps)
-            if (overlapCount < minOverlaps) {
-              minOverlaps = overlapCount;
-              bestRotation = candidateRotation;
-            }
-            
-            // Perfect? Stop zoeken
-            if (overlapCount === 0) break;
-          }
-          
-          newRotations[dominoId] = bestRotation;
-        });
-        
-        // Pas alle nieuwe rotaties toe
-        dominoIds.forEach((dominoId) => {
-          finalDominoes[dominoId] = {
-            ...finalDominoes[dominoId],
-            rotation: newRotations[dominoId]
-          };
-        });
-        
-        // Ook nieuwe domino een mooie rotatie geven
-        finalDominoes[id] = {
-          ...finalDominoes[id],
-          rotation: (Math.random() - 0.5) * 40
-        };
-        
-        // Create state with hard slam animation active (apply AFTER placement)
-        newState = {
-          ...prev,
-          dominoes: finalDominoes,
-          board: newBoard,
-          playerHand: newPlayerHand,
-          selectedHandIndex: null,
-          nextDominoId: prev.nextDominoId + 1,
-          isGameOver: isGameWon,
-          hardSlamNextMove: false, // Reset hard slam flag
-          isHardSlamming: false, // Do not rely on CSS class; we use direct animations like Test Trillingen
-        };
-        
-        console.log('💥 HARD SLAM EFFECT - applying test-like vibrations AFTER placement');
-        
-        // Schedule vibrations just after DOM update so the new tile is present
-        setTimeout(() => {
-          applyBoardVibration();
-          console.log('✅ Hard Slam vibration triggered via util');
-        }, 50);
-
-        
-      } else {
-        // Regular move without hard slam
-        newState = {
-          ...prev,
-          dominoes: finalDominoes,
-          board: newBoard,
-          playerHand: newPlayerHand,
-          selectedHandIndex: null,
-          nextDominoId: prev.nextDominoId + 1,
-          isGameOver: isGameWon,
-        };
-      }
+      // Create normal state
+      const newState = {
+        ...prev,
+        dominoes: finalDominoes,
+        board: newBoard,
+        playerHand: newPlayerHand,
+        selectedHandIndex: null,
+        nextDominoId: prev.nextDominoId + 1,
+        isGameOver: isGameWon,
+      };
       
       // Generate new open ends and check for blocked game
       const newOpenEnds = regenerateOpenEnds(newState);
@@ -1217,15 +1117,6 @@ export const useDominoGame = () => {
       setGameState(prev => ({
         ...prev,
         isGameOver: isBlocked
-      }));
-    },
-    hardSlam: () => {
-      console.log('🔥 Hard Slam activated!');
-      // Activate hard slam for next move (don't apply immediately)
-      setGameState(prevState => ({
-        ...prevState,
-        hardSlamNextMove: true,
-        hardSlamUsesRemaining: Math.max(0, (prevState.hardSlamUsesRemaining || 3) - 1)
       }));
     },
   };

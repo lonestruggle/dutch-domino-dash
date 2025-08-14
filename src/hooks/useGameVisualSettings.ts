@@ -5,8 +5,6 @@ import { useAuth } from './useAuth';
 export interface GameVisualSettings {
   dominoScale: number; // 0.5 to 2.0 multiplier for board dominoes
   handDominoScale: number; // 0.5 to 2.0 multiplier for hand dominoes
-  hardSlamDuration: number; // 0.5 to 3.0 seconds
-  hardSlamSpeed: number; // 0.1 to 0.3 seconds per vibration
   // Individual vibration toggles
   enableHorizontalVibration: boolean;
   enableLeftDiagonalVibration: boolean;
@@ -28,8 +26,6 @@ export interface DeviceSpecificSettings {
 const DEFAULT_SETTINGS: GameVisualSettings = {
   dominoScale: 1.0,
   handDominoScale: 1.0,
-  hardSlamDuration: 1.5,
-  hardSlamSpeed: 0.2,
   enableHorizontalVibration: true,
   enableLeftDiagonalVibration: true,
   enableRightDiagonalVibration: true,
@@ -42,19 +38,19 @@ const DEFAULT_SETTINGS: GameVisualSettings = {
 
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
   desktop: { 
-    dominoScale: 1.0, handDominoScale: 1.0, hardSlamDuration: 1.5, hardSlamSpeed: 0.2,
+    dominoScale: 1.0, handDominoScale: 1.0,
     enableHorizontalVibration: true, enableLeftDiagonalVibration: true, enableRightDiagonalVibration: true,
     enableVerticalVibration: true, enableSubtleVibration: true, enableShakeVibration: true,
     durationAdjustment: 0, speedAdjustment: 0
   },
   tablet: { 
-    dominoScale: 0.9, handDominoScale: 0.9, hardSlamDuration: 1.5, hardSlamSpeed: 0.2,
+    dominoScale: 0.9, handDominoScale: 0.9,
     enableHorizontalVibration: true, enableLeftDiagonalVibration: true, enableRightDiagonalVibration: true,
     enableVerticalVibration: true, enableSubtleVibration: true, enableShakeVibration: true,
     durationAdjustment: 0, speedAdjustment: 0
   },
   mobile: { 
-    dominoScale: 0.8, handDominoScale: 0.8, hardSlamDuration: 1.5, hardSlamSpeed: 0.2,
+    dominoScale: 0.8, handDominoScale: 0.8,
     enableHorizontalVibration: true, enableLeftDiagonalVibration: true, enableRightDiagonalVibration: true,
     enableVerticalVibration: true, enableSubtleVibration: true, enableShakeVibration: true,
     durationAdjustment: 0, speedAdjustment: 0
@@ -107,16 +103,9 @@ export const useGameVisualSettings = () => {
       (window as any).__dominoVibrationSettings = currentSettings;
     } catch {}
 
-    // Update global CSS vars for hard slam so animations pick up instantly
-    const root = document.documentElement;
-    const adjustedDuration = currentSettings.hardSlamDuration + (currentSettings.durationAdjustment * 0.5);
-    const adjustedSpeed = currentSettings.hardSlamSpeed + (currentSettings.speedAdjustment * 0.01);
-    root.style.setProperty('--hard-slam-duration', `${adjustedDuration}s`);
-    root.style.setProperty('--hard-slam-speed', `${adjustedSpeed}s`);
-
     // Notify listeners (GameBoard, PlayerHand, etc.)
     window.dispatchEvent(new CustomEvent('visualSettingsUpdated', {
-      detail: { settings: currentSettings, deviceType, adjustedDuration, adjustedSpeed }
+      detail: { settings: currentSettings, deviceType }
     }));
   }, [allSettings, deviceType]);
 
@@ -152,23 +141,6 @@ export const useGameVisualSettings = () => {
     }
   };
 
-  const updateHardSlamDuration = (duration: number, targetDevice?: DeviceType) => {
-    const clampedDuration = Math.max(0.5, Math.min(3.0, duration));
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], hardSlamDuration: clampedDuration }
-    }));
-  };
-
-  const updateHardSlamSpeed = (speed: number, targetDevice?: DeviceType) => {
-    const clampedSpeed = Math.max(0.1, Math.min(0.3, speed));
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], hardSlamSpeed: clampedSpeed }
-    }));
-  };
 
   const updateVibrationToggle = (vibrationType: keyof Pick<GameVisualSettings, 'enableHorizontalVibration' | 'enableLeftDiagonalVibration' | 'enableRightDiagonalVibration' | 'enableVerticalVibration' | 'enableSubtleVibration' | 'enableShakeVibration'>, enabled: boolean, targetDevice?: DeviceType) => {
     const device = targetDevice || deviceType;
@@ -197,18 +169,8 @@ export const useGameVisualSettings = () => {
   };
 
   const applyLiveUpdate = () => {
-    // Force a re-render by updating CSS variables
-    const rootElement = document.documentElement;
-    const currentSettings = allSettings[deviceType];
-    
-    // Calculate adjusted values
-    const adjustedDuration = currentSettings.hardSlamDuration + (currentSettings.durationAdjustment * 0.5);
-    const adjustedSpeed = currentSettings.hardSlamSpeed + (currentSettings.speedAdjustment * 0.01);
-    
-    rootElement.style.setProperty('--hard-slam-duration', `${adjustedDuration}s`);
-    rootElement.style.setProperty('--hard-slam-speed', `${adjustedSpeed}s`);
-    
     // Trigger a re-render event
+    const currentSettings = allSettings[deviceType];
     window.dispatchEvent(new CustomEvent('vibrationSettingsUpdated', { 
       detail: { 
         enabledVibrations: {
@@ -218,24 +180,13 @@ export const useGameVisualSettings = () => {
           vertical: currentSettings.enableVerticalVibration,
           subtle: currentSettings.enableSubtleVibration,
           shake: currentSettings.enableShakeVibration,
-        },
-        adjustedDuration,
-        adjustedSpeed
+        }
       }
     }));
   };
 
   const getSettingsForDevice = (device: DeviceType) => allSettings[device];
 
-  const getAdjustedDuration = (device?: DeviceType) => {
-    const deviceSettings = device ? allSettings[device] : settings;
-    return deviceSettings.hardSlamDuration + (deviceSettings.durationAdjustment * 0.5);
-  };
-
-  const getAdjustedSpeed = (device?: DeviceType) => {
-    const deviceSettings = device ? allSettings[device] : settings;
-    return deviceSettings.hardSlamSpeed + (deviceSettings.speedAdjustment * 0.01);
-  };
 
   return {
     settings,
@@ -243,14 +194,10 @@ export const useGameVisualSettings = () => {
     currentDeviceType: deviceType,
     updateDominoScale,
     updateHandDominoScale,
-    updateHardSlamDuration,
-    updateHardSlamSpeed,
     updateVibrationToggle,
     updateDurationAdjustment,
     updateSpeedAdjustment,
     applyLiveUpdate,
-    getAdjustedDuration,
-    getAdjustedSpeed,
     resetToDefaults,
     getSettingsForDevice,
   };
