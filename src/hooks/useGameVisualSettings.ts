@@ -186,7 +186,7 @@ export const useGameVisualSettings = () => {
 
   const getSettingsForDevice = (device: DeviceType) => allSettings[device];
 
-  // Animation functions with better error handling
+  // Animation functions met exacte logica uit DominoTileDemo
   const startShakeAnimation = () => {
     const currentSettings = allSettings[deviceType];
     if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
@@ -216,7 +216,7 @@ export const useGameVisualSettings = () => {
         const wave = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000);
         const decayFactor = Math.pow(1 - progress, 1.5);
         
-        // Apply animation on top of base rotation
+        // Apply animation on top of base rotation - direct calculation
         const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave * decayFactor);
         const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave * decayFactor);
         const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave * decayFactor);
@@ -265,7 +265,7 @@ export const useGameVisualSettings = () => {
       const angle = (elapsedMilliseconds / 1000) * currentSettings.rotationSpeed * Math.PI;
       const wave = Math.sin(angle);
       
-      // Apply animation on top of base rotation
+      // Apply animation on top of base rotation - exacte logica uit demo
       const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave);
       const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave);
       const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave);

@@ -453,10 +453,10 @@ export const GameVisualControls: React.FC = () => {
                   disabled={isAnimating}
                   className="w-full"
                 />
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
         {/* Live Update knop */}
         <div className="pt-2 space-y-2">
