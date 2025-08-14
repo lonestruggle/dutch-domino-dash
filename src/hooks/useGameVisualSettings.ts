@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDeviceType, DeviceType } from './useDeviceType';
 import { useAuth } from './useAuth';
 
@@ -68,6 +68,13 @@ const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
 export const useGameVisualSettings = () => {
   const deviceType = useDeviceType();
   const { user } = useAuth();
+  
+  // Animation state
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null);
+  const animationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const baseRotationRef = useRef({ X: 0, Y: 0, Z: 0 });
   
   // Make settings personal per user
   const getStorageKey = () => {
@@ -179,14 +186,163 @@ export const useGameVisualSettings = () => {
 
   const getSettingsForDevice = (device: DeviceType) => allSettings[device];
 
+  // Animation functions
+  const startShakeAnimation = () => {
+    const currentSettings = allSettings[deviceType];
+    if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
+      return { success: false, message: "De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen." };
+    }
+    
+    setIsAnimating(true);
+    setAnimationMode('shake');
+    
+    // Store base rotation values
+    baseRotationRef.current = {
+      X: currentSettings.rotateX,
+      Y: currentSettings.rotateY,
+      Z: currentSettings.rotateZ
+    };
+    
+    startTimeRef.current = performance.now();
+    const durationInMs = currentSettings.animationDuration * 1000;
+    
+    const animate = (timestamp: number) => {
+      if (!startTimeRef.current) return;
+      const elapsedTime = timestamp - startTimeRef.current;
+      const progress = elapsedTime / durationInMs;
+      
+      if (progress < 1) {
+        const wave = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000);
+        const decayFactor = Math.pow(1 - progress, 1.5);
+        
+        // Apply animation on top of base rotation
+        const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave * decayFactor);
+        const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave * decayFactor);
+        const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave * decayFactor);
+        
+        // Update settings and broadcast globally
+        setAllSettings(prev => ({
+          ...prev,
+          [deviceType]: { 
+            ...prev[deviceType], 
+            rotateX: newX,
+            rotateY: newY,
+            rotateZ: newZ
+          }
+        }));
+        
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        // Return to base rotation
+        setAllSettings(prev => ({
+          ...prev,
+          [deviceType]: { 
+            ...prev[deviceType], 
+            rotateX: baseRotationRef.current.X,
+            rotateY: baseRotationRef.current.Y,
+            rotateZ: baseRotationRef.current.Z
+          }
+        }));
+        setIsAnimating(false);
+        setAnimationMode(null);
+      }
+    };
+    animationRef.current = requestAnimationFrame(animate);
+    return { success: true, message: "De dominostenen schudden..." };
+  };
+
+  const startContinuousRotate = () => {
+    const currentSettings = allSettings[deviceType];
+    if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
+      return { success: false, message: "De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen." };
+    }
+    
+    setIsAnimating(true);
+    setAnimationMode('rotate');
+    
+    // Store base rotation values
+    baseRotationRef.current = {
+      X: currentSettings.rotateX,
+      Y: currentSettings.rotateY,
+      Z: currentSettings.rotateZ
+    };
+    
+    const initialTime = performance.now();
+
+    const animate = (timestamp: number) => {
+      const elapsedMilliseconds = timestamp - initialTime;
+      const angle = (elapsedMilliseconds / 1000) * currentSettings.rotationSpeed * Math.PI;
+      const wave = Math.sin(angle);
+      
+      // Apply animation on top of base rotation
+      const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave);
+      const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave);
+      const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave);
+      
+      // Update settings and broadcast globally
+      setAllSettings(prev => ({
+        ...prev,
+        [deviceType]: { 
+          ...prev[deviceType], 
+          rotateX: newX,
+          rotateY: newY,
+          rotateZ: newZ
+        }
+      }));
+      
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    animationRef.current = requestAnimationFrame(animate);
+    return { success: true, message: "De dominostenen roteren continu..." };
+  };
+
+  const stopAnimation = () => {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    
+    // Return to base rotation
+    setAllSettings(prev => ({
+      ...prev,
+      [deviceType]: { 
+        ...prev[deviceType], 
+        rotateX: baseRotationRef.current.X,
+        rotateY: baseRotationRef.current.Y,
+        rotateZ: baseRotationRef.current.Z
+      }
+    }));
+    
+    setIsAnimating(false);
+    setAnimationMode(null);
+    return { success: true, message: "Animatie gestopt." };
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
   const updateRotation = (axis: 'X' | 'Y' | 'Z', value: number, targetDevice?: DeviceType) => {
+    // Don't allow manual rotation during animation
+    if (isAnimating) return;
+    
     const clampedValue = Math.max(-90, Math.min(90, value));
     const device = targetDevice || deviceType;
     const property = `rotate${axis}` as keyof GameVisualSettings;
+    
     setAllSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], [property]: clampedValue }
     }));
+    
+    // Update base rotation reference for current device
+    if (device === deviceType) {
+      baseRotationRef.current[axis] = clampedValue;
+    }
   };
 
   const updateRotationSpeed = (speed: number, targetDevice?: DeviceType) => {
@@ -232,5 +388,11 @@ export const useGameVisualSettings = () => {
     applyLiveUpdate,
     resetToDefaults,
     getSettingsForDevice,
+    // Animation controls
+    isAnimating,
+    animationMode,
+    startShakeAnimation,
+    startContinuousRotate,
+    stopAnimation,
   };
 };

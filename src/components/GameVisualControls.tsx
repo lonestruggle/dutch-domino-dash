@@ -50,100 +50,35 @@ export const GameVisualControls: React.FC = () => {
     updateRotationAmplitude,
     updateAnimationDuration,
     applyLiveUpdate,
-    resetToDefaults 
+    resetToDefaults,
+    // Animation controls from hook
+    isAnimating,
+    animationMode,
+    startShakeAnimation,
+    startContinuousRotate,
+    stopAnimation,
   } = useGameVisualSettings();
   const [activeTab, setActiveTab] = useState<DeviceType>(currentDeviceType);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null);
   const [animationMessage, setAnimationMessage] = useState('');
-  const animationRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number | null>(null);
   
   // Get current settings for the active device
   const settings = getSettingsForDevice(activeTab);
 
-  // Animation functions
-  const startShakeAnimation = () => {
-    if (settings.rotationAmplitudeX === 0 && settings.rotationAmplitudeY === 0 && settings.rotationAmplitudeZ === 0) {
-      setAnimationMessage("De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen.");
-      return;
-    }
-    setAnimationMessage("De dominostenen schudden...");
-    
-    setIsAnimating(true);
-    setAnimationMode('shake');
-    
-    startTimeRef.current = performance.now();
-    const durationInMs = settings.animationDuration * 1000;
-    
-    const animate = (timestamp: number) => {
-      if (!startTimeRef.current) return;
-      const elapsedTime = timestamp - startTimeRef.current;
-      const progress = elapsedTime / durationInMs;
-      
-      if (progress < 1) {
-        const wave = Math.cos(elapsedTime * settings.rotationSpeed * Math.PI / 1000);
-        const decayFactor = Math.pow(1 - progress, 1.5);
-        updateRotation('X', settings.rotationAmplitudeX * wave * decayFactor, activeTab);
-        updateRotation('Y', settings.rotationAmplitudeY * wave * decayFactor, activeTab);
-        updateRotation('Z', settings.rotationAmplitudeZ * wave * decayFactor, activeTab);
-        animationRef.current = requestAnimationFrame(animate);
-      } else {
-        updateRotation('X', 0, activeTab);
-        updateRotation('Y', 0, activeTab);
-        updateRotation('Z', 0, activeTab);
-        setIsAnimating(false);
-        setAnimationMode(null);
-        setAnimationMessage("Klaar met schudden.");
-      }
-    };
-    animationRef.current = requestAnimationFrame(animate);
+  // Handle animation button clicks
+  const handleShakeAnimation = () => {
+    const result = startShakeAnimation();
+    setAnimationMessage(result.message);
   };
 
-  const startContinuousRotate = () => {
-    if (settings.rotationAmplitudeX === 0 && settings.rotationAmplitudeY === 0 && settings.rotationAmplitudeZ === 0) {
-      setAnimationMessage("De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen.");
-      return;
-    }
-    setIsAnimating(true);
-    setAnimationMode('rotate');
-    setAnimationMessage("De dominostenen roteren continu...");
-    
-    const initialTime = performance.now();
-
-    const animate = (timestamp: number) => {
-      const elapsedMilliseconds = timestamp - initialTime;
-      const angle = (elapsedMilliseconds / 1000) * settings.rotationSpeed * Math.PI;
-      const wave = Math.sin(angle);
-      
-      updateRotation('X', settings.rotationAmplitudeX * wave, activeTab);
-      updateRotation('Y', settings.rotationAmplitudeY * wave, activeTab);
-      updateRotation('Z', settings.rotationAmplitudeZ * wave, activeTab);
-      
-      animationRef.current = requestAnimationFrame(animate);
-    };
-    animationRef.current = requestAnimationFrame(animate);
+  const handleContinuousRotate = () => {
+    const result = startContinuousRotate();
+    setAnimationMessage(result.message);
   };
 
-  const stopAnimation = () => {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-    setIsAnimating(false);
-    setAnimationMode(null);
-    updateRotation('X', 0, activeTab);
-    updateRotation('Y', 0, activeTab);
-    updateRotation('Z', 0, activeTab);
-    setAnimationMessage("Animatie gestopt.");
+  const handleStopAnimation = () => {
+    const result = stopAnimation();
+    setAnimationMessage(result.message);
   };
-
-  useEffect(() => {
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, []);
   
   // Get current settings for the active device
   const deviceSettings = getSettingsForDevice(activeTab);
@@ -353,7 +288,7 @@ export const GameVisualControls: React.FC = () => {
               <div className="flex gap-2">
                 {animationMode === 'rotate' ? (
                   <Button
-                    onClick={stopAnimation}
+                    onClick={handleStopAnimation}
                     variant="destructive"
                     size="sm"
                     className="flex items-center gap-1"
@@ -362,7 +297,7 @@ export const GameVisualControls: React.FC = () => {
                   </Button>
                 ) : (
                   <Button
-                    onClick={startContinuousRotate}
+                    onClick={handleContinuousRotate}
                     variant="outline"
                     size="sm"
                     disabled={isAnimating}
@@ -374,7 +309,7 @@ export const GameVisualControls: React.FC = () => {
                 
                 {animationMode === 'shake' ? (
                   <Button
-                    onClick={stopAnimation}
+                    onClick={handleStopAnimation}
                     variant="destructive"
                     size="sm"
                     className="flex items-center gap-1"
@@ -383,7 +318,7 @@ export const GameVisualControls: React.FC = () => {
                   </Button>
                 ) : (
                   <Button
-                    onClick={startShakeAnimation}
+                    onClick={handleShakeAnimation}
                     variant="outline"
                     size="sm"
                     disabled={isAnimating}
@@ -407,7 +342,7 @@ export const GameVisualControls: React.FC = () => {
                   step={0.1}
                   value={[deviceSettings.rotateX]}
                   onValueChange={([value]) => updateRotation('X', value, device)}
-                  disabled={isAnimating && device === activeTab}
+                  disabled={isAnimating}
                   className="w-full"
                 />
               </div>
@@ -422,7 +357,7 @@ export const GameVisualControls: React.FC = () => {
                   step={0.1}
                   value={[deviceSettings.rotateY]}
                   onValueChange={([value]) => updateRotation('Y', value, device)}
-                  disabled={isAnimating && device === activeTab}
+                  disabled={isAnimating}
                   className="w-full"
                 />
               </div>
@@ -437,7 +372,7 @@ export const GameVisualControls: React.FC = () => {
                   step={0.1}
                   value={[deviceSettings.rotateZ]}
                   onValueChange={([value]) => updateRotation('Z', value, device)}
-                  disabled={isAnimating && device === activeTab}
+                  disabled={isAnimating}
                   className="w-full"
                 />
               </div>
@@ -455,7 +390,7 @@ export const GameVisualControls: React.FC = () => {
                   step={0.1}
                   value={[deviceSettings.animationDuration]}
                   onValueChange={([value]) => updateAnimationDuration(value, device)}
-                  disabled={isAnimating && device === activeTab}
+                  disabled={isAnimating}
                   className="w-full"
                 />
               </div>
@@ -470,7 +405,7 @@ export const GameVisualControls: React.FC = () => {
                   step={0.1}
                   value={[deviceSettings.rotationSpeed]}
                   onValueChange={([value]) => updateRotationSpeed(value, device)}
-                  disabled={isAnimating && device === activeTab}
+                  disabled={isAnimating}
                   className="w-full"
                 />
               </div>
@@ -485,7 +420,7 @@ export const GameVisualControls: React.FC = () => {
                   step={0.1}
                   value={[deviceSettings.rotationAmplitudeX]}
                   onValueChange={([value]) => updateRotationAmplitude('X', value, device)}
-                  disabled={isAnimating && device === activeTab}
+                  disabled={isAnimating}
                   className="w-full"
                 />
               </div>
@@ -500,7 +435,7 @@ export const GameVisualControls: React.FC = () => {
                   step={0.1}
                   value={[deviceSettings.rotationAmplitudeY]}
                   onValueChange={([value]) => updateRotationAmplitude('Y', value, device)}
-                  disabled={isAnimating && device === activeTab}
+                  disabled={isAnimating}
                   className="w-full"
                 />
               </div>
@@ -515,7 +450,7 @@ export const GameVisualControls: React.FC = () => {
                   step={0.1}
                   value={[deviceSettings.rotationAmplitudeZ]}
                   onValueChange={([value]) => updateRotationAmplitude('Z', value, device)}
-                  disabled={isAnimating && device === activeTab}
+                  disabled={isAnimating}
                   className="w-full"
                 />
               </div>
