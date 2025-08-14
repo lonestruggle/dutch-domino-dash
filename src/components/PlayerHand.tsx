@@ -77,6 +77,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             selected={index === selectedIndex}
             onClick={() => onDominoSelect(index)}
             className="relative transition-all duration-200 domino-tile-hand hover:z-20"
+            use3D={true}
+            size="medium"
           />
         ))}
       </div>

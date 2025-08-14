@@ -266,170 +266,7 @@ export const GameVisualControls: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Hard Slam Trilbeweging */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Hard Slam Trilbeweging</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Trillingstypen */}
-            <div>
-              <div className="text-xs text-muted-foreground mb-3">Trillingstypen</div>
-              <div className="grid grid-cols-1 gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Horizontaal</span>
-                  <Switch
-                    checked={settings.enableHorizontalVibration}
-                    onCheckedChange={(checked) => updateVibrationToggle('enableHorizontalVibration', checked, device)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Links Diagonaal</span>
-                  <Switch
-                    checked={settings.enableLeftDiagonalVibration}
-                    onCheckedChange={(checked) => updateVibrationToggle('enableLeftDiagonalVibration', checked, device)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Rechts Diagonaal</span>
-                  <Switch
-                    checked={settings.enableRightDiagonalVibration}
-                    onCheckedChange={(checked) => updateVibrationToggle('enableRightDiagonalVibration', checked, device)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Verticaal</span>
-                  <Switch
-                    checked={settings.enableVerticalVibration}
-                    onCheckedChange={(checked) => updateVibrationToggle('enableVerticalVibration', checked, device)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Subtiel</span>
-                  <Switch
-                    checked={settings.enableSubtleVibration}
-                    onCheckedChange={(checked) => updateVibrationToggle('enableSubtleVibration', checked, device)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Schudden</span>
-                  <Switch
-                    checked={settings.enableShakeVibration}
-                    onCheckedChange={(checked) => updateVibrationToggle('enableShakeVibration', checked, device)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Duur aanpassing */}
-            <div>
-              <div className="text-xs text-muted-foreground mb-2">
-                Duur Aanpassing ({settings.durationAdjustment > 0 ? '+' : ''}{settings.durationAdjustment}) 
-                → {getAdjustedDuration(device).toFixed(1)}s
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => updateDurationAdjustment(settings.durationAdjustment - 1, device)}
-                  disabled={settings.durationAdjustment <= -5}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <div className="flex-1">
-                  <Slider
-                    value={[settings.durationAdjustment]}
-                    onValueChange={(values) => updateDurationAdjustment(values[0], device)}
-                    min={-5}
-                    max={5}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => updateDurationAdjustment(settings.durationAdjustment + 1, device)}
-                  disabled={settings.durationAdjustment >= 5}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Snelheid aanpassing */}
-            <div>
-              <div className="text-xs text-muted-foreground mb-2">
-                Snelheid Aanpassing ({settings.speedAdjustment > 0 ? '+' : ''}{settings.speedAdjustment * 10}ms)
-                → {(getAdjustedSpeed(device) * 1000).toFixed(0)}ms
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => updateSpeedAdjustment(settings.speedAdjustment - 1, device)}
-                  disabled={settings.speedAdjustment <= -30}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <div className="flex-1">
-                  <Slider
-                    value={[settings.speedAdjustment]}
-                    onValueChange={(values) => updateSpeedAdjustment(values[0], device)}
-                    min={-30}
-                    max={30}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => updateSpeedAdjustment(settings.speedAdjustment + 1, device)}
-                  disabled={settings.speedAdjustment >= 30}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Live Update knop */}
-            <div className="pt-2 space-y-2">
-              <Button
-                onClick={handleLiveUpdate}
-                disabled={isUpdating}
-                className="w-full flex items-center gap-2"
-                variant="secondary"
-              >
-                {isUpdating ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                {isUpdating ? 'Toegepast!' : 'Live Update Toepassen'}
-              </Button>
-              
-              {/* Test trillingen knop */}
-              <Button
-                onClick={() => {
-                  console.log('🧪 Test Trillingen via util');
-                  applyBoardVibration(settings);
-                }}
-                className="w-full flex items-center gap-2"
-                variant="outline"
-                size="sm"
-              >
-                🧪 Test Trillingen
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Nieuwe 3D Shake Instellingen */}
+        {/* Nieuwe 3D Domino Shake Animaties */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">3D Domino Shake Animaties</CardTitle>
@@ -639,6 +476,26 @@ export const GameVisualControls: React.FC = () => {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Test 3D Shake knop */}
+            <div className="pt-2">
+              <Button
+                onClick={() => {
+                  console.log('🧪 Test 3D Shake');
+                  // Trigger een test shake event
+                  window.dispatchEvent(new CustomEvent('test3DShake', { 
+                    detail: { 
+                      settings: settings
+                    }
+                  }));
+                }}
+                className="w-full flex items-center gap-2"
+                variant="outline"
+                size="sm"
+              >
+                🎲 Test 3D Shake
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -56,6 +56,15 @@ export const NewDominoTile: React.FC<NewDominoTileProps> = ({
   const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
   const double = isDouble(data);
 
+  // Combine all rotations including global shake
+  const globalShakeX = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--global-shake-x') || '0');
+  const globalShakeY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--global-shake-y') || '0');
+  const globalShakeZ = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--global-shake-z') || '0');
+  
+  const totalRotateX = rotateX + globalShakeX;
+  const totalRotateY = rotateY + globalShakeY;
+  const totalRotateZ = rotateZ + globalShakeZ;
+
   const renderDots = (count: number) => {
     if (count === 0) return null;
     return Array.from({ length: count }, (_, i) => (
@@ -121,7 +130,7 @@ export const NewDominoTile: React.FC<NewDominoTileProps> = ({
       )}
       onClick={onClick}
       style={{
-        transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg) rotate(${rotation}deg)`,
+        transform: `rotateX(${totalRotateX}deg) rotateY(${totalRotateY}deg) rotateZ(${totalRotateZ}deg) rotate(${rotation}deg)`,
         width: tileWidth,
         height: tileHeight,
         transformStyle: 'preserve-3d',
