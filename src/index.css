@@ -26,6 +26,17 @@
     --domino-shadow: 220 13% 18% / 0.25;
     --domino-pip: 220 13% 18%;
     
+    /* 3D Domino Colors */
+    --domino-face: 220 50% 90%;
+    --domino-highlight: 220 50% 95%;
+    --domino-lowlight: 220 50% 80%;
+    --domino-dot: 220 20% 20%;
+    --domino-edge: 220 20% 30%;
+    --domino-side: 220 30% 70%;
+    --domino-back: 220 30% 60%;
+    --shadow-domino: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-domino-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    
     /* UI colors */
     --ui-bg: 42 39% 96%;
     --ui-border: 35 26% 75%;
@@ -140,6 +151,15 @@
 }
 
 @layer components {
+  /* 3D Transform utilities */
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
   /* Domino game specific styles */
   .game-board {
     background: var(--felt-gradient);
