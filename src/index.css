@@ -55,11 +55,6 @@
     --domino-target-scale: 1;
     --board-tile-scale: 0.99;
 
-    /* 3D Shake variables */
-    --global-shake-x: 0deg;
-    --global-shake-y: 0deg;
-    --global-shake-z: 0deg;
-
     /* Animations */
     --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -244,22 +239,20 @@
   .pip-pattern-6 .domino-pip:nth-child(5) { top: 75%; left: 33.3%; }
   .pip-pattern-6 .domino-pip:nth-child(6) { top: 75%; left: 66.6%; }
 
-  /* 3D CSS transforms voor domino tiles */
-  .preserve-3d {
-    transform-style: preserve-3d;
-  }
-  
-  .backface-hidden {
-    backface-visibility: hidden;
-  }
-  
-  .transform-gpu {
-    transform: translateZ(0);
-    will-change: transform;
-  }
-  
-  /* Legacy CSS shake support voor backward compatibility */
+  /* Hard Slam Shake Animation - aanpasbare trilbeweging met willekeurige variaties */
   .hard-slam-shake {
+    animation-name: var(--vibration-animation, dominoVibrate) !important;
+    animation-duration: var(--hard-slam-speed, 0.2s) !important;
+    animation-timing-function: ease-in-out !important;
+    animation-iteration-count: infinite !important;
+    animation-direction: alternate !important;
+    animation-fill-mode: forwards !important;
+    /* Stop animatie na de ingestelde duur */
+    animation-play-state: running !important;
+  }
+  
+  /* Zorg ervoor dat board dominostenen ook trillen met aanpasbare trilbeweging */
+  .domino-tile-board.hard-slam-shake {
     animation-name: var(--vibration-animation, dominoVibrate) !important;
     animation-duration: var(--hard-slam-speed, 0.2s) !important;
     animation-timing-function: ease-in-out !important;

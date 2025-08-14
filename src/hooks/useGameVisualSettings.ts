@@ -17,15 +17,6 @@ export interface GameVisualSettings {
   // Duration and speed adjustments (-5 to +5 range)
   durationAdjustment: number; // -5 to +5, each step = 0.5s
   speedAdjustment: number; // -300 to +300ms, each step = 10ms
-  
-  // Nieuwe 3D shake instellingen
-  shakeAmplitudeX: number;
-  shakeAmplitudeY: number;
-  shakeAmplitudeZ: number;
-  shakeSpeed: number;
-  shakeDuration: number;
-  enableShakeDecay: boolean;
-  enableContinuousRotation: boolean;
 }
 
 export interface DeviceSpecificSettings {
@@ -47,30 +38,26 @@ const DEFAULT_SETTINGS: GameVisualSettings = {
   enableShakeVibration: true,
   durationAdjustment: 0,
   speedAdjustment: 0,
-  
-  // Nieuwe 3D shake defaults
-  shakeAmplitudeX: 45,
-  shakeAmplitudeY: 45,
-  shakeAmplitudeZ: 0,
-  shakeSpeed: 5,
-  shakeDuration: 2,
-  enableShakeDecay: true,
-  enableContinuousRotation: false,
 };
 
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
   desktop: { 
-    ...DEFAULT_SETTINGS
+    dominoScale: 1.0, handDominoScale: 1.0, hardSlamDuration: 1.5, hardSlamSpeed: 0.2,
+    enableHorizontalVibration: true, enableLeftDiagonalVibration: true, enableRightDiagonalVibration: true,
+    enableVerticalVibration: true, enableSubtleVibration: true, enableShakeVibration: true,
+    durationAdjustment: 0, speedAdjustment: 0
   },
   tablet: { 
-    ...DEFAULT_SETTINGS,
-    dominoScale: 0.9,
-    handDominoScale: 0.9
+    dominoScale: 0.9, handDominoScale: 0.9, hardSlamDuration: 1.5, hardSlamSpeed: 0.2,
+    enableHorizontalVibration: true, enableLeftDiagonalVibration: true, enableRightDiagonalVibration: true,
+    enableVerticalVibration: true, enableSubtleVibration: true, enableShakeVibration: true,
+    durationAdjustment: 0, speedAdjustment: 0
   },
   mobile: { 
-    ...DEFAULT_SETTINGS,
-    dominoScale: 0.8,
-    handDominoScale: 0.8
+    dominoScale: 0.8, handDominoScale: 0.8, hardSlamDuration: 1.5, hardSlamSpeed: 0.2,
+    enableHorizontalVibration: true, enableLeftDiagonalVibration: true, enableRightDiagonalVibration: true,
+    enableVerticalVibration: true, enableSubtleVibration: true, enableShakeVibration: true,
+    durationAdjustment: 0, speedAdjustment: 0
   },
 };
 
@@ -209,68 +196,6 @@ export const useGameVisualSettings = () => {
     }));
   };
 
-  // Nieuwe functies voor 3D shake instellingen
-  const updateShakeAmplitudeX = (value: number, targetDevice?: DeviceType) => {
-    const clampedValue = Math.max(-500, Math.min(500, value));
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], shakeAmplitudeX: clampedValue }
-    }));
-  };
-
-  const updateShakeAmplitudeY = (value: number, targetDevice?: DeviceType) => {
-    const clampedValue = Math.max(-500, Math.min(500, value));
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], shakeAmplitudeY: clampedValue }
-    }));
-  };
-
-  const updateShakeAmplitudeZ = (value: number, targetDevice?: DeviceType) => {
-    const clampedValue = Math.max(-500, Math.min(500, value));
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], shakeAmplitudeZ: clampedValue }
-    }));
-  };
-
-  const updateShakeSpeed = (value: number, targetDevice?: DeviceType) => {
-    const clampedValue = Math.max(0.1, Math.min(10, value));
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], shakeSpeed: clampedValue }
-    }));
-  };
-
-  const updateShakeDuration = (value: number, targetDevice?: DeviceType) => {
-    const clampedValue = Math.max(0.1, Math.min(10, value));
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], shakeDuration: clampedValue }
-    }));
-  };
-
-  const updateShakeDecay = (enabled: boolean, targetDevice?: DeviceType) => {
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], enableShakeDecay: enabled }
-    }));
-  };
-
-  const updateContinuousRotation = (enabled: boolean, targetDevice?: DeviceType) => {
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], enableContinuousRotation: enabled }
-    }));
-  };
-
   const applyLiveUpdate = () => {
     // Force a re-render by updating CSS variables
     const rootElement = document.documentElement;
@@ -323,13 +248,6 @@ export const useGameVisualSettings = () => {
     updateVibrationToggle,
     updateDurationAdjustment,
     updateSpeedAdjustment,
-    updateShakeAmplitudeX,
-    updateShakeAmplitudeY,
-    updateShakeAmplitudeZ,
-    updateShakeSpeed,
-    updateShakeDuration,
-    updateShakeDecay,
-    updateContinuousRotation,
     applyLiveUpdate,
     getAdjustedDuration,
     getAdjustedSpeed,

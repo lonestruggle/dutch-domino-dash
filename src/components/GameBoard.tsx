@@ -370,8 +370,40 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             transformOrigin: 'center'
           }}
         >
-          {/* Nieuwe 3D domino rendering met shake support */}
+          {/* Original PC domino rendering */}
           {Object.entries(gameState.dominoes).map(([id, domino]) => {
+            // Elke dominosteen krijgt zijn eigen willekeurige rotatie hoek (tussen 5 en 20 graden)
+            const individualAngle = 5 + Math.random() * 15; // 5-20 graden
+            
+            // Select enabled vibration animations based on settings
+            const getEnabledAnimations = () => {
+              const animations = [];
+              if (settings.enableHorizontalVibration) animations.push('dominoVibrate_horizontal');
+              if (settings.enableLeftDiagonalVibration) animations.push('dominoVibrate_left_diagonal');
+              if (settings.enableRightDiagonalVibration) animations.push('dominoVibrate_right_diagonal');
+              if (settings.enableVerticalVibration) animations.push('dominoVibrate_vertical');
+              if (settings.enableSubtleVibration) animations.push('dominoVibrate_subtle');
+              if (settings.enableShakeVibration) animations.push('dominoVibrate_shake');
+              
+              // Return empty array if no animations enabled
+              return animations;
+            };
+            
+            const enabledAnimations = getEnabledAnimations();
+            
+            // Use domino index for consistent animation selection
+            const dominoIndex = Object.keys(gameState.dominoes).indexOf(id);
+            
+            // Only animate if vibrations are enabled and hard slamming
+            const shouldAnimate = gameState.isHardSlamming && enabledAnimations.length > 0;
+            const selectedAnimation = shouldAnimate ? enabledAnimations[dominoIndex % enabledAnimations.length] : 'none';
+            
+            // Calculate adjusted duration and speed
+            const adjustedDuration = settings.hardSlamDuration + (settings.durationAdjustment * 0.5);
+            const adjustedSpeed = settings.hardSlamSpeed + (settings.speedAdjustment * 0.01);
+            
+            console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, animation: ${selectedAnimation}`);
+            
             return (
               <div
                 key={id}
@@ -386,10 +418,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   orientation={domino.orientation}
                   flipped={domino.flipped}
                   rotation={domino.rotation || 0}
+                  isShaking={shouldAnimate}
                   onClick={undefined}
                   className="domino-tile-board"
-                  use3D={true}
-                  size="medium"
+                  style={{
+                    '--individual-angle': `${individualAngle}deg`,
+                    '--vibration-animation': selectedAnimation,
+                    '--shake-duration': `${adjustedDuration}s`,
+                    '--hard-slam-duration': `${adjustedDuration}s`,
+                    '--hard-slam-speed': `${adjustedSpeed}s`,
+                  } as React.CSSProperties}
                 />
               </div>
             );
