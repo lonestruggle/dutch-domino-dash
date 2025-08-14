@@ -239,20 +239,6 @@
   .pip-pattern-6 .domino-pip:nth-child(5) { top: 75%; left: 33.3%; }
   .pip-pattern-6 .domino-pip:nth-child(6) { top: 75%; left: 66.6%; }
 
-    animation-play-state: running !important;
-  }
-  
-  /* Zorg ervoor dat board dominostenen ook trillen met aanpasbare trilbeweging */
-  .domino-tile-board.hard-slam-shake {
-    animation-name: var(--vibration-animation, dominoVibrate) !important;
-    animation-duration: var(--hard-slam-speed, 0.2s) !important;
-    animation-timing-function: ease-in-out !important;
-    animation-iteration-count: infinite !important;
-    animation-direction: alternate !important;
-    animation-fill-mode: forwards !important;
-    animation-play-state: running !important;
-  }
-
   @keyframes fade-in {
     0% {
       opacity: 0;
@@ -456,4 +442,3 @@
       overscroll-behavior: contain;
     }
   }
-}
