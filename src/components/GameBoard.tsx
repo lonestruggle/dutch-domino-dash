@@ -6,7 +6,6 @@ import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { cn } from '@/lib/utils';
-import { applyBoardVibration } from '@/lib/vibration';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -52,16 +51,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       updateDominoScaling();
     };
 
-    const handleTestVibration = () => {
-      // Apply vibration to all board dominoes
-      applyBoardVibration(settings);
-    };
-
-    window.addEventListener('testVibration', handleTestVibration);
     return () => {
       window.removeEventListener('vibrationSettingsUpdated', handleAnyUpdate);
       window.removeEventListener('visualSettingsUpdated', handleAnyUpdate);
-      window.removeEventListener('testVibration', handleTestVibration);
     };
   }, [gameState]);
 
@@ -79,7 +71,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const latest = (() => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (window as any).__dominoVibrationSettings || settings;
+        return (window as any).__dominoSettings || settings;
       } catch {
         return settings;
       }
@@ -370,25 +362,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const individualAngle = 5 + Math.random() * 15; // 5-20 graden
             
             // Select enabled vibration animations based on settings
-            const getEnabledAnimations = () => {
-              const animations = [];
-              if (settings.enableHorizontalVibration) animations.push('dominoVibrate_horizontal');
-              if (settings.enableLeftDiagonalVibration) animations.push('dominoVibrate_left_diagonal');
-              if (settings.enableRightDiagonalVibration) animations.push('dominoVibrate_right_diagonal');
-              if (settings.enableVerticalVibration) animations.push('dominoVibrate_vertical');
-              if (settings.enableSubtleVibration) animations.push('dominoVibrate_subtle');
-              if (settings.enableShakeVibration) animations.push('dominoVibrate_shake');
-              
-              // Return empty array if no animations enabled
-              return animations;
-            };
-            
-            const enabledAnimations = getEnabledAnimations();
-            
-            // Use domino index for consistent animation selection
-            const dominoIndex = Object.keys(gameState.dominoes).indexOf(id);
-            
-            // Hard slam removed - no animations
+            // Animation removed - no vibrations
             const shouldAnimate = false;
             const selectedAnimation = 'none';
             

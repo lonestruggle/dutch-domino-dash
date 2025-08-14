@@ -5,13 +5,6 @@ import { useAuth } from './useAuth';
 export interface GameVisualSettings {
   dominoScale: number; // 0.5 to 2.0 multiplier for board dominoes
   handDominoScale: number; // 0.5 to 2.0 multiplier for hand dominoes
-  // Individual vibration toggles
-  enableHorizontalVibration: boolean;
-  enableLeftDiagonalVibration: boolean;
-  enableRightDiagonalVibration: boolean;
-  enableVerticalVibration: boolean;
-  enableSubtleVibration: boolean;
-  enableShakeVibration: boolean;
   // Duration and speed adjustments (-5 to +5 range)
   durationAdjustment: number; // -5 to +5, each step = 0.5s
   speedAdjustment: number; // -300 to +300ms, each step = 10ms
@@ -26,12 +19,6 @@ export interface DeviceSpecificSettings {
 const DEFAULT_SETTINGS: GameVisualSettings = {
   dominoScale: 1.0,
   handDominoScale: 1.0,
-  enableHorizontalVibration: true,
-  enableLeftDiagonalVibration: true,
-  enableRightDiagonalVibration: true,
-  enableVerticalVibration: true,
-  enableSubtleVibration: true,
-  enableShakeVibration: true,
   durationAdjustment: 0,
   speedAdjustment: 0,
 };
@@ -39,20 +26,14 @@ const DEFAULT_SETTINGS: GameVisualSettings = {
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
   desktop: { 
     dominoScale: 1.0, handDominoScale: 1.0,
-    enableHorizontalVibration: true, enableLeftDiagonalVibration: true, enableRightDiagonalVibration: true,
-    enableVerticalVibration: true, enableSubtleVibration: true, enableShakeVibration: true,
     durationAdjustment: 0, speedAdjustment: 0
   },
   tablet: { 
     dominoScale: 0.9, handDominoScale: 0.9,
-    enableHorizontalVibration: true, enableLeftDiagonalVibration: true, enableRightDiagonalVibration: true,
-    enableVerticalVibration: true, enableSubtleVibration: true, enableShakeVibration: true,
     durationAdjustment: 0, speedAdjustment: 0
   },
   mobile: { 
     dominoScale: 0.8, handDominoScale: 0.8,
-    enableHorizontalVibration: true, enableLeftDiagonalVibration: true, enableRightDiagonalVibration: true,
-    enableVerticalVibration: true, enableSubtleVibration: true, enableShakeVibration: true,
     durationAdjustment: 0, speedAdjustment: 0
   },
 };
@@ -100,7 +81,7 @@ export const useGameVisualSettings = () => {
     const currentSettings = allSettings[deviceType];
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).__dominoVibrationSettings = currentSettings;
+      (window as any).__dominoSettings = currentSettings;
     } catch {}
 
     // Notify listeners (GameBoard, PlayerHand, etc.)
@@ -142,13 +123,6 @@ export const useGameVisualSettings = () => {
   };
 
 
-  const updateVibrationToggle = (vibrationType: keyof Pick<GameVisualSettings, 'enableHorizontalVibration' | 'enableLeftDiagonalVibration' | 'enableRightDiagonalVibration' | 'enableVerticalVibration' | 'enableSubtleVibration' | 'enableShakeVibration'>, enabled: boolean, targetDevice?: DeviceType) => {
-    const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], [vibrationType]: enabled }
-    }));
-  };
 
   const updateDurationAdjustment = (adjustment: number, targetDevice?: DeviceType) => {
     const clampedAdjustment = Math.max(-5, Math.min(5, adjustment));
@@ -171,17 +145,8 @@ export const useGameVisualSettings = () => {
   const applyLiveUpdate = () => {
     // Trigger a re-render event
     const currentSettings = allSettings[deviceType];
-    window.dispatchEvent(new CustomEvent('vibrationSettingsUpdated', { 
-      detail: { 
-        enabledVibrations: {
-          horizontal: currentSettings.enableHorizontalVibration,
-          leftDiagonal: currentSettings.enableLeftDiagonalVibration,
-          rightDiagonal: currentSettings.enableRightDiagonalVibration,
-          vertical: currentSettings.enableVerticalVibration,
-          subtle: currentSettings.enableSubtleVibration,
-          shake: currentSettings.enableShakeVibration,
-        }
-      }
+    window.dispatchEvent(new CustomEvent('settingsUpdated', { 
+      detail: { settings: currentSettings }
     }));
   };
 
@@ -194,7 +159,6 @@ export const useGameVisualSettings = () => {
     currentDeviceType: deviceType,
     updateDominoScale,
     updateHandDominoScale,
-    updateVibrationToggle,
     updateDurationAdjustment,
     updateSpeedAdjustment,
     applyLiveUpdate,

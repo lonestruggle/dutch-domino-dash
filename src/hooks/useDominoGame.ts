@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { GameState, DominoData, OpenEnd, LegalMove, DominoState } from '@/types/domino';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import { applyBoardVibration } from '@/lib/vibration';
+
 
 const CELL_SIZE = 48;
 

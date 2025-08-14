@@ -47,7 +47,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
     const handleUpdate = (e: Event) => {
       try {
         const custom = e as CustomEvent;
-        const newScale = (custom.detail?.settings?.handDominoScale) ?? (window as any).__dominoVibrationSettings?.handDominoScale;
+        const newScale = (custom.detail?.settings?.handDominoScale) ?? (window as any).__dominoSettings?.handDominoScale;
         if (typeof newScale === 'number') applyScale(newScale);
       } catch {}
     };
