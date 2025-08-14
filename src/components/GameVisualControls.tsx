@@ -48,6 +48,13 @@ export const GameVisualControls: React.FC = () => {
     updateVibrationToggle,
     updateDurationAdjustment,
     updateSpeedAdjustment,
+    updateShakeAmplitudeX,
+    updateShakeAmplitudeY,
+    updateShakeAmplitudeZ,
+    updateShakeSpeed,
+    updateShakeDuration,
+    updateShakeDecay,
+    updateContinuousRotation,
     applyLiveUpdate,
     getAdjustedDuration,
     getAdjustedSpeed,
@@ -418,6 +425,220 @@ export const GameVisualControls: React.FC = () => {
               >
                 🧪 Test Trillingen
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Nieuwe 3D Shake Instellingen */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">3D Domino Shake Animaties</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Shake Amplitude X-as */}
+            <div>
+              <div className="text-xs text-muted-foreground mb-2">
+                X-as Amplitude: {settings.shakeAmplitudeX.toFixed(1)}°
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => updateShakeAmplitudeX(settings.shakeAmplitudeX - 5, device)}
+                  disabled={settings.shakeAmplitudeX <= -500}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <div className="flex-1">
+                  <Slider
+                    value={[settings.shakeAmplitudeX]}
+                    onValueChange={(values) => updateShakeAmplitudeX(values[0], device)}
+                    min={-500}
+                    max={500}
+                    step={5}
+                    className="w-full"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => updateShakeAmplitudeX(settings.shakeAmplitudeX + 5, device)}
+                  disabled={settings.shakeAmplitudeX >= 500}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Shake Amplitude Y-as */}
+            <div>
+              <div className="text-xs text-muted-foreground mb-2">
+                Y-as Amplitude: {settings.shakeAmplitudeY.toFixed(1)}°
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => updateShakeAmplitudeY(settings.shakeAmplitudeY - 5, device)}
+                  disabled={settings.shakeAmplitudeY <= -500}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <div className="flex-1">
+                  <Slider
+                    value={[settings.shakeAmplitudeY]}
+                    onValueChange={(values) => updateShakeAmplitudeY(values[0], device)}
+                    min={-500}
+                    max={500}
+                    step={5}
+                    className="w-full"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => updateShakeAmplitudeY(settings.shakeAmplitudeY + 5, device)}
+                  disabled={settings.shakeAmplitudeY >= 500}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Shake Amplitude Z-as */}
+            <div>
+              <div className="text-xs text-muted-foreground mb-2">
+                Z-as Amplitude: {settings.shakeAmplitudeZ.toFixed(1)}°
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => updateShakeAmplitudeZ(settings.shakeAmplitudeZ - 5, device)}
+                  disabled={settings.shakeAmplitudeZ <= -500}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <div className="flex-1">
+                  <Slider
+                    value={[settings.shakeAmplitudeZ]}
+                    onValueChange={(values) => updateShakeAmplitudeZ(values[0], device)}
+                    min={-500}
+                    max={500}
+                    step={5}
+                    className="w-full"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => updateShakeAmplitudeZ(settings.shakeAmplitudeZ + 5, device)}
+                  disabled={settings.shakeAmplitudeZ >= 500}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Shake Snelheid */}
+            <div>
+              <div className="text-xs text-muted-foreground mb-2">
+                Shake Snelheid: {settings.shakeSpeed.toFixed(1)}x
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => updateShakeSpeed(settings.shakeSpeed - 0.5, device)}
+                  disabled={settings.shakeSpeed <= 0.1}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <div className="flex-1">
+                  <Slider
+                    value={[settings.shakeSpeed]}
+                    onValueChange={(values) => updateShakeSpeed(values[0], device)}
+                    min={0.1}
+                    max={10}
+                    step={0.1}
+                    className="w-full"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => updateShakeSpeed(settings.shakeSpeed + 0.5, device)}
+                  disabled={settings.shakeSpeed >= 10}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Shake Duur */}
+            <div>
+              <div className="text-xs text-muted-foreground mb-2">
+                Shake Duur: {settings.shakeDuration.toFixed(1)}s
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => updateShakeDuration(settings.shakeDuration - 0.5, device)}
+                  disabled={settings.shakeDuration <= 0.1}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <div className="flex-1">
+                  <Slider
+                    value={[settings.shakeDuration]}
+                    onValueChange={(values) => updateShakeDuration(values[0], device)}
+                    min={0.1}
+                    max={10}
+                    step={0.1}
+                    className="w-full"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => updateShakeDuration(settings.shakeDuration + 0.5, device)}
+                  disabled={settings.shakeDuration >= 10}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Toggles */}
+            <div>
+              <div className="text-xs text-muted-foreground mb-3">Shake Opties</div>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Afnemende Shake</span>
+                  <Switch
+                    checked={settings.enableShakeDecay}
+                    onCheckedChange={(checked) => updateShakeDecay(checked, device)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Continue Rotatie</span>
+                  <Switch
+                    checked={settings.enableContinuousRotation}
+                    onCheckedChange={(checked) => updateContinuousRotation(checked, device)}
+                  />
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
