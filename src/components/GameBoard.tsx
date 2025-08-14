@@ -6,6 +6,7 @@ import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { cn } from '@/lib/utils';
+import { applyBoardVibration } from '@/lib/vibration';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -51,18 +52,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       updateDominoScaling();
     };
 
-    const handleTestHardSlam = () => {
-      // Trigger a test hard slam via parent component callback
-      console.log('🎯 Test hard slam requested - implement at parent level');
+    const handleTestVibration = () => {
+      // Apply vibration to all board dominoes
+      applyBoardVibration(settings);
     };
 
-    window.addEventListener('vibrationSettingsUpdated', handleAnyUpdate);
-    window.addEventListener('visualSettingsUpdated', handleAnyUpdate);
-    window.addEventListener('testHardSlam', handleTestHardSlam);
+    window.addEventListener('testVibration', handleTestVibration);
     return () => {
       window.removeEventListener('vibrationSettingsUpdated', handleAnyUpdate);
       window.removeEventListener('visualSettingsUpdated', handleAnyUpdate);
-      window.removeEventListener('testHardSlam', handleTestHardSlam);
+      window.removeEventListener('testVibration', handleTestVibration);
     };
   }, [gameState]);
 

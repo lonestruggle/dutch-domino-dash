@@ -893,7 +893,6 @@ export const useDominoGame = () => {
       
       // Apply Hard Slam effect if activated
       let finalDominoes = { ...prev.dominoes, [id]: dominoState };
-      let newState;
       
       // Create normal state
       const newState = {
