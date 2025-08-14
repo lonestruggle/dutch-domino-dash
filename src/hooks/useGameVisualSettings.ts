@@ -193,6 +193,13 @@ export const useGameVisualSettings = () => {
       return { success: false, message: "De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen." };
     }
     
+    console.log('🎬 Starting shake animation with settings:', currentSettings);
+    
+    // Stop any existing animation first
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    
     setIsAnimating(true);
     setAnimationMode('shake');
     
@@ -207,7 +214,13 @@ export const useGameVisualSettings = () => {
     const durationInMs = currentSettings.animationDuration * 1000;
     
     const animate = (timestamp: number) => {
-      if (!startTimeRef.current || animationMode !== 'shake') return;
+      if (!startTimeRef.current) return;
+      
+      // Check if we should still be animating
+      if (!isAnimating || animationMode !== 'shake') {
+        console.log('🎬 Shake animation stopped, mode:', animationMode, 'isAnimating:', isAnimating);
+        return;
+      }
       
       const elapsedTime = timestamp - startTimeRef.current;
       const progress = elapsedTime / durationInMs;
@@ -220,6 +233,8 @@ export const useGameVisualSettings = () => {
         const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave * decayFactor);
         const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave * decayFactor);
         const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave * decayFactor);
+        
+        console.log('🎯 Shaking:', { newX, newY, newZ, wave, decayFactor, progress });
         
         // Direct DOM manipulation for immediate effect
         document.documentElement.style.setProperty('--current-rotate-x', `${newX}deg`);
@@ -234,6 +249,7 @@ export const useGameVisualSettings = () => {
         document.documentElement.style.setProperty('--current-rotate-z', `${baseRotationRef.current.Z}deg`);
         setIsAnimating(false);
         setAnimationMode(null);
+        console.log('🎬 Shake animation completed');
       }
     };
     animationRef.current = requestAnimationFrame(animate);
@@ -244,6 +260,13 @@ export const useGameVisualSettings = () => {
     const currentSettings = allSettings[deviceType];
     if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
       return { success: false, message: "De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen." };
+    }
+    
+    console.log('🎬 Starting continuous rotate with settings:', currentSettings);
+    
+    // Stop any existing animation first
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
     }
     
     setIsAnimating(true);
@@ -259,7 +282,11 @@ export const useGameVisualSettings = () => {
     const initialTime = performance.now();
 
     const animate = (timestamp: number) => {
-      if (animationMode !== 'rotate') return;
+      // Check if we should still be animating
+      if (!isAnimating || animationMode !== 'rotate') {
+        console.log('🎬 Animation stopped, mode:', animationMode, 'isAnimating:', isAnimating);
+        return;
+      }
       
       const elapsedMilliseconds = timestamp - initialTime;
       const angle = (elapsedMilliseconds / 1000) * currentSettings.rotationSpeed * Math.PI;
@@ -269,6 +296,8 @@ export const useGameVisualSettings = () => {
       const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave);
       const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave);
       const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave);
+      
+      console.log('🎯 Animating:', { newX, newY, newZ, wave });
       
       // Direct DOM manipulation for immediate effect
       document.documentElement.style.setProperty('--current-rotate-x', `${newX}deg`);
