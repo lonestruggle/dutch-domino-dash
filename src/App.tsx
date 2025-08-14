@@ -13,6 +13,7 @@ import Lobbies from "./pages/Lobbies";
 import Lobby from "./pages/Lobby";
 import Game from "./pages/Game";
 import NotFound from "./pages/NotFound";
+import DominoTileDemo from "./components/DominoTileDemo";
 import { GameVisualControls } from "@/components/GameVisualControls";
 import Scoreboard from "./pages/Scoreboard";
 
@@ -56,6 +57,7 @@ const App = () => {
               <Route path="/lobby/:lobbyId" element={<Lobby />} />
               <Route path="/game/:gameId" element={<Game />} />
               <Route path="/scoreboard" element={<Scoreboard />} />
+              <Route path="/demo" element={<DominoTileDemo />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
