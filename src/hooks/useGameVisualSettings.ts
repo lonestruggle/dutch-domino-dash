@@ -231,17 +231,25 @@ export const useGameVisualSettings = () => {
         
         console.log('🎯 Shaking:', { newX, newY, newZ, wave, decayFactor, progress });
         
-        // Direct DOM manipulation for immediate effect
-        document.documentElement.style.setProperty('--current-rotate-x', `${newX}deg`);
-        document.documentElement.style.setProperty('--current-rotate-y', `${newY}deg`);
-        document.documentElement.style.setProperty('--current-rotate-z', `${newZ}deg`);
+        // Apply animation only to existing board dominoes with animation class  
+        const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
+        boardDominoes.forEach((domino: Element) => {
+          const htmlDomino = domino as HTMLElement;
+          const currentTransform = htmlDomino.style.transform || '';
+          const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
+          htmlDomino.style.transform = `${baseTransform} rotateX(${newX}deg) rotateY(${newY}deg) rotateZ(${newZ}deg)`.trim();
+        });
         
         animationRef.current.current = requestAnimationFrame(animate);
       } else {
-        // Return to base rotation and finish
-        document.documentElement.style.setProperty('--current-rotate-x', `${baseRotationRef.current.X}deg`);
-        document.documentElement.style.setProperty('--current-rotate-y', `${baseRotationRef.current.Y}deg`);
-        document.documentElement.style.setProperty('--current-rotate-z', `${baseRotationRef.current.Z}deg`);
+        // Return to base rotation - reset only board dominoes
+        const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
+        boardDominoes.forEach((domino: Element) => {
+          const htmlDomino = domino as HTMLElement;
+          const currentTransform = htmlDomino.style.transform || '';
+          const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
+          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z}deg)`.trim();
+        });
         setIsAnimating(false);
         setAnimationMode(null);
         console.log('🎬 Shake animation completed');
@@ -304,10 +312,14 @@ export const useGameVisualSettings = () => {
       
       console.log('🎯 Animating:', { newX, newY, newZ, wave });
       
-      // Direct DOM manipulation for immediate effect
-      document.documentElement.style.setProperty('--current-rotate-x', `${newX}deg`);
-      document.documentElement.style.setProperty('--current-rotate-y', `${newY}deg`);
-      document.documentElement.style.setProperty('--current-rotate-z', `${newZ}deg`);
+        // Apply animation only to existing board dominoes with animation class
+        const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
+        boardDominoes.forEach((domino: Element) => {
+          const htmlDomino = domino as HTMLElement;
+          const currentTransform = htmlDomino.style.transform || '';
+          const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
+          htmlDomino.style.transform = `${baseTransform} rotateX(${newX}deg) rotateY(${newY}deg) rotateZ(${newZ}deg)`.trim();
+        });
       
       animationRef.current.current = requestAnimationFrame(animate);
     };
@@ -336,10 +348,14 @@ export const useGameVisualSettings = () => {
       animationRef.current.stopFunction = null;
     }
     
-    // Return to base rotation
-    document.documentElement.style.setProperty('--current-rotate-x', `${baseRotationRef.current.X}deg`);
-    document.documentElement.style.setProperty('--current-rotate-y', `${baseRotationRef.current.Y}deg`);
-    document.documentElement.style.setProperty('--current-rotate-z', `${baseRotationRef.current.Z}deg`);
+        // Return to base rotation - reset only board dominoes
+        const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
+        boardDominoes.forEach((domino: Element) => {
+          const htmlDomino = domino as HTMLElement;
+          const currentTransform = htmlDomino.style.transform || '';
+          const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
+          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z}deg)`.trim();
+        });
     
     setIsAnimating(false);
     setAnimationMode(null);

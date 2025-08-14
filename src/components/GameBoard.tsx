@@ -385,7 +385,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   rotateZ={settings.rotateZ}
                   isShaking={shouldAnimate}
                   onClick={undefined}
-                  className="domino-tile-board"
+                  className="domino-tile-board board-domino"
                   style={{
                     '--individual-angle': `${individualAngle}deg`,
                   } as React.CSSProperties}
