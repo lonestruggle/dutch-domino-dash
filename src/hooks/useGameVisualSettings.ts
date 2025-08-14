@@ -231,13 +231,33 @@ export const useGameVisualSettings = () => {
         
         console.log('🎯 Shaking:', { newX, newY, newZ, wave, decayFactor, progress });
         
-        // Apply animation only to existing board dominoes with animation class  
+        // Apply individual random animation to each existing board domino
         const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
-        boardDominoes.forEach((domino: Element) => {
+        boardDominoes.forEach((domino: Element, index: number) => {
           const htmlDomino = domino as HTMLElement;
+          
+          // Generate unique random values for each domino based on index and time
+          const seed = index * 1000 + elapsedTime * 0.1;
+          const randomPhaseX = Math.sin(seed * 0.001) * 2 * Math.PI;
+          const randomPhaseY = Math.cos(seed * 0.001) * 2 * Math.PI;
+          const randomPhaseZ = Math.sin(seed * 0.002) * 2 * Math.PI;
+          
+          const waveX = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000 + randomPhaseX);
+          const waveY = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000 + randomPhaseY);
+          const waveZ = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000 + randomPhaseZ);
+          
+          // Individual random amplitude multipliers (0.5 to 1.5)
+          const amplitudeMultX = 0.5 + Math.sin(seed * 0.003);
+          const amplitudeMultY = 0.5 + Math.cos(seed * 0.003);
+          const amplitudeMultZ = 0.5 + Math.sin(seed * 0.004);
+          
+          const individualX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX);
+          const individualY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY);
+          const individualZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ);
+          
           const currentTransform = htmlDomino.style.transform || '';
           const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-          htmlDomino.style.transform = `${baseTransform} rotateX(${newX}deg) rotateY(${newY}deg) rotateZ(${newZ}deg)`.trim();
+          htmlDomino.style.transform = `${baseTransform} rotateX(${individualX}deg) rotateY(${individualY}deg) rotateZ(${individualZ}deg)`.trim();
         });
         
         animationRef.current.current = requestAnimationFrame(animate);
@@ -312,13 +332,33 @@ export const useGameVisualSettings = () => {
       
       console.log('🎯 Animating:', { newX, newY, newZ, wave });
       
-        // Apply animation only to existing board dominoes with animation class
+        // Apply individual random animation to each existing board domino
         const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
-        boardDominoes.forEach((domino: Element) => {
+        boardDominoes.forEach((domino: Element, index: number) => {
           const htmlDomino = domino as HTMLElement;
+          
+          // Generate unique random values for each domino based on index
+          const seed = index * 1000 + elapsedMilliseconds * 0.001;
+          const randomPhaseX = Math.sin(seed * 0.001) * 2 * Math.PI;
+          const randomPhaseY = Math.cos(seed * 0.001) * 2 * Math.PI;
+          const randomPhaseZ = Math.sin(seed * 0.002) * 2 * Math.PI;
+          
+          const waveX = Math.sin(angle + randomPhaseX);
+          const waveY = Math.sin(angle + randomPhaseY);
+          const waveZ = Math.sin(angle + randomPhaseZ);
+          
+          // Individual random amplitude multipliers (0.5 to 1.5)
+          const amplitudeMultX = 0.5 + Math.sin(seed * 0.003);
+          const amplitudeMultY = 0.5 + Math.cos(seed * 0.003);
+          const amplitudeMultZ = 0.5 + Math.sin(seed * 0.004);
+          
+          const individualX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * waveX * amplitudeMultX);
+          const individualY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * waveY * amplitudeMultY);
+          const individualZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * waveZ * amplitudeMultZ);
+          
           const currentTransform = htmlDomino.style.transform || '';
           const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-          htmlDomino.style.transform = `${baseTransform} rotateX(${newX}deg) rotateY(${newY}deg) rotateZ(${newZ}deg)`.trim();
+          htmlDomino.style.transform = `${baseTransform} rotateX(${individualX}deg) rotateY(${individualY}deg) rotateZ(${individualZ}deg)`.trim();
         });
       
       animationRef.current.current = requestAnimationFrame(animate);
