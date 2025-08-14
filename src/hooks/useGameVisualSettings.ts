@@ -97,7 +97,7 @@ export const useGameVisualSettings = () => {
   // Animation state - moved after initial settings
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null);
-  const animationRef = useRef<number | null>(null);
+  const animationRef = useRef<{ current: number | null; stopFunction?: (() => void) | null }>({ current: null });
   const startTimeRef = useRef<number | null>(null);
   const baseRotationRef = useRef({ X: 0, Y: 0, Z: 0 });
 
@@ -196,8 +196,8 @@ export const useGameVisualSettings = () => {
     console.log('🎬 Starting shake animation with settings:', currentSettings);
     
     // Stop any existing animation first
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
+    if (animationRef.current.current) {
+      cancelAnimationFrame(animationRef.current.current);
     }
     
     setIsAnimating(true);
@@ -212,15 +212,10 @@ export const useGameVisualSettings = () => {
     
     startTimeRef.current = performance.now();
     const durationInMs = currentSettings.animationDuration * 1000;
+    let shouldContinue = true; // Local variable voor animatie controle
     
     const animate = (timestamp: number) => {
-      if (!startTimeRef.current) return;
-      
-      // Check if we should still be animating
-      if (!isAnimating || animationMode !== 'shake') {
-        console.log('🎬 Shake animation stopped, mode:', animationMode, 'isAnimating:', isAnimating);
-        return;
-      }
+      if (!startTimeRef.current || !shouldContinue) return;
       
       const elapsedTime = timestamp - startTimeRef.current;
       const progress = elapsedTime / durationInMs;
@@ -229,7 +224,7 @@ export const useGameVisualSettings = () => {
         const wave = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000);
         const decayFactor = Math.pow(1 - progress, 1.5);
         
-        // Apply animation on top of base rotation - direct calculation
+        // Apply animation on top of base rotation
         const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave * decayFactor);
         const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave * decayFactor);
         const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave * decayFactor);
@@ -241,9 +236,9 @@ export const useGameVisualSettings = () => {
         document.documentElement.style.setProperty('--current-rotate-y', `${newY}deg`);
         document.documentElement.style.setProperty('--current-rotate-z', `${newZ}deg`);
         
-        animationRef.current = requestAnimationFrame(animate);
+        animationRef.current.current = requestAnimationFrame(animate);
       } else {
-        // Return to base rotation
+        // Return to base rotation and finish
         document.documentElement.style.setProperty('--current-rotate-x', `${baseRotationRef.current.X}deg`);
         document.documentElement.style.setProperty('--current-rotate-y', `${baseRotationRef.current.Y}deg`);
         document.documentElement.style.setProperty('--current-rotate-z', `${baseRotationRef.current.Z}deg`);
@@ -252,7 +247,15 @@ export const useGameVisualSettings = () => {
         console.log('🎬 Shake animation completed');
       }
     };
-    animationRef.current = requestAnimationFrame(animate);
+    
+    // Store the stop function to cancel the animation
+    animationRef.current.stopFunction = () => {
+      shouldContinue = false;
+      setIsAnimating(false);
+      setAnimationMode(null);
+    };
+    
+    animationRef.current.current = requestAnimationFrame(animate);
     return { success: true, message: "De dominostenen schudden..." };
   };
 
@@ -265,10 +268,11 @@ export const useGameVisualSettings = () => {
     console.log('🎬 Starting continuous rotate with settings:', currentSettings);
     
     // Stop any existing animation first
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
+    if (animationRef.current.current) {
+      cancelAnimationFrame(animationRef.current.current);
     }
     
+    // Set state - maar vertrouw niet op deze waarden in de animatie loop
     setIsAnimating(true);
     setAnimationMode('rotate');
     
@@ -280,11 +284,12 @@ export const useGameVisualSettings = () => {
     };
     
     const initialTime = performance.now();
+    let shouldContinue = true; // Local variable voor animatie controle
 
     const animate = (timestamp: number) => {
-      // Check if we should still be animating
-      if (!isAnimating || animationMode !== 'rotate') {
-        console.log('🎬 Animation stopped, mode:', animationMode, 'isAnimating:', isAnimating);
+      // Use local variable instead of React state to avoid race conditions
+      if (!shouldContinue) {
+        console.log('🎬 Animation stopped via local flag');
         return;
       }
       
@@ -292,7 +297,7 @@ export const useGameVisualSettings = () => {
       const angle = (elapsedMilliseconds / 1000) * currentSettings.rotationSpeed * Math.PI;
       const wave = Math.sin(angle);
       
-      // Apply animation on top of base rotation - exacte logica uit demo
+      // Apply animation on top of base rotation
       const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave);
       const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave);
       const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave);
@@ -304,15 +309,31 @@ export const useGameVisualSettings = () => {
       document.documentElement.style.setProperty('--current-rotate-y', `${newY}deg`);
       document.documentElement.style.setProperty('--current-rotate-z', `${newZ}deg`);
       
-      animationRef.current = requestAnimationFrame(animate);
+      animationRef.current.current = requestAnimationFrame(animate);
     };
-    animationRef.current = requestAnimationFrame(animate);
+    
+    // Store the stop function to cancel the animation
+    animationRef.current.stopFunction = () => {
+      shouldContinue = false;
+      setIsAnimating(false);
+      setAnimationMode(null);
+    };
+    
+    animationRef.current.current = requestAnimationFrame(animate);
     return { success: true, message: "De dominostenen roteren continu..." };
   };
 
   const stopAnimation = () => {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
+    console.log('🛑 Stopping animation');
+    
+    if (animationRef.current.current) {
+      cancelAnimationFrame(animationRef.current.current);
+    }
+    
+    // Call custom stop function if it exists
+    if (animationRef.current.stopFunction) {
+      animationRef.current.stopFunction();
+      animationRef.current.stopFunction = null;
     }
     
     // Return to base rotation
@@ -328,8 +349,8 @@ export const useGameVisualSettings = () => {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (animationRef.current.current) {
+        cancelAnimationFrame(animationRef.current.current);
       }
     };
   }, []);
