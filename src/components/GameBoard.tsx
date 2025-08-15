@@ -113,10 +113,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [settings.dominoScale]);
 
   useEffect(() => {
+    console.log('🎯 GameBoard useEffect triggered:', {
+      dominoCount: Object.keys(gameState.dominoes).length,
+      hardSlamMode,
+      hasStartShakeAnimation: !!startShakeAnimation,
+      hasDisarmHardSlam: !!disarmHardSlam
+    });
+    
     updateDominoScaling();
     // Apply original rotations after rendering new dominoes
     const timer = setTimeout(() => {
       applyOriginalRotations();
+      
+      console.log('🎯 Checking hard slam conditions:', {
+        hardSlamMode,
+        dominoCount: Object.keys(gameState.dominoes).length,
+        condition: hardSlamMode && Object.keys(gameState.dominoes).length > 0
+      });
       
       // Auto-trigger shake if hard slam mode is active and there are new dominoes
       if (hardSlamMode && Object.keys(gameState.dominoes).length > 0) {
