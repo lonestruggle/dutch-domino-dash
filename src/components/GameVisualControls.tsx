@@ -52,6 +52,9 @@ export const GameVisualControls: React.FC = () => {
     updateAnimationDuration,
     updateShakeIntensity,
     updateShakeDuration,
+    updateDominoWidth,
+    updateDominoHeight,
+    updateDominoThickness,
     applyLiveUpdate,
     resetToDefaults,
     // Animation controls from hook
@@ -290,6 +293,61 @@ export const GameVisualControls: React.FC = () => {
               >
                 <Plus className="h-3 w-3" />
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Domino Afmetingen - GLOBAL */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              🌍 Domino Afmetingen (Globaal)
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Deze instellingen gelden voor alle spelers en worden gedeeld
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="text-xs font-medium mb-1">
+                Breedte: {deviceSettings.dominoWidth}px
+              </div>
+              <Slider
+                min={40}
+                max={120}
+                step={1}
+                value={[deviceSettings.dominoWidth]}
+                onValueChange={([value]) => updateDominoWidth(value, device)}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <div className="text-xs font-medium mb-1">
+                Hoogte: {deviceSettings.dominoHeight}px
+              </div>
+              <Slider
+                min={20}
+                max={60}
+                step={1}
+                value={[deviceSettings.dominoHeight]}
+                onValueChange={([value]) => updateDominoHeight(value, device)}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <div className="text-xs font-medium mb-1">
+                Dikte: {deviceSettings.dominoThickness}px
+              </div>
+              <Slider
+                min={4}
+                max={16}
+                step={1}
+                value={[deviceSettings.dominoThickness]}
+                onValueChange={([value]) => updateDominoThickness(value, device)}
+                className="w-full"
+              />
             </div>
           </CardContent>
         </Card>
