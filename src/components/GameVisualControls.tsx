@@ -269,13 +269,16 @@ export const GameVisualControls: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* 3D Rotation Controls */}
+        {/* 3D Rotation Controls - GLOBAL */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <RotateCw className="h-4 w-4" />
-              3D Rotatie Instellingen
+              🌍 3D Rotatie Instellingen (Globaal)
             </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Deze instellingen gelden voor alle spelers en worden gedeeld
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Animation Message */}
@@ -460,13 +463,16 @@ export const GameVisualControls: React.FC = () => {
             </CardContent>
           </Card>
 
-        {/* Schud Instellingen */}
+        {/* Schud Instellingen - GLOBAL */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Hand className="h-4 w-4" />
-              Schud Instellingen
+              🌍 Schud Instellingen (Globaal)
             </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Deze instellingen gelden voor alle spelers en worden gedeeld
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>

@@ -2,25 +2,44 @@ import { useState, useEffect, useRef } from 'react';
 import { useDeviceType, DeviceType } from './useDeviceType';
 import { useAuth } from './useAuth';
 
-export interface GameVisualSettings {
+// Personal settings (per user)
+export interface PersonalSettings {
   dominoScale: number; // 0.5 to 2.0 multiplier for board dominoes
   handDominoScale: number; // 0.5 to 2.0 multiplier for hand dominoes
-  // Duration and speed adjustments (-5 to +5 range)
   durationAdjustment: number; // -5 to +5, each step = 0.5s
   speedAdjustment: number; // -300 to +300ms, each step = 10ms
-  // 3D Rotation settings
+}
+
+// Global settings (same for everyone)
+export interface GlobalSettings {
+  // 3D Rotation settings - GLOBAL FOR EVERYONE
   rotateX: number; // -90 to 90 degrees
   rotateY: number; // -90 to 90 degrees  
   rotateZ: number; // -90 to 90 degrees
-  // Animation settings
+  // Animation settings - GLOBAL FOR EVERYONE
   rotationSpeed: number; // 0.1 to 10x speed
   rotationAmplitudeX: number; // -500 to 500 degrees
   rotationAmplitudeY: number; // -500 to 500 degrees
   rotationAmplitudeZ: number; // -500 to 500 degrees
   animationDuration: number; // 0.1 to 10 seconds
-  // Shake settings
+  // Shake settings - GLOBAL FOR EVERYONE
   shakeIntensity: number; // 0.1 to 2.0 intensity multiplier
   shakeDuration: number; // 0.5 to 5.0 seconds
+}
+
+// Combined interface for easy access
+export interface GameVisualSettings extends PersonalSettings, GlobalSettings {}
+
+export interface DeviceSpecificPersonalSettings {
+  desktop: PersonalSettings;
+  tablet: PersonalSettings;  
+  mobile: PersonalSettings;
+}
+
+export interface DeviceSpecificGlobalSettings {
+  desktop: GlobalSettings;
+  tablet: GlobalSettings;  
+  mobile: GlobalSettings;
 }
 
 export interface DeviceSpecificSettings {
@@ -29,11 +48,14 @@ export interface DeviceSpecificSettings {
   mobile: GameVisualSettings;
 }
 
-const DEFAULT_SETTINGS: GameVisualSettings = {
+const DEFAULT_PERSONAL_SETTINGS: PersonalSettings = {
   dominoScale: 1.0,
   handDominoScale: 1.0,
   durationAdjustment: 0,
   speedAdjustment: 0,
+};
+
+const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   rotateX: 0,
   rotateY: 0,
   rotateZ: 0,
@@ -46,71 +68,114 @@ const DEFAULT_SETTINGS: GameVisualSettings = {
   shakeDuration: 1.5,
 };
 
+const DEFAULT_SETTINGS: GameVisualSettings = {
+  ...DEFAULT_PERSONAL_SETTINGS,
+  ...DEFAULT_GLOBAL_SETTINGS,
+};
+
+const DEFAULT_DEVICE_PERSONAL_SETTINGS: DeviceSpecificPersonalSettings = {
+  desktop: { dominoScale: 1.0, handDominoScale: 1.0, durationAdjustment: 0, speedAdjustment: 0 },
+  tablet: { dominoScale: 0.9, handDominoScale: 0.9, durationAdjustment: 0, speedAdjustment: 0 },
+  mobile: { dominoScale: 0.8, handDominoScale: 0.8, durationAdjustment: 0, speedAdjustment: 0 },
+};
+
+const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
+  desktop: { ...DEFAULT_GLOBAL_SETTINGS },
+  tablet: { ...DEFAULT_GLOBAL_SETTINGS },
+  mobile: { ...DEFAULT_GLOBAL_SETTINGS },
+};
+
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
-  desktop: { 
-    dominoScale: 1.0, handDominoScale: 1.0,
-    durationAdjustment: 0, speedAdjustment: 0,
-    rotateX: 0, rotateY: 0, rotateZ: 0,
-    rotationSpeed: 5, rotationAmplitudeX: 45, rotationAmplitudeY: 45, rotationAmplitudeZ: 0,
-    animationDuration: 2, shakeIntensity: 1.0, shakeDuration: 1.5
-  },
-  tablet: { 
-    dominoScale: 0.9, handDominoScale: 0.9,
-    durationAdjustment: 0, speedAdjustment: 0,
-    rotateX: 0, rotateY: 0, rotateZ: 0,
-    rotationSpeed: 5, rotationAmplitudeX: 45, rotationAmplitudeY: 45, rotationAmplitudeZ: 0,
-    animationDuration: 2, shakeIntensity: 1.0, shakeDuration: 1.5
-  },
-  mobile: { 
-    dominoScale: 0.8, handDominoScale: 0.8,
-    durationAdjustment: 0, speedAdjustment: 0,
-    rotateX: 0, rotateY: 0, rotateZ: 0,
-    rotationSpeed: 5, rotationAmplitudeX: 45, rotationAmplitudeY: 45, rotationAmplitudeZ: 0,
-    animationDuration: 2, shakeIntensity: 1.0, shakeDuration: 1.5
-  },
+  desktop: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.desktop, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop },
+  tablet: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.tablet, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet },
+  mobile: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile },
 };
 
 export const useGameVisualSettings = () => {
   const deviceType = useDeviceType();
   const { user } = useAuth();
   
-  // Make settings personal per user
-  const getStorageKey = () => {
+  // Separate storage for personal and global settings
+  const getPersonalStorageKey = () => {
     const userId = user?.id || 'anonymous';
-    return `domino-game-visual-settings-v2-${userId}`;
+    return `domino-personal-settings-v3-${userId}`;
   };
   
-  const loadSettingsFromStorage = () => {
+  const getGlobalStorageKey = () => {
+    return `domino-global-settings-v3`; // No user ID - same for everyone
+  };
+  
+  const loadPersonalSettingsFromStorage = (): DeviceSpecificPersonalSettings => {
     try {
-      const storageKey = getStorageKey();
-      console.log('🔧 Loading settings with key:', storageKey, 'user:', user?.id);
+      const storageKey = getPersonalStorageKey();
+      console.log('🔧 Loading personal settings with key:', storageKey, 'user:', user?.id);
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Ensure all properties exist by merging with defaults
         const merged = {
-          desktop: { ...DEFAULT_DEVICE_SETTINGS.desktop, ...parsed.desktop },
-          tablet: { ...DEFAULT_DEVICE_SETTINGS.tablet, ...parsed.tablet },
-          mobile: { ...DEFAULT_DEVICE_SETTINGS.mobile, ...parsed.mobile },
+          desktop: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.desktop, ...parsed.desktop },
+          tablet: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.tablet, ...parsed.tablet },
+          mobile: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...parsed.mobile },
         };
-        console.log('🔧 Loaded settings:', merged);
+        console.log('🔧 Loaded personal settings:', merged);
         return merged;
       }
-      console.log('🔧 No stored settings found, using defaults');
-      return DEFAULT_DEVICE_SETTINGS;
+      console.log('🔧 No personal settings found, using defaults');
+      return DEFAULT_DEVICE_PERSONAL_SETTINGS;
     } catch {
-      console.log('🔧 Error loading settings, using defaults');
-      return DEFAULT_DEVICE_SETTINGS;
+      console.log('🔧 Error loading personal settings, using defaults');
+      return DEFAULT_DEVICE_PERSONAL_SETTINGS;
     }
   };
   
-  const [allSettings, setAllSettings] = useState<DeviceSpecificSettings>(loadSettingsFromStorage);
+  const loadGlobalSettingsFromStorage = (): DeviceSpecificGlobalSettings => {
+    try {
+      const storageKey = getGlobalStorageKey();
+      console.log('🌍 Loading GLOBAL settings with key:', storageKey);
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const merged = {
+          desktop: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop, ...parsed.desktop },
+          tablet: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet, ...parsed.tablet },
+          mobile: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile, ...parsed.mobile },
+        };
+        console.log('🌍 Loaded GLOBAL settings:', merged);
+        return merged;
+      }
+      console.log('🌍 No global settings found, using defaults');
+      return DEFAULT_DEVICE_GLOBAL_SETTINGS;
+    } catch {
+      console.log('🌍 Error loading global settings, using defaults');
+      return DEFAULT_DEVICE_GLOBAL_SETTINGS;
+    }
+  };
   
-  // Reload settings when user changes (fix race condition)
+  const combineSettings = (personal: DeviceSpecificPersonalSettings, global: DeviceSpecificGlobalSettings): DeviceSpecificSettings => {
+    return {
+      desktop: { ...personal.desktop, ...global.desktop },
+      tablet: { ...personal.tablet, ...global.tablet },
+      mobile: { ...personal.mobile, ...global.mobile },
+    };
+  };
+  
+  const [personalSettings, setPersonalSettings] = useState<DeviceSpecificPersonalSettings>(loadPersonalSettingsFromStorage);
+  const [globalSettings, setGlobalSettings] = useState<DeviceSpecificGlobalSettings>(loadGlobalSettingsFromStorage);
+  
+  // Combine personal and global settings
+  const allSettings = combineSettings(personalSettings, globalSettings);
+  
+  // Reload personal settings when user changes
   useEffect(() => {
-    const newSettings = loadSettingsFromStorage();
-    setAllSettings(newSettings);
+    const newPersonalSettings = loadPersonalSettingsFromStorage();
+    setPersonalSettings(newPersonalSettings);
   }, [user?.id]);
+  
+  // Load global settings once (same for everyone)
+  useEffect(() => {
+    const newGlobalSettings = loadGlobalSettingsFromStorage();
+    setGlobalSettings(newGlobalSettings);
+  }, []);
 
   // Animation state - moved after initial settings
   const [isAnimating, setIsAnimating] = useState(false);
@@ -120,14 +185,27 @@ export const useGameVisualSettings = () => {
   const baseRotationRef = useRef({ X: 0, Y: 0, Z: 0 });
   const randomSeedsRef = useRef<number[]>([]); // Store random seeds for each domino
 
+  // Save personal settings
   useEffect(() => {
     try {
-      const storageKey = getStorageKey();
-      localStorage.setItem(storageKey, JSON.stringify(allSettings));
+      const storageKey = getPersonalStorageKey();
+      localStorage.setItem(storageKey, JSON.stringify(personalSettings));
+      console.log('💾 Saved personal settings:', personalSettings);
     } catch (error) {
-      console.warn('Failed to save visual settings:', error);
+      console.warn('Failed to save personal settings:', error);
     }
-  }, [allSettings, user?.id]);
+  }, [personalSettings, user?.id]);
+  
+  // Save global settings
+  useEffect(() => {
+    try {
+      const storageKey = getGlobalStorageKey();
+      localStorage.setItem(storageKey, JSON.stringify(globalSettings));
+      console.log('🌍💾 Saved GLOBAL settings:', globalSettings);
+    } catch (error) {
+      console.warn('Failed to save global settings:', error);
+    }
+  }, [globalSettings]);
 
   // Broadcast and apply live visual settings globally on any change
   useEffect(() => {
@@ -149,7 +227,7 @@ export const useGameVisualSettings = () => {
   const updateDominoScale = (scale: number, targetDevice?: DeviceType) => {
     const clampedScale = Math.max(0.5, Math.min(2.0, scale));
     const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
+    setPersonalSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], dominoScale: clampedScale }
     }));
@@ -158,7 +236,7 @@ export const useGameVisualSettings = () => {
   const updateHandDominoScale = (scale: number, targetDevice?: DeviceType) => {
     const clampedScale = Math.max(0.5, Math.min(2.0, scale));
     const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
+    setPersonalSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], handDominoScale: clampedScale }
     }));
@@ -166,12 +244,17 @@ export const useGameVisualSettings = () => {
 
   const resetToDefaults = (targetDevice?: DeviceType) => {
     if (targetDevice) {
-      setAllSettings(prev => ({
+      setPersonalSettings(prev => ({
         ...prev,
-        [targetDevice]: DEFAULT_DEVICE_SETTINGS[targetDevice]
+        [targetDevice]: DEFAULT_DEVICE_PERSONAL_SETTINGS[targetDevice]
+      }));
+      setGlobalSettings(prev => ({
+        ...prev,
+        [targetDevice]: DEFAULT_DEVICE_GLOBAL_SETTINGS[targetDevice]
       }));
     } else {
-      setAllSettings(DEFAULT_DEVICE_SETTINGS);
+      setPersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS);
+      setGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
     }
   };
 
@@ -180,7 +263,7 @@ export const useGameVisualSettings = () => {
   const updateDurationAdjustment = (adjustment: number, targetDevice?: DeviceType) => {
     const clampedAdjustment = Math.max(-5, Math.min(5, adjustment));
     const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
+    setPersonalSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], durationAdjustment: clampedAdjustment }
     }));
@@ -189,7 +272,7 @@ export const useGameVisualSettings = () => {
   const updateSpeedAdjustment = (adjustment: number, targetDevice?: DeviceType) => {
     const clampedAdjustment = Math.max(-30, Math.min(30, adjustment)); // -300ms to +300ms in 10ms steps
     const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
+    setPersonalSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], speedAdjustment: clampedAdjustment }
     }));
@@ -546,9 +629,9 @@ export const useGameVisualSettings = () => {
     
     const clampedValue = Math.max(-90, Math.min(90, value));
     const device = targetDevice || deviceType;
-    const property = `rotate${axis}` as keyof GameVisualSettings;
+    const property = `rotate${axis}` as keyof GlobalSettings;
     
-    setAllSettings(prev => ({
+    setGlobalSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], [property]: clampedValue }
     }));
@@ -562,7 +645,7 @@ export const useGameVisualSettings = () => {
   const updateRotationSpeed = (speed: number, targetDevice?: DeviceType) => {
     const clampedSpeed = Math.max(0.1, Math.min(10, speed));
     const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
+    setGlobalSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], rotationSpeed: clampedSpeed }
     }));
@@ -571,8 +654,8 @@ export const useGameVisualSettings = () => {
   const updateRotationAmplitude = (axis: 'X' | 'Y' | 'Z', value: number, targetDevice?: DeviceType) => {
     const clampedValue = Math.max(-1000, Math.min(1000, value));
     const device = targetDevice || deviceType;
-    const property = `rotationAmplitude${axis}` as keyof GameVisualSettings;
-    setAllSettings(prev => ({
+    const property = `rotationAmplitude${axis}` as keyof GlobalSettings;
+    setGlobalSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], [property]: clampedValue }
     }));
@@ -581,7 +664,7 @@ export const useGameVisualSettings = () => {
   const updateAnimationDuration = (duration: number, targetDevice?: DeviceType) => {
     const clampedDuration = Math.max(0.1, Math.min(10, duration));
     const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
+    setGlobalSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], animationDuration: clampedDuration }
     }));
@@ -590,7 +673,7 @@ export const useGameVisualSettings = () => {
   const updateShakeIntensity = (intensity: number, targetDevice?: DeviceType) => {
     const clampedIntensity = Math.max(0.1, Math.min(2.0, intensity));
     const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
+    setGlobalSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], shakeIntensity: clampedIntensity }
     }));
@@ -599,7 +682,7 @@ export const useGameVisualSettings = () => {
   const updateShakeDuration = (duration: number, targetDevice?: DeviceType) => {
     const clampedDuration = Math.max(0.5, Math.min(5.0, duration));
     const device = targetDevice || deviceType;
-    setAllSettings(prev => ({
+    setGlobalSettings(prev => ({
       ...prev,
       [device]: { ...prev[device], shakeDuration: clampedDuration }
     }));
