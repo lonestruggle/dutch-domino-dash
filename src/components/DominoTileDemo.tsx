@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { RefreshCw, RotateCw, Hand } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GameVisualControls } from '@/components/GameVisualControls';
 
 /**
  * The DominoTile component.
@@ -574,6 +575,9 @@ const DominoTileDemo = () => {
           )}
         </div>
       </div>
+      
+      {/* GameVisualControls component voor visuele instellingen */}
+      <GameVisualControls />
       
     </div>
   );
