@@ -387,18 +387,12 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   🔧 Check Blocked
                 </Button>
                 <Button 
-                  onClick={() => {
-                    if (hardSlamMode) {
-                      toggleHardSlamMode(); // Schakel hard slam mode uit
-                    } else {
-                      startShakeAnimation(); // Start direct shake animatie
-                    }
-                  }}
+                  onClick={toggleHardSlamMode}
                   variant={hardSlamMode ? "default" : "outline"}
                   className={hardSlamMode ? "bg-red-500 hover:bg-red-600 text-white" : "bg-slate-100 hover:bg-slate-200"}
                 >
                   <Hammer className="h-4 w-4 mr-1" />
-                  {hardSlamMode ? "Disarm Slam" : "Hard Slaan"}
+                  {hardSlamMode ? "Hard Slaan (Armed)" : "Hard Slaan"}
                 </Button>
               </div>
               <div className="text-sm text-muted-foreground flex items-center">
