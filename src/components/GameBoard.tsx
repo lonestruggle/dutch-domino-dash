@@ -105,14 +105,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const handleResize = () => updateDominoScaling();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isMobile, settings.dominoScale]);
+  }, [isMobile, settings.dominoScale, settings.dominoWidth, settings.dominoHeight, settings.dominoThickness]);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(() => updateDominoScaling());
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [settings.dominoScale]);
+  }, [settings.dominoScale, settings.dominoWidth, settings.dominoHeight, settings.dominoThickness]);
 
   useEffect(() => {
     updateDominoScaling();
@@ -121,7 +121,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       applyOriginalRotations();
     }, 100);
     return () => clearTimeout(timer);
-  }, [gameState.dominoes, settings.dominoScale, applyOriginalRotations]);
+  }, [gameState.dominoes, settings.dominoScale, settings.dominoWidth, settings.dominoHeight, settings.dominoThickness, applyOriginalRotations]);
   // Note: hardSlamMode is intentionally NOT in dependencies - we only want to trigger on new dominoes
 
   // Original PC logic for board size calculation
