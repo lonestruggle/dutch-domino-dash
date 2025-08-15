@@ -188,8 +188,40 @@ export const useGameVisualSettings = () => {
   const getSettingsForDevice = (device: DeviceType) => allSettings[device];
 
   // Animation functions met exacte logica uit DominoTileDemo
+  const forceStopAnimation = () => {
+    console.log('🎬 🛑 Force stopping animation');
+    
+    // Force clear all animation references
+    if (animationRef.current.current) {
+      cancelAnimationFrame(animationRef.current.current);
+      animationRef.current.current = null;
+    }
+    
+    // Call any stored stop function
+    if (animationRef.current.stopFunction) {
+      animationRef.current.stopFunction();
+      animationRef.current.stopFunction = null;
+    }
+    
+    // Reset all states explicitly
+    setIsAnimating(false);
+    setAnimationMode(null);
+    startTimeRef.current = null;
+    
+    // Clear random seeds
+    randomSeedsRef.current = [];
+    
+    console.log('🎬 ✅ Animation force stopped and cleaned up');
+  };
+
   const startShakeAnimation = () => {
     console.log('🎬 startShakeAnimation called!');
+    console.log('🎬 Current animation state:', { 
+      isAnimating, 
+      animationMode, 
+      hasActiveRef: !!animationRef.current.current,
+      hasStopFunction: !!animationRef.current.stopFunction 
+    });
     
     const currentSettings = allSettings[deviceType];
     console.log('🎬 Current device:', deviceType);
@@ -210,17 +242,21 @@ export const useGameVisualSettings = () => {
       return { success: false, message: "Geen domino's op het bord gevonden om te schudden." };
     }
     
-    // Stop any existing animation first
-    if (animationRef.current.current) {
-      cancelAnimationFrame(animationRef.current.current);
-    }
+    // Force stop any existing animation first
+    forceStopAnimation();
     
-    // Generate new random seeds for each domino
-    const allBoardDominoes = document.querySelectorAll('.domino-tile.board-domino');
-    randomSeedsRef.current = Array.from({ length: allBoardDominoes.length }, () => Math.random() * 10000);
+    // Small delay to ensure cleanup is complete
+    setTimeout(() => {
+      console.log('🎬 ⏰ Starting animation after cleanup delay');
     
-    setIsAnimating(true);
-    setAnimationMode('shake');
+      // Generate new random seeds for each domino
+      const allBoardDominoes = document.querySelectorAll('.domino-tile.board-domino');
+      randomSeedsRef.current = Array.from({ length: allBoardDominoes.length }, () => Math.random() * 10000);
+      
+      setIsAnimating(true);
+      setAnimationMode('shake');
+      
+      console.log('🎬 ✅ Animation state set:', { isAnimating: true, animationMode: 'shake' });
     
     // Store base rotation values
     baseRotationRef.current = {
@@ -307,7 +343,10 @@ export const useGameVisualSettings = () => {
       setAnimationMode(null);
     };
     
-    animationRef.current.current = requestAnimationFrame(animate);
+      animationRef.current.current = requestAnimationFrame(animate);
+      console.log('🎬 ✅ Shake animation started successfully');
+    }, 50); // 50ms delay for cleanup
+    
     return { success: true, message: "De dominostenen schudden..." };
   };
 
