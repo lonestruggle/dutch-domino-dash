@@ -18,6 +18,9 @@ export interface GameVisualSettings {
   rotationAmplitudeY: number; // -500 to 500 degrees
   rotationAmplitudeZ: number; // -500 to 500 degrees
   animationDuration: number; // 0.1 to 10 seconds
+  // Shake settings
+  shakeIntensity: number; // 0.1 to 2.0 intensity multiplier
+  shakeDuration: number; // 0.5 to 5.0 seconds
 }
 
 export interface DeviceSpecificSettings {
@@ -39,6 +42,8 @@ const DEFAULT_SETTINGS: GameVisualSettings = {
   rotationAmplitudeY: 45,
   rotationAmplitudeZ: 0,
   animationDuration: 2,
+  shakeIntensity: 1.0,
+  shakeDuration: 1.5,
 };
 
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
@@ -47,21 +52,21 @@ const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
     durationAdjustment: 0, speedAdjustment: 0,
     rotateX: 0, rotateY: 0, rotateZ: 0,
     rotationSpeed: 5, rotationAmplitudeX: 45, rotationAmplitudeY: 45, rotationAmplitudeZ: 0,
-    animationDuration: 2
+    animationDuration: 2, shakeIntensity: 1.0, shakeDuration: 1.5
   },
   tablet: { 
     dominoScale: 0.9, handDominoScale: 0.9,
     durationAdjustment: 0, speedAdjustment: 0,
     rotateX: 0, rotateY: 0, rotateZ: 0,
     rotationSpeed: 5, rotationAmplitudeX: 45, rotationAmplitudeY: 45, rotationAmplitudeZ: 0,
-    animationDuration: 2
+    animationDuration: 2, shakeIntensity: 1.0, shakeDuration: 1.5
   },
   mobile: { 
     dominoScale: 0.8, handDominoScale: 0.8,
     durationAdjustment: 0, speedAdjustment: 0,
     rotateX: 0, rotateY: 0, rotateZ: 0,
     rotationSpeed: 5, rotationAmplitudeX: 45, rotationAmplitudeY: 45, rotationAmplitudeZ: 0,
-    animationDuration: 2
+    animationDuration: 2, shakeIntensity: 1.0, shakeDuration: 1.5
   },
 };
 
@@ -303,7 +308,7 @@ export const useGameVisualSettings = () => {
     };
     
     startTimeRef.current = performance.now();
-    const durationInMs = currentSettings.animationDuration * 1000;
+    const durationInMs = currentSettings.shakeDuration * 1000; // Use shake duration setting
     let shouldContinue = true; // Local variable voor animatie controle
     
     const animate = (timestamp: number) => {
@@ -316,10 +321,11 @@ export const useGameVisualSettings = () => {
         const wave = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000);
         const decayFactor = Math.pow(1 - progress, 1.5);
         
-        // Apply animation on top of base rotation
-        const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave * decayFactor);
-        const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave * decayFactor);
-        const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave * decayFactor);
+        // Apply animation on top of base rotation with shake intensity
+        const shakeIntensity = currentSettings.shakeIntensity;
+        const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave * decayFactor * shakeIntensity);
+        const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave * decayFactor * shakeIntensity);
+        const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave * decayFactor * shakeIntensity);
         
         console.log('🎯 Shaking:', { newX, newY, newZ, wave, decayFactor, progress });
         
@@ -346,9 +352,10 @@ export const useGameVisualSettings = () => {
           // Get the original domino rotation from the data attribute or rotation prop
           const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
           
-          const individualX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX);
-          const individualY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY);
-          const individualZ = baseRotationRef.current.Z + originalRotationZ + (currentSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ);
+          const shakeIntensity = currentSettings.shakeIntensity;
+          const individualX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX * shakeIntensity);
+          const individualY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY * shakeIntensity);
+          const individualZ = baseRotationRef.current.Z + originalRotationZ + (currentSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ * shakeIntensity);
           
           // Keep only non-rotation transforms (like translate, scale) and add our complete rotation
           const currentTransform = htmlDomino.style.transform || '';
@@ -580,6 +587,24 @@ export const useGameVisualSettings = () => {
     }));
   };
 
+  const updateShakeIntensity = (intensity: number, targetDevice?: DeviceType) => {
+    const clampedIntensity = Math.max(0.1, Math.min(2.0, intensity));
+    const device = targetDevice || deviceType;
+    setAllSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], shakeIntensity: clampedIntensity }
+    }));
+  };
+
+  const updateShakeDuration = (duration: number, targetDevice?: DeviceType) => {
+    const clampedDuration = Math.max(0.5, Math.min(5.0, duration));
+    const device = targetDevice || deviceType;
+    setAllSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], shakeDuration: clampedDuration }
+    }));
+  };
+
   // Hard slam mode state
   const [hardSlamMode, setHardSlamMode] = useState(false);
   const hardSlamRef = useRef(false);
@@ -613,6 +638,8 @@ export const useGameVisualSettings = () => {
     updateRotationSpeed,
     updateRotationAmplitude,
     updateAnimationDuration,
+    updateShakeIntensity,
+    updateShakeDuration,
     applyLiveUpdate,
     resetToDefaults,
     getSettingsForDevice,

@@ -49,6 +49,8 @@ export const GameVisualControls: React.FC = () => {
     updateRotationSpeed,
     updateRotationAmplitude,
     updateAnimationDuration,
+    updateShakeIntensity,
+    updateShakeDuration,
     applyLiveUpdate,
     resetToDefaults,
     // Animation controls from hook
@@ -452,11 +454,52 @@ export const GameVisualControls: React.FC = () => {
                   onValueChange={([value]) => updateRotationAmplitude('Z', value, device)}
                   disabled={isAnimating}
                   className="w-full"
-                />
+                 />
                 </div>
               </div>
             </CardContent>
           </Card>
+
+        {/* Schud Instellingen */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Hand className="h-4 w-4" />
+              Schud Instellingen
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="text-xs font-medium mb-1">
+                Schud Intensiteit: {deviceSettings.shakeIntensity.toFixed(1)}x
+              </div>
+              <Slider
+                min={0.1}
+                max={2.0}
+                step={0.1}
+                value={[deviceSettings.shakeIntensity]}
+                onValueChange={([value]) => updateShakeIntensity(value, device)}
+                disabled={isAnimating}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <div className="text-xs font-medium mb-1">
+                Schud Duur: {deviceSettings.shakeDuration.toFixed(1)}s
+              </div>
+              <Slider
+                min={0.5}
+                max={5.0}
+                step={0.1}
+                value={[deviceSettings.shakeDuration]}
+                onValueChange={([value]) => updateShakeDuration(value, device)}
+                disabled={isAnimating}
+                className="w-full"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Live Update knop */}
         <div className="pt-2 space-y-2">
