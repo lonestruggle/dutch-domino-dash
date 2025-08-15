@@ -221,6 +221,8 @@ const DominoTileDemo = () => {
   } = useGameVisualSettings();
   
   const settings = getSettingsForDevice(currentDeviceType);
+  
+  console.log('DominoTileDemo settings:', settings);
 
   const handleTileClick = (left: number, right: number) => {
     setSelectedTile({ leftDots: left, rightDots: right });
@@ -322,7 +324,7 @@ const DominoTileDemo = () => {
           }
         `}
       </style>
-      <h1 className="text-3xl font-bold mb-4">Dominostenen</h1>
+      <h1 className="text-3xl font-bold mb-4">Dominostenen Demo</h1>
       <p className="text-sm mb-8 text-center text-gray-400 max-w-lg">
         Dit is een demonstratie van de <strong>DominoTile</strong> component. Klik op een tegel om deze te selecteren. De interactieve tegel hieronder kun je roteren of in de dropzone slepen.
       </p>
