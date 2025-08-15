@@ -1,5 +1,6 @@
 import React from 'react';
 import { DominoData } from '@/types/domino';
+import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { cn } from '@/lib/utils';
 
 interface DominoTileProps {
@@ -34,6 +35,7 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   rotateZ = 0
 }) => {
   console.log(`🎯 DominoTile render - rotation: ${rotation}, data: ${data.value1}|${data.value2}, isShaking: ${isShaking}`, style);
+  const { settings } = useGameVisualSettings();
   const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
   const double = isDouble(data);
 
@@ -70,16 +72,16 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   };
 
   const isHorizontal = orientation === 'horizontal';
-  const thickness = '6px';
+  const thickness = `${settings.dominoThickness}px`;
+  
+  // Dynamic dimensions based on settings
+  const dominoWidth = settings.dominoWidth;
+  const dominoHeight = settings.dominoHeight;
 
   return (
     <div
       className={cn(
         'domino-tile cursor-pointer relative preserve-3d',
-        // Perfect grid cells - exactly 48px per cell, no gaps like reference image
-        // Horizontal: 2×48px (96px) × 1×48px (48px)
-        // Vertical: 1×48px (48px) × 2×48px (96px)
-        orientation === 'vertical' ? 'w-12 h-24' : 'w-24 h-12',
         double && orientation === 'vertical' && 'double-vertical-offset',
         double && orientation === 'horizontal' && 'double-horizontal-offset',
         selected && 'ring-2 ring-blue-500 scale-105 shadow-[var(--shadow-domino-hover)]',
@@ -92,6 +94,9 @@ export const DominoTile: React.FC<DominoTileProps> = ({
       style={{
         '--domino-rotation': `${rotation}deg`,
         transformStyle: 'preserve-3d',
+        // Dynamic dimensions
+        width: orientation === 'horizontal' ? `${dominoWidth}px` : `${dominoHeight}px`,
+        height: orientation === 'horizontal' ? `${dominoHeight}px` : `${dominoWidth}px`,
         // Spread alle andere style properties EERST
         ...style,
         // CRITICAL: Include original rotation in initial transform

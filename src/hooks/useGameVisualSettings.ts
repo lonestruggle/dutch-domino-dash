@@ -25,6 +25,10 @@ export interface GlobalSettings {
   // Shake settings - GLOBAL FOR EVERYONE
   shakeIntensity: number; // 0.1 to 2.0 intensity multiplier
   shakeDuration: number; // 0.5 to 5.0 seconds
+  // Domino dimensions - GLOBAL FOR EVERYONE
+  dominoWidth: number; // 40 to 120 pixels
+  dominoHeight: number; // 20 to 60 pixels  
+  dominoThickness: number; // 4 to 16 pixels
 }
 
 // Combined interface for easy access
@@ -66,6 +70,9 @@ const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   animationDuration: 2,
   shakeIntensity: 1.0,
   shakeDuration: 1.5,
+  dominoWidth: 64,
+  dominoHeight: 32,
+  dominoThickness: 8,
 };
 
 const DEFAULT_SETTINGS: GameVisualSettings = {
@@ -703,6 +710,34 @@ export const useGameVisualSettings = () => {
     }));
   };
 
+  // Domino dimension update functions
+  const updateDominoWidth = (width: number, targetDevice?: DeviceType) => {
+    const clampedWidth = Math.max(40, Math.min(120, width));
+    const device = targetDevice || deviceType;
+    setGlobalSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], dominoWidth: clampedWidth }
+    }));
+  };
+
+  const updateDominoHeight = (height: number, targetDevice?: DeviceType) => {
+    const clampedHeight = Math.max(20, Math.min(60, height));
+    const device = targetDevice || deviceType;
+    setGlobalSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], dominoHeight: clampedHeight }
+    }));
+  };
+
+  const updateDominoThickness = (thickness: number, targetDevice?: DeviceType) => {
+    const clampedThickness = Math.max(4, Math.min(16, thickness));
+    const device = targetDevice || deviceType;
+    setGlobalSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], dominoThickness: clampedThickness }
+    }));
+  };
+
   // Hard slam mode state
   const [hardSlamMode, setHardSlamMode] = useState(false);
   const hardSlamRef = useRef(false);
@@ -738,6 +773,9 @@ export const useGameVisualSettings = () => {
     updateAnimationDuration,
     updateShakeIntensity,
     updateShakeDuration,
+    updateDominoWidth,
+    updateDominoHeight,
+    updateDominoThickness,
     applyLiveUpdate,
     resetToDefaults,
     getSettingsForDevice,

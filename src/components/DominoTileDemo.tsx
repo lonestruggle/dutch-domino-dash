@@ -92,10 +92,13 @@ const DominoTile = ({
     );
   };
 
+  // Gebruik de settings uit de hook voor dimensies
+  const { settings } = useGameVisualSettings();
+  
   const sizeMetrics = {
-    small: { width: '48px', height: '24px', thickness: '6px' },
-    medium: { width: '64px', height: '32px', thickness: '8px' },
-    large: { width: '80px', height: '40px', thickness: '10px' },
+    small: { width: `${settings.dominoWidth * 0.75}px`, height: `${settings.dominoHeight * 0.75}px`, thickness: `${settings.dominoThickness * 0.75}px` },
+    medium: { width: `${settings.dominoWidth}px`, height: `${settings.dominoHeight}px`, thickness: `${settings.dominoThickness}px` },
+    large: { width: `${settings.dominoWidth * 1.25}px`, height: `${settings.dominoHeight * 1.25}px`, thickness: `${settings.dominoThickness * 1.25}px` },
   };
 
   const { width, height, thickness } = sizeMetrics[size];
@@ -213,6 +216,9 @@ const DominoTileDemo = () => {
     updateAnimationDuration,
     updateShakeIntensity,
     updateShakeDuration,
+    updateDominoWidth,
+    updateDominoHeight,
+    updateDominoThickness,
     applyLiveUpdate,
     resetToDefaults,
     // Animation controls from hook
@@ -580,6 +586,52 @@ const DominoTileDemo = () => {
               onValueChange={(value) => updateRotation('Z', value[0])}
               min={-90}
               max={90}
+              step={1}
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
+            />
+          </div>
+          
+          {/* Domino Dimensies */}
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Domino Breedte:</label>
+              <span className="text-sm text-gray-400">{settings.dominoWidth.toFixed(0)}px</span>
+            </div>
+            <Slider
+              value={[settings.dominoWidth]}
+              onValueChange={(value) => updateDominoWidth(value[0])}
+              min={40}
+              max={120}
+              step={1}
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Domino Hoogte:</label>
+              <span className="text-sm text-gray-400">{settings.dominoHeight.toFixed(0)}px</span>
+            </div>
+            <Slider
+              value={[settings.dominoHeight]}
+              onValueChange={(value) => updateDominoHeight(value[0])}
+              min={20}
+              max={60}
+              step={1}
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Domino Dikte:</label>
+              <span className="text-sm text-gray-400">{settings.dominoThickness.toFixed(0)}px</span>
+            </div>
+            <Slider
+              value={[settings.dominoThickness]}
+              onValueChange={(value) => updateDominoThickness(value[0])}
+              min={4}
+              max={16}
               step={1}
               className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
             />
