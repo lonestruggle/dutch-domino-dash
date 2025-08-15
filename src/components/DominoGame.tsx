@@ -390,7 +390,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   🔧 Check Blocked
                 </Button>
                 <Button 
-                  onClick={() => startShakeAnimation()}
+                  onClick={() => {
+                    console.log('🎬 SCHUDDEN KNOP GEKLIKT!');
+                    const result = startShakeAnimation();
+                    console.log('🎬 Shake result:', result);
+                    if (result && !result.success) {
+                      toast({
+                        title: "Kan niet schudden",
+                        description: result.message,
+                        variant: "destructive"
+                      });
+                    }
+                  }}
                   variant="outline"
                   className="bg-slate-100 hover:bg-slate-200"
                 >
