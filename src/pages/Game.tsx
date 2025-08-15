@@ -89,16 +89,21 @@ export default function Game() {
     changaRef.current = isChangaCandidate;
 
     // Execute the move
+    console.log('🔥 wrappedExecuteMove called! hardSlamMode:', hardSlamMode);
     const moveResult = (gameHook as any).executeMove(move);
     
     // Check if Hard Slam is active and trigger shake animation after successful move
     if (hardSlamMode) {
       console.log('🔥 Hard Slam active! Move executed, starting shake animation...');
       setTimeout(() => {
-        startShakeAnimation();
+        console.log('🔥 About to call startShakeAnimation...');
+        const animResult = startShakeAnimation();
+        console.log('🔥 startShakeAnimation result:', animResult);
         disarmHardSlam(); // Automatically disarm after shake
         console.log('🔥 Hard Slam animation triggered and disarmed');
       }, 100);
+    } else {
+      console.log('🔥 Hard Slam NOT active, no animation');
     }
 
     // Markeer CHANGA direct en veilig op basis van de nieuwste state
