@@ -215,6 +215,11 @@ export const useGameVisualSettings = () => {
   };
 
   const startShakeAnimation = () => {
+    // Get stack trace to see which button called this
+    const stack = new Error().stack;
+    const caller = stack?.split('\n')[2]?.trim() || 'unknown';
+    
+    console.log('🎬 SHAKE BUTTON DEBUG: Called from:', caller);
     console.log('🎬 startShakeAnimation called!');
     console.log('🎬 Current animation state:', { 
       isAnimating, 
@@ -224,8 +229,13 @@ export const useGameVisualSettings = () => {
     });
     
     const currentSettings = allSettings[deviceType];
-    console.log('🎬 Current device:', deviceType);
-    console.log('🎬 Current settings:', currentSettings);
+    console.log('🎬 SHAKE BUTTON DEBUG: Current device:', deviceType);
+    console.log('🎬 SHAKE BUTTON DEBUG: Current settings amplitude X/Y/Z:', {
+      X: currentSettings.rotationAmplitudeX,
+      Y: currentSettings.rotationAmplitudeY, 
+      Z: currentSettings.rotationAmplitudeZ
+    });
+    console.log('🎬 SHAKE BUTTON DEBUG: All settings object:', currentSettings);
     
     if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
       console.log('🎬 ❌ All amplitudes are 0, cannot shake');
