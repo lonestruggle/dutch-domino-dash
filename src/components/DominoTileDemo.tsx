@@ -199,16 +199,6 @@ const DominoTileDemo = () => {
   const [selectedTile, setSelectedTile] = useState({ leftDots: 2, rightDots: 4 });
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
   const [droppedTile, setDroppedTile] = useState<{ leftDots: number; rightDots: number; orientation: string } | null>(null);
-  const [rotateX, setRotateX] = useState(0);
-  const [rotateY, setRotateY] = useState(0);
-  const [rotateZ, setRotateZ] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null);
-  const [durationInSeconds, setDurationInSeconds] = useState(2);
-  const [rotationSpeed, setRotationSpeed] = useState(5);
-  const [rotationAmplitudeX, setRotationAmplitudeX] = useState(45);
-  const [rotationAmplitudeY, setRotationAmplitudeY] = useState(45);
-  const [rotationAmplitudeZ, setRotationAmplitudeZ] = useState(0);
   const [animationMessage, setAnimationMessage] = useState('');
   const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -223,8 +213,8 @@ const DominoTileDemo = () => {
     updateShakeIntensity,
     updateShakeDuration,
     // Animation controls from hook
-    isAnimating: hookIsAnimating,
-    animationMode: hookAnimationMode,
+    isAnimating,
+    animationMode,
     startShakeAnimation: hookStartShakeAnimation,
     startContinuousRotate: hookStartContinuousRotate,
     stopAnimation: hookStopAnimation,
@@ -261,81 +251,27 @@ const DominoTileDemo = () => {
     setOrientation(currentOrientation => currentOrientation === 'horizontal' ? 'vertical' : 'horizontal');
   };
 
-  // Functie voor de afnemende schud-animatie
+  // Gebruik hook animaties in plaats van lokale animaties
   const startShakeAnimation = () => {
-    if (rotationAmplitudeX === 0 && rotationAmplitudeY === 0 && rotationAmplitudeZ === 0) {
+    if (settings.rotationAmplitudeX === 0 && settings.rotationAmplitudeY === 0 && settings.rotationAmplitudeZ === 0) {
         setAnimationMessage("De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen.");
         return;
     }
     setAnimationMessage("De dominosteen schudt...");
-    
-    setIsAnimating(true);
-    setAnimationMode('shake');
-    
-    startTimeRef.current = performance.now();
-    const durationInMs = durationInSeconds * 1000;
-    
-    const animate = (timestamp: number) => {
-      if (!startTimeRef.current) return;
-      
-      const elapsedTime = timestamp - startTimeRef.current;
-      const progress = elapsedTime / durationInMs;
-      
-      if (progress < 1) {
-        const wave = Math.cos(elapsedTime * rotationSpeed * Math.PI / 1000);
-        const decayFactor = Math.pow(1 - progress, 1.5);
-        setRotateX(rotationAmplitudeX * wave * decayFactor);
-        setRotateY(rotationAmplitudeY * wave * decayFactor);
-        setRotateZ(rotationAmplitudeZ * wave * decayFactor);
-        animationRef.current = requestAnimationFrame(animate);
-      } else {
-        setRotateX(0);
-        setRotateY(0);
-        setRotateZ(0);
-        setIsAnimating(false);
-        setAnimationMode(null);
-        setAnimationMessage("Klaar met schudden.");
-      }
-    };
-    animationRef.current = requestAnimationFrame(animate);
+    hookStartShakeAnimation(); // Gebruik hook functie
   };
 
-  // Functie voor de continue rotatie-animatie
   const startContinuousRotate = () => {
-    if (rotationAmplitudeX === 0 && rotationAmplitudeY === 0 && rotationAmplitudeZ === 0) {
+    if (settings.rotationAmplitudeX === 0 && settings.rotationAmplitudeY === 0 && settings.rotationAmplitudeZ === 0) {
       setAnimationMessage("De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen.");
       return;
     }
-    setIsAnimating(true);
-    setAnimationMode('rotate');
     setAnimationMessage("De dominosteen roteert continu...");
-    
-    const initialTime = performance.now();
-
-    const animate = (timestamp: number) => {
-      const elapsedMilliseconds = timestamp - initialTime;
-      const angle = (elapsedMilliseconds / 1000) * rotationSpeed * Math.PI;
-      const wave = Math.sin(angle);
-      
-      setRotateX(rotationAmplitudeX * wave);
-      setRotateY(rotationAmplitudeY * wave);
-      setRotateZ(rotationAmplitudeZ * wave);
-      
-      animationRef.current = requestAnimationFrame(animate);
-    };
-    animationRef.current = requestAnimationFrame(animate);
+    hookStartContinuousRotate(); // Gebruik hook functie
   };
 
-  // Functie om de animatie te stoppen
   const stopAnimation = () => {
-    if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-    }
-    setIsAnimating(false);
-    setAnimationMode(null);
-    setRotateX(0);
-    setRotateY(0);
-    setRotateZ(0);
+    hookStopAnimation(); // Gebruik hook functie
     setAnimationMessage("Animatie gestopt.");
   };
   
@@ -405,9 +341,9 @@ const DominoTileDemo = () => {
           rightDots={selectedTile.rightDots}
           orientation={orientation}
           size="large"
-          rotateX={rotateX}
-          rotateY={rotateY}
-          rotateZ={rotateZ}
+          rotateX={settings.rotateX}
+          rotateY={settings.rotateY}
+          rotateZ={settings.rotateZ}
         />
         
         <div className="flex flex-col items-center gap-4 mt-4">
@@ -453,118 +389,6 @@ const DominoTileDemo = () => {
                 </button>
             )}
           </div>
-          
-          {/* Controls for speed, duration, and magnitude */}
-          <div className="flex flex-wrap justify-center gap-4 mt-4 w-full max-w-lg">
-            
-            <div className="flex flex-col items-center gap-2 flex-1 min-w-[200px]">
-                <span className="text-sm">Duur (seconden):</span>
-                <input
-                    type="number"
-                    value={durationInSeconds}
-                    onChange={(e) => setDurationInSeconds(Math.max(0.1, parseFloat(e.target.value)))}
-                    className="w-24 text-center p-2 rounded-md bg-gray-700 text-white"
-                    min="0.1"
-                    step="0.1"
-                />
-            </div>
-            
-            {/* Schuifbalk voor rotatiesnelheid */}
-            <div className="flex flex-col items-center gap-2 flex-1 min-w-[200px]">
-                <span className="text-sm">Rotatiesnelheid: {rotationSpeed.toFixed(1)}x</span>
-                <input
-                    type="range"
-                    min="0.1"
-                    max="10"
-                    step="0.1"
-                    value={rotationSpeed}
-                    onChange={(e) => setRotationSpeed(parseFloat(e.target.value))}
-                    className="w-full"
-                    disabled={isAnimating}
-                />
-            </div>
-
-            {/* Nieuwe schuifbalken voor rotatie-amplitude, apart voor X en Y */}
-            <div className="flex flex-col items-center gap-2 flex-1 min-w-[200px]">
-                <span className="text-sm">Rotatie-amplitude X-as: {rotationAmplitudeX.toFixed(1)}°</span>
-                <input
-                    type="range"
-                    min="-500"
-                    max="500"
-                    step="0.1"
-                    value={rotationAmplitudeX}
-                    onChange={(e) => setRotationAmplitudeX(parseFloat(e.target.value))}
-                    className="w-full"
-                    disabled={isAnimating}
-                />
-            </div>
-            <div className="flex flex-col items-center gap-2 flex-1 min-w-[200px]">
-                <span className="text-sm">Rotatie-amplitude Y-as: {rotationAmplitudeY.toFixed(1)}°</span>
-                <input
-                    type="range"
-                    min="-500"
-                    max="500"
-                    step="0.1"
-                    value={rotationAmplitudeY}
-                    onChange={(e) => setRotationAmplitudeY(parseFloat(e.target.value))}
-                    className="w-full"
-                    disabled={isAnimating}
-                />
-            </div>
-            {/* Nieuwe schuifbalk voor Z-as amplitude */}
-            <div className="flex flex-col items-center gap-2 flex-1 min-w-[200px]">
-                <span className="text-sm">Rotatie-amplitude Z-as: {rotationAmplitudeZ.toFixed(1)}°</span>
-                <input
-                    type="range"
-                    min="-500"
-                    max="500"
-                    step="0.1"
-                    value={rotationAmplitudeZ}
-                    onChange={(e) => setRotationAmplitudeZ(parseFloat(e.target.value))}
-                    className="w-full"
-                    disabled={isAnimating}
-                />
-            </div>
-
-          </div>
-        </div>
-        
-        {/* Schuifregelaars voor handmatige 3D-rotatie */}
-        <div className="flex flex-col gap-2 w-64 mt-4">
-          <label className="text-sm">Rotatie X-as: {rotateX.toFixed(2)}°</label>
-          <input
-            type="range"
-            min="-90"
-            max="90"
-            value={rotateX}
-            onChange={(e) => setRotateX(parseFloat(e.target.value))}
-            className="w-full"
-            step="0.1"
-            disabled={isAnimating}
-          />
-          <label className="text-sm">Rotatie Y-as: {rotateY.toFixed(2)}°</label>
-          <input
-            type="range"
-            min="-90"
-            max="90"
-            value={rotateY}
-            onChange={(e) => setRotateY(parseFloat(e.target.value))}
-            className="w-full"
-            step="0.1"
-            disabled={isAnimating}
-          />
-          {/* Nieuwe schuifbalk voor handmatige Z-as rotatie */}
-          <label className="text-sm">Rotatie Z-as: {rotateZ.toFixed(2)}°</label>
-          <input
-            type="range"
-            min="-90"
-            max="90"
-            value={rotateZ}
-            onChange={(e) => setRotateZ(parseFloat(e.target.value))}
-            className="w-full"
-            step="0.1"
-            disabled={isAnimating}
-          />
         </div>
       </div>
       
@@ -598,212 +422,127 @@ const DominoTileDemo = () => {
       </div>
       
       {/* Visuele Instellingen */}
-      <div className="bg-background border rounded-lg p-6 space-y-6 max-w-4xl w-full mt-8">
-        <h3 className="text-lg font-semibold text-black">Visuele Instellingen</h3>
+      <div className="bg-gray-700 border border-gray-600 rounded-lg p-6 space-y-6 max-w-4xl w-full mt-8">
+        <h3 className="text-xl font-bold mb-4">Visuele Instellingen</h3>
         
-        {/* Animation Controls */}
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            {hookAnimationMode === 'rotate' ? (
-              <Button
-                onClick={() => hookStopAnimation()}
-                variant="destructive"
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <Square className="h-3 w-3" /> Stop Rotatie
-              </Button>
-            ) : (
-              <Button
-                onClick={() => hookStartContinuousRotate()}
-                variant="outline"
-                size="sm"
-                disabled={hookIsAnimating}
-                className="flex items-center gap-1"
-              >
-                <Hand className="h-3 w-3" /> Continue Rotatie
-              </Button>
-            )}
-            
-            {hookAnimationMode === 'shake' ? (
-              <Button
-                onClick={() => hookStopAnimation()}
-                variant="destructive"
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <Square className="h-3 w-3" /> Stop Schudden
-              </Button>
-            ) : (
-              <Button
-                onClick={() => hookStartShakeAnimation()}
-                variant="outline"
-                size="sm"
-                disabled={hookIsAnimating}
-                className="flex items-center gap-1"
-              >
-                <Hand className="h-3 w-3" /> Schudden
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* 3D Rotation Controls */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-black">3D Rotatie Instellingen</h4>
-          
-          <div>
-            <div className="text-sm font-medium mb-2 text-black">
-              Rotatie X-as: {settings.rotateX.toFixed(1)}°
+        <div className="flex flex-col gap-6 w-full max-w-md">
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Animatie Duur:</label>
+              <span className="text-sm text-gray-400">{settings.animationDuration.toFixed(1)}s</span>
             </div>
             <Slider
-              min={-90}
-              max={90}
-              step={0.1}
-              value={[settings.rotateX]}
-              onValueChange={([value]) => updateRotation('X', value, currentDeviceType)}
-              disabled={hookIsAnimating}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <div className="text-sm font-medium mb-2 text-black">
-              Rotatie Y-as: {settings.rotateY.toFixed(1)}°
-            </div>
-            <Slider
-              min={-90}
-              max={90}
-              step={0.1}
-              value={[settings.rotateY]}
-              onValueChange={([value]) => updateRotation('Y', value, currentDeviceType)}
-              disabled={hookIsAnimating}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <div className="text-sm font-medium mb-2 text-black">
-              Rotatie Z-as: {settings.rotateZ.toFixed(1)}°
-            </div>
-            <Slider
-              min={-90}
-              max={90}
-              step={0.1}
-              value={[settings.rotateZ]}
-              onValueChange={([value]) => updateRotation('Z', value, currentDeviceType)}
-              disabled={hookIsAnimating}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <div className="text-sm font-medium mb-2 text-black">
-              Animatie Duur: {settings.animationDuration.toFixed(1)}s
-            </div>
-            <Slider
-              min={0.1}
-              max={10}
-              step={0.1}
               value={[settings.animationDuration]}
-              onValueChange={([value]) => updateAnimationDuration(value, currentDeviceType)}
-              disabled={hookIsAnimating}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <div className="text-sm font-medium mb-2 text-black">
-              Rotatie Snelheid: {settings.rotationSpeed.toFixed(1)}x
-            </div>
-            <Slider
-              min={0.1}
-              max={10}
-              step={0.1}
-              value={[settings.rotationSpeed]}
-              onValueChange={([value]) => updateRotationSpeed(value, currentDeviceType)}
-              disabled={hookIsAnimating}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <div className="text-sm font-medium mb-2 text-black">
-              Amplitude X-as: {settings.rotationAmplitudeX.toFixed(1)}°
-            </div>
-            <Slider
-              min={-1000}
-              max={1000}
-              step={0.1}
-              value={[settings.rotationAmplitudeX]}
-              onValueChange={([value]) => updateRotationAmplitude('X', value, currentDeviceType)}
-              disabled={hookIsAnimating}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <div className="text-sm font-medium mb-2 text-black">
-              Amplitude Y-as: {settings.rotationAmplitudeY.toFixed(1)}°
-            </div>
-            <Slider
-              min={-1000}
-              max={1000}
-              step={0.1}
-              value={[settings.rotationAmplitudeY]}
-              onValueChange={([value]) => updateRotationAmplitude('Y', value, currentDeviceType)}
-              disabled={hookIsAnimating}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <div className="text-sm font-medium mb-2 text-black">
-              Amplitude Z-as: {settings.rotationAmplitudeZ.toFixed(1)}°
-            </div>
-            <Slider
-              min={-1000}
-              max={1000}
-              step={0.1}
-              value={[settings.rotationAmplitudeZ]}
-              onValueChange={([value]) => updateRotationAmplitude('Z', value, currentDeviceType)}
-              disabled={hookIsAnimating}
-              className="w-full"
-            />
-          </div>
-        </div>
-
-        {/* Schud Instellingen */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-black">Schud Instellingen</h4>
-          
-          <div>
-            <div className="text-sm font-medium mb-2 text-black">
-              Schud Intensiteit: {settings.shakeIntensity.toFixed(1)}
-            </div>
-            <Slider
-              min={0.1}
-              max={10}
-              step={0.1}
-              value={[settings.shakeIntensity]}
-              onValueChange={([value]) => updateShakeIntensity(value, currentDeviceType)}
-              disabled={hookIsAnimating}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <div className="text-sm font-medium mb-2 text-black">
-              Schud Duur: {settings.shakeDuration.toFixed(1)}s
-            </div>
-            <Slider
-              min={0.1}
+              onValueChange={(value) => updateAnimationDuration(value[0])}
+              min={0.5}
               max={5}
               step={0.1}
-              value={[settings.shakeDuration]}
-              onValueChange={([value]) => updateShakeDuration(value, currentDeviceType)}
-              disabled={hookIsAnimating}
-              className="w-full"
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Rotatie Snelheid:</label>
+              <span className="text-sm text-gray-400">{settings.rotationSpeed.toFixed(1)}x</span>
+            </div>
+            <Slider
+              value={[settings.rotationSpeed]}
+              onValueChange={(value) => updateRotationSpeed(value[0])}
+              min={0.5}
+              max={10}
+              step={0.1}
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Rotatie-amplitude X-as:</label>
+              <span className="text-sm text-gray-400">{settings.rotationAmplitudeX.toFixed(1)}°</span>
+            </div>
+            <Slider
+              value={[settings.rotationAmplitudeX]}
+              onValueChange={(value) => updateRotationAmplitude('X', value[0])}
+              min={0}
+              max={500}
+              step={1}
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Rotatie-amplitude Y-as:</label>
+              <span className="text-sm text-gray-400">{settings.rotationAmplitudeY.toFixed(1)}°</span>
+            </div>
+            <Slider
+              value={[settings.rotationAmplitudeY]}
+              onValueChange={(value) => updateRotationAmplitude('Y', value[0])}
+              min={0}
+              max={500}
+              step={1}
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Rotatie-amplitude Z-as:</label>
+              <span className="text-sm text-gray-400">{settings.rotationAmplitudeZ.toFixed(1)}°</span>
+            </div>
+            <Slider
+              value={[settings.rotationAmplitudeZ]}
+              onValueChange={(value) => updateRotationAmplitude('Z', value[0])}
+              min={0}
+              max={500}
+              step={1}
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Rotatie X-as:</label>
+              <span className="text-sm text-gray-400">{settings.rotateX.toFixed(1)}°</span>
+            </div>
+            <Slider
+              value={[settings.rotateX]}
+              onValueChange={(value) => updateRotation('X', value[0])}
+              min={-90}
+              max={90}
+              step={1}
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Rotatie Y-as:</label>
+              <span className="text-sm text-gray-400">{settings.rotateY.toFixed(1)}°</span>
+            </div>
+            <Slider
+              value={[settings.rotateY]}
+              onValueChange={(value) => updateRotation('Y', value[0])}
+              min={-90}
+              max={90}
+              step={1}
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Rotatie Z-as:</label>
+              <span className="text-sm text-gray-400">{settings.rotateZ.toFixed(1)}°</span>
+            </div>
+            <Slider
+              value={[settings.rotateZ]}
+              onValueChange={(value) => updateRotation('Z', value[0])}
+              min={-90}
+              max={90}
+              step={1}
+              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
             />
           </div>
         </div>
