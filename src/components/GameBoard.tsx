@@ -144,7 +144,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
     }, 100); // Increased base delay
     return () => clearTimeout(timer);
-  }, [gameState.dominoes, settings.dominoScale, applyOriginalRotations, hardSlamMode, startShakeAnimation, disarmHardSlam]);
+  }, [gameState.dominoes, settings.dominoScale, applyOriginalRotations, startShakeAnimation, disarmHardSlam]);
+  // Note: hardSlamMode is intentionally NOT in dependencies - we only want to trigger on new dominoes
 
   // Original PC logic for board size calculation
   const calculateOptimalScale = () => {
