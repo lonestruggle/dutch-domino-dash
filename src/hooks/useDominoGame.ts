@@ -62,7 +62,7 @@ export const useDominoGame = () => {
       orientation,
       flipped,
       isSpinner: isDouble(data),
-      rotation: (Math.random() - 0.5) * 15, // Random rotation between -7.5 and +7.5 degrees
+      rotation: (Math.random() - 0.5) * 40, // Random rotation between -20 and +20 degrees
     };
 
     const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
