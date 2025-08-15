@@ -509,11 +509,16 @@ export const useGameVisualSettings = () => {
 
   // Toggle hard slam mode
   const toggleHardSlamMode = () => {
-    setHardSlamMode(prev => !prev);
+    setHardSlamMode(prev => {
+      const newValue = !prev;
+      console.log('🔥 toggleHardSlamMode called - changing from', prev, 'to', newValue);
+      return newValue;
+    });
   };
 
   // Disarm hard slam mode (only turn off, don't toggle)
   const disarmHardSlam = () => {
+    console.log('🔥 disarmHardSlam called - setting to false');
     setHardSlamMode(false);
   };
 
