@@ -94,6 +94,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // IMPORTANT: Hand domino scale must be independent from board scale
     rootElement.style.setProperty('--hand-domino-scale', (latest.handDominoScale || 1).toString());
     
+    // Apply global domino dimension settings
+    rootElement.style.setProperty('--domino-width', (latest.dominoWidth || 80).toString() + 'px');
+    rootElement.style.setProperty('--domino-height', (latest.dominoHeight || 40).toString() + 'px');
+    rootElement.style.setProperty('--domino-thickness', (latest.dominoThickness || 8).toString() + 'px');
     
     if (boardRef.current) {
       boardRef.current.offsetHeight;
