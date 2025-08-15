@@ -286,7 +286,20 @@ export const useGameVisualSettings = () => {
     }));
   };
 
-  const getSettingsForDevice = (device: DeviceType) => allSettings[device];
+  const getSettingsForDevice = (device: DeviceType) => {
+    // ✅ FIX: Always load fresh settings from localStorage to avoid race conditions
+    // Load both personal and global settings fresh from localStorage
+    const freshPersonalSettings = loadPersonalSettingsFromStorage();
+    const freshGlobalSettings = loadGlobalSettingsFromStorage();
+    
+    // Combine them just like allSettings does
+    const combined = {
+      ...freshPersonalSettings[device],
+      ...freshGlobalSettings[device]
+    };
+    
+    return combined || DEFAULT_DEVICE_SETTINGS[device];
+  };
 
   // Animation functions met exacte logica uit DominoTileDemo
   const forceStopAnimation = () => {
