@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { RefreshCw, RotateCw, Hand, Square, Minus, Plus } from 'lucide-react';
+import { RefreshCw, RotateCw, Hand, Square, Minus, Plus, Save, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -200,6 +200,7 @@ const DominoTileDemo = () => {
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
   const [droppedTile, setDroppedTile] = useState<{ leftDots: number; rightDots: number; orientation: string } | null>(null);
   const [animationMessage, setAnimationMessage] = useState('');
+  const [saveMessage, setSaveMessage] = useState('');
   const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
   
@@ -212,6 +213,8 @@ const DominoTileDemo = () => {
     updateAnimationDuration,
     updateShakeIntensity,
     updateShakeDuration,
+    applyLiveUpdate,
+    resetToDefaults,
     // Animation controls from hook
     isAnimating,
     animationMode,
@@ -223,6 +226,14 @@ const DominoTileDemo = () => {
   const settings = getSettingsForDevice(currentDeviceType);
   
   console.log('DominoTileDemo settings:', settings);
+
+  // Save function
+  const handleSave = () => {
+    // Apply live update to broadcast changes to all components
+    applyLiveUpdate();
+    setSaveMessage('Instellingen opgeslagen!');
+    setTimeout(() => setSaveMessage(''), 2000);
+  };
 
   const handleTileClick = (left: number, right: number) => {
     setSelectedTile({ leftDots: left, rightDots: right });
@@ -425,7 +436,33 @@ const DominoTileDemo = () => {
       
       {/* Visuele Instellingen */}
       <div className="bg-gray-700 border border-gray-600 rounded-lg p-6 space-y-6 max-w-4xl w-full mt-8">
-        <h3 className="text-xl font-bold mb-4">Visuele Instellingen</h3>
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-bold">Visuele Instellingen</h3>
+          <div className="flex items-center gap-3">
+            {saveMessage && (
+              <div className="flex items-center gap-2 text-green-400 text-sm">
+                <CheckCircle size={16} />
+                {saveMessage}
+              </div>
+            )}
+            <Button
+              onClick={handleSave}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+              size="sm"
+            >
+              <Save size={16} />
+              Opslaan
+            </Button>
+            <Button
+              onClick={() => resetToDefaults()}
+              variant="outline"
+              size="sm"
+              className="text-gray-300 border-gray-500 hover:bg-gray-600"
+            >
+              Reset
+            </Button>
+          </div>
+        </div>
         
         <div className="flex flex-col gap-6 w-full max-w-md">
           <div className="space-y-2">
