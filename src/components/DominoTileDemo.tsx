@@ -50,6 +50,8 @@ const DominoTile = ({
   rotateY?: number;
   rotateZ?: number;
 }) => {
+  // Gebruik de settings uit de hook voor dimensies
+  const { settings } = useGameVisualSettings();
   const handleDragStart = (e: React.DragEvent) => {
     // Slaat de gegevens van de tegel op voor de drag-and-drop functionaliteit.
     const tileData = JSON.stringify({ leftDots, rightDots, orientation });
@@ -92,21 +94,21 @@ const DominoTile = ({
     );
   };
 
-  // Gebruik de settings uit de hook voor dimensies
-  const { settings } = useGameVisualSettings();
+  // Gebruik de settings uit de hook voor dimensies - deze regel is al hierboven gedefinieerd
   
   const sizeMetrics = {
-    small: { width: `${settings.dominoWidth * 0.75}px`, height: `${settings.dominoHeight * 0.75}px`, thickness: `${settings.dominoThickness * 0.75}px` },
-    medium: { width: `${settings.dominoWidth}px`, height: `${settings.dominoHeight}px`, thickness: `${settings.dominoThickness}px` },
-    large: { width: `${settings.dominoWidth * 1.25}px`, height: `${settings.dominoHeight * 1.25}px`, thickness: `${settings.dominoThickness * 1.25}px` },
+    small: { width: settings.dominoWidth * 0.75, height: settings.dominoHeight * 0.75, thickness: settings.dominoThickness * 0.75 },
+    medium: { width: settings.dominoWidth, height: settings.dominoHeight, thickness: settings.dominoThickness },
+    large: { width: settings.dominoWidth * 1.25, height: settings.dominoHeight * 1.25, thickness: settings.dominoThickness * 1.25 },
   };
 
   const { width, height, thickness } = sizeMetrics[size];
   const isHorizontal = orientation === 'horizontal';
 
   // De grootte van de tegel wordt dynamisch berekend op basis van de oriëntatie
-  const tileWidth = isHorizontal ? width : height;
-  const tileHeight = isHorizontal ? height : width;
+  const tileWidth = isHorizontal ? `${width}px` : `${height}px`;
+  const tileHeight = isHorizontal ? `${height}px` : `${width}px`;
+  const thicknessPx = `${thickness}px`;
 
   return (
     <div
@@ -137,7 +139,7 @@ const DominoTile = ({
         "shadow-[var(--shadow-domino)]",
       )}
       style={{
-        transform: `translateZ(calc(${thickness} / 2))`,
+        transform: `translateZ(calc(${thicknessPx} / 2))`,
         border: '1px solid hsl(var(--domino-edge))'
       }}
       >
@@ -158,38 +160,38 @@ const DominoTile = ({
 
       {/* Achterkant */}
       <div className="absolute inset-0 bg-[hsl(var(--domino-back))] rounded-sm backface-hidden"
-            style={{ transform: `rotateY(180deg) translateZ(calc(${thickness} / 2))` }}
+            style={{ transform: `rotateY(180deg) translateZ(calc(${thicknessPx} / 2))` }}
       />
       
       {/* Bovenkant */}
       <div className="absolute top-0 left-0 w-full rounded-t-sm bg-[hsl(var(--domino-side))] origin-top backface-hidden"
             style={{
-              height: thickness,
-              transform: `rotateX(90deg) translateY(calc(${thickness} / -2))`
+              height: thicknessPx,
+              transform: `rotateX(90deg) translateY(calc(${thicknessPx} / -2))`
             }}
       />
       
       {/* Onderkant */}
       <div className="absolute bottom-0 left-0 w-full rounded-b-sm bg-[hsl(var(--domino-side))] origin-bottom backface-hidden"
             style={{
-              height: thickness,
-              transform: `rotateX(-90deg) translateY(calc(${thickness} / 2))`
+              height: thicknessPx,
+              transform: `rotateX(-90deg) translateY(calc(${thicknessPx} / 2))`
             }}
       />
 
       {/* Linkerkant */}
       <div className="absolute top-0 left-0 h-full rounded-l-sm bg-[hsl(var(--domino-side))] origin-left backface-hidden"
             style={{
-              width: thickness,
-              transform: `rotateY(-90deg) translateX(calc(${thickness} / -2))`
+              width: thicknessPx,
+              transform: `rotateY(-90deg) translateX(calc(${thicknessPx} / -2))`
             }}
       />
 
       {/* Rechterkant */}
       <div className="absolute top-0 right-0 h-full rounded-r-sm bg-[hsl(var(--domino-side))] origin-right backface-hidden"
             style={{
-              width: thickness,
-              transform: `rotateY(90deg) translateX(calc(${thickness} / 2))`
+              width: thicknessPx,
+              transform: `rotateY(90deg) translateX(calc(${thicknessPx} / 2))`
             }}
       />
       
