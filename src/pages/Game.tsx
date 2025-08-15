@@ -123,7 +123,7 @@ export default function Game() {
     setTimeout(syncLocalToRemote, 60);
     
     return moveResult;
-  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast, hardSlamMode, startShakeAnimation, disarmHardSlam]);
+  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast, visualSettings.hardSlamRef, startShakeAnimation, disarmHardSlam]);
 
   const wrappedDrawFromBoneyard = useCallback(() => {
     (gameHook as any).drawFromBoneyard();
