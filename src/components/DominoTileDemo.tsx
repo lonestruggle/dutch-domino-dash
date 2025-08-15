@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { RefreshCw, RotateCw, Hand } from 'lucide-react';
+import { RefreshCw, RotateCw, Hand, Square, Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { GameVisualControls } from '@/components/GameVisualControls';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 
 /**
  * The DominoTile component.
@@ -199,17 +201,36 @@ const DominoTileDemo = () => {
   const [droppedTile, setDroppedTile] = useState<{ leftDots: number; rightDots: number; orientation: string } | null>(null);
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
-  const [rotateZ, setRotateZ] = useState(0); // Nieuwe state voor de Z-as
+  const [rotateZ, setRotateZ] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null); // Nieuwe state voor animatiemodus
+  const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null);
   const [durationInSeconds, setDurationInSeconds] = useState(2);
   const [rotationSpeed, setRotationSpeed] = useState(5);
-  const [rotationAmplitudeX, setRotationAmplitudeX] = useState(45); // Separate state for X-axis amplitude
-  const [rotationAmplitudeY, setRotationAmplitudeY] = useState(45); // Separate state for Y-axis amplitude
-  const [rotationAmplitudeZ, setRotationAmplitudeZ] = useState(0); // Nieuwe state voor Z-as amplitude
-  const [animationMessage, setAnimationMessage] = useState(''); // Nieuwe state voor animatieberichten
+  const [rotationAmplitudeX, setRotationAmplitudeX] = useState(45);
+  const [rotationAmplitudeY, setRotationAmplitudeY] = useState(45);
+  const [rotationAmplitudeZ, setRotationAmplitudeZ] = useState(0);
+  const [animationMessage, setAnimationMessage] = useState('');
   const animationRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  
+  const { 
+    currentDeviceType, 
+    getSettingsForDevice, 
+    updateRotation,
+    updateRotationSpeed,
+    updateRotationAmplitude,
+    updateAnimationDuration,
+    updateShakeIntensity,
+    updateShakeDuration,
+    // Animation controls from hook
+    isAnimating: hookIsAnimating,
+    animationMode: hookAnimationMode,
+    startShakeAnimation: hookStartShakeAnimation,
+    startContinuousRotate: hookStartContinuousRotate,
+    stopAnimation: hookStopAnimation,
+  } = useGameVisualSettings();
+  
+  const settings = getSettingsForDevice(currentDeviceType);
 
   const handleTileClick = (left: number, right: number) => {
     setSelectedTile({ leftDots: left, rightDots: right });
@@ -576,8 +597,217 @@ const DominoTileDemo = () => {
         </div>
       </div>
       
-      {/* GameVisualControls component voor visuele instellingen */}
-      <GameVisualControls />
+      {/* Visuele Instellingen */}
+      <div className="bg-background border rounded-lg p-6 space-y-6 max-w-4xl w-full mt-8">
+        <h3 className="text-lg font-semibold text-black">Visuele Instellingen</h3>
+        
+        {/* Animation Controls */}
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            {hookAnimationMode === 'rotate' ? (
+              <Button
+                onClick={() => hookStopAnimation()}
+                variant="destructive"
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <Square className="h-3 w-3" /> Stop Rotatie
+              </Button>
+            ) : (
+              <Button
+                onClick={() => hookStartContinuousRotate()}
+                variant="outline"
+                size="sm"
+                disabled={hookIsAnimating}
+                className="flex items-center gap-1"
+              >
+                <Hand className="h-3 w-3" /> Continue Rotatie
+              </Button>
+            )}
+            
+            {hookAnimationMode === 'shake' ? (
+              <Button
+                onClick={() => hookStopAnimation()}
+                variant="destructive"
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <Square className="h-3 w-3" /> Stop Schudden
+              </Button>
+            ) : (
+              <Button
+                onClick={() => hookStartShakeAnimation()}
+                variant="outline"
+                size="sm"
+                disabled={hookIsAnimating}
+                className="flex items-center gap-1"
+              >
+                <Hand className="h-3 w-3" /> Schudden
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* 3D Rotation Controls */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-black">3D Rotatie Instellingen</h4>
+          
+          <div>
+            <div className="text-sm font-medium mb-2 text-black">
+              Rotatie X-as: {settings.rotateX.toFixed(1)}°
+            </div>
+            <Slider
+              min={-90}
+              max={90}
+              step={0.1}
+              value={[settings.rotateX]}
+              onValueChange={([value]) => updateRotation('X', value, currentDeviceType)}
+              disabled={hookIsAnimating}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <div className="text-sm font-medium mb-2 text-black">
+              Rotatie Y-as: {settings.rotateY.toFixed(1)}°
+            </div>
+            <Slider
+              min={-90}
+              max={90}
+              step={0.1}
+              value={[settings.rotateY]}
+              onValueChange={([value]) => updateRotation('Y', value, currentDeviceType)}
+              disabled={hookIsAnimating}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <div className="text-sm font-medium mb-2 text-black">
+              Rotatie Z-as: {settings.rotateZ.toFixed(1)}°
+            </div>
+            <Slider
+              min={-90}
+              max={90}
+              step={0.1}
+              value={[settings.rotateZ]}
+              onValueChange={([value]) => updateRotation('Z', value, currentDeviceType)}
+              disabled={hookIsAnimating}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <div className="text-sm font-medium mb-2 text-black">
+              Animatie Duur: {settings.animationDuration.toFixed(1)}s
+            </div>
+            <Slider
+              min={0.1}
+              max={10}
+              step={0.1}
+              value={[settings.animationDuration]}
+              onValueChange={([value]) => updateAnimationDuration(value, currentDeviceType)}
+              disabled={hookIsAnimating}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <div className="text-sm font-medium mb-2 text-black">
+              Rotatie Snelheid: {settings.rotationSpeed.toFixed(1)}x
+            </div>
+            <Slider
+              min={0.1}
+              max={10}
+              step={0.1}
+              value={[settings.rotationSpeed]}
+              onValueChange={([value]) => updateRotationSpeed(value, currentDeviceType)}
+              disabled={hookIsAnimating}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <div className="text-sm font-medium mb-2 text-black">
+              Amplitude X-as: {settings.rotationAmplitudeX.toFixed(1)}°
+            </div>
+            <Slider
+              min={-1000}
+              max={1000}
+              step={0.1}
+              value={[settings.rotationAmplitudeX]}
+              onValueChange={([value]) => updateRotationAmplitude('X', value, currentDeviceType)}
+              disabled={hookIsAnimating}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <div className="text-sm font-medium mb-2 text-black">
+              Amplitude Y-as: {settings.rotationAmplitudeY.toFixed(1)}°
+            </div>
+            <Slider
+              min={-1000}
+              max={1000}
+              step={0.1}
+              value={[settings.rotationAmplitudeY]}
+              onValueChange={([value]) => updateRotationAmplitude('Y', value, currentDeviceType)}
+              disabled={hookIsAnimating}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <div className="text-sm font-medium mb-2 text-black">
+              Amplitude Z-as: {settings.rotationAmplitudeZ.toFixed(1)}°
+            </div>
+            <Slider
+              min={-1000}
+              max={1000}
+              step={0.1}
+              value={[settings.rotationAmplitudeZ]}
+              onValueChange={([value]) => updateRotationAmplitude('Z', value, currentDeviceType)}
+              disabled={hookIsAnimating}
+              className="w-full"
+            />
+          </div>
+        </div>
+
+        {/* Schud Instellingen */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-black">Schud Instellingen</h4>
+          
+          <div>
+            <div className="text-sm font-medium mb-2 text-black">
+              Schud Intensiteit: {settings.shakeIntensity.toFixed(1)}
+            </div>
+            <Slider
+              min={0.1}
+              max={10}
+              step={0.1}
+              value={[settings.shakeIntensity]}
+              onValueChange={([value]) => updateShakeIntensity(value, currentDeviceType)}
+              disabled={hookIsAnimating}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <div className="text-sm font-medium mb-2 text-black">
+              Schud Duur: {settings.shakeDuration.toFixed(1)}s
+            </div>
+            <Slider
+              min={0.1}
+              max={5}
+              step={0.1}
+              value={[settings.shakeDuration]}
+              onValueChange={([value]) => updateShakeDuration(value, currentDeviceType)}
+              disabled={hookIsAnimating}
+              className="w-full"
+            />
+          </div>
+        </div>
+      </div>
       
     </div>
   );
