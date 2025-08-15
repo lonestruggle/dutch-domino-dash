@@ -415,8 +415,8 @@ export const GameVisualControls: React.FC = () => {
                   Amplitude X-as: {deviceSettings.rotationAmplitudeX.toFixed(1)}°
                 </div>
                 <Slider
-                  min={-500}
-                  max={500}
+                  min={-1000}
+                  max={1000}
                   step={0.1}
                   value={[deviceSettings.rotationAmplitudeX]}
                   onValueChange={([value]) => updateRotationAmplitude('X', value, device)}
@@ -430,8 +430,8 @@ export const GameVisualControls: React.FC = () => {
                   Amplitude Y-as: {deviceSettings.rotationAmplitudeY.toFixed(1)}°
                 </div>
                 <Slider
-                  min={-500}
-                  max={500}
+                  min={-1000}
+                  max={1000}
                   step={0.1}
                   value={[deviceSettings.rotationAmplitudeY]}
                   onValueChange={([value]) => updateRotationAmplitude('Y', value, device)}
@@ -445,8 +445,8 @@ export const GameVisualControls: React.FC = () => {
                   Amplitude Z-as: {deviceSettings.rotationAmplitudeZ.toFixed(1)}°
                 </div>
                 <Slider
-                  min={-500}
-                  max={500}
+                  min={-1000}
+                  max={1000}
                   step={0.1}
                   value={[deviceSettings.rotationAmplitudeZ]}
                   onValueChange={([value]) => updateRotationAmplitude('Z', value, device)}

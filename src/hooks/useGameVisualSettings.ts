@@ -472,7 +472,7 @@ export const useGameVisualSettings = () => {
   };
 
   const updateRotationAmplitude = (axis: 'X' | 'Y' | 'Z', value: number, targetDevice?: DeviceType) => {
-    const clampedValue = Math.max(-500, Math.min(500, value));
+    const clampedValue = Math.max(-1000, Math.min(1000, value));
     const device = targetDevice || deviceType;
     const property = `rotationAmplitude${axis}` as keyof GameVisualSettings;
     setAllSettings(prev => ({
