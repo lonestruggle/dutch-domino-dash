@@ -389,9 +389,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </Button>
                 <Button 
                   onClick={() => {
-                    console.log('🔥 Hard Slaan button clicked, current mode:', hardSlamMode);
+                    startShakeAnimation();
                     toggleHardSlamMode();
-                    console.log('🔥 Hard Slaan toggled, new mode should be:', !hardSlamMode);
                   }}
                   variant={hardSlamMode ? "default" : "outline"}
                   className={hardSlamMode ? "bg-red-500 hover:bg-red-600 text-white" : "bg-slate-100 hover:bg-slate-200"}
