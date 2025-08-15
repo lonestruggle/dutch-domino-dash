@@ -389,7 +389,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </Button>
                 <Button 
                   onClick={() => {
-                    startShakeAnimation();
                     toggleHardSlamMode();
                   }}
                   variant={hardSlamMode ? "default" : "outline"}

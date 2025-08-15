@@ -91,8 +91,9 @@ export default function Game() {
     // Execute the move
     const moveResult = (gameHook as any).executeMove(move);
     
-    // Auto-disarm Hard Slam after placing a tile
+    // Trigger shake animation and auto-disarm Hard Slam after placing a tile
     if (hardSlamMode) {
+      startShakeAnimation();
       disarmHardSlam();
     }
 
