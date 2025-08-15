@@ -45,7 +45,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const { settings, applyOriginalRotations, startShakeAnimation, disarmHardSlam } = useGameVisualSettings();
+  const { settings, applyOriginalRotations } = useGameVisualSettings();
 
   // Listen for live settings updates and reapply scaling
   useEffect(() => {
@@ -115,42 +115,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [settings.dominoScale]);
 
   useEffect(() => {
-    console.log('🎯 GameBoard useEffect triggered:', {
-      dominoCount: Object.keys(gameState.dominoes).length,
-      hardSlamMode,
-      hasStartShakeAnimation: !!startShakeAnimation,
-      hasDisarmHardSlam: !!disarmHardSlam,
-      trigger: 'dominoes changed'
-    });
-    
     updateDominoScaling();
     // Apply original rotations after rendering new dominoes
     const timer = setTimeout(() => {
       applyOriginalRotations();
-      
-      console.log('🎯 Checking hard slam conditions:', {
-        hardSlamMode,
-        dominoCount: Object.keys(gameState.dominoes).length,
-        condition: hardSlamMode && Object.keys(gameState.dominoes).length > 0
-      });
-      
-      // Auto-trigger shake if hard slam mode is active and there are new dominoes
-      if (hardSlamMode && Object.keys(gameState.dominoes).length > 0) {
-        console.log('🔥 Hard slam mode is active! Starting shake animation...');
-        setTimeout(() => {
-          console.log('🔥 About to call startShakeAnimation...');
-          const result = startShakeAnimation();
-          console.log('🔥 Shake animation result:', result);
-          console.log('🔥 About to call disarmHardSlam...');
-          disarmHardSlam(); // Automatically disarm after shake
-          console.log('🔥 disarmHardSlam called');
-        }, 150); // Increased delay to ensure DOM is fully updated
-      } else {
-        console.log('🚫 Hard slam conditions not met - no animation triggered');
-      }
-    }, 100); // Increased base delay
+    }, 100);
     return () => clearTimeout(timer);
-  }, [gameState.dominoes, settings.dominoScale, applyOriginalRotations, startShakeAnimation, disarmHardSlam]);
+  }, [gameState.dominoes, settings.dominoScale, applyOriginalRotations]);
   // Note: hardSlamMode is intentionally NOT in dependencies - we only want to trigger on new dominoes
 
   // Original PC logic for board size calculation

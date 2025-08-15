@@ -7,6 +7,7 @@ import { useSyncedDominoGameState } from '@/hooks/useSyncedDominoGameState';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import type { GameState } from '@/types/domino';
 
 export default function Game() {
@@ -14,6 +15,9 @@ export default function Game() {
   const { user } = useAuth();
   const { toast } = useToast();
   const savedRef = useRef(false);
+  
+  // Hard slam functionality
+  const { hardSlamMode, startShakeAnimation, disarmHardSlam } = useGameVisualSettings();
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
@@ -84,7 +88,18 @@ export default function Game() {
 
     changaRef.current = isChangaCandidate;
 
-    (gameHook as any).executeMove(move);
+    // Execute the move
+    const moveResult = (gameHook as any).executeMove(move);
+    
+    // Check if Hard Slam is active and trigger shake animation after successful move
+    if (hardSlamMode) {
+      console.log('🔥 Hard Slam active! Move executed, starting shake animation...');
+      setTimeout(() => {
+        startShakeAnimation();
+        disarmHardSlam(); // Automatically disarm after shake
+        console.log('🔥 Hard Slam animation triggered and disarmed');
+      }, 100);
+    }
 
     // Markeer CHANGA direct en veilig op basis van de nieuwste state
     setTimeout(() => {
@@ -102,7 +117,9 @@ export default function Game() {
     }, 50);
 
     setTimeout(syncLocalToRemote, 60);
-  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast]);
+    
+    return moveResult;
+  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast, hardSlamMode, startShakeAnimation, disarmHardSlam]);
 
   const wrappedDrawFromBoneyard = useCallback(() => {
     (gameHook as any).drawFromBoneyard();
