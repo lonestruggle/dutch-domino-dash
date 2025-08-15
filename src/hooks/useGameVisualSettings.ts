@@ -74,9 +74,11 @@ export const useGameVisualSettings = () => {
     const userId = user?.id || 'anonymous';
     return `domino-game-visual-settings-v2-${userId}`;
   };
-  const [allSettings, setAllSettings] = useState<DeviceSpecificSettings>(() => {
+  
+  const loadSettingsFromStorage = () => {
     try {
       const storageKey = getStorageKey();
+      console.log('🔧 Loading settings with key:', storageKey, 'user:', user?.id);
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -86,13 +88,24 @@ export const useGameVisualSettings = () => {
           tablet: { ...DEFAULT_DEVICE_SETTINGS.tablet, ...parsed.tablet },
           mobile: { ...DEFAULT_DEVICE_SETTINGS.mobile, ...parsed.mobile },
         };
+        console.log('🔧 Loaded settings:', merged);
         return merged;
       }
+      console.log('🔧 No stored settings found, using defaults');
       return DEFAULT_DEVICE_SETTINGS;
     } catch {
+      console.log('🔧 Error loading settings, using defaults');
       return DEFAULT_DEVICE_SETTINGS;
     }
-  });
+  };
+  
+  const [allSettings, setAllSettings] = useState<DeviceSpecificSettings>(loadSettingsFromStorage);
+  
+  // Reload settings when user changes (fix race condition)
+  useEffect(() => {
+    const newSettings = loadSettingsFromStorage();
+    setAllSettings(newSettings);
+  }, [user?.id]);
 
   // Animation state - moved after initial settings
   const [isAnimating, setIsAnimating] = useState(false);
