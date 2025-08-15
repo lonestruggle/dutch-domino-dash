@@ -92,23 +92,17 @@ export default function Game() {
     // Execute the move
     const moveResult = (gameHook as any).executeMove(move);
     
-    // Trigger shake animation and auto-disarm Hard Slam after placing a tile
-    // Use ref to get the most current hardSlamMode value, avoiding closure issues
-    const currentHardSlamMode = (visualSettings as any).hardSlamRef?.current || hardSlamMode;
-    console.log('🔥 Checking hardSlamMode - state:', hardSlamMode, 'ref:', (visualSettings as any).hardSlamRef?.current, 'using:', currentHardSlamMode);
+    // Check if Hard Slam is active and trigger shake animation
+    console.log('🔥 Checking Hard Slam mode:', visualSettings.hardSlamRef.current);
     
-    if (currentHardSlamMode) {
-      console.log('🔥 Hard Slam Mode is active - triggering shake animation');
-      const shakeResult = startShakeAnimation();
-      console.log('🔥 Shake animation result:', shakeResult);
+    if (visualSettings.hardSlamRef.current) {
+      console.log('🔥 Hard Slam ACTIVE - triggering shake animation');
+      startShakeAnimation();
       
-      // Add delay before disarming to ensure animation has time to start
+      // Disarm after 100ms
       setTimeout(() => {
-        console.log('🔥 Disarming Hard Slam mode after shake');
         disarmHardSlam();
       }, 100);
-    } else {
-      console.log('🔥 Hard Slam Mode is NOT active, no shake animation');
     }
 
     // Markeer CHANGA direct en veilig op basis van de nieuwste state
