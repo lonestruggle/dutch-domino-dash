@@ -93,8 +93,18 @@ export default function Game() {
     
     // Trigger shake animation and auto-disarm Hard Slam after placing a tile
     if (hardSlamMode) {
-      startShakeAnimation();
-      disarmHardSlam();
+      console.log('🔥 Hard Slam Mode is active - triggering shake animation');
+      console.log('🔥 hardSlamMode value:', hardSlamMode);
+      const shakeResult = startShakeAnimation();
+      console.log('🔥 Shake animation result:', shakeResult);
+      
+      // Add delay before disarming to ensure animation has time to start
+      setTimeout(() => {
+        console.log('🔥 Disarming Hard Slam mode after shake');
+        disarmHardSlam();
+      }, 100);
+    } else {
+      console.log('🔥 Hard Slam Mode is NOT active, no shake animation');
     }
 
     // Markeer CHANGA direct en veilig op basis van de nieuwste state

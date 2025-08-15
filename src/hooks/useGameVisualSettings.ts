@@ -189,12 +189,26 @@ export const useGameVisualSettings = () => {
 
   // Animation functions met exacte logica uit DominoTileDemo
   const startShakeAnimation = () => {
+    console.log('🎬 startShakeAnimation called!');
+    
     const currentSettings = allSettings[deviceType];
+    console.log('🎬 Current device:', deviceType);
+    console.log('🎬 Current settings:', currentSettings);
+    
     if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
+      console.log('🎬 ❌ All amplitudes are 0, cannot shake');
       return { success: false, message: "De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen." };
     }
     
     console.log('🎬 Starting shake animation with settings:', currentSettings);
+    
+    // Check if we can find board dominoes
+    const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
+    console.log('🎬 Found board dominoes:', boardDominoes.length);
+    if (boardDominoes.length === 0) {
+      console.log('🎬 ❌ No board dominoes found to shake!');
+      return { success: false, message: "Geen domino's op het bord gevonden om te schudden." };
+    }
     
     // Stop any existing animation first
     if (animationRef.current.current) {
@@ -202,8 +216,8 @@ export const useGameVisualSettings = () => {
     }
     
     // Generate new random seeds for each domino
-    const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
-    randomSeedsRef.current = Array.from({ length: boardDominoes.length }, () => Math.random() * 10000);
+    const allBoardDominoes = document.querySelectorAll('.domino-tile.board-domino');
+    randomSeedsRef.current = Array.from({ length: allBoardDominoes.length }, () => Math.random() * 10000);
     
     setIsAnimating(true);
     setAnimationMode('shake');
@@ -237,8 +251,8 @@ export const useGameVisualSettings = () => {
         console.log('🎯 Shaking:', { newX, newY, newZ, wave, decayFactor, progress });
         
         // Apply individual random animation to each existing board domino
-        const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
-        boardDominoes.forEach((domino: Element, index: number) => {
+        const animatedDominoes = document.querySelectorAll('.domino-tile.board-domino');
+        animatedDominoes.forEach((domino: Element, index: number) => {
           const htmlDomino = domino as HTMLElement;
           
           // Use stored random seed for this domino to maintain consistency during animation
