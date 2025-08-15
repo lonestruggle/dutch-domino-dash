@@ -127,10 +127,6 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         <div className="flex-1 flex items-center justify-center relative">
           {renderDots(pips[1])}
         </div>
-        <div className={cn(
-          "absolute bg-[hsl(var(--domino-highlight))] pointer-events-none",
-          isHorizontal ? "top-0 left-1/2 h-full w-[1px] -translate-x-0.5" : "left-0 top-1/2 w-full h-[1px] -translate-y-0.5"
-        )} />
       </div>
 
       {/* Achterkant */}
