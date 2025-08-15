@@ -45,7 +45,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const { settings, applyOriginalRotations } = useGameVisualSettings();
+  const { settings, applyOriginalRotations, isAnimating, animationMode } = useGameVisualSettings();
 
   // Listen for live settings updates and reapply scaling
   useEffect(() => {
@@ -369,10 +369,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // Elke dominosteen krijgt zijn eigen willekeurige rotatie hoek (tussen 5 en 20 graden)
             const individualAngle = 5 + Math.random() * 15; // 5-20 graden
             
-            // Select enabled vibration animations based on settings
-            // Animation removed - no vibrations
-            const shouldAnimate = false;
-            const selectedAnimation = 'none';
+            // Connect to actual animation state from useGameVisualSettings
+            const shouldAnimate = isAnimating && animationMode === 'shake';
+            const selectedAnimation = shouldAnimate ? 'shake' : 'none';
             
             return (
               <div
