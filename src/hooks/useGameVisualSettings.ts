@@ -329,14 +329,15 @@ export const useGameVisualSettings = () => {
       hasStopFunction: !!animationRef.current.stopFunction 
     });
     
-    const currentSettings = allSettings[deviceType];
+    // ✅ FIX: Use getSettingsForDevice() for consistent settings retrieval
+    const currentSettings = getSettingsForDevice(deviceType);
     console.log('🎬 SHAKE BUTTON DEBUG: Current device:', deviceType);
     console.log('🎬 SHAKE BUTTON DEBUG: Current settings amplitude X/Y/Z:', {
       X: currentSettings.rotationAmplitudeX,
       Y: currentSettings.rotationAmplitudeY, 
       Z: currentSettings.rotationAmplitudeZ
     });
-    console.log('🎬 SHAKE BUTTON DEBUG: All settings object:', currentSettings);
+    console.log('🎬 SHAKE BUTTON DEBUG: Settings from getSettingsForDevice():', currentSettings);
     
     if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
       console.log('🎬 ❌ All amplitudes are 0, cannot shake');
@@ -478,7 +479,8 @@ export const useGameVisualSettings = () => {
   };
 
   const startContinuousRotate = () => {
-    const currentSettings = allSettings[deviceType];
+    // ✅ FIX: Use getSettingsForDevice() for consistent settings retrieval  
+    const currentSettings = getSettingsForDevice(deviceType);
     if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
       return { success: false, message: "De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen." };
     }
