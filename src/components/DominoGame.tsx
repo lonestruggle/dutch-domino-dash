@@ -26,7 +26,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const {
     gameState,
     findLegalMoves,
-    executeMove,
     selectHandDomino,
     drawFromBoneyard,
     startNewGame,
@@ -301,7 +300,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <GameBoard 
           gameState={gameState}
           legalMoves={legalMovesWithIndex}
-          onMoveExecute={executeMove}
+          onMoveExecute={gameHook.executeMove}
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}
