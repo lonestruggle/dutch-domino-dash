@@ -21,9 +21,7 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const gameVisualSettingsHook = useGameVisualSettings();
-  console.log('Available from useGameVisualSettings:', Object.keys(gameVisualSettingsHook));
-  const { hardSlamMode, toggleHardSlamMode } = gameVisualSettingsHook;
+  const { hardSlamMode, toggleHardSlamMode } = useGameVisualSettings();
   
   const {
     gameState,

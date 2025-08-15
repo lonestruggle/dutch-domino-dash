@@ -498,6 +498,11 @@ export const useGameVisualSettings = () => {
     setHardSlamMode(prev => !prev);
   };
 
+  // Disarm hard slam mode (only turn off, don't toggle)
+  const disarmHardSlam = () => {
+    setHardSlamMode(false);
+  };
+
   return {
     settings,
     allSettings,
@@ -518,6 +523,7 @@ export const useGameVisualSettings = () => {
     animationMode,
     hardSlamMode,
     toggleHardSlamMode,
+    disarmHardSlam,
     startShakeAnimation,
     startContinuousRotate,
     stopAnimation,

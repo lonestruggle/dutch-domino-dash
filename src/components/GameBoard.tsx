@@ -43,7 +43,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const { settings, applyOriginalRotations, hardSlamMode, startShakeAnimation } = useGameVisualSettings();
+  const { settings, applyOriginalRotations, hardSlamMode, startShakeAnimation, disarmHardSlam } = useGameVisualSettings();
 
   // Listen for live settings updates and reapply scaling
   useEffect(() => {
@@ -122,6 +122,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       if (hardSlamMode && Object.keys(gameState.dominoes).length > 0) {
         setTimeout(() => {
           startShakeAnimation();
+          disarmHardSlam(); // Automatically disarm after shake
         }, 100); // Small delay after rotations are applied
       }
     }, 50); // Small delay to ensure DOM is updated
