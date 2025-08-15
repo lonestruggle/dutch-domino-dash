@@ -21,7 +21,7 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { hardSlamMode, toggleHardSlamMode } = useGameVisualSettings();
+  const { startShakeAnimation } = useGameVisualSettings();
   
   const {
     gameState,
@@ -387,9 +387,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   🔧 Check Blocked
                 </Button>
                 <Button 
-                  onClick={toggleHardSlamMode}
-                  variant={hardSlamMode ? "default" : "outline"}
-                  className={hardSlamMode ? "bg-red-500 hover:bg-red-600 text-white" : "bg-slate-100 hover:bg-slate-200"}
+                  onClick={() => startShakeAnimation()}
+                  variant="outline"
+                  className="bg-slate-100 hover:bg-slate-200"
                 >
                   <Hammer className="h-4 w-4 mr-1" />
                   Hard Slaan
