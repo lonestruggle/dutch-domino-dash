@@ -119,7 +119,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       dominoCount: Object.keys(gameState.dominoes).length,
       hardSlamMode,
       hasStartShakeAnimation: !!startShakeAnimation,
-      hasDisarmHardSlam: !!disarmHardSlam
+      hasDisarmHardSlam: !!disarmHardSlam,
+      trigger: 'dominoes changed'
     });
     
     updateDominoScaling();
@@ -137,10 +138,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       if (hardSlamMode && Object.keys(gameState.dominoes).length > 0) {
         console.log('🔥 Hard slam mode is active! Starting shake animation...');
         setTimeout(() => {
+          console.log('🔥 About to call startShakeAnimation...');
           const result = startShakeAnimation();
           console.log('🔥 Shake animation result:', result);
+          console.log('🔥 About to call disarmHardSlam...');
           disarmHardSlam(); // Automatically disarm after shake
+          console.log('🔥 disarmHardSlam called');
         }, 150); // Increased delay to ensure DOM is fully updated
+      } else {
+        console.log('🚫 Hard slam conditions not met - no animation triggered');
       }
     }, 100); // Increased base delay
     return () => clearTimeout(timer);
