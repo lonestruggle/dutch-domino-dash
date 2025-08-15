@@ -17,7 +17,8 @@ export default function Game() {
   const savedRef = useRef(false);
   
   // Hard slam functionality
-  const { hardSlamMode, startShakeAnimation, disarmHardSlam } = useGameVisualSettings();
+  const visualSettings = useGameVisualSettings();
+  const { hardSlamMode, startShakeAnimation, disarmHardSlam } = visualSettings;
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
@@ -92,9 +93,12 @@ export default function Game() {
     const moveResult = (gameHook as any).executeMove(move);
     
     // Trigger shake animation and auto-disarm Hard Slam after placing a tile
-    if (hardSlamMode) {
+    // Use ref to get the most current hardSlamMode value, avoiding closure issues
+    const currentHardSlamMode = (visualSettings as any).hardSlamRef?.current || hardSlamMode;
+    console.log('🔥 Checking hardSlamMode - state:', hardSlamMode, 'ref:', (visualSettings as any).hardSlamRef?.current, 'using:', currentHardSlamMode);
+    
+    if (currentHardSlamMode) {
       console.log('🔥 Hard Slam Mode is active - triggering shake animation');
-      console.log('🔥 hardSlamMode value:', hardSlamMode);
       const shakeResult = startShakeAnimation();
       console.log('🔥 Shake animation result:', shakeResult);
       

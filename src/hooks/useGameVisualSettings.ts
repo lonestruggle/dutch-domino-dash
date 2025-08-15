@@ -506,11 +506,13 @@ export const useGameVisualSettings = () => {
 
   // Hard slam mode state
   const [hardSlamMode, setHardSlamMode] = useState(false);
+  const hardSlamRef = useRef(false);
 
   // Toggle hard slam mode
   const toggleHardSlamMode = () => {
     setHardSlamMode(prev => {
       const newValue = !prev;
+      hardSlamRef.current = newValue; // Update ref immediately
       console.log('🔥 toggleHardSlamMode called - changing from', prev, 'to', newValue);
       return newValue;
     });
@@ -520,6 +522,7 @@ export const useGameVisualSettings = () => {
   const disarmHardSlam = () => {
     console.log('🔥 disarmHardSlam called - setting to false');
     setHardSlamMode(false);
+    hardSlamRef.current = false; // Update ref immediately
   };
 
   return {
@@ -541,6 +544,7 @@ export const useGameVisualSettings = () => {
     isAnimating,
     animationMode,
     hardSlamMode,
+    hardSlamRef, // Export the ref so it can be accessed
     toggleHardSlamMode,
     disarmHardSlam,
     startShakeAnimation,
