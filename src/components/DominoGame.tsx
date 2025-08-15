@@ -21,7 +21,7 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { startShakeAnimation, hardSlamMode, toggleHardSlamMode } = useGameVisualSettings();
+  const { startShakeAnimation, hardSlamMode, toggleHardSlamMode, disarmHardSlam } = useGameVisualSettings();
   
   const {
     gameState,
@@ -307,6 +307,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           backgroundChoice={gameData?.background_choice}
           tableBackgroundUrl={gameData?.table_background_url}
           onRotateDomino={rotateDomino}
+          hardSlamMode={hardSlamMode}
         />
 
         {/* Player Hand */}

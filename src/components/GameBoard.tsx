@@ -20,6 +20,7 @@ interface GameBoardProps {
   backgroundChoice?: string;
   tableBackgroundUrl?: string;
   onRotateDomino?: (dominoId: string) => void;
+  hardSlamMode?: boolean;
 }
 
 // Original PC constants - exactly as in original HTML domino game
@@ -38,12 +39,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
   tableBackgroundUrl,
-  onRotateDomino
+  onRotateDomino,
+  hardSlamMode
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const { settings, applyOriginalRotations, hardSlamMode, startShakeAnimation, disarmHardSlam } = useGameVisualSettings();
+  const { settings, applyOriginalRotations, startShakeAnimation, disarmHardSlam } = useGameVisualSettings();
 
   // Listen for live settings updates and reapply scaling
   useEffect(() => {
