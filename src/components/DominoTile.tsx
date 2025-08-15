@@ -88,6 +88,7 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         className
       )}
       onClick={onClick}
+      data-original-rotation={rotation} // Store original rotation for animations
       style={{
         '--domino-rotation': `${rotation}deg`,
         transformStyle: 'preserve-3d',

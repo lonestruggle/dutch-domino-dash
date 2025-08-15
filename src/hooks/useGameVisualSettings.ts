@@ -256,10 +256,14 @@ export const useGameVisualSettings = () => {
           const amplitudeMultY = 0.5 + Math.cos(seed * 0.003);
           const amplitudeMultZ = 0.5 + Math.sin(seed * 0.004);
           
+          // Get the original domino rotation from the data attribute or rotation prop
+          const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
+          
           const individualX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX);
           const individualY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY);
-          const individualZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ);
+          const individualZ = baseRotationRef.current.Z + originalRotationZ + (currentSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ);
           
+          // Keep only non-rotation transforms (like translate, scale) and add our complete rotation
           const currentTransform = htmlDomino.style.transform || '';
           const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
           htmlDomino.style.transform = `${baseTransform} rotateX(${individualX}deg) rotateY(${individualY}deg) rotateZ(${individualZ}deg)`.trim();
@@ -267,13 +271,14 @@ export const useGameVisualSettings = () => {
         
         animationRef.current.current = requestAnimationFrame(animate);
       } else {
-        // Return to base rotation - reset only board dominoes
+        // Return to base rotation - reset only board dominoes but keep their original rotation
         const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
         boardDominoes.forEach((domino: Element) => {
           const htmlDomino = domino as HTMLElement;
+          const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
           const currentTransform = htmlDomino.style.transform || '';
           const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z}deg)`.trim();
+          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + originalRotationZ}deg)`.trim();
         });
         setIsAnimating(false);
         setAnimationMode(null);
@@ -361,10 +366,14 @@ export const useGameVisualSettings = () => {
           const amplitudeMultY = 0.5 + Math.cos(seed * 0.003);
           const amplitudeMultZ = 0.5 + Math.sin(seed * 0.004);
           
+          // Get the original domino rotation from the data attribute or rotation prop
+          const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
+          
           const individualX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * waveX * amplitudeMultX);
           const individualY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * waveY * amplitudeMultY);
-          const individualZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * waveZ * amplitudeMultZ);
+          const individualZ = baseRotationRef.current.Z + originalRotationZ + (currentSettings.rotationAmplitudeZ * waveZ * amplitudeMultZ);
           
+          // Keep only non-rotation transforms (like translate, scale) and add our complete rotation
           const currentTransform = htmlDomino.style.transform || '';
           const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
           htmlDomino.style.transform = `${baseTransform} rotateX(${individualX}deg) rotateY(${individualY}deg) rotateZ(${individualZ}deg)`.trim();
@@ -397,13 +406,14 @@ export const useGameVisualSettings = () => {
       animationRef.current.stopFunction = null;
     }
     
-        // Return to base rotation - reset only board dominoes
+        // Return to base rotation - reset only board dominoes but keep their original rotation
         const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
         boardDominoes.forEach((domino: Element) => {
           const htmlDomino = domino as HTMLElement;
+          const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
           const currentTransform = htmlDomino.style.transform || '';
           const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z}deg)`.trim();
+          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + originalRotationZ}deg)`.trim();
         });
     
     setIsAnimating(false);
