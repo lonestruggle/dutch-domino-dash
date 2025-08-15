@@ -10,8 +10,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Hammer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 
 interface DominoGameProps {
   gameHook: any;
@@ -20,6 +21,7 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { hardSlamMode, toggleHardSlamMode } = useGameVisualSettings();
   
   const {
     gameState,
@@ -383,6 +385,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   className="bg-slate-100 hover:bg-slate-200"
                 >
                   🔧 Check Blocked
+                </Button>
+                <Button 
+                  onClick={toggleHardSlamMode}
+                  variant={hardSlamMode ? "default" : "outline"}
+                  className={hardSlamMode ? "bg-red-500 hover:bg-red-600 text-white" : "bg-slate-100 hover:bg-slate-200"}
+                >
+                  <Hammer className="h-4 w-4 mr-1" />
+                  Hard Slaan
                 </Button>
               </div>
               <div className="text-sm text-muted-foreground flex items-center">

@@ -490,6 +490,14 @@ export const useGameVisualSettings = () => {
     }));
   };
 
+  // Hard slam mode state
+  const [hardSlamMode, setHardSlamMode] = useState(false);
+
+  // Toggle hard slam mode
+  const toggleHardSlamMode = () => {
+    setHardSlamMode(prev => !prev);
+  };
+
   return {
     settings,
     allSettings,
@@ -508,6 +516,8 @@ export const useGameVisualSettings = () => {
     // Animation controls
     isAnimating,
     animationMode,
+    hardSlamMode,
+    toggleHardSlamMode,
     startShakeAnimation,
     startContinuousRotate,
     stopAnimation,

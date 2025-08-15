@@ -43,7 +43,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const { settings, applyOriginalRotations } = useGameVisualSettings();
+  const { settings, applyOriginalRotations, hardSlamMode, startShakeAnimation } = useGameVisualSettings();
 
   // Listen for live settings updates and reapply scaling
   useEffect(() => {
@@ -117,9 +117,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // Apply original rotations after rendering new dominoes
     const timer = setTimeout(() => {
       applyOriginalRotations();
+      
+      // Auto-trigger shake if hard slam mode is active and there are new dominoes
+      if (hardSlamMode && Object.keys(gameState.dominoes).length > 0) {
+        setTimeout(() => {
+          startShakeAnimation();
+        }, 100); // Small delay after rotations are applied
+      }
     }, 50); // Small delay to ensure DOM is updated
     return () => clearTimeout(timer);
-  }, [gameState.dominoes, settings.dominoScale, applyOriginalRotations]);
+  }, [gameState.dominoes, settings.dominoScale, applyOriginalRotations, hardSlamMode, startShakeAnimation]);
 
   // Original PC logic for board size calculation
   const calculateOptimalScale = () => {
