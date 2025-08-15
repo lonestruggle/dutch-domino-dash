@@ -421,6 +421,19 @@ export const useGameVisualSettings = () => {
     return { success: true, message: "Animatie gestopt." };
   };
 
+  // Function to apply original rotations without animation 
+  const applyOriginalRotations = () => {
+    const currentSettings = allSettings[deviceType];
+    const boardDominoes = document.querySelectorAll('.domino-tile.board-domino');
+    boardDominoes.forEach((domino: Element) => {
+      const htmlDomino = domino as HTMLElement;
+      const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
+      const currentTransform = htmlDomino.style.transform || '';
+      const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
+      htmlDomino.style.transform = `${baseTransform} rotateX(${currentSettings.rotateX}deg) rotateY(${currentSettings.rotateY}deg) rotateZ(${currentSettings.rotateZ + originalRotationZ}deg)`.trim();
+    });
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -498,5 +511,6 @@ export const useGameVisualSettings = () => {
     startShakeAnimation,
     startContinuousRotate,
     stopAnimation,
+    applyOriginalRotations,
   };
 };

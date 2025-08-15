@@ -43,7 +43,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const { settings } = useGameVisualSettings();
+  const { settings, applyOriginalRotations } = useGameVisualSettings();
 
   // Listen for live settings updates and reapply scaling
   useEffect(() => {
@@ -114,7 +114,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   useEffect(() => {
     updateDominoScaling();
-  }, [gameState.dominoes, settings.dominoScale]);
+    // Apply original rotations after rendering new dominoes
+    const timer = setTimeout(() => {
+      applyOriginalRotations();
+    }, 50); // Small delay to ensure DOM is updated
+    return () => clearTimeout(timer);
+  }, [gameState.dominoes, settings.dominoScale, applyOriginalRotations]);
 
   // Original PC logic for board size calculation
   const calculateOptimalScale = () => {

@@ -94,10 +94,10 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         transformStyle: 'preserve-3d',
         // Spread alle andere style properties EERST
         ...style,
-        // CRITICAL: Alleen eigen rotatie toepassen, NIET globale animatie CSS variabelen
+        // CRITICAL: Include original rotation in initial transform
         transform: style?.transform 
-          ? `${style.transform} rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`
-          : `rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`,
+          ? `${style.transform} rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ + rotation}deg)`
+          : `rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ + rotation}deg)`,
       } as React.CSSProperties}
     >
       {/* Voorkant */}
