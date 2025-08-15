@@ -52,6 +52,7 @@ const DominoTile = ({
 }) => {
   // Gebruik de settings uit de hook voor dimensies
   const { settings } = useGameVisualSettings();
+  console.log('🔧 DominoTile in demo - settings:', settings);
   const handleDragStart = (e: React.DragEvent) => {
     // Slaat de gegevens van de tegel op voor de drag-and-drop functionaliteit.
     const tileData = JSON.stringify({ leftDots, rightDots, orientation });
@@ -101,6 +102,8 @@ const DominoTile = ({
     medium: { width: settings.dominoWidth, height: settings.dominoHeight, thickness: settings.dominoThickness },
     large: { width: settings.dominoWidth * 1.25, height: settings.dominoHeight * 1.25, thickness: settings.dominoThickness * 1.25 },
   };
+  
+  console.log('🔧 DominoTile sizeMetrics:', sizeMetrics, 'size:', size);
 
   const { width, height, thickness } = sizeMetrics[size];
   const isHorizontal = orientation === 'horizontal';
@@ -365,6 +368,7 @@ const DominoTileDemo = () => {
           rotateX={settings.rotateX}
           rotateY={settings.rotateY}
           rotateZ={settings.rotateZ}
+          key={`${settings.dominoWidth}-${settings.dominoHeight}-${settings.dominoThickness}`}
         />
         
         <div className="flex flex-col items-center gap-4 mt-4">
