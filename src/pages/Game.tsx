@@ -92,22 +92,6 @@ export default function Game() {
     // Execute the move
     const moveResult = (gameHook as any).executeMove(move);
     
-    // Check if Hard Slam is active and trigger shake animation
-    console.log('🔥 PRE-CHECK: hardSlamMode prop:', hardSlamMode);
-    console.log('🔥 PRE-CHECK: hardSlamRef via visualSettings:', visualSettings.hardSlamRef?.current);
-    
-    if (hardSlamMode) {
-      console.log('🔥 Hard Slam ACTIVE - triggering shake animation');
-      startShakeAnimation();
-      
-      // Disarm after 100ms
-      setTimeout(() => {
-        console.log('🔥 Disarming Hard Slam');
-        disarmHardSlam();
-      }, 100);
-    } else {
-      console.log('🔥 Hard Slam NOT ACTIVE - no animation');
-    }
 
     // Markeer CHANGA direct en veilig op basis van de nieuwste state
     setTimeout(() => {
@@ -127,7 +111,7 @@ export default function Game() {
     setTimeout(syncLocalToRemote, 60);
     
     return moveResult;
-  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast, hardSlamMode, startShakeAnimation, disarmHardSlam]);
+  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast]);
 
   const wrappedDrawFromBoneyard = useCallback(() => {
     (gameHook as any).drawFromBoneyard();
@@ -458,12 +442,6 @@ export default function Game() {
           startNewGame: wrappedStartNewGame,
           syncState,
           gameData: syncState.gameData || { background_choice: null }
-        }}
-        visualSettings={{
-          hardSlamMode,
-          toggleHardSlamMode: visualSettings.toggleHardSlamMode,
-          startShakeAnimation,
-          disarmHardSlam
         }}
       />
     </div>

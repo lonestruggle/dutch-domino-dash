@@ -10,27 +10,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Hammer } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Hand } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 
 interface DominoGameProps {
   gameHook: any;
-  visualSettings?: {
-    hardSlamMode: boolean;
-    toggleHardSlamMode: () => void;
-    startShakeAnimation: () => void;
-    disarmHardSlam: () => void;
-  };
 }
 
-export const DominoGame = ({ gameHook, visualSettings }: DominoGameProps) => {
+export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const localVisualSettings = useGameVisualSettings();
-  
-  // Use passed visualSettings if provided, otherwise fall back to local
-  const { hardSlamMode, toggleHardSlamMode, startShakeAnimation, disarmHardSlam } = visualSettings || localVisualSettings;
+  const { startShakeAnimation } = useGameVisualSettings();
   
   const {
     gameState,
@@ -318,7 +309,7 @@ export const DominoGame = ({ gameHook, visualSettings }: DominoGameProps) => {
           backgroundChoice={gameData?.background_choice}
           tableBackgroundUrl={gameData?.table_background_url}
           onRotateDomino={rotateDomino}
-          hardSlamMode={hardSlamMode}
+          
         />
 
         {/* Player Hand */}
@@ -399,14 +390,12 @@ export const DominoGame = ({ gameHook, visualSettings }: DominoGameProps) => {
                   🔧 Check Blocked
                 </Button>
                 <Button 
-                  onClick={() => {
-                    toggleHardSlamMode();
-                  }}
-                  variant={hardSlamMode ? "default" : "outline"}
-                  className={hardSlamMode ? "bg-red-500 hover:bg-red-600 text-white" : "bg-slate-100 hover:bg-slate-200"}
+                  onClick={() => startShakeAnimation()}
+                  variant="outline"
+                  className="bg-slate-100 hover:bg-slate-200"
                 >
-                  <Hammer className="h-4 w-4 mr-1" />
-                  {hardSlamMode ? "Hard Slaan (Armed)" : "Hard Slaan"}
+                  <Hand className="h-4 w-4 mr-1" />
+                  Schudden
                 </Button>
               </div>
               <div className="text-sm text-muted-foreground flex items-center">
