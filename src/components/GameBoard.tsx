@@ -120,14 +120,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       
       // Auto-trigger shake if hard slam mode is active and there are new dominoes
       if (hardSlamMode && Object.keys(gameState.dominoes).length > 0) {
+        console.log('🔥 Hard slam mode is active! Starting shake animation...');
         setTimeout(() => {
-          startShakeAnimation();
+          const result = startShakeAnimation();
+          console.log('🔥 Shake animation result:', result);
           disarmHardSlam(); // Automatically disarm after shake
-        }, 100); // Small delay after rotations are applied
+        }, 150); // Increased delay to ensure DOM is fully updated
       }
-    }, 50); // Small delay to ensure DOM is updated
+    }, 100); // Increased base delay
     return () => clearTimeout(timer);
-  }, [gameState.dominoes, settings.dominoScale, applyOriginalRotations, hardSlamMode, startShakeAnimation]);
+  }, [gameState.dominoes, settings.dominoScale, applyOriginalRotations, hardSlamMode, startShakeAnimation, disarmHardSlam]);
 
   // Original PC logic for board size calculation
   const calculateOptimalScale = () => {
