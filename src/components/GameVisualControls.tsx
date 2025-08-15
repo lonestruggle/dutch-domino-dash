@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshCw, Check, GripVertical, RotateCw, Hand, Square } from 'lucide-react';
+import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshCw, Check, GripVertical, RotateCw, Hand, Square, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -33,6 +33,7 @@ const deviceLabels = {
 export const GameVisualControls: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -150,6 +151,30 @@ export const GameVisualControls: React.FC = () => {
         setIsOpen(false);
       }, 500);
     }, 300);
+  };
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    
+    // De instellingen worden automatisch opgeslagen door de hook
+    // We hoeven alleen feedback te geven aan de gebruiker
+    try {
+      // Show success state briefly
+      setTimeout(() => {
+        setIsSaving(false);
+        toast({
+          title: "Instellingen opgeslagen",
+          description: "Alle visuele instellingen zijn permanent opgeslagen.",
+        });
+      }, 300);
+    } catch (error) {
+      setIsSaving(false);
+      toast({
+        title: "Fout bij opslaan",
+        description: "Er is een probleem opgetreden bij het opslaan van de instellingen.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDominoScaleChange = (values: number[], device: DeviceType) => {
@@ -507,21 +532,37 @@ export const GameVisualControls: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Live Update knop */}
+        {/* Live Update en Opslaan knoppen */}
         <div className="pt-2 space-y-2">
-          <Button
-            onClick={handleLiveUpdate}
-            disabled={isUpdating}
-            className="w-full flex items-center gap-2"
-            variant="secondary"
-          >
-            {isUpdating ? (
-              <Check className="h-4 w-4 text-green-500" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            {isUpdating ? 'Toegepast!' : 'Live Update Toepassen'}
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={handleLiveUpdate}
+              disabled={isUpdating}
+              className="flex items-center gap-2"
+              variant="secondary"
+            >
+              {isUpdating ? (
+                <Check className="h-4 w-4 text-green-500" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {isUpdating ? 'Toegepast!' : 'Live Update'}
+            </Button>
+            
+            <Button
+              onClick={handleSaveSettings}
+              disabled={isSaving}
+              className="flex items-center gap-2"
+              variant="default"
+            >
+              {isSaving ? (
+                <Check className="h-4 w-4 text-green-500" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {isSaving ? 'Opgeslagen!' : 'Opslaan'}
+            </Button>
+          </div>
         </div>
 
         {/* Reset knop per device */}
