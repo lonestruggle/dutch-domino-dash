@@ -459,6 +459,12 @@ export default function Game() {
           syncState,
           gameData: syncState.gameData || { background_choice: null }
         }}
+        visualSettings={{
+          hardSlamMode,
+          toggleHardSlamMode: visualSettings.toggleHardSlamMode,
+          startShakeAnimation,
+          disarmHardSlam
+        }}
       />
     </div>
   );

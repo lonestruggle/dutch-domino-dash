@@ -16,12 +16,21 @@ import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 
 interface DominoGameProps {
   gameHook: any;
+  visualSettings?: {
+    hardSlamMode: boolean;
+    toggleHardSlamMode: () => void;
+    startShakeAnimation: () => void;
+    disarmHardSlam: () => void;
+  };
 }
 
-export const DominoGame = ({ gameHook }: DominoGameProps) => {
+export const DominoGame = ({ gameHook, visualSettings }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { startShakeAnimation, hardSlamMode, toggleHardSlamMode, disarmHardSlam } = useGameVisualSettings();
+  const localVisualSettings = useGameVisualSettings();
+  
+  // Use passed visualSettings if provided, otherwise fall back to local
+  const { hardSlamMode, toggleHardSlamMode, startShakeAnimation, disarmHardSlam } = visualSettings || localVisualSettings;
   
   const {
     gameState,
