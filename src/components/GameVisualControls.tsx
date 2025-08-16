@@ -146,28 +146,36 @@ export const GameVisualControls: React.FC = () => {
     setTimeout(() => {
       setIsUpdating(false);
       toast({
-        title: "Instellingen bijgewerkt",
-        description: "De trillingsinstellingen zijn toegepast.",
+        title: "Instellingen toegepast",
+        description: "De visuele instellingen zijn direct toegepast.",
       });
-      // Close dialog after showing success
-      setTimeout(() => {
-        setIsOpen(false);
-      }, 500);
+      // Don't close dialog - keep it open for more adjustments
     }, 300);
   };
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
     
-    // De instellingen worden automatisch opgeslagen door de hook
-    // We hoeven alleen feedback te geven aan de gebruiker
     try {
+      // Force save all current settings by triggering the localStorage save
+      // Get all current settings for all devices
+      const currentSettings = {
+        desktop: getSettingsForDevice('desktop'),
+        tablet: getSettingsForDevice('tablet'),
+        mobile: getSettingsForDevice('mobile')
+      };
+      
+      // Force save to localStorage by dispatching update event
+      window.dispatchEvent(new CustomEvent('forceSettingsSave', { 
+        detail: currentSettings 
+      }));
+      
       // Show success state briefly
       setTimeout(() => {
         setIsSaving(false);
         toast({
           title: "Instellingen opgeslagen",
-          description: "Alle visuele instellingen zijn permanent opgeslagen.",
+          description: "Alle visuele instellingen zijn permanent opgeslagen in localStorage.",
         });
       }, 300);
     } catch (error) {

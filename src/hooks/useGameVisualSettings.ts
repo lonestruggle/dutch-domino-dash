@@ -214,6 +214,31 @@ export const useGameVisualSettings = () => {
     }
   }, [globalSettings]);
 
+  // Listen for force save events
+  useEffect(() => {
+    const handleForceSave = (event: CustomEvent) => {
+      console.log('🔧 Force save triggered:', event.detail);
+      try {
+        // Force save current personal settings
+        const personalKey = getPersonalStorageKey();
+        localStorage.setItem(personalKey, JSON.stringify(personalSettings));
+        
+        // Force save current global settings
+        const globalKey = getGlobalStorageKey();
+        localStorage.setItem(globalKey, JSON.stringify(globalSettings));
+        
+        console.log('💾 Force saved all settings to localStorage');
+      } catch (error) {
+        console.error('Failed to force save settings:', error);
+      }
+    };
+
+    window.addEventListener('forceSettingsSave', handleForceSave as EventListener);
+    return () => {
+      window.removeEventListener('forceSettingsSave', handleForceSave as EventListener);
+    };
+  }, [personalSettings, globalSettings, user?.id]);
+
   // Broadcast and apply live visual settings globally on any change
   useEffect(() => {
     const currentSettings = allSettings[deviceType];
