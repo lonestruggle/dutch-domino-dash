@@ -27,7 +27,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Dynamische gap op basis van handDominoScale
-  const baseGap = isMobile ? 4 : 12; // px
+  const baseGap = isMobile ? 2 : 12; // px
   const gapPx = Math.max(1, Math.round(baseGap * (settings.handDominoScale ?? 1)));
 
   // Update hand domino scale CSS variables - force immediate update and listen for global changes
