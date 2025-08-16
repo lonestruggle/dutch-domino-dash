@@ -344,6 +344,36 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   Pas
                 </Button>
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  onClick={() => gameHook.manualBlockedCheck?.()}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs bg-slate-100 hover:bg-slate-200"
+                >
+                  🔧 Check Blocked
+                </Button>
+                <Button 
+                  onClick={() => {
+                    console.log('🎬 SCHUDDEN KNOP GEKLIKT!');
+                    const result = startShakeAnimation();
+                    console.log('🎬 Shake result:', result);
+                    if (result && !result.success) {
+                      toast({
+                        title: "Kan niet schudden",
+                        description: result.message,
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs bg-slate-100 hover:bg-slate-200"
+                >
+                  <Hand className="h-3 w-3 mr-1" />
+                  Schudden
+                </Button>
+              </div>
               {gameState?.isGameOver && (
                 <div className="text-center">
                   <span className="text-sm font-semibold text-green-600 block mb-2">Game Over!</span>
