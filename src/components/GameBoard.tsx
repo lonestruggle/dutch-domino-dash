@@ -59,12 +59,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     };
   }, [gameState]);
 
-  // Standard domino size for mobile - like real dominoes
+  // Base domino scale - allow user settings to take effect
   const calculateDominoScale = () => {
-    if (!isMobile) return 1; // PC unchanged
-    
-    // Standard domino size for mobile - readable and playable like real dominoes
-    return 1.0; // Full size dominoes on mobile for best visibility and usability
+    // Return base scale of 1.0 to let user dominoScale setting control the size
+    return 1.0; // Base scale - user settings will be applied on top of this
   };
 
   // Update CSS scaling
