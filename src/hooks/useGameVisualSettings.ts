@@ -187,6 +187,7 @@ export const useGameVisualSettings = () => {
   // Animation state - moved after initial settings
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null);
+  const [pendingShake, setPendingShake] = useState(false); // NEW: Track pending shake
   const animationRef = useRef<{ current: number | null; stopFunction?: (() => void) | null }>({ current: null });
   const startTimeRef = useRef<number | null>(null);
   const baseRotationRef = useRef({ X: 0, Y: 0, Z: 0 });
@@ -360,13 +361,42 @@ export const useGameVisualSettings = () => {
     console.log('🎬 ✅ Animation force stopped and cleaned up');
   };
 
+  // Queue shake to execute after domino placement
+  const queueShakeAnimation = () => {
+    console.log('🎬 🎯 Queueing shake animation for after next domino placement');
+    setPendingShake(true);
+    return { success: true, message: "Shake ingepland na volgende zet" };
+  };
+
+  // Execute pending shake (called after domino placement)
+  const executePendingShake = () => {
+    if (!pendingShake) return;
+    
+    console.log('🎬 ⚡ Executing pending shake animation');
+    setPendingShake(false);
+    
+    // Use the direct shake execution logic
+    return startShakeAnimationDirect();
+  };
+
   const startShakeAnimation = () => {
     // Get stack trace to see which button called this
     const stack = new Error().stack;
     const caller = stack?.split('\n')[2]?.trim() || 'unknown';
     
     console.log('🎬 SHAKE BUTTON DEBUG: Called from:', caller);
-    console.log('🎬 startShakeAnimation called!');
+    
+    // In game context, queue the shake instead of executing immediately
+    if (caller.includes('DominoGame') || caller.includes('onClick')) {
+      return queueShakeAnimation();
+    }
+    
+    // Direct execution for other contexts (like settings)
+    return startShakeAnimationDirect();
+  };
+
+  const startShakeAnimationDirect = () => {
+    console.log('🎬 startShakeAnimationDirect called!');
     console.log('🎬 Current animation state:', { 
       isAnimating, 
       animationMode, 
@@ -807,11 +837,14 @@ export const useGameVisualSettings = () => {
     // Animation controls
     isAnimating,
     animationMode,
+    pendingShake,
     hardSlamMode,
     hardSlamRef, // Export the ref so it can be accessed
     toggleHardSlamMode,
     disarmHardSlam,
     startShakeAnimation,
+    queueShakeAnimation,
+    executePendingShake,
     startContinuousRotate,
     stopAnimation,
     applyOriginalRotations,

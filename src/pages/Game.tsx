@@ -18,7 +18,7 @@ export default function Game() {
   
   // Hard slam functionality
   const visualSettings = useGameVisualSettings();
-  const { hardSlamMode, startShakeAnimation, disarmHardSlam } = visualSettings;
+  const { hardSlamMode, startShakeAnimation, disarmHardSlam, executePendingShake } = visualSettings;
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
@@ -92,6 +92,11 @@ export default function Game() {
     // Execute the move
     const moveResult = (gameHook as any).executeMove(move);
     
+    // Execute pending shake after domino placement
+    setTimeout(() => {
+      console.log('🎬 ✨ Checking for pending shake after domino placement...');
+      executePendingShake();
+    }, 100);
 
     // Markeer CHANGA direct en veilig op basis van de nieuwste state
     setTimeout(() => {

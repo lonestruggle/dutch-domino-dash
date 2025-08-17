@@ -21,7 +21,7 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { startShakeAnimation } = useGameVisualSettings();
+  const { startShakeAnimation, pendingShake } = useGameVisualSettings();
   
   const {
     gameState,
@@ -364,14 +364,20 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                         description: result.message,
                         variant: "destructive"
                       });
+                    } else if (result && result.success) {
+                      toast({
+                        title: "Schudden ingepland",
+                        description: "Stenen schudden na volgende zet",
+                        variant: "default"
+                      });
                     }
                   }}
-                  variant="outline"
+                  variant={pendingShake ? "default" : "outline"}
                   size="sm"
-                  className="text-xs bg-slate-100 hover:bg-slate-200"
+                  className={`text-xs ${pendingShake ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`}
                 >
                   <Hand className="h-3 w-3 mr-1" />
-                  Schudden
+                  {pendingShake ? "Gepland" : "Schudden"}
                 </Button>
               </div>
               {gameState?.isGameOver && (
@@ -430,13 +436,19 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                         description: result.message,
                         variant: "destructive"
                       });
+                    } else if (result && result.success) {
+                      toast({
+                        title: "Schudden ingepland",
+                        description: "Stenen schudden na volgende zet",
+                        variant: "default"
+                      });
                     }
                   }}
-                  variant="outline"
-                  className="bg-slate-100 hover:bg-slate-200"
+                  variant={pendingShake ? "default" : "outline"}
+                  className={pendingShake ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}
                 >
                   <Hand className="h-4 w-4 mr-1" />
-                  Schudden
+                  {pendingShake ? "Gepland" : "Schudden"}
                 </Button>
               </div>
               <div className="text-sm text-muted-foreground flex items-center">
