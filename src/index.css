@@ -223,6 +223,8 @@
     transition: background-color 0.2s ease;
     /* Use transform-origin center without initial transform */
     transform-origin: center;
+    /* Scale with domino scale settings for proper proportional sizing */
+    transform: scale(var(--domino-target-scale, 1));
   }
   
   .placement-target:hover {
