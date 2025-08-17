@@ -456,60 +456,10 @@
       transform: scale(calc(var(--hand-domino-scale, 1) * 0.9)) !important;
     }
     
-    /* Mobile board dominoes - reduce visual spacing with smaller scale */
-    .domino-tile-board {
-      transform: scale(calc(var(--domino-scale) * 0.85)) rotate(var(--domino-rotation, 0deg));
-    }
-    
-    .domino-tile-board.double-vertical-offset:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale) * 0.85)) rotate(var(--domino-rotation, 0deg)) translateY(-1.5rem);
-    }
-    
-    .domino-tile-board.double-horizontal-offset:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale) * 0.85)) rotate(var(--domino-rotation, 0deg)) translateX(-1.5rem);
-    }
-    
-    .domino-tile-board.selected:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale-selected) * 0.85)) rotate(var(--domino-rotation, 0deg)) !important;
-    }
-    
-    .domino-tile-board.selected.double-vertical-offset:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale-selected) * 0.85)) rotate(var(--domino-rotation, 0deg)) translateY(-1.5rem);
-    }
-    
-    .domino-tile-board.selected.double-horizontal-offset:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale-selected) * 0.85)) rotate(var(--domino-rotation, 0deg)) translateX(-1.5rem);
-    }
-    
-    .domino-tile-board:hover:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale-hover) * 0.85)) rotate(var(--domino-rotation, 0deg)) translateY(-2px);
-    }
-    
-    .domino-tile-board:hover.double-vertical-offset:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale-hover) * 0.85)) rotate(var(--domino-rotation, 0deg)) translateY(-1.5rem) translateY(-2px);
-    }
-    
-    .domino-tile-board:hover.double-horizontal-offset:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale-hover) * 0.85)) rotate(var(--domino-rotation, 0deg)) translateX(-1.5rem) translateY(-2px);
-    }
-    
-    .domino-tile-board:active:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale) * 0.85 * 0.95)) rotate(var(--domino-rotation, 0deg));
-    }
-    
-    .domino-tile-board:active.double-vertical-offset:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale) * 0.85 * 0.95)) rotate(var(--domino-rotation, 0deg)) translateY(-1.5rem);
-    }
-    
-    .domino-tile-board:active.double-horizontal-offset:not(.hard-slam-shake) {
-      transform: scale(calc(var(--domino-scale) * 0.85 * 0.95)) rotate(var(--domino-rotation, 0deg)) translateX(-1.5rem);
-    }
-    
-    /* Mobile placement targets - scale them down too for consistency */
+    /* Larger touch targets for mobile */
     .placement-target {
       min-width: 44px;
       min-height: 44px;
-      transform: scale(0.85);
     }
     
     /* Better mobile scrolling */
