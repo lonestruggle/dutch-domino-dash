@@ -98,10 +98,11 @@ export default function Game() {
     console.log('🎬 ✨ Checking for pending shake after domino placement...');
     console.log('🎬 ✨ Pending shake state:', pendingShake);
     console.log('🎬 ✨ Visual settings object:', visualSettings);
+    console.log('🎬 ✨ Visual settings pendingShake:', visualSettings.pendingShake);
     
-    if (pendingShake) {
+    if (visualSettings.pendingShake) {
       console.log('🎬 ✨ EXECUTING PENDING SHAKE NOW!');
-      const result = executePendingShake();
+      const result = visualSettings.executePendingShake();
       console.log('🎬 ✨ Execute pending shake result:', result);
     } else {
       console.log('🎬 ✨ No pending shake to execute');
