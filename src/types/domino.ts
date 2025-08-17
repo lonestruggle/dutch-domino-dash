@@ -11,7 +11,10 @@ export interface DominoState {
   orientation: 'horizontal' | 'vertical';
   flipped: boolean;
   isSpinner: boolean;
-  rotation?: number; // Small random rotation in degrees for natural placement
+  rotation?: number; // Small random rotation in degrees for natural placement (Z-axis)
+  rotationX?: number; // X-axis rotation for Hard Slam
+  rotationY?: number; // Y-axis rotation for Hard Slam
+  rotationZ?: number; // Z-axis rotation for Hard Slam (replaces rotation when set)
 }
 
 export interface OpenEnd {

@@ -405,9 +405,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   orientation={domino.orientation}
                   flipped={domino.flipped}
                   rotation={domino.rotation || 0}
-                  rotateX={settings.rotateX}
-                  rotateY={settings.rotateY}
-                  rotateZ={settings.rotateZ}
+                  rotateX={(domino.rotationX !== undefined ? domino.rotationX : settings.rotateX)}
+                  rotateY={(domino.rotationY !== undefined ? domino.rotationY : settings.rotateY)}
+                  rotateZ={(domino.rotationZ !== undefined ? domino.rotationZ : settings.rotateZ)}
                   isShaking={shouldAnimate}
                   onClick={undefined}
                   className="domino-tile-board board-domino"

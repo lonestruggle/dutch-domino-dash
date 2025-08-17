@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { GameState, DominoData, OpenEnd, LegalMove, DominoState } from '@/types/domino';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
+import { useToast } from '@/hooks/use-toast';
 
 
 const CELL_SIZE = 48;
@@ -16,6 +17,7 @@ const shuffleArray = <T>(array: T[]): void => {
 
 export const useDominoGame = () => {
   const { settings } = useGameVisualSettings();
+  const { toast } = useToast();
   const [gameState, setGameState] = useState<GameState>({
     dominoes: {},
     board: {},
@@ -905,11 +907,18 @@ export const useDominoGame = () => {
         // Apply new rotations to ALL dominoes on the board (including the new one)
         Object.keys(finalDominoes).forEach(dominoId => {
           const currentDomino = finalDominoes[dominoId];
-          // Generate new random rotation between -20 and +20 degrees
-          const newRotation = (Math.random() - 0.5) * 40;
+          // Use global rotation amplitude settings for Hard Slam
+          const rotationX = (Math.random() - 0.5) * 2 * settings.rotationAmplitudeX;
+          const rotationY = (Math.random() - 0.5) * 2 * settings.rotationAmplitudeY;
+          const rotationZ = (Math.random() - 0.5) * 2 * settings.rotationAmplitudeZ;
+          
           finalDominoes[dominoId] = {
             ...currentDomino,
-            rotation: newRotation
+            rotationX,
+            rotationY,
+            rotationZ,
+            // Keep backwards compatibility with rotation
+            rotation: rotationZ
           };
         });
         
