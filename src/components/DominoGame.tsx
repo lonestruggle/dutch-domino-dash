@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
@@ -22,7 +22,16 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { startShakeAnimation, pendingShake } = useGameVisualSettings();
+  // Handle domino rotation updates from Hard Slam
+  const handleDominoRotationsUpdated = useCallback((rotations: Record<string, number>) => {
+    console.log('🎲 Updating domino rotations in game state:', rotations);
+    // Update the rotation values in the game state for permanent storage via gameHook
+    if (gameHook.updateDominoRotations) {
+      gameHook.updateDominoRotations(rotations);
+    }
+  }, [gameHook]);
+
+  const { startShakeAnimation, pendingShake } = useGameVisualSettings(handleDominoRotationsUpdated);
   const { canHardSlam } = useUserPermissions();
   
   const {

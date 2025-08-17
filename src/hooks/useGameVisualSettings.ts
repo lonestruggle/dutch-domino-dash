@@ -99,7 +99,7 @@ const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
   mobile: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile },
 };
 
-export const useGameVisualSettings = () => {
+export const useGameVisualSettings = (onDominoRotationsUpdated?: (rotations: Record<string, number>) => void) => {
   const deviceType = useDeviceType();
   const { user } = useAuth();
   
@@ -571,13 +571,29 @@ export const useGameVisualSettings = () => {
         if (boardDominoes.length === 0) {
           boardDominoes = document.querySelectorAll('.domino-tile');
         }
+        // Apply new random rotations permanently (Hard Slam effect)
         boardDominoes.forEach((domino: Element) => {
           const htmlDomino = domino as HTMLElement;
-          const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
+          const newRandomRotation = (Math.random() - 0.5) * 40; // Random between -20 and +20 degrees
+          htmlDomino.dataset.originalRotation = newRandomRotation.toString();
           const currentTransform = htmlDomino.style.transform || '';
           const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + originalRotationZ}deg)`.trim();
+          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + newRandomRotation}deg)`.trim();
         });
+        
+        // Call callback to update game state with new rotations if provided
+        if (onDominoRotationsUpdated) {
+          const rotationUpdates: Record<string, number> = {};
+          boardDominoes.forEach((domino: Element) => {
+            const htmlDomino = domino as HTMLElement;
+            const dominoId = htmlDomino.dataset.dominoId;
+            const newRotation = parseFloat(htmlDomino.dataset.originalRotation || '0');
+            if (dominoId) {
+              rotationUpdates[dominoId] = newRotation;
+            }
+          });
+          onDominoRotationsUpdated(rotationUpdates);
+        }
         setIsAnimating(false);
         setAnimationMode(null);
         console.log('🎬 Shake animation completed');

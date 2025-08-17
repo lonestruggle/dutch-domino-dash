@@ -1118,5 +1118,23 @@ export const useDominoGame = () => {
         isGameOver: isBlocked
       }));
     },
+    updateDominoRotations: (rotations: Record<string, number>) => {
+      console.log('🎲 Updating domino rotations in game state:', rotations);
+      setGameState(prev => {
+        const updatedDominoes = { ...prev.dominoes };
+        Object.entries(rotations).forEach(([dominoId, rotation]) => {
+          if (updatedDominoes[dominoId]) {
+            updatedDominoes[dominoId] = {
+              ...updatedDominoes[dominoId],
+              rotation
+            };
+          }
+        });
+        return {
+          ...prev,
+          dominoes: updatedDominoes
+        };
+      });
+    },
   };
 };
