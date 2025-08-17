@@ -14,6 +14,7 @@ import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Hand 
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { cn } from '@/lib/utils';
 
 interface DominoGameProps {
   gameHook: any;
@@ -36,6 +37,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     syncState,
     gameData
   } = gameHook;
+
+  // Hard Slam logic
+  const canUseHardSlam = canHardSlam && !gameState?.isGameOver;
+  const hardSlamActive = gameState?.hardSlamNextMove || gameState?.isHardSlamming;
 
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   const [hasShownDialog, setHasShownDialog] = useState(false);
@@ -353,34 +358,20 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   🔧 Check Blocked
                 </Button>
 {canHardSlam && (
-                  <Button 
-                    onClick={async () => {
-                      console.log('🎬 🚨 SCHUDDEN KNOP GEKLIKT! (Mobile)');
-                      console.log('🎬 🚨 pendingShake before click:', pendingShake);
-                      console.log('🎬 🚨 startShakeAnimation function:', typeof startShakeAnimation);
-                      const result = await startShakeAnimation();
-                      console.log('🎬 🚨 Shake result:', result);
-                      console.log('🎬 🚨 pendingShake after click:', pendingShake);
-                      if (result && !result.success) {
-                        toast({
-                          title: "Kan niet schudden",
-                          description: result.message,
-                          variant: "destructive"
-                        });
-                      } else if (result && result.success) {
-                        toast({
-                          title: "Schudden ingepland",
-                          description: "Stenen schudden na volgende zet",
-                          variant: "default"
-                        });
-                      }
-                    }}
-                    variant={pendingShake ? "default" : "outline"}
+                  <Button
+                    onClick={gameHook.hardSlam}
+                    disabled={!canUseHardSlam || hardSlamActive}
                     size="sm"
-                    className={`text-xs ${pendingShake ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`}
+                    className={cn(
+                      "text-xs transition-all duration-300",
+                      hardSlamActive 
+                        ? "bg-gradient-to-r from-orange-500 to-red-500 text-white animate-pulse shadow-lg shadow-orange-500/50" 
+                        : canUseHardSlam 
+                          ? "bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-orange-500 hover:to-red-500 text-black hover:text-white shadow-md hover:shadow-lg" 
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    )}
                   >
-                    <Hand className="h-3 w-3 mr-1" />
-                    {pendingShake ? "Gepland" : "Schudden"}
+                    {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
                   </Button>
                 )}
               </div>
@@ -430,33 +421,19 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   🔧 Check Blocked
                 </Button>
 {canHardSlam && (
-                  <Button 
-                    onClick={async () => {
-                      console.log('🎬 🚨 SCHUDDEN KNOP GEKLIKT! (Desktop)');
-                      console.log('🎬 🚨 pendingShake before click:', pendingShake);
-                      console.log('🎬 🚨 startShakeAnimation function:', typeof startShakeAnimation);
-                      const result = await startShakeAnimation();
-                      console.log('🎬 🚨 Shake result:', result);
-                      console.log('🎬 🚨 pendingShake after click:', pendingShake);
-                      if (result && !result.success) {
-                        toast({
-                          title: "Kan niet schudden",
-                          description: result.message,
-                          variant: "destructive"
-                        });
-                      } else if (result && result.success) {
-                        toast({
-                          title: "Schudden ingepland",
-                          description: "Stenen schudden na volgende zet",
-                          variant: "default"
-                        });
-                      }
-                    }}
-                    variant={pendingShake ? "default" : "outline"}
-                    className={pendingShake ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}
+                  <Button
+                    onClick={gameHook.hardSlam}
+                    disabled={!canUseHardSlam || hardSlamActive}
+                    className={cn(
+                      "transition-all duration-300",
+                      hardSlamActive 
+                        ? "bg-gradient-to-r from-orange-500 to-red-500 text-white animate-pulse shadow-lg shadow-orange-500/50" 
+                        : canUseHardSlam 
+                          ? "bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-orange-500 hover:to-red-500 text-black hover:text-white shadow-md hover:shadow-lg" 
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    )}
                   >
-                    <Hand className="h-4 w-4 mr-1" />
-                    {pendingShake ? "Gepland" : "Schudden"}
+                    {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
                   </Button>
                 )}
               </div>

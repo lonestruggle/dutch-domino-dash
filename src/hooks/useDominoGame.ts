@@ -27,6 +27,8 @@ export const useDominoGame = () => {
     spinnerId: null,
     isGameOver: false,
     selectedHandIndex: null,
+    hardSlamNextMove: false,
+    isHardSlamming: false,
   });
 
   const gameStateRef = useRef(gameState);
@@ -44,6 +46,8 @@ export const useDominoGame = () => {
       spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
+      hardSlamNextMove: false,
+      isHardSlamming: false,
     });
   }, []);
 
@@ -110,6 +114,8 @@ export const useDominoGame = () => {
       spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
+      hardSlamNextMove: false,
+      isHardSlamming: false,
     });
   }, [resetGame]);
 
@@ -894,6 +900,37 @@ export const useDominoGame = () => {
       // Apply Hard Slam effect if activated
       let finalDominoes = { ...prev.dominoes, [id]: dominoState };
       
+      if (prev.hardSlamNextMove) {
+        console.log('🔥 HARD SLAM ACTIVATED - Applying new rotations to all dominoes!');
+        // Apply new rotations to ALL dominoes on the board (including the new one)
+        Object.keys(finalDominoes).forEach(dominoId => {
+          const currentDomino = finalDominoes[dominoId];
+          // Generate new random rotation between -20 and +20 degrees
+          const newRotation = (Math.random() - 0.5) * 40;
+          finalDominoes[dominoId] = {
+            ...currentDomino,
+            rotation: newRotation
+          };
+        });
+        
+        // Start shake animation
+        setTimeout(() => {
+          const dominoElements = document.querySelectorAll('.domino-tile-board');
+          console.log('🎬 Starting hard slam shake animation for', dominoElements.length, 'dominoes');
+          
+          dominoElements.forEach((element) => {
+            (element as HTMLElement).style.animation = 'dominoVibrate 1s ease-out';
+          });
+          
+          // Clean up animation
+          setTimeout(() => {
+            dominoElements.forEach((element) => {
+              (element as HTMLElement).style.animation = '';
+            });
+          }, 1000);
+        }, 100);
+      }
+      
       // Create normal state
       const newState = {
         ...prev,
@@ -903,6 +940,8 @@ export const useDominoGame = () => {
         selectedHandIndex: null,
         nextDominoId: prev.nextDominoId + 1,
         isGameOver: isGameWon,
+        hardSlamNextMove: false, // Reset hard slam flag after use
+        isHardSlamming: false,
       };
       
       // Generate new open ends and check for blocked game
@@ -1091,6 +1130,16 @@ export const useDominoGame = () => {
     });
   }, [regenerateOpenEnds]);
 
+  // Hard Slam function
+  const hardSlam = useCallback(() => {
+    console.log('🔥 HARD SLAM ACTIVATED!');
+    setGameState(prev => ({
+      ...prev,
+      hardSlamNextMove: true,
+      isHardSlamming: true,
+    }));
+  }, []);
+
   return {
     gameState,
     setGameState,
@@ -1103,6 +1152,7 @@ export const useDominoGame = () => {
     selectHandDomino,
     resetGame,
     rotateDomino,
+    hardSlam,
     hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y),
     regenerateOpenEnds: (state?: GameState) => regenerateOpenEnds(state || gameStateRef.current),
     manualBlockedCheck: () => {

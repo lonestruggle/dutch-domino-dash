@@ -48,6 +48,10 @@ export interface GameState {
   isGameOver: boolean;
   selectedHandIndex: number | null;
   currentPlayer?: number; // Add current player for multiplayer sync
+  
+  // Hard Slam properties
+  hardSlamNextMove?: boolean;
+  isHardSlamming?: boolean;
 
   // Nieuw voor spelafloop
   gameEndReason?: 'blocked' | 'changa' | 'normal';
