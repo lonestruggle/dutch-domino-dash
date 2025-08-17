@@ -15,7 +15,7 @@ const shuffleArray = <T>(array: T[]): void => {
   }
 };
 
-export const useDominoGame = () => {
+export const useDominoGame = (startShakeAnimation?: () => void) => {
   const { settings } = useGameVisualSettings();
   const { toast } = useToast();
   const [gameState, setGameState] = useState<GameState>({
@@ -922,7 +922,7 @@ export const useDominoGame = () => {
           };
         });
         
-        // Use the advanced shake animation system instead of simple CSS animation
+        // Use the advanced shake animation system - same as Schudden button
         console.log('🎬 Starting advanced shake animation after Hard Slam');
         
         // Show toast notification for Hard Slam activation
@@ -932,12 +932,14 @@ export const useDominoGame = () => {
           duration: 3000,
         });
         
-        // Queue the shake animation to start after state update
+        // Call the shake animation directly, just like the Schudden button does
         setTimeout(() => {
-          // Note: We can't directly call startShakeAnimation here since it's not in scope
-          // We'll trigger it through a different mechanism or expose it
-          const shakeEvent = new CustomEvent('hardSlamShake');
-          window.dispatchEvent(shakeEvent);
+          if (startShakeAnimation) {
+            console.log('🎬 Calling startShakeAnimation directly from Hard Slam');
+            startShakeAnimation();
+          } else {
+            console.warn('⚠️ startShakeAnimation not available in Hard Slam');
+          }
         }, 100);
       }
       

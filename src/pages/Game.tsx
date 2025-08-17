@@ -23,8 +23,8 @@ export default function Game() {
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
   
-  // Use the domino game hook
-  const gameHook = useDominoGame();
+  // Use the domino game hook with shake animation support
+  const gameHook = useDominoGame(startShakeAnimation);
   const { gameState, setGameState } = gameHook;
 
   // Ref om Changa-detectie te markeren tussen pre- en post-move
