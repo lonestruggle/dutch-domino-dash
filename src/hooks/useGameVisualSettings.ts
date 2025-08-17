@@ -372,12 +372,20 @@ export const useGameVisualSettings = () => {
 
   // Execute pending shake (called after domino placement)
   const executePendingShake = () => {
-    if (!pendingShake) return;
+    console.log('🎬 ✨ executePendingShake called');
+    console.log('🎬 ✨ pendingShake state:', pendingShake);
     
-    console.log('🎬 ⚡ Executing pending shake animation');
+    if (!pendingShake) {
+      console.log('🎬 ✨ No pending shake to execute');
+      return { success: false, message: "Geen ingeplande shake om uit te voeren." };
+    }
+    
+    // Reset pending shake immediately to prevent double execution
     setPendingShake(false);
     
-    // Use the direct shake execution logic
+    console.log('🎬 ✨ Executing pending shake now!');
+    
+    // Execute the shake
     return startShakeAnimationDirect();
   };
 
@@ -443,11 +451,20 @@ export const useGameVisualSettings = () => {
     
     console.log('🎬 Starting shake animation with settings:', currentSettings);
     
-    // Use the correct selector for board dominoes
-    const boardDominoes = document.querySelectorAll('.domino-tile-board');
-    console.log('🎬 🚨 Found board dominoes:', boardDominoes.length);
+    // Try multiple selectors to find board dominoes
+    let boardDominoes = document.querySelectorAll('.domino-tile-board');
+    if (boardDominoes.length === 0) {
+      boardDominoes = document.querySelectorAll('.board-domino');
+    }
+    if (boardDominoes.length === 0) {
+      boardDominoes = document.querySelectorAll('.domino-tile');
+    }
+    console.log('🎬 🚨 Found board dominoes:', boardDominoes.length, 'using selector:', 
+      boardDominoes.length > 0 ? (boardDominoes[0] as HTMLElement).className : 'none');
+    
     if (boardDominoes.length === 0) {
       console.log('🎬 ❌ No board dominoes found to shake!');
+      console.log('🎬 🔍 Available elements:', Array.from(document.querySelectorAll('[class*="domino"]')).map(el => el.className));
       // Reset pending shake even if we can't shake
       setPendingShake(false);
       return { success: false, message: "Geen domino's op het bord gevonden om te schudden." };
@@ -460,8 +477,14 @@ export const useGameVisualSettings = () => {
     setTimeout(() => {
       console.log('🎬 ⏰ Starting animation after cleanup delay');
     
-      // Generate new random seeds for each domino
-      const allBoardDominoes = document.querySelectorAll('.domino-tile-board');
+      // Generate new random seeds for each domino - use same selector logic
+      let allBoardDominoes = document.querySelectorAll('.domino-tile-board');
+      if (allBoardDominoes.length === 0) {
+        allBoardDominoes = document.querySelectorAll('.board-domino');
+      }
+      if (allBoardDominoes.length === 0) {
+        allBoardDominoes = document.querySelectorAll('.domino-tile');
+      }
       randomSeedsRef.current = Array.from({ length: allBoardDominoes.length }, () => Math.random() * 10000);
       
       setIsAnimating(true);
@@ -498,8 +521,14 @@ export const useGameVisualSettings = () => {
         
         console.log('🎯 Shaking:', { newX, newY, newZ, wave, decayFactor, progress });
         
-        // Apply individual random animation to each existing board domino
-        const animatedDominoes = document.querySelectorAll('.domino-tile-board');
+        // Apply individual random animation to each existing board domino - use same selector logic
+        let animatedDominoes = document.querySelectorAll('.domino-tile-board');
+        if (animatedDominoes.length === 0) {
+          animatedDominoes = document.querySelectorAll('.board-domino');
+        }
+        if (animatedDominoes.length === 0) {
+          animatedDominoes = document.querySelectorAll('.domino-tile');
+        }
         animatedDominoes.forEach((domino: Element, index: number) => {
           const htmlDomino = domino as HTMLElement;
           
@@ -535,7 +564,13 @@ export const useGameVisualSettings = () => {
         animationRef.current.current = requestAnimationFrame(animate);
       } else {
         // Return to base rotation - reset only board dominoes but keep their original rotation
-        const boardDominoes = document.querySelectorAll('.domino-tile-board');
+        let boardDominoes = document.querySelectorAll('.domino-tile-board');
+        if (boardDominoes.length === 0) {
+          boardDominoes = document.querySelectorAll('.board-domino');
+        }
+        if (boardDominoes.length === 0) {
+          boardDominoes = document.querySelectorAll('.domino-tile');
+        }
         boardDominoes.forEach((domino: Element) => {
           const htmlDomino = domino as HTMLElement;
           const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
@@ -674,7 +709,13 @@ export const useGameVisualSettings = () => {
     }
     
         // Return to base rotation - reset only board dominoes but keep their original rotation
-        const boardDominoes = document.querySelectorAll('.domino-tile-board');
+        let boardDominoes = document.querySelectorAll('.domino-tile-board');
+        if (boardDominoes.length === 0) {
+          boardDominoes = document.querySelectorAll('.board-domino');
+        }
+        if (boardDominoes.length === 0) {
+          boardDominoes = document.querySelectorAll('.domino-tile');
+        }
         boardDominoes.forEach((domino: Element) => {
           const htmlDomino = domino as HTMLElement;
           const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
@@ -691,7 +732,13 @@ export const useGameVisualSettings = () => {
   // Function to apply original rotations without animation 
   const applyOriginalRotations = () => {
     const currentSettings = allSettings[deviceType];
-    const boardDominoes = document.querySelectorAll('.domino-tile-board');
+    let boardDominoes = document.querySelectorAll('.domino-tile-board');
+    if (boardDominoes.length === 0) {
+      boardDominoes = document.querySelectorAll('.board-domino');
+    }
+    if (boardDominoes.length === 0) {
+      boardDominoes = document.querySelectorAll('.domino-tile');
+    }
     boardDominoes.forEach((domino: Element) => {
       const htmlDomino = domino as HTMLElement;
       const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');

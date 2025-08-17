@@ -137,6 +137,11 @@ export default function Game() {
     // Reset opslagvlag voor scorebord zodat nieuwe uitslag later kan worden opgeslagen
     savedRef.current = false;
 
+    // Reset alle shake states bij nieuw spel
+    if (visualSettings?.disarmHardSlam) {
+      visualSettings.disarmHardSlam();
+    }
+
     const blank: GameState = {
       dominoes: {},
       board: {},
@@ -157,7 +162,7 @@ export default function Game() {
     if (newState) {
       setGameState(newState);
     }
-  }, [setGameState, syncedStartNewGame]);
+  }, [setGameState, syncedStartNewGame, visualSettings]);
 
   // Auto-check for blocked game after each move
   useEffect(() => {
