@@ -1,24 +1,13 @@
-
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { DominoGame } from '@/components/DominoGame';
 import { useDominoGame } from '@/hooks/useDominoGame';
 import { useSyncedDominoGameState } from '@/hooks/useSyncedDominoGameState';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import type { GameState } from '@/types/domino';
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
-  const { toast } = useToast();
-  const savedRef = useRef(false);
-  
-  // Hard slam functionality
-  const visualSettings = useGameVisualSettings();
-  const { hardSlamMode, startShakeAnimation, disarmHardSlam, executePendingShake, pendingShake } = visualSettings;
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
@@ -26,9 +15,6 @@ export default function Game() {
   // Use the domino game hook
   const gameHook = useDominoGame();
   const { gameState, setGameState } = gameHook;
-
-  // Ref om Changa-detectie te markeren tussen pre- en post-move
-  const changaRef = useRef(false);
   
   // Sync the game state when synced state changes
   useEffect(() => {
@@ -37,142 +23,9 @@ export default function Game() {
     }
   }, [syncState.gameState, syncState.isLoading, setGameState]);
 
-  // Sync my local hand/boneyard/board to Supabase after local actions to avoid duplicates
-  const syncLocalToRemote = useCallback(() => {
-    if (!syncState.gameState || !syncState.gameData) return;
-    const remote = syncState.gameState as any;
-    const myPos = syncState.playerPosition || 0;
-    const nextHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
-    nextHands[myPos] = gameState.playerHand || [];
-
-    const newStateToSave = {
-      ...remote,
-      dominoes: gameState.dominoes,
-      board: gameState.board,
-      boneyard: gameState.boneyard,
-      forbiddens: gameState.forbiddens,
-      openEnds: gameState.openEnds,
-      nextDominoId: gameState.nextDominoId,
-      spinnerId: gameState.spinnerId,
-      isGameOver: gameState.isGameOver,
-      playerHand: gameState.playerHand,
-      playerHands: nextHands,
-      gameEndReason: (gameState as any).gameEndReason,
-      winner_position: (gameState as any).winner_position,
-    };
-    updateGameState(newStateToSave);
-  }, [syncState.gameState, syncState.gameData, syncState.playerPosition, gameState, updateGameState]);
-
-  // Wrap local actions and then sync
-  const wrappedExecuteMove = useCallback((move: any) => {
-    console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
-    console.log('🔥 pendingShake status:', pendingShake);
-    // Pre-move: detecteer CHANGA (ook bij dubbel)
-    const myHand = gameState.playerHand || [];
-    const isLastStone = myHand.length === 1;
-    let isChangaCandidate = false;
-
-    if (isLastStone && move?.dominoData) {
-      const currentOpenEnds = gameHook.regenerateOpenEnds(gameState) || [];
-      const endValues = currentOpenEnds.map(e => e.value);
-      const v1 = move.dominoData.value1;
-      const v2 = move.dominoData.value2;
-
-      if (v1 === v2) {
-        // Dubbel: CHANGA als er minimaal twee open einden met deze waarde zijn
-        const sameCount = endValues.filter(v => v === v1).length;
-        isChangaCandidate = sameCount >= 2;
-      } else {
-        // Niet-dubbel: CHANGA als beide waardes aanwezig zijn in de open einden
-        const set = new Set(endValues);
-        isChangaCandidate = set.has(v1) && set.has(v2);
-      }
-    }
-
-    changaRef.current = isChangaCandidate;
-
-    // Execute the move
-    const moveResult = (gameHook as any).executeMove(move);
-    
-    // Execute pending shake after domino placement
-    console.log('🎬 ✨ Checking for pending shake after domino placement...');
-    console.log('🎬 ✨ Pending shake state:', pendingShake);
-    console.log('🎬 ✨ Visual settings object:', visualSettings);
-    console.log('🎬 ✨ Visual settings pendingShake:', visualSettings.pendingShake);
-    
-    if (visualSettings.pendingShake) {
-      console.log('🎬 ✨ EXECUTING PENDING SHAKE NOW!');
-      const result = visualSettings.executePendingShake();
-      console.log('🎬 ✨ Execute pending shake result:', result);
-    } else {
-      console.log('🎬 ✨ No pending shake to execute');
-    }
-
-    // Markeer CHANGA direct en veilig op basis van de nieuwste state
-    setTimeout(() => {
-      if (!changaRef.current) return;
-      const myPos = syncState.playerPosition || 0;
-      setGameState(prev => {
-        if (prev.isGameOver) return prev;
-        const after = { ...(prev as any), isGameOver: true, gameEndReason: 'changa', winner_position: myPos } as any;
-        updateGameState(after);
-        return after;
-      });
-      // Optionele feedback
-      toast({ title: 'CHANGA!', description: 'Je hebt gewonnen met CHANGA!' });
-      changaRef.current = false;
-    }, 50);
-
-    setTimeout(syncLocalToRemote, 60);
-    
-    return moveResult;
-  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast, pendingShake, visualSettings, executePendingShake]);
-
-  const wrappedDrawFromBoneyard = useCallback(() => {
-    (gameHook as any).drawFromBoneyard();
-    setTimeout(syncLocalToRemote, 60);
-  }, [gameHook, syncLocalToRemote]);
-
-  const wrappedStartNewGame = useCallback(async () => {
-    // Reset opslagvlag voor scorebord zodat nieuwe uitslag later kan worden opgeslagen
-    savedRef.current = false;
-
-    // Reset alle shake states bij nieuw spel
-    if (visualSettings?.disarmHardSlam) {
-      visualSettings.disarmHardSlam();
-    }
-
-    const blank: GameState = {
-      dominoes: {},
-      board: {},
-      playerHand: [],
-      playerHands: [],
-      boneyard: [],
-      openEnds: [],
-      forbiddens: {},
-      nextDominoId: 0,
-      spinnerId: null,
-      isGameOver: false,
-      selectedHandIndex: null,
-    };
-    // Optimistische reset van UI
-    setGameState(blank);
-    // Start nieuw spel in backend en gebruik de teruggegeven state voor directe UI update
-    const newState = await syncedStartNewGame();
-    if (newState) {
-      setGameState(newState);
-    }
-  }, [setGameState, syncedStartNewGame, visualSettings]);
-
   // Auto-check for blocked game after each move
   useEffect(() => {
     if (!gameState || gameState.isGameOver || !syncState.allPlayers.length) return;
-
-    // Als iemand leeg is of CHANGA reeds gemarkeerd, geen blocked-check uitvoeren
-    const anyEmptyHand =
-      (gameState.playerHand?.length === 0) ||
-      (gameState.playerHands || []).some(h => Array.isArray(h) && h.length === 0);
-    if (anyEmptyHand || (gameState as any).gameEndReason === 'changa') return;
     
     const hasValidGameState = gameState.board && Object.keys(gameState.board).length > 0;
     if (!hasValidGameState) return;
@@ -185,13 +38,6 @@ export default function Game() {
         totalBoardCells: Object.keys(gameState.board).length,
         isGameOver: gameState.isGameOver
       });
-
-      // Herhaal guard binnen timeout
-      const stateNow: any = gameState;
-      const anyEmptyNow = (stateNow.playerHand?.length === 0) || (stateNow.playerHands || []).some((h: any) => Array.isArray(h) && h.length === 0);
-      if (anyEmptyNow || stateNow.gameEndReason === 'changa') {
-        return;
-      }
       
       // Use the CURRENT game state (not a stale reference)
       const currentOpenEnds = gameHook.regenerateOpenEnds(gameState);
@@ -200,13 +46,13 @@ export default function Game() {
       if (currentOpenEnds.length === 0) {
         console.log('❌ No open ends - game should be blocked');
         // Automatically end the game when blocked
-        const blockedState: GameState = {
+        const updatedGameState = {
           ...gameState,
           isGameOver: true,
           gameEndReason: 'blocked'
         };
-        setGameState(blockedState);
-        updateGameState(blockedState);
+        setGameState(updatedGameState);
+        updateGameState(updatedGameState);
         return;
       }
       
@@ -290,14 +136,14 @@ export default function Game() {
           console.log('🏆 Winner position:', winnerPosition, 'with', minPoints, 'points');
           
           // Automatically end the game when blocked
-          const blockedState: GameState = {
+          const updatedGameState = {
             ...gameState,
             isGameOver: true,
             winner_position: winnerPosition,
             gameEndReason: 'blocked'
           };
-          setGameState(blockedState);
-          updateGameState(blockedState);
+          setGameState(updatedGameState);
+          updateGameState(updatedGameState);
           return;
         }
       }
@@ -369,97 +215,13 @@ export default function Game() {
     updateGameState(updatedGameState);
   }, [gameState, gameHook, syncState.allPlayers, setGameState, updateGameState]);
 
-  // Sla automatisch de uitslag op naar het scoreboard zodra het spel eindigt
-  useEffect(() => {
-    if (!gameState?.isGameOver || !syncState?.gameData || savedRef.current) return;
-
-    savedRef.current = true;
-
-    (async () => {
-      try {
-        // Zorg dat er een actief seizoen bestaat (maak er één aan indien nodig en toegestaan)
-        const { data: season, error: seasonErr } = await supabase
-          .from('seasons')
-          .select('id')
-          .eq('is_active', true)
-          .maybeSingle();
-
-        if (!season && !seasonErr) {
-          const defaultName = `Seizoen ${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-          const { error: createSeasonErr } = await supabase.rpc('start_new_season', { _name: defaultName });
-          if (createSeasonErr) {
-            console.warn('start_new_season failed (non-blocking):', createSeasonErr);
-          }
-        }
-
-        const hands = gameState.playerHands || [];
-        const winnerPos = (gameState as any).winner_position !== undefined
-          ? (gameState as any).winner_position
-          : hands.findIndex(h => Array.isArray(h) && h.length === 0);
-
-        const winnerUserId = winnerPos >= 0 && (syncState.allPlayers[winnerPos] as any)?.user_id
-          ? (syncState.allPlayers[winnerPos] as any).user_id
-          : null;
-
-        const wonByChanga = (gameState as any).gameEndReason === 'changa';
-
-        const players = syncState.allPlayers.map((p: any, index: number) => {
-          const hand = hands[index] || [];
-          const pips_remaining = hand.reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
-          if (!p.user_id) return null; // sla bots of onbekenden over
-          return {
-            user_id: p.user_id,
-            player_position: index,
-            points_scored: 0,
-            pips_remaining,
-            won: index === winnerPos,
-            hard_slams_used: 0,
-            turns_played: 0,
-            won_by_changa: index === winnerPos ? wonByChanga : false,
-          };
-        }).filter(Boolean);
-
-        const { error } = await supabase.rpc('record_game_outcome', {
-          _game_id: syncState.gameData.id,
-          _lobby_id: syncState.gameData.lobby_id,
-          _winner_user_id: winnerUserId,
-          _is_blocked: (gameState as any).gameEndReason === 'blocked',
-          _players: players,
-        });
-
-        if (error) {
-          console.error('record_game_outcome error', error);
-          toast({
-            title: 'Opslaan mislukt',
-            description: error.message || 'Kon uitslag niet opslaan.',
-            variant: 'destructive'
-          });
-        } else {
-          toast({ 
-            title: wonByChanga ? 'Uitslag: CHANGA' : 'Uitslag opgeslagen', 
-            description: wonByChanga ? 'Scorebord bijgewerkt — gewonnen met CHANGA!' : 'Scorebord bijgewerkt.' 
-          });
-        }
-      } catch (err: any) {
-        console.error('Result save flow error', err);
-        toast({
-          title: 'Opslaan mislukt',
-          description: err?.message || 'Onbekende fout bij opslaan.',
-          variant: 'destructive'
-        });
-      }
-    })();
-  }, [gameState?.isGameOver, syncState?.gameData, toast]);
-
   return (
     <div className="min-h-screen bg-background">
       <DominoGame 
         gameHook={{
           ...gameHook, 
-          executeMove: wrappedExecuteMove,
-          drawFromBoneyard: wrappedDrawFromBoneyard,
           manualBlockedCheck,
-          startNewGame: wrappedStartNewGame,
+          startNewGame: syncedStartNewGame,
           syncState,
           gameData: syncState.gameData || { background_choice: null }
         }}

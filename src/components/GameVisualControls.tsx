@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshCw, Check, GripVertical, RotateCw, Hand, Square, Save } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -14,9 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { DeviceType } from '@/hooks/useDeviceType';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-
 
 const deviceIcons = {
   desktop: Monitor,
@@ -32,161 +28,8 @@ const deviceLabels = {
 
 export const GameVisualControls: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
-  const { 
-    currentDeviceType, 
-    getSettingsForDevice, 
-    updateDominoScale, 
-    updateHandDominoScale, 
-    updateDurationAdjustment,
-    updateSpeedAdjustment,
-    updateRotation,
-    updateRotationSpeed,
-    updateRotationAmplitude,
-    updateAnimationDuration,
-    updateShakeIntensity,
-    updateShakeDuration,
-    updateDominoWidth,
-    updateDominoHeight,
-    updateDominoThickness,
-    applyLiveUpdate,
-    resetToDefaults,
-    // Animation controls from hook
-    isAnimating,
-    animationMode,
-    startShakeAnimation,
-    startContinuousRotate,
-    stopAnimation,
-  } = useGameVisualSettings();
+  const { currentDeviceType, getSettingsForDevice, updateDominoScale, updateHandDominoScale, updateHardSlamDuration, updateHardSlamSpeed, resetToDefaults } = useGameVisualSettings();
   const [activeTab, setActiveTab] = useState<DeviceType>(currentDeviceType);
-  const [animationMessage, setAnimationMessage] = useState('');
-  
-  // Get current settings for the active device
-  const settings = getSettingsForDevice(activeTab);
-
-  // Handle animation button clicks
-  const handleShakeAnimation = async () => {
-    const result = await startShakeAnimation();
-    setAnimationMessage(result.message);
-  };
-
-  const handleContinuousRotate = () => {
-    const result = startContinuousRotate();
-    setAnimationMessage(result.message);
-  };
-
-  const handleStopAnimation = () => {
-    const result = stopAnimation();
-    setAnimationMessage(result.message);
-  };
-  
-  // Get current settings for the active device
-  const deviceSettings = getSettingsForDevice(activeTab);
-  
-  // Expose latest settings globally so other modules (Hard Slam) always read fresh values
-  useEffect(() => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).__dominoSettings = settings;
-    } catch {}
-  }, [settings]);
-
-  // Drag functionality
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
-    });
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        const newX = e.clientX - dragStart.x;
-        const newY = e.clientY - dragStart.y;
-        
-        // Keep within viewport bounds
-        const maxX = window.innerWidth - 400; // dialog width
-        const maxY = window.innerHeight - 600; // dialog height
-        
-        setPosition({
-          x: Math.max(0, Math.min(newX, maxX)),
-          y: Math.max(0, Math.min(newY, maxY))
-        });
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragStart]);
-
-  const handleLiveUpdate = async () => {
-    setIsUpdating(true);
-    applyLiveUpdate();
-    
-    // Show success state briefly
-    setTimeout(() => {
-      setIsUpdating(false);
-      toast({
-        title: "Instellingen toegepast",
-        description: "De visuele instellingen zijn direct toegepast.",
-      });
-      // Don't close dialog - keep it open for more adjustments
-    }, 300);
-  };
-
-  const handleSaveSettings = async () => {
-    setIsSaving(true);
-    
-    try {
-      // Force save all current settings by triggering the localStorage save
-      // Get all current settings for all devices
-      const currentSettings = {
-        desktop: getSettingsForDevice('desktop'),
-        tablet: getSettingsForDevice('tablet'),
-        mobile: getSettingsForDevice('mobile')
-      };
-      
-      // Force save to localStorage by dispatching update event
-      window.dispatchEvent(new CustomEvent('forceSettingsSave', { 
-        detail: currentSettings 
-      }));
-      
-      // Show success state briefly
-      setTimeout(() => {
-        setIsSaving(false);
-        toast({
-          title: "Instellingen opgeslagen",
-          description: "Alle visuele instellingen zijn permanent opgeslagen in localStorage.",
-        });
-      }, 300);
-    } catch (error) {
-      setIsSaving(false);
-      toast({
-        title: "Fout bij opslaan",
-        description: "Er is een probleem opgetreden bij het opslaan van de instellingen.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleDominoScaleChange = (values: number[], device: DeviceType) => {
     updateDominoScale(values[0], device);
@@ -206,9 +49,26 @@ export const GameVisualControls: React.FC = () => {
     updateHandDominoScale(currentSettings.handDominoScale + delta, device);
   };
 
+  const handleHardSlamDurationChange = (values: number[], device: DeviceType) => {
+    updateHardSlamDuration(values[0], device);
+  };
+
+  const handleHardSlamSpeedChange = (values: number[], device: DeviceType) => {
+    updateHardSlamSpeed(values[0], device);
+  };
+
+  const adjustHardSlamDuration = (delta: number, device: DeviceType) => {
+    const currentSettings = getSettingsForDevice(device);
+    updateHardSlamDuration(currentSettings.hardSlamDuration + delta, device);
+  };
+
+  const adjustHardSlamSpeed = (delta: number, device: DeviceType) => {
+    const currentSettings = getSettingsForDevice(device);
+    updateHardSlamSpeed(currentSettings.hardSlamSpeed + delta, device);
+  };
 
   const renderDeviceControls = (device: DeviceType) => {
-    const deviceSettings = getSettingsForDevice(device);
+    const settings = getSettingsForDevice(device);
     const IconComponent = deviceIcons[device];
     
     return (
@@ -227,7 +87,7 @@ export const GameVisualControls: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">
-              Bord Domino Grootte ({Math.round(deviceSettings.dominoScale * 100)}%)
+              Bord Domino Grootte ({Math.round(settings.dominoScale * 100)}%)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -237,13 +97,13 @@ export const GameVisualControls: React.FC = () => {
                 size="icon"
                 className="h-8 w-8 shrink-0"
                 onClick={() => adjustDominoScale(-0.1, device)}
-                disabled={deviceSettings.dominoScale <= 0.5}
+                disabled={settings.dominoScale <= 0.5}
               >
                 <Minus className="h-3 w-3" />
               </Button>
               <div className="flex-1">
                 <Slider
-                  value={[deviceSettings.dominoScale]}
+                  value={[settings.dominoScale]}
                   onValueChange={(values) => handleDominoScaleChange(values, device)}
                   min={0.5}
                   max={2.0}
@@ -256,7 +116,7 @@ export const GameVisualControls: React.FC = () => {
                 size="icon"
                 className="h-8 w-8 shrink-0"
                 onClick={() => adjustDominoScale(0.1, device)}
-                disabled={deviceSettings.dominoScale >= 2.0}
+                disabled={settings.dominoScale >= 2.0}
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -268,7 +128,7 @@ export const GameVisualControls: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">
-              Hand Domino Grootte ({Math.round(deviceSettings.handDominoScale * 100)}%)
+              Hand Domino Grootte ({Math.round(settings.handDominoScale * 100)}%)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -278,13 +138,13 @@ export const GameVisualControls: React.FC = () => {
                 size="icon"
                 className="h-8 w-8 shrink-0"
                 onClick={() => adjustHandDominoScale(-0.1, device)}
-                disabled={deviceSettings.handDominoScale <= 0.5}
+                disabled={settings.handDominoScale <= 0.5}
               >
                 <Minus className="h-3 w-3" />
               </Button>
               <div className="flex-1">
                 <Slider
-                  value={[deviceSettings.handDominoScale]}
+                  value={[settings.handDominoScale]}
                   onValueChange={(values) => handleHandDominoScaleChange(values, device)}
                   min={0.5}
                   max={2.0}
@@ -297,7 +157,7 @@ export const GameVisualControls: React.FC = () => {
                 size="icon"
                 className="h-8 w-8 shrink-0"
                 onClick={() => adjustHandDominoScale(0.1, device)}
-                disabled={deviceSettings.handDominoScale >= 2.0}
+                disabled={settings.handDominoScale >= 2.0}
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -305,331 +165,87 @@ export const GameVisualControls: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Domino Afmetingen - GLOBAL */}
+        {/* Hard Slam Trilbeweging */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              🌍 Domino Afmetingen (Globaal)
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Deze instellingen gelden voor alle spelers en worden gedeeld
-            </p>
+            <CardTitle className="text-sm font-medium">Hard Slam Trilbeweging</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Trillingsduur */}
             <div>
-              <div className="text-xs font-medium mb-1">
-                Breedte: {deviceSettings.dominoWidth}px
+              <div className="text-xs text-muted-foreground mb-2">
+                Duur ({settings.hardSlamDuration.toFixed(1)}s)
               </div>
-              <Slider
-                min={40}
-                max={120}
-                step={1}
-                value={[deviceSettings.dominoWidth]}
-                onValueChange={([value]) => updateDominoWidth(value, device)}
-                className="w-full"
-              />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => adjustHardSlamDuration(-0.1, device)}
+                  disabled={settings.hardSlamDuration <= 0.5}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <div className="flex-1">
+                  <Slider
+                    value={[settings.hardSlamDuration]}
+                    onValueChange={(values) => handleHardSlamDurationChange(values, device)}
+                    min={0.5}
+                    max={3.0}
+                    step={0.1}
+                    className="w-full"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => adjustHardSlamDuration(0.1, device)}
+                  disabled={settings.hardSlamDuration >= 3.0}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
 
+            {/* Trilsnelheid */}
             <div>
-              <div className="text-xs font-medium mb-1">
-                Hoogte: {deviceSettings.dominoHeight}px
+              <div className="text-xs text-muted-foreground mb-2">
+                Snelheid ({(settings.hardSlamSpeed * 1000).toFixed(0)}ms per trilling)
               </div>
-              <Slider
-                min={20}
-                max={60}
-                step={1}
-                value={[deviceSettings.dominoHeight]}
-                onValueChange={([value]) => updateDominoHeight(value, device)}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <div className="text-xs font-medium mb-1">
-                Dikte: {deviceSettings.dominoThickness}px
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => adjustHardSlamSpeed(-0.01, device)}
+                  disabled={settings.hardSlamSpeed <= 0.1}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <div className="flex-1">
+                  <Slider
+                    value={[settings.hardSlamSpeed]}
+                    onValueChange={(values) => handleHardSlamSpeedChange(values, device)}
+                    min={0.1}
+                    max={0.3}
+                    step={0.01}
+                    className="w-full"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => adjustHardSlamSpeed(0.01, device)}
+                  disabled={settings.hardSlamSpeed >= 0.3}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
               </div>
-              <Slider
-                min={4}
-                max={16}
-                step={1}
-                value={[deviceSettings.dominoThickness]}
-                onValueChange={([value]) => updateDominoThickness(value, device)}
-                className="w-full"
-              />
             </div>
           </CardContent>
         </Card>
-
-        {/* 3D Rotation Controls - GLOBAL */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <RotateCw className="h-4 w-4" />
-              🌍 3D Rotatie Instellingen (Globaal)
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Deze instellingen gelden voor alle spelers en worden gedeeld
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Animation Message */}
-            {animationMessage && device === activeTab && (
-              <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                {animationMessage}
-              </div>
-            )}
-
-            {/* Animation Controls */}
-            {device === activeTab && (
-              <div className="flex gap-2">
-                {animationMode === 'rotate' ? (
-                  <Button
-                    onClick={handleStopAnimation}
-                    variant="destructive"
-                    size="sm"
-                    className="flex items-center gap-1"
-                  >
-                    <Square className="h-3 w-3" /> Stop Rotatie
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleContinuousRotate}
-                    variant="outline"
-                    size="sm"
-                    disabled={isAnimating}
-                    className="flex items-center gap-1"
-                  >
-                    <Hand className="h-3 w-3" /> Continue Rotatie
-                  </Button>
-                )}
-                
-                {animationMode === 'shake' ? (
-                  <Button
-                    onClick={handleStopAnimation}
-                    variant="destructive"
-                    size="sm"
-                    className="flex items-center gap-1"
-                  >
-                    <Square className="h-3 w-3" /> Stop Schudden
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleShakeAnimation}
-                    variant="outline"
-                    size="sm"
-                    disabled={isAnimating}
-                    className="flex items-center gap-1"
-                  >
-                    <Hand className="h-3 w-3" /> Schudden
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* Manual Rotation Controls */}
-            <div className="space-y-3">
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Rotatie X-as: {deviceSettings.rotateX.toFixed(1)}°
-                </div>
-                <Slider
-                  min={-90}
-                  max={90}
-                  step={0.1}
-                  value={[deviceSettings.rotateX]}
-                  onValueChange={([value]) => updateRotation('X', value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Rotatie Y-as: {deviceSettings.rotateY.toFixed(1)}°
-                </div>
-                <Slider
-                  min={-90}
-                  max={90}
-                  step={0.1}
-                  value={[deviceSettings.rotateY]}
-                  onValueChange={([value]) => updateRotation('Y', value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Rotatie Z-as: {deviceSettings.rotateZ.toFixed(1)}°
-                </div>
-                <Slider
-                  min={-90}
-                  max={90}
-                  step={0.1}
-                  value={[deviceSettings.rotateZ]}
-                  onValueChange={([value]) => updateRotation('Z', value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            {/* Animation Settings */}
-            <div className="space-y-3">
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Animatie Duur: {deviceSettings.animationDuration.toFixed(1)}s
-                </div>
-                <Slider
-                  min={0.1}
-                  max={10}
-                  step={0.1}
-                  value={[deviceSettings.animationDuration]}
-                  onValueChange={([value]) => updateAnimationDuration(value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Rotatie Snelheid: {deviceSettings.rotationSpeed.toFixed(1)}x
-                </div>
-                <Slider
-                  min={0.1}
-                  max={10}
-                  step={0.1}
-                  value={[deviceSettings.rotationSpeed]}
-                  onValueChange={([value]) => updateRotationSpeed(value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Amplitude X-as: {deviceSettings.rotationAmplitudeX.toFixed(1)}°
-                </div>
-                <Slider
-                  min={-1000}
-                  max={1000}
-                  step={0.1}
-                  value={[deviceSettings.rotationAmplitudeX]}
-                  onValueChange={([value]) => updateRotationAmplitude('X', value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Amplitude Y-as: {deviceSettings.rotationAmplitudeY.toFixed(1)}°
-                </div>
-                <Slider
-                  min={-1000}
-                  max={1000}
-                  step={0.1}
-                  value={[deviceSettings.rotationAmplitudeY]}
-                  onValueChange={([value]) => updateRotationAmplitude('Y', value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Amplitude Z-as: {deviceSettings.rotationAmplitudeZ.toFixed(1)}°
-                </div>
-                <Slider
-                  min={-1000}
-                  max={1000}
-                  step={0.1}
-                  value={[deviceSettings.rotationAmplitudeZ]}
-                  onValueChange={([value]) => updateRotationAmplitude('Z', value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                 />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-        {/* Schud Instellingen - GLOBAL */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Hand className="h-4 w-4" />
-              🌍 Schud Instellingen (Globaal)
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Deze instellingen gelden voor alle spelers en worden gedeeld
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="text-xs font-medium mb-1">
-                Schud Intensiteit: {deviceSettings.shakeIntensity.toFixed(1)}x
-              </div>
-              <Slider
-                min={0.1}
-                max={2.0}
-                step={0.1}
-                value={[deviceSettings.shakeIntensity]}
-                onValueChange={([value]) => updateShakeIntensity(value, device)}
-                disabled={isAnimating}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <div className="text-xs font-medium mb-1">
-                Schud Duur: {deviceSettings.shakeDuration.toFixed(1)}s
-              </div>
-              <Slider
-                min={0.5}
-                max={5.0}
-                step={0.1}
-                value={[deviceSettings.shakeDuration]}
-                onValueChange={([value]) => updateShakeDuration(value, device)}
-                disabled={isAnimating}
-                className="w-full"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Live Update en Opslaan knoppen */}
-        <div className="pt-2 space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              onClick={handleLiveUpdate}
-              disabled={isUpdating}
-              className="flex items-center gap-2"
-              variant="secondary"
-            >
-              {isUpdating ? (
-                <Check className="h-4 w-4 text-green-500" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              {isUpdating ? 'Toegepast!' : 'Live Update'}
-            </Button>
-            
-            <Button
-              onClick={handleSaveSettings}
-              disabled={isSaving}
-              className="flex items-center gap-2"
-              variant="default"
-            >
-              {isSaving ? (
-                <Check className="h-4 w-4 text-green-500" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              {isSaving ? 'Opgeslagen!' : 'Opslaan'}
-            </Button>
-          </div>
-        </div>
 
         {/* Reset knop per device */}
         <div className="flex justify-center pt-2">
@@ -658,26 +274,9 @@ export const GameVisualControls: React.FC = () => {
           <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent 
-        ref={dialogRef}
-        className="max-w-lg max-h-[90vh] overflow-y-auto"
-        style={{
-          position: 'fixed',
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-          transform: 'none',
-          margin: 0
-        }}
-      >
-        <DialogHeader 
-          className={cn(
-            "cursor-move flex flex-row items-center gap-2 border-b pb-3",
-            isDragging && "cursor-grabbing"
-          )}
-          onMouseDown={handleMouseDown}
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-          <DialogTitle className="flex items-center gap-2 flex-1">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
             Visuele Instellingen
           </DialogTitle>

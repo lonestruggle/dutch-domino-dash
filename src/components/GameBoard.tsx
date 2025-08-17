@@ -20,11 +20,10 @@ interface GameBoardProps {
   backgroundChoice?: string;
   tableBackgroundUrl?: string;
   onRotateDomino?: (dominoId: string) => void;
-  hardSlamMode?: boolean;
 }
 
 // Original PC constants - exactly as in original HTML domino game
-const BASE_CELL_SIZE = 48;
+const CELL_SIZE = 48;
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 1.0;
 const MIN_BOARD_SIZE = 1200;
@@ -39,52 +38,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   hasDifferentNeighbor, 
   backgroundChoice = 'domino-table-2',
   tableBackgroundUrl,
-  onRotateDomino,
-  hardSlamMode
+  onRotateDomino
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const { settings, applyOriginalRotations, isAnimating, animationMode } = useGameVisualSettings();
+  const { settings } = useGameVisualSettings();
 
-  // Get effective cell size that scales with domino scale for proportional spacing
-  const getEffectiveCellSize = () => {
-    const currentDominoScale = settings.dominoScale || 1.0;
-    return BASE_CELL_SIZE * currentDominoScale;
-  };
-
-  // Listen for live settings updates and reapply scaling
-  useEffect(() => {
-    const handleAnyUpdate = () => {
-      updateDominoScaling();
-    };
-
-    return () => {
-      window.removeEventListener('vibrationSettingsUpdated', handleAnyUpdate);
-      window.removeEventListener('visualSettingsUpdated', handleAnyUpdate);
-    };
-  }, [gameState]);
-
-  // Base domino scale - allow user settings to take effect
+  // Standard domino size for mobile - like real dominoes
   const calculateDominoScale = () => {
-    // Return base scale of 1.0 to let user dominoScale setting control the size
-    return 1.0; // Base scale - user settings will be applied on top of this
+    if (!isMobile) return 1; // PC unchanged
+    
+    // Standard domino size for mobile - readable and playable like real dominoes
+    return 1.0; // Full size dominoes on mobile for best visibility and usability
   };
 
   // Update CSS scaling
   const updateDominoScaling = () => {
-    // Prefer globally broadcast settings to ensure live updates across components
-    const latest = (() => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (window as any).__dominoSettings || settings;
-      } catch {
-        return settings;
-      }
-    })();
-
     const baseScale = calculateDominoScale();
-    const userScale = latest.dominoScale;
+    const userScale = settings.dominoScale;
     const finalScale = baseScale * userScale;
     const selectedScale = finalScale * 1.05;
     const hoverScale = finalScale;
@@ -95,18 +67,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--domino-scale-selected', selectedScale.toString());
     rootElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
     rootElement.style.setProperty('--domino-target-scale', targetScale.toString());
-    // IMPORTANT: Hand domino scale must be independent from board scale
-    rootElement.style.setProperty('--hand-domino-scale', (latest.handDominoScale || 1).toString());
+    rootElement.style.setProperty('--hand-domino-scale', finalScale.toString());
     
-    // Apply global domino dimension settings
-    rootElement.style.setProperty('--domino-width', (latest.dominoWidth || 80).toString() + 'px');
-    rootElement.style.setProperty('--domino-height', (latest.dominoHeight || 40).toString() + 'px');
-    rootElement.style.setProperty('--domino-thickness', (latest.dominoThickness || 8).toString() + 'px');
-    
-    // Calculate dynamic double offset for proper centering
-    const effectiveCellSize = BASE_CELL_SIZE * (latest.dominoScale || 1.0);
-    const doubleOffset = effectiveCellSize / 2;
-    rootElement.style.setProperty('--double-offset', `-${doubleOffset}px`);
+    // Hard slam settings
+    rootElement.style.setProperty('--hard-slam-duration', `${settings.hardSlamDuration}s`);
+    rootElement.style.setProperty('--hard-slam-speed', `${settings.hardSlamSpeed}s`);
     
     if (boardRef.current) {
       boardRef.current.offsetHeight;
@@ -118,24 +83,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const handleResize = () => updateDominoScaling();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isMobile, settings.dominoScale, settings.dominoWidth, settings.dominoHeight, settings.dominoThickness]);
+  }, [isMobile, settings.dominoScale, settings.hardSlamDuration, settings.hardSlamSpeed]);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(() => updateDominoScaling());
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [settings.dominoScale, settings.dominoWidth, settings.dominoHeight, settings.dominoThickness]);
+  }, [settings.dominoScale, settings.hardSlamDuration, settings.hardSlamSpeed]);
 
   useEffect(() => {
     updateDominoScaling();
-    // Apply original rotations after rendering new dominoes
-    const timer = setTimeout(() => {
-      applyOriginalRotations();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [gameState.dominoes, settings.dominoScale, settings.dominoWidth, settings.dominoHeight, settings.dominoThickness, applyOriginalRotations]);
-  // Note: hardSlamMode is intentionally NOT in dependencies - we only want to trigger on new dominoes
+  }, [gameState.dominoes, settings.dominoScale, settings.hardSlamDuration, settings.hardSlamSpeed]);
 
   // Original PC logic for board size calculation
   const calculateOptimalScale = () => {
@@ -160,9 +119,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     });
 
     const extraPadding = 4;
-    const effectiveCellSize = getEffectiveCellSize();
-    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * effectiveCellSize;
-    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * effectiveCellSize;
+    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * CELL_SIZE;
+    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * CELL_SIZE;
 
     const scaleX = availableWidth / requiredWidth;
     const scaleY = availableHeight / requiredHeight;
@@ -189,9 +147,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       maxY = Math.max(maxY, domino.y + dominoHeight - 1);
     });
 
-    const effectiveCellSize = getEffectiveCellSize();
-    const requiredWidth = (maxX - minX + 1) * effectiveCellSize + PADDING * 2;
-    const requiredHeight = (maxY - minY + 1) * effectiveCellSize + PADDING * 2;
+    const requiredWidth = (maxX - minX + 1) * CELL_SIZE + PADDING * 2;
+    const requiredHeight = (maxY - minY + 1) * CELL_SIZE + PADDING * 2;
     const requiredSize = Math.max(requiredWidth, requiredHeight, MIN_BOARD_SIZE);
     
     return Math.max(requiredSize, MIN_BOARD_SIZE);
@@ -238,10 +195,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     const containerRect = containerRef.current.getBoundingClientRect();
     const boardSize = calculateBoardSize();
-    const effectiveCellSize = getEffectiveCellSize();
     
-    const pixelCenterX = boardSize / 2 + centerX * effectiveCellSize;
-    const pixelCenterY = boardSize / 2 + centerY * effectiveCellSize;
+    const pixelCenterX = boardSize / 2 + centerX * CELL_SIZE;
+    const pixelCenterY = boardSize / 2 + centerY * CELL_SIZE;
     
     const optimalScrollX = pixelCenterX - containerRect.width / 2;
     const optimalScrollY = pixelCenterY - containerRect.height / 2;
@@ -300,9 +256,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       
-      const effectiveCellSize = getEffectiveCellSize();
-      const pixelCenterX = boardSize / 2 + centerX * effectiveCellSize * currentScale;
-      const pixelCenterY = boardSize / 2 + centerY * effectiveCellSize * currentScale;
+      const pixelCenterX = boardSize / 2 + centerX * CELL_SIZE * currentScale;
+      const pixelCenterY = boardSize / 2 + centerY * CELL_SIZE * currentScale;
       
       const optimalScrollX = pixelCenterX - containerRect.width / 2;
       const optimalScrollY = pixelCenterY - containerRect.height / 2;
@@ -322,9 +277,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       const firstDomino = Object.values(gameState.dominoes)[0];
-      const effectiveCellSize = getEffectiveCellSize();
-      const firstDominoX = firstDomino.x * effectiveCellSize * dynamicScale;
-      const firstDominoY = firstDomino.y * effectiveCellSize * dynamicScale;
+      const firstDominoX = firstDomino.x * CELL_SIZE * dynamicScale;
+      const firstDominoY = firstDomino.y * CELL_SIZE * dynamicScale;
       
       setTimeout(() => {
         containerRef.current?.scrollTo({
@@ -387,17 +341,30 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // Elke dominosteen krijgt zijn eigen willekeurige rotatie hoek (tussen 5 en 20 graden)
             const individualAngle = 5 + Math.random() * 15; // 5-20 graden
             
-            // Connect to actual animation state from useGameVisualSettings
-            const shouldAnimate = isAnimating && animationMode === 'shake';
-            const selectedAnimation = shouldAnimate ? 'shake' : 'none';
+            // Select a random vibration animation for each domino during hard slam
+            const vibrationAnimations = [
+              'dominoVibrate_horizontal',
+              'dominoVibrate_left_diagonal', 
+              'dominoVibrate_right_diagonal',
+              'dominoVibrate_vertical',
+              'dominoVibrate_subtle',
+              'dominoVibrate_shake'
+            ];
+            
+            // Use domino index and consistent seed for stable animation selection
+            const dominoIndex = Object.keys(gameState.dominoes).indexOf(id);
+            const animationIndex = dominoIndex % vibrationAnimations.length;
+            const selectedAnimation = vibrationAnimations[animationIndex];
+            
+            console.log(`🎲 Domino ${id} - isHardSlamming: ${gameState.isHardSlamming}, animation: ${selectedAnimation}`);
             
             return (
               <div
                 key={id}
                 className="absolute"
                 style={{
-                  left: boardSize / 2 + domino.x * getEffectiveCellSize(),
-                  top: boardSize / 2 + domino.y * getEffectiveCellSize(),
+                  left: boardSize / 2 + domino.x * CELL_SIZE,
+                  top: boardSize / 2 + domino.y * CELL_SIZE,
                 }}
               >
                 <DominoTile
@@ -405,14 +372,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   orientation={domino.orientation}
                   flipped={domino.flipped}
                   rotation={domino.rotation || 0}
-                  rotateX={settings.rotateX}
-                  rotateY={settings.rotateY}
-                  rotateZ={settings.rotateZ}
-                  isShaking={shouldAnimate}
+                  isShaking={gameState.isHardSlamming}
                   onClick={undefined}
-                  className="domino-tile-board board-domino"
+                  className="domino-tile-board"
                   style={{
                     '--individual-angle': `${individualAngle}deg`,
+                    '--vibration-animation': selectedAnimation,
                   } as React.CSSProperties}
                 />
               </div>
@@ -423,8 +388,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           {legalMoves.map((move, index) => {
             const { end } = move;
             
-            if (!end.forced && hasDifferentNeighbor(end.x, end.y)) return null;
-            if (!end.forced && gameState.forbiddens[`${end.x},${end.y}`]) return null;
+            if (hasDifferentNeighbor(end.x, end.y)) return null;
+            if (gameState.forbiddens[`${end.x},${end.y}`]) return null;
 
             let { x, y } = end;
             const { orientation, dominoData } = move;
@@ -449,8 +414,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 onClick={() => onMoveExecute(move)}
                 style={{
                   // Position exactly on grid coordinates - like dominos, no centering
-                  left: boardSize / 2 + x * getEffectiveCellSize(),
-                  top: boardSize / 2 + y * getEffectiveCellSize(),
+                  left: boardSize / 2 + x * CELL_SIZE,
+                  top: boardSize / 2 + y * CELL_SIZE,
                 }}
               />
             );

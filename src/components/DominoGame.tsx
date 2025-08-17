@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
@@ -6,14 +6,10 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Hand } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
 
 interface DominoGameProps {
   gameHook: any;
@@ -22,21 +18,11 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  // Handle domino rotation updates from Hard Slam
-  const handleDominoRotationsUpdated = useCallback((rotations: Record<string, number>) => {
-    console.log('🎲 Updating domino rotations in game state:', rotations);
-    // Update the rotation values in the game state for permanent storage via gameHook
-    if (gameHook.updateDominoRotations) {
-      gameHook.updateDominoRotations(rotations);
-    }
-  }, [gameHook]);
-
-  const { startShakeAnimation, pendingShake } = useGameVisualSettings(handleDominoRotationsUpdated);
-  const { canHardSlam } = useUserPermissions();
   
   const {
     gameState,
     findLegalMoves,
+    executeMove,
     selectHandDomino,
     drawFromBoneyard,
     startNewGame,
@@ -52,36 +38,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [startingNewGame, setStartingNewGame] = useState(false);
-  const [confirmNewGameOpen, setConfirmNewGameOpen] = useState(false);
-  const { toast } = useToast();
-
-  const actuallyStartNewGame = async () => {
-    setStartingNewGame(true);
-    try {
-      await startNewGame();
-    } finally {
-      setTimeout(() => setStartingNewGame(false), 800);
-      setConfirmNewGameOpen(false);
-    }
-  };
-
-  const handleStartNewGame = async () => {
-    if (!syncState?.isHost) {
-      toast({ title: 'Alleen host', description: 'Alleen de host kan een nieuw spel starten.', variant: 'destructive' });
-      return;
-    }
-    if (startingNewGame) return;
-
-    const boardHasDominoes = Boolean(gameState && gameState.board && Object.keys(gameState.board).length > 0);
-    if (boardHasDominoes) {
-      setConfirmNewGameOpen(true);
-      return;
-    }
-
-    await actuallyStartNewGame();
-  };
-
   
   // Reset dialog shown flag when game starts new
   useEffect(() => {
@@ -107,6 +63,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     console.warn('passMove function not available');
   });
 
+  // Access the hardSlam function from Game.tsx
+  const hardSlam = gameHook.hardSlam || (() => {
+    console.warn('hardSlam function not available');
+  });
 
   if (syncState?.isLoading) {
     return (
@@ -120,9 +80,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   }
 
   const isMyTurn = gameState?.currentPlayer === syncState?.playerPosition;
-  const currentPlayerName = syncState?.allPlayers?.find((p: any) => p.position === gameState?.currentPlayer)?.username || 'Unknown';
-  
-
+  const currentPlayerName = syncState?.allPlayers?.find(p => p.position === gameState?.currentPlayer)?.username || 'Unknown';
   
   // Determine if current player won (has empty hand OR is winner from blocked game)
   const didIWin = gameState?.isGameOver && (
@@ -197,6 +155,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     index: gameState?.selectedHandIndex
   }));
 
+  // Check if Hard Slam is available
+  const canUseHardSlam = isMyTurn && 
+    !gameState?.isGameOver && 
+    Object.keys(gameState?.dominoes || {}).length > 0; // At least one domino on board
+  
+  // Check if Hard Slam is activated for next move
+  const hardSlamActive = gameState?.hardSlamNextMove === true;
 
   // Handle boneyard stone preview
   const handleStonePreview = (domino: any, index: number) => {
@@ -249,13 +214,12 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </span>
               </Button>
               <Button 
-                onClick={handleStartNewGame}
-                disabled={!syncState?.isHost || startingNewGame}
+                onClick={startNewGame}
                 variant="default"
                 size={isMobile ? "sm" : "default"}
                 className={isMobile ? "text-xs" : ""}
               >
-                {isMobile ? "Nieuw Spel" : startingNewGame ? "Starten..." : "Start New Game"}
+                {isMobile ? "Nieuw Spel" : "Start New Game"}
               </Button>
               {!isMobile && (
                 <Button
@@ -311,17 +275,12 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <GameBoard 
           gameState={gameState}
           legalMoves={legalMovesWithIndex}
-          onMoveExecute={(move) => {
-            console.log('🔥 DominoGame - move executed, calling gameHook.executeMove');
-            console.log('🔥 DominoGame - gameHook.executeMove type:', typeof gameHook.executeMove);
-            return gameHook.executeMove(move);
-          }}
+          onMoveExecute={executeMove}
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}
           tableBackgroundUrl={gameData?.table_background_url}
           onRotateDomino={rotateDomino}
-          
         />
 
         {/* Player Hand */}
@@ -356,46 +315,23 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   Pas
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 <Button 
-                  onClick={() => gameHook.manualBlockedCheck?.()}
-                  variant="outline"
+                  onClick={hardSlam}
+                  disabled={!canUseHardSlam || hardSlamActive}
+                  variant="secondary"
                   size="sm"
-                  className="text-xs bg-slate-100 hover:bg-slate-200"
+                  className={`text-xs ${
+                    hardSlamActive 
+                      ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
+                      : canUseHardSlam 
+                        ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" 
+                        : ""
+                  }`}
                 >
-                  🔧 Check Blocked
+                  <Zap className="h-3 w-3 mr-1" />
+                  {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
                 </Button>
-{canHardSlam && (
-                  <Button 
-                    onClick={async () => {
-                      console.log('🎬 🚨 SCHUDDEN KNOP GEKLIKT! (Mobile)');
-                      console.log('🎬 🚨 pendingShake before click:', pendingShake);
-                      console.log('🎬 🚨 startShakeAnimation function:', typeof startShakeAnimation);
-                      const result = await startShakeAnimation();
-                      console.log('🎬 🚨 Shake result:', result);
-                      console.log('🎬 🚨 pendingShake after click:', pendingShake);
-                      if (result && !result.success) {
-                        toast({
-                          title: "Kan niet schudden",
-                          description: result.message,
-                          variant: "destructive"
-                        });
-                      } else if (result && result.success) {
-                        toast({
-                          title: "Schudden ingepland",
-                          description: "Stenen schudden na volgende zet",
-                          variant: "default"
-                        });
-                      }
-                    }}
-                    variant={pendingShake ? "default" : "outline"}
-                    size="sm"
-                    className={`text-xs ${pendingShake ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`}
-                  >
-                    <Hand className="h-3 w-3 mr-1" />
-                    {pendingShake ? "Gepland" : "Schudden"}
-                  </Button>
-                )}
               </div>
               {gameState?.isGameOver && (
                 <div className="text-center">
@@ -436,42 +372,27 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   Pas
                 </Button>
                 <Button 
+                  onClick={hardSlam}
+                  disabled={!canUseHardSlam || hardSlamActive}
+                  variant="secondary"
+                  className={
+                    hardSlamActive 
+                      ? "bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold shadow-lg animate-pulse" 
+                      : canUseHardSlam 
+                        ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold shadow-lg" 
+                        : ""
+                  }
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
+                </Button>
+                <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
                   variant="outline"
                   className="bg-slate-100 hover:bg-slate-200"
                 >
                   🔧 Check Blocked
                 </Button>
-{canHardSlam && (
-                  <Button 
-                    onClick={async () => {
-                      console.log('🎬 🚨 SCHUDDEN KNOP GEKLIKT! (Desktop)');
-                      console.log('🎬 🚨 pendingShake before click:', pendingShake);
-                      console.log('🎬 🚨 startShakeAnimation function:', typeof startShakeAnimation);
-                      const result = await startShakeAnimation();
-                      console.log('🎬 🚨 Shake result:', result);
-                      console.log('🎬 🚨 pendingShake after click:', pendingShake);
-                      if (result && !result.success) {
-                        toast({
-                          title: "Kan niet schudden",
-                          description: result.message,
-                          variant: "destructive"
-                        });
-                      } else if (result && result.success) {
-                        toast({
-                          title: "Schudden ingepland",
-                          description: "Stenen schudden na volgende zet",
-                          variant: "default"
-                        });
-                      }
-                    }}
-                    variant={pendingShake ? "default" : "outline"}
-                    className={pendingShake ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}
-                  >
-                    <Hand className="h-4 w-4 mr-1" />
-                    {pendingShake ? "Gepland" : "Schudden"}
-                  </Button>
-                )}
               </div>
               <div className="text-sm text-muted-foreground flex items-center">
                 {gameState?.isGameOver ? (
@@ -604,11 +525,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                        🎉 Je hebt gewonnen! 🎉
                      </h3>
                      <p className="text-gray-600">
-                       {(gameState as any)?.gameEndReason === 'changa'
-                         ? "CHANGA! Je hebt gewonnen met CHANGA!"
-                         : isBlockedGame 
-                           ? "Spel geblokkeerd! Je hebt gewonnen met de minste punten!" 
-                           : "Je hebt alle dominostenen succesvol gespeeld!"
+                       {isBlockedGame 
+                         ? "Spel geblokkeerd! Je hebt gewonnen met de minste punten!" 
+                         : "Je hebt alle dominostenen succesvol gespeeld!"
                        }
                      </p>
                    </div>
@@ -635,11 +554,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                        Je hebt verloren!
                      </h3>
                      <p className="text-gray-600">
-                       {(gameState as any)?.gameEndReason === 'changa'
-                         ? "CHANGA! Een andere speler won met CHANGA."
-                         : isBlockedGame 
-                           ? "Spel geblokkeerd! Een andere speler had minder punten." 
-                           : "Een andere speler heeft alle stenen als eerste gespeeld."
+                       {isBlockedGame 
+                         ? "Spel geblokkeerd! Een andere speler had minder punten." 
+                         : "Een andere speler heeft alle stenen als eerste gespeeld."
                        }
                      </p>
                      <p className="text-sm text-gray-500 mt-2">
@@ -668,38 +585,19 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </Button>
                 
                 <Button 
-                  onClick={handleStartNewGame}
-                  disabled={!syncState?.isHost || startingNewGame}
+                  onClick={startNewGame}
                   className={`font-bold py-3 text-base shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 ${
                     didIWin 
                       ? 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white' 
                       : 'bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white'
                   }`}
                 >
-                  🎮 {startingNewGame ? 'Starten...' : 'Nieuw Spel'}
+                  🎮 Nieuw Spel
                 </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
-
-        {/* Bevestiging nieuw spel */}
-        <AlertDialog open={confirmNewGameOpen} onOpenChange={setConfirmNewGameOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Nieuw spel starten?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Dit reset het huidige spel voor alle spelers en wist het bord. Weet je het zeker?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="flex justify-end gap-2">
-              <AlertDialogCancel>Annuleren</AlertDialogCancel>
-              <AlertDialogAction onClick={actuallyStartNewGame} disabled={startingNewGame}>
-                {startingNewGame ? 'Starten...' : 'Start nieuw spel'}
-              </AlertDialogAction>
-            </div>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </div>
   );

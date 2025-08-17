@@ -1,6 +1,5 @@
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { cn } from '@/lib/utils';
 
 interface PlacementTargetProps {
@@ -29,13 +28,6 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   isInitialPlacement = false
 }) => {
   const isMobile = useIsMobile();
-  const { settings } = useGameVisualSettings();
-  
-  // Get effective cell size that scales with domino scale for proportional spacing
-  const getEffectiveCellSize = () => {
-    const currentDominoScale = settings.dominoScale || 1.0;
-    return 48 * currentDominoScale; // BASE_CELL_SIZE = 48
-  };
   
   return (
     <div
@@ -47,12 +39,13 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         className
       )}
       style={{
-        // Perfect grid alignment - use dynamic cell size for proportional spacing
-        width: `${width * getEffectiveCellSize()}px`,
-        height: `${height * getEffectiveCellSize()}px`,
+        // Perfect grid alignment - exactly like reference image with no gaps
+        width: `${width * 48}px`,
+        height: `${height * 48}px`,
         left: style?.left,
         top: style?.top,
-        // No additional transform scaling needed - size is already proportional
+        // Position exactly on grid boundaries - no centering offset
+        transform: 'scale(var(--domino-scale, 1))',
         transformOrigin: 'top left',
         transition: 'background-color 0.2s ease',
         ...style,

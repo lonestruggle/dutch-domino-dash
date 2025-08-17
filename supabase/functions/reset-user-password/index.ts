@@ -4,7 +4,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.0'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +13,7 @@ const corsHeaders = {
 interface ResetPasswordRequest {
   userId: string;
   newPassword: string;
+  adminId: string;
 }
 
 serve(async (req) => {
@@ -23,43 +23,12 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization') || '';
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    const { userId, newPassword, adminId }: ResetPasswordRequest = await req.json();
 
-    // Create authed client to validate caller and check role
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false, autoRefreshToken: false }
-    });
-
-    const { data: userData, error: userErr } = await supabaseAuth.auth.getUser();
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'Invalid user' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const adminUser = userData.user;
-    const { data: isAdmin, error: adminErr } = await supabaseAuth.rpc('is_admin', { _user_id: adminUser.id });
-    if (adminErr || !isAdmin) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const { userId, newPassword }: ResetPasswordRequest = await req.json();
-
-    console.log('Password reset request:', { userId, adminId: adminUser.id });
+    console.log('Password reset request:', { userId, adminId });
 
     // Validate input
-    if (!userId || !newPassword) {
+    if (!userId || !newPassword || !adminId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }), 
         { 
@@ -70,10 +39,10 @@ serve(async (req) => {
     }
 
     // Validate password strength (detailed check)
-    if (newPassword.length < 8) {
+    if (newPassword.length < 6) {
       console.error('Password too short:', newPassword.length);
       return new Response(
-        JSON.stringify({ error: 'Wachtwoord moet minimaal 8 karakters lang zijn' }), 
+        JSON.stringify({ error: 'Wachtwoord moet minimaal 6 karakters lang zijn' }), 
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -81,7 +50,7 @@ serve(async (req) => {
       );
     }
 
-    // Check if password contains at least one letter and one number
+    // Check if password contains at least one letter and one number (common requirement)
     if (!/^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword)) {
       console.error('Password does not meet complexity requirements');
       return new Response(
@@ -96,7 +65,7 @@ serve(async (req) => {
     console.log('Password validation passed. Length:', newPassword.length);
 
     // Create Supabase admin client
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
@@ -112,7 +81,7 @@ serve(async (req) => {
 
     console.log('About to reset password for user:', userId);
 
-    // Reset user password using admin API
+    // Reset user password using admin API - simplified approach
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: newPassword,
       email_confirm: true,
@@ -139,7 +108,7 @@ serve(async (req) => {
     const { error: logError } = await supabaseAdmin
       .from('moderation_logs')
       .insert({
-        moderator_id: adminUser.id,
+        moderator_id: adminId,
         target_user_id: userId,
         action: 'password_reset',
         reason: 'Admin initiated password reset'

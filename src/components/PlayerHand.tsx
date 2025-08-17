@@ -13,9 +13,9 @@ interface PlayerHandProps {
 
 const isDouble = (data: DominoData) => data.value1 === data.value2;
 
-// Generate a stable key for each domino based on its values (canonical order)
+// Generate a stable key for each domino based on its values
 const getDominoKey = (domino: DominoData, index: number) => 
-  `${Math.min(domino.value1, domino.value2)}-${Math.max(domino.value1, domino.value2)}-${index}`;
+  `${domino.value1}-${domino.value2}-${index}`;
 
 export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   hand,
@@ -26,37 +26,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const { settings } = useGameVisualSettings();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Dynamische gap op basis van handDominoScale
-  const baseGap = isMobile ? 2 : 12; // px
-  const gapPx = Math.max(1, Math.round(baseGap * (settings.handDominoScale ?? 1)));
-
-  // Update hand domino scale CSS variables - force immediate update and listen for global changes
+  // Update hand domino scale CSS variables - force immediate update
   useEffect(() => {
-    const applyScale = (scale: number) => {
-      if (containerRef.current) {
-        containerRef.current.style.setProperty('--hand-domino-scale', scale.toString());
-        // Force reflow to ensure immediate visual update
-        containerRef.current.offsetHeight;
-      }
-    };
-
-    // Initial apply from local hook
-    applyScale(settings.handDominoScale);
-
-    // Listen for globally broadcast updates from controls
-    const handleUpdate = (e: Event) => {
-      try {
-        const custom = e as CustomEvent;
-        const newScale = (custom.detail?.settings?.handDominoScale) ?? (window as any).__dominoSettings?.handDominoScale;
-        if (typeof newScale === 'number') applyScale(newScale);
-      } catch {}
-    };
-
-    window.addEventListener('visualSettingsUpdated', handleUpdate);
-
-    return () => {
-      window.removeEventListener('visualSettingsUpdated', handleUpdate);
-    };
+    if (containerRef.current) {
+      containerRef.current.style.setProperty('--hand-domino-scale', settings.handDominoScale.toString());
+      // Force reflow to ensure immediate visual update
+      containerRef.current.offsetHeight;
+    }
   }, [settings.handDominoScale]);
   
   return (
@@ -65,19 +41,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         Jouw Hand
       </h2>
       
-      <div
-        className={`flex flex-wrap justify-center min-h-[48px] ${isMobile ? "px-2" : "p-2"}`}
-        style={{ gap: `${gapPx}px` }}
-      >
+      <div className={`flex flex-wrap justify-center min-h-[48px] ${isMobile ? "gap-1 px-2" : "gap-3 p-2"}`}>
         {hand.map((domino, index) => (
           <DominoTile
             key={getDominoKey(domino, index)}
             data={domino}
             orientation={isDouble(domino) ? "vertical" : "horizontal"}
             selected={index === selectedIndex}
-            rotateX={settings.rotateX}
-            rotateY={settings.rotateY}
-            rotateZ={settings.rotateZ}
             onClick={() => onDominoSelect(index)}
             className="relative transition-all duration-200 domino-tile-hand hover:z-20"
           />
