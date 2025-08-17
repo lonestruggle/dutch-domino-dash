@@ -48,6 +48,19 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // Listen for Hard Slam shake events
+  useEffect(() => {
+    const handleHardSlamShake = () => {
+      console.log('🎬 Hard Slam shake event received, starting shake animation');
+      startShakeAnimation();
+    };
+
+    window.addEventListener('hardSlamShake', handleHardSlamShake);
+    return () => {
+      window.removeEventListener('hardSlamShake', handleHardSlamShake);
+    };
+  }, [startShakeAnimation]);
   const [startingNewGame, setStartingNewGame] = useState(false);
   const [confirmNewGameOpen, setConfirmNewGameOpen] = useState(false);
   const { toast } = useToast();

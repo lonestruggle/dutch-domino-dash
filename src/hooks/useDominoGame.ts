@@ -922,21 +922,22 @@ export const useDominoGame = () => {
           };
         });
         
-        // Start shake animation
+        // Use the advanced shake animation system instead of simple CSS animation
+        console.log('🎬 Starting advanced shake animation after Hard Slam');
+        
+        // Show toast notification for Hard Slam activation
+        toast({
+          title: "🔥 HARD SLAM!",
+          description: "Alle stenen krijgen nieuwe rotaties en schudden!",
+          duration: 3000,
+        });
+        
+        // Queue the shake animation to start after state update
         setTimeout(() => {
-          const dominoElements = document.querySelectorAll('.domino-tile-board');
-          console.log('🎬 Starting hard slam shake animation for', dominoElements.length, 'dominoes');
-          
-          dominoElements.forEach((element) => {
-            (element as HTMLElement).style.animation = 'dominoVibrate 1s ease-out';
-          });
-          
-          // Clean up animation
-          setTimeout(() => {
-            dominoElements.forEach((element) => {
-              (element as HTMLElement).style.animation = '';
-            });
-          }, 1000);
+          // Note: We can't directly call startShakeAnimation here since it's not in scope
+          // We'll trigger it through a different mechanism or expose it
+          const shakeEvent = new CustomEvent('hardSlamShake');
+          window.dispatchEvent(shakeEvent);
         }, 100);
       }
       
