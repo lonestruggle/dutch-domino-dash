@@ -66,6 +66,7 @@ export default function Game() {
   // Wrap local actions and then sync
   const wrappedExecuteMove = useCallback((move: any) => {
     console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
+    console.log('🔥 pendingShake status:', pendingShake);
     // Pre-move: detecteer CHANGA (ook bij dubbel)
     const myHand = gameState.playerHand || [];
     const isLastStone = myHand.length === 1;
@@ -94,13 +95,17 @@ export default function Game() {
     const moveResult = (gameHook as any).executeMove(move);
     
     // Execute pending shake after domino placement
-    setTimeout(() => {
-      console.log('🎬 ✨ Checking for pending shake after domino placement...');
-      console.log('🎬 ✨ Pending shake state:', pendingShake);
-      console.log('🎬 ✨ Visual settings object:', visualSettings);
+    console.log('🎬 ✨ Checking for pending shake after domino placement...');
+    console.log('🎬 ✨ Pending shake state:', pendingShake);
+    console.log('🎬 ✨ Visual settings object:', visualSettings);
+    
+    if (pendingShake) {
+      console.log('🎬 ✨ EXECUTING PENDING SHAKE NOW!');
       const result = executePendingShake();
       console.log('🎬 ✨ Execute pending shake result:', result);
-    }, 100);
+    } else {
+      console.log('🎬 ✨ No pending shake to execute');
+    }
 
     // Markeer CHANGA direct en veilig op basis van de nieuwste state
     setTimeout(() => {
