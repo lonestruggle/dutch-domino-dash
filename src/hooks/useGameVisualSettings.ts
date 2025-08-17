@@ -563,7 +563,9 @@ export const useGameVisualSettings = () => {
         
         animationRef.current.current = requestAnimationFrame(animate);
       } else {
-        // Return to base rotation - reset only board dominoes but keep their original rotation
+        console.log('💥 HARD SLAM EFFECT - Starting shake animation and randomizing rotations!');
+        
+        // Return to base rotation AND randomize permanent rotations (HARD SLAM effect)
         let boardDominoes = document.querySelectorAll('.domino-tile-board');
         if (boardDominoes.length === 0) {
           boardDominoes = document.querySelectorAll('.board-domino');
@@ -571,16 +573,27 @@ export const useGameVisualSettings = () => {
         if (boardDominoes.length === 0) {
           boardDominoes = document.querySelectorAll('.domino-tile');
         }
-        boardDominoes.forEach((domino: Element) => {
+        
+        boardDominoes.forEach((domino: Element, index: number) => {
           const htmlDomino = domino as HTMLElement;
-          const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
+          
+          // Generate a new random rotation for this domino (-20 to +20 degrees)
+          const newRandomRotation = (Math.random() - 0.5) * 40;
+          
+          // Update the data attribute with the new random rotation
+          htmlDomino.dataset.originalRotation = newRandomRotation.toString();
+          
+          // Apply the new permanent rotation immediately
           const currentTransform = htmlDomino.style.transform || '';
           const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + originalRotationZ}deg)`.trim();
+          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + newRandomRotation}deg)`.trim();
+          
+          console.log(`🎯 Domino ${index} got new permanent rotation: ${newRandomRotation.toFixed(1)}°`);
         });
+        
         setIsAnimating(false);
         setAnimationMode(null);
-        console.log('🎬 Shake animation completed');
+        console.log('🎬 Shake animation completed with new permanent rotations');
       }
     };
     
