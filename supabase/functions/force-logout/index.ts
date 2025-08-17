@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.0'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +13,6 @@ const corsHeaders = {
 
 interface ForceLogoutRequest {
   userId: string;
-  adminId: string;
 }
 
 serve(async (req) => {
@@ -22,12 +22,43 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, adminId }: ForceLogoutRequest = await req.json();
+    const authHeader = req.headers.get('Authorization') || '';
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
-    console.log('Force logout request:', { userId, adminId });
+    // Create authed client to validate caller and check role
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+
+    const { data: userData, error: userErr } = await supabaseAuth.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Invalid user' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const adminUser = userData.user;
+    const { data: isAdmin, error: adminErr } = await supabaseAuth.rpc('is_admin', { _user_id: adminUser.id });
+    if (adminErr || !isAdmin) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { userId }: ForceLogoutRequest = await req.json();
+
+    console.log('Force logout request by admin:', { target: userId, admin: adminUser.id });
 
     // Validate input
-    if (!userId || !adminId) {
+    if (!userId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }), 
         { 
@@ -48,7 +79,7 @@ serve(async (req) => {
     console.log('Attempting to invalidate user sessions by updating user...');
 
     // Force logout by updating the user (this invalidates all sessions)
-    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       // Adding a timestamp to user metadata forces session refresh
       user_metadata: {
         force_logout_at: new Date().toISOString(),
@@ -71,7 +102,7 @@ serve(async (req) => {
     const { error: logError } = await supabaseAdmin
       .from('moderation_logs')
       .insert({
-        moderator_id: adminId,
+        moderator_id: adminUser.id,
         target_user_id: userId,
         action: 'force_logout',
         reason: 'Admin initiated force logout'

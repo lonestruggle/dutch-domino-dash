@@ -169,6 +169,97 @@ export type Database = {
         }
         Relationships: []
       }
+      game_player_stats: {
+        Row: {
+          created_at: string
+          game_id: string
+          hard_slams_used: number
+          id: string
+          pips_remaining: number
+          player_position: number
+          points_scored: number
+          turns_played: number
+          user_id: string
+          username: string | null
+          won: boolean
+          won_by_changa: boolean
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          hard_slams_used?: number
+          id?: string
+          pips_remaining?: number
+          player_position: number
+          points_scored?: number
+          turns_played?: number
+          user_id: string
+          username?: string | null
+          won?: boolean
+          won_by_changa?: boolean
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          hard_slams_used?: number
+          id?: string
+          pips_remaining?: number
+          player_position?: number
+          points_scored?: number
+          turns_played?: number
+          user_id?: string
+          username?: string | null
+          won?: boolean
+          won_by_changa?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_player_stats_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_results"
+            referencedColumns: ["game_id"]
+          },
+        ]
+      }
+      game_results: {
+        Row: {
+          game_id: string
+          id: string
+          is_blocked_game: boolean
+          lobby_id: string
+          played_at: string
+          season_id: string | null
+          winner_user_id: string | null
+        }
+        Insert: {
+          game_id: string
+          id?: string
+          is_blocked_game?: boolean
+          lobby_id: string
+          played_at?: string
+          season_id?: string | null
+          winner_user_id?: string | null
+        }
+        Update: {
+          game_id?: string
+          id?: string
+          is_blocked_game?: boolean
+          lobby_id?: string
+          played_at?: string
+          season_id?: string | null
+          winner_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_results_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       games: {
         Row: {
           background_choice: string | null
@@ -262,6 +353,7 @@ export type Database = {
           id: string
           max_players: number
           name: string
+          player_count: number
           status: string
           updated_at: string
         }
@@ -274,6 +366,7 @@ export type Database = {
           id?: string
           max_players?: number
           name: string
+          player_count?: number
           status?: string
           updated_at?: string
         }
@@ -286,6 +379,7 @@ export type Database = {
           id?: string
           max_players?: number
           name?: string
+          player_count?: number
           status?: string
           updated_at?: string
         }
@@ -413,6 +507,33 @@ export type Database = {
         }
         Relationships: []
       }
+      seasons: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       table_background_settings: {
         Row: {
           background_url: string
@@ -473,6 +594,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permissions: {
+        Row: {
+          can_chat: boolean
+          can_create_lobby: boolean
+          can_hard_slam: boolean
+          can_invite: boolean
+          can_use_custom_backgrounds: boolean
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_chat?: boolean
+          can_create_lobby?: boolean
+          can_hard_slam?: boolean
+          can_invite?: boolean
+          can_use_custom_backgrounds?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_chat?: boolean
+          can_create_lobby?: boolean
+          can_hard_slam?: boolean
+          can_invite?: boolean
+          can_use_custom_backgrounds?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
@@ -499,7 +656,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard_current_season: {
+        Row: {
+          changa_wins: number | null
+          games_played: number | null
+          hard_slams: number | null
+          total_points: number | null
+          turns: number | null
+          user_id: string | null
+          username: string | null
+          wins: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_moderate: {
@@ -509,6 +678,10 @@ export type Database = {
       cleanup_expired_invitations: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_active_season_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_email_by_username: {
         Args: { _username: string }
@@ -534,6 +707,32 @@ export type Database = {
       }
       is_moderator: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      recalc_lobby_player_count: {
+        Args: { _lobby_id: string }
+        Returns: undefined
+      }
+      record_game_outcome: {
+        Args: {
+          _game_id: string
+          _lobby_id: string
+          _winner_user_id: string
+          _is_blocked: boolean
+          _players: Json
+        }
+        Returns: boolean
+      }
+      reset_season_stats: {
+        Args: { _season_id: string }
+        Returns: number
+      }
+      start_new_season: {
+        Args: { _name: string }
+        Returns: string
+      }
+      user_in_lobby: {
+        Args: { _lobby_id: string }
         Returns: boolean
       }
       validate_game_move: {
