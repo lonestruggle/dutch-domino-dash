@@ -363,7 +363,8 @@ export const useGameVisualSettings = () => {
 
   // Queue shake to execute after domino placement
   const queueShakeAnimation = () => {
-    console.log('🎬 🎯 Queueing shake animation for after next domino placement');
+    console.log('🎬 🚨 🎯 Queueing shake animation for after next domino placement');
+    console.log('🎬 🚨 🎯 Setting pendingShake to true');
     setPendingShake(true);
     return { success: true, message: "Shake ingepland na volgende zet" };
   };

@@ -356,9 +356,12 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </Button>
                 <Button 
                   onClick={() => {
-                    console.log('🎬 SCHUDDEN KNOP GEKLIKT!');
+                    console.log('🎬 🚨 SCHUDDEN KNOP GEKLIKT! (Mobile)');
+                    console.log('🎬 🚨 pendingShake before click:', pendingShake);
+                    console.log('🎬 🚨 startShakeAnimation function:', typeof startShakeAnimation);
                     const result = startShakeAnimation();
-                    console.log('🎬 Shake result:', result);
+                    console.log('🎬 🚨 Shake result:', result);
+                    console.log('🎬 🚨 pendingShake after click:', pendingShake);
                     if (result && !result.success) {
                       toast({
                         title: "Kan niet schudden",
@@ -428,9 +431,12 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </Button>
                 <Button 
                   onClick={() => {
-                    console.log('🎬 SCHUDDEN KNOP GEKLIKT!');
+                    console.log('🎬 🚨 SCHUDDEN KNOP GEKLIKT! (Desktop)');
+                    console.log('🎬 🚨 pendingShake before click:', pendingShake);
+                    console.log('🎬 🚨 startShakeAnimation function:', typeof startShakeAnimation);
                     const result = startShakeAnimation();
-                    console.log('🎬 Shake result:', result);
+                    console.log('🎬 🚨 Shake result:', result);
+                    console.log('🎬 🚨 pendingShake after click:', pendingShake);
                     if (result && !result.success) {
                       toast({
                         title: "Kan niet schudden",
