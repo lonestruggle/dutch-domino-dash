@@ -103,6 +103,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--domino-height', (latest.dominoHeight || 40).toString() + 'px');
     rootElement.style.setProperty('--domino-thickness', (latest.dominoThickness || 8).toString() + 'px');
     
+    // Calculate dynamic double offset for proper centering
+    const effectiveCellSize = BASE_CELL_SIZE * (latest.dominoScale || 1.0);
+    const doubleOffset = effectiveCellSize / 2;
+    rootElement.style.setProperty('--double-offset', `-${doubleOffset}px`);
+    
     if (boardRef.current) {
       boardRef.current.offsetHeight;
     }
