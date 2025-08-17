@@ -302,6 +302,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           legalMoves={legalMovesWithIndex}
           onMoveExecute={(move) => {
             console.log('🔥 DominoGame - move executed, calling gameHook.executeMove');
+            console.log('🔥 DominoGame - gameHook.executeMove type:', typeof gameHook.executeMove);
             return gameHook.executeMove(move);
           }}
           onCenterView={() => {}}

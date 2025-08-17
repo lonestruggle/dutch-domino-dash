@@ -65,6 +65,7 @@ export default function Game() {
 
   // Wrap local actions and then sync
   const wrappedExecuteMove = useCallback((move: any) => {
+    console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
     // Pre-move: detecteer CHANGA (ook bij dubbel)
     const myHand = gameState.playerHand || [];
     const isLastStone = myHand.length === 1;
