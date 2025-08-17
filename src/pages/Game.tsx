@@ -18,7 +18,7 @@ export default function Game() {
   
   // Hard slam functionality
   const visualSettings = useGameVisualSettings();
-  const { hardSlamMode, startShakeAnimation, disarmHardSlam, executePendingShake } = visualSettings;
+  const { hardSlamMode, startShakeAnimation, disarmHardSlam, executePendingShake, pendingShake } = visualSettings;
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
@@ -95,7 +95,10 @@ export default function Game() {
     // Execute pending shake after domino placement
     setTimeout(() => {
       console.log('🎬 ✨ Checking for pending shake after domino placement...');
-      executePendingShake();
+      console.log('🎬 ✨ Pending shake state:', pendingShake);
+      console.log('🎬 ✨ Visual settings object:', visualSettings);
+      const result = executePendingShake();
+      console.log('🎬 ✨ Execute pending shake result:', result);
     }, 100);
 
     // Markeer CHANGA direct en veilig op basis van de nieuwste state
@@ -116,7 +119,7 @@ export default function Game() {
     setTimeout(syncLocalToRemote, 60);
     
     return moveResult;
-  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast]);
+  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast, pendingShake, visualSettings, executePendingShake]);
 
   const wrappedDrawFromBoneyard = useCallback(() => {
     (gameHook as any).drawFromBoneyard();
