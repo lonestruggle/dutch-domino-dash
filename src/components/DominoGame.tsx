@@ -302,11 +302,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <GameBoard 
           gameState={gameState}
           legalMoves={legalMovesWithIndex}
-          onMoveExecute={(move) => {
-            console.log('🔥 DominoGame - move executed, calling gameHook.executeMove');
-            console.log('🔥 DominoGame - gameHook.executeMove type:', typeof gameHook.executeMove);
-            return gameHook.executeMove(move);
-          }}
+          onMoveExecute={(move) => gameHook.executeMove(move)}
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}
