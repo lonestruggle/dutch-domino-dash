@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDeviceType, DeviceType } from './useDeviceType';
 import { useAuth } from './useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 // Personal settings (per user)
 export interface PersonalSettings {
@@ -396,7 +397,7 @@ export const useGameVisualSettings = () => {
     return startShakeAnimationDirect();
   };
 
-  const startShakeAnimationDirect = () => {
+  const startShakeAnimationDirect = async () => {
     console.log('🎬 startShakeAnimationDirect called!');
     console.log('🎬 Current animation state:', { 
       isAnimating, 
@@ -404,6 +405,26 @@ export const useGameVisualSettings = () => {
       hasActiveRef: !!animationRef.current.current,
       hasStopFunction: !!animationRef.current.stopFunction 
     });
+    
+    // Check user permissions first
+    if (user?.id) {
+      try {
+        const { data: permissions } = await supabase
+          .from('user_permissions')
+          .select('can_hard_slam')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        // If permissions exist and can_hard_slam is false, deny access
+        if (permissions && !permissions.can_hard_slam) {
+          console.log('🎬 ❌ User does not have hard slam permission');
+          return { success: false, message: "Je hebt geen toestemming om te schudden. Neem contact op met een beheerder." };
+        }
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+        // Continue with default permission (true) if there's an error
+      }
+    }
     
     // ✅ FIX: Use getSettingsForDevice() for consistent settings retrieval
     const currentSettings = getSettingsForDevice(deviceType);

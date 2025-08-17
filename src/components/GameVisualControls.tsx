@@ -71,8 +71,8 @@ export const GameVisualControls: React.FC = () => {
   const settings = getSettingsForDevice(activeTab);
 
   // Handle animation button clicks
-  const handleShakeAnimation = () => {
-    const result = startShakeAnimation();
+  const handleShakeAnimation = async () => {
+    const result = await startShakeAnimation();
     setAnimationMessage(result.message);
   };
 

@@ -13,6 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Hand } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 interface DominoGameProps {
   gameHook: any;
@@ -22,6 +23,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { startShakeAnimation, pendingShake } = useGameVisualSettings();
+  const { canHardSlam } = useUserPermissions();
   
   const {
     gameState,
@@ -354,35 +356,37 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 >
                   🔧 Check Blocked
                 </Button>
-                <Button 
-                  onClick={() => {
-                    console.log('🎬 🚨 SCHUDDEN KNOP GEKLIKT! (Mobile)');
-                    console.log('🎬 🚨 pendingShake before click:', pendingShake);
-                    console.log('🎬 🚨 startShakeAnimation function:', typeof startShakeAnimation);
-                    const result = startShakeAnimation();
-                    console.log('🎬 🚨 Shake result:', result);
-                    console.log('🎬 🚨 pendingShake after click:', pendingShake);
-                    if (result && !result.success) {
-                      toast({
-                        title: "Kan niet schudden",
-                        description: result.message,
-                        variant: "destructive"
-                      });
-                    } else if (result && result.success) {
-                      toast({
-                        title: "Schudden ingepland",
-                        description: "Stenen schudden na volgende zet",
-                        variant: "default"
-                      });
-                    }
-                  }}
-                  variant={pendingShake ? "default" : "outline"}
-                  size="sm"
-                  className={`text-xs ${pendingShake ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`}
-                >
-                  <Hand className="h-3 w-3 mr-1" />
-                  {pendingShake ? "Gepland" : "Schudden"}
-                </Button>
+{canHardSlam && (
+                  <Button 
+                    onClick={async () => {
+                      console.log('🎬 🚨 SCHUDDEN KNOP GEKLIKT! (Mobile)');
+                      console.log('🎬 🚨 pendingShake before click:', pendingShake);
+                      console.log('🎬 🚨 startShakeAnimation function:', typeof startShakeAnimation);
+                      const result = await startShakeAnimation();
+                      console.log('🎬 🚨 Shake result:', result);
+                      console.log('🎬 🚨 pendingShake after click:', pendingShake);
+                      if (result && !result.success) {
+                        toast({
+                          title: "Kan niet schudden",
+                          description: result.message,
+                          variant: "destructive"
+                        });
+                      } else if (result && result.success) {
+                        toast({
+                          title: "Schudden ingepland",
+                          description: "Stenen schudden na volgende zet",
+                          variant: "default"
+                        });
+                      }
+                    }}
+                    variant={pendingShake ? "default" : "outline"}
+                    size="sm"
+                    className={`text-xs ${pendingShake ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`}
+                  >
+                    <Hand className="h-3 w-3 mr-1" />
+                    {pendingShake ? "Gepland" : "Schudden"}
+                  </Button>
+                )}
               </div>
               {gameState?.isGameOver && (
                 <div className="text-center">
@@ -429,34 +433,36 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 >
                   🔧 Check Blocked
                 </Button>
-                <Button 
-                  onClick={() => {
-                    console.log('🎬 🚨 SCHUDDEN KNOP GEKLIKT! (Desktop)');
-                    console.log('🎬 🚨 pendingShake before click:', pendingShake);
-                    console.log('🎬 🚨 startShakeAnimation function:', typeof startShakeAnimation);
-                    const result = startShakeAnimation();
-                    console.log('🎬 🚨 Shake result:', result);
-                    console.log('🎬 🚨 pendingShake after click:', pendingShake);
-                    if (result && !result.success) {
-                      toast({
-                        title: "Kan niet schudden",
-                        description: result.message,
-                        variant: "destructive"
-                      });
-                    } else if (result && result.success) {
-                      toast({
-                        title: "Schudden ingepland",
-                        description: "Stenen schudden na volgende zet",
-                        variant: "default"
-                      });
-                    }
-                  }}
-                  variant={pendingShake ? "default" : "outline"}
-                  className={pendingShake ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}
-                >
-                  <Hand className="h-4 w-4 mr-1" />
-                  {pendingShake ? "Gepland" : "Schudden"}
-                </Button>
+{canHardSlam && (
+                  <Button 
+                    onClick={async () => {
+                      console.log('🎬 🚨 SCHUDDEN KNOP GEKLIKT! (Desktop)');
+                      console.log('🎬 🚨 pendingShake before click:', pendingShake);
+                      console.log('🎬 🚨 startShakeAnimation function:', typeof startShakeAnimation);
+                      const result = await startShakeAnimation();
+                      console.log('🎬 🚨 Shake result:', result);
+                      console.log('🎬 🚨 pendingShake after click:', pendingShake);
+                      if (result && !result.success) {
+                        toast({
+                          title: "Kan niet schudden",
+                          description: result.message,
+                          variant: "destructive"
+                        });
+                      } else if (result && result.success) {
+                        toast({
+                          title: "Schudden ingepland",
+                          description: "Stenen schudden na volgende zet",
+                          variant: "default"
+                        });
+                      }
+                    }}
+                    variant={pendingShake ? "default" : "outline"}
+                    className={pendingShake ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}
+                  >
+                    <Hand className="h-4 w-4 mr-1" />
+                    {pendingShake ? "Gepland" : "Schudden"}
+                  </Button>
+                )}
               </div>
               <div className="text-sm text-muted-foreground flex items-center">
                 {gameState?.isGameOver ? (
