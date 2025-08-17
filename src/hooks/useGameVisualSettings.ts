@@ -649,7 +649,21 @@ export const useGameVisualSettings = () => {
       console.log('🎯 Animating:', { newX, newY, newZ, wave });
       
         // Apply individual random animation to each existing board domino
-        const boardDominoes = document.querySelectorAll('.domino-tile-board');
+        let boardDominoes = document.querySelectorAll('.domino-tile-board');
+        if (boardDominoes.length === 0) {
+          console.log('🔍 No .domino-tile-board found, trying .board-domino');
+          boardDominoes = document.querySelectorAll('.board-domino');
+        }
+        if (boardDominoes.length === 0) {
+          console.log('🔍 No .board-domino found, trying .domino-tile');
+          boardDominoes = document.querySelectorAll('.domino-tile');
+        }
+        if (boardDominoes.length === 0) {
+          console.log('🔍 No domino tiles found, trying [class*="domino"]');
+          boardDominoes = document.querySelectorAll('[class*="domino"]');
+        }
+        console.log(`🎯 Found ${boardDominoes.length} domino elements for animation`);
+        
         boardDominoes.forEach((domino: Element, index: number) => {
           const htmlDomino = domino as HTMLElement;
           
@@ -866,8 +880,9 @@ export const useGameVisualSettings = () => {
 
   // Disarm hard slam mode (only turn off, don't toggle)
   const disarmHardSlam = () => {
-    console.log('🔥 disarmHardSlam called - setting to false');
+    console.log('🔥 disarmHardSlam called - resetting all shake states');
     setHardSlamMode(false);
+    setPendingShake(false); // Also reset pending shake
     hardSlamRef.current = false; // Update ref immediately
   };
 
