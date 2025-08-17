@@ -563,9 +563,7 @@ export const useGameVisualSettings = () => {
         
         animationRef.current.current = requestAnimationFrame(animate);
       } else {
-        console.log('💥 HARD SLAM EFFECT - Starting shake animation and randomizing rotations!');
-        
-        // Return to base rotation AND randomize permanent rotations (HARD SLAM effect)
+        // Return to base rotation - reset only board dominoes but keep their original rotation
         let boardDominoes = document.querySelectorAll('.domino-tile-board');
         if (boardDominoes.length === 0) {
           boardDominoes = document.querySelectorAll('.board-domino');
@@ -573,27 +571,16 @@ export const useGameVisualSettings = () => {
         if (boardDominoes.length === 0) {
           boardDominoes = document.querySelectorAll('.domino-tile');
         }
-        
-        boardDominoes.forEach((domino: Element, index: number) => {
+        boardDominoes.forEach((domino: Element) => {
           const htmlDomino = domino as HTMLElement;
-          
-          // Generate a new random rotation for this domino (-20 to +20 degrees)
-          const newRandomRotation = (Math.random() - 0.5) * 40;
-          
-          // Update the data attribute with the new random rotation
-          htmlDomino.dataset.originalRotation = newRandomRotation.toString();
-          
-          // Apply the new permanent rotation immediately
+          const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
           const currentTransform = htmlDomino.style.transform || '';
           const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + newRandomRotation}deg)`.trim();
-          
-          console.log(`🎯 Domino ${index} got new permanent rotation: ${newRandomRotation.toFixed(1)}°`);
+          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + originalRotationZ}deg)`.trim();
         });
-        
         setIsAnimating(false);
         setAnimationMode(null);
-        console.log('🎬 Shake animation completed with new permanent rotations');
+        console.log('🎬 Shake animation completed');
       }
     };
     
@@ -662,21 +649,7 @@ export const useGameVisualSettings = () => {
       console.log('🎯 Animating:', { newX, newY, newZ, wave });
       
         // Apply individual random animation to each existing board domino
-        let boardDominoes = document.querySelectorAll('.domino-tile-board');
-        if (boardDominoes.length === 0) {
-          console.log('🔍 No .domino-tile-board found, trying .board-domino');
-          boardDominoes = document.querySelectorAll('.board-domino');
-        }
-        if (boardDominoes.length === 0) {
-          console.log('🔍 No .board-domino found, trying .domino-tile');
-          boardDominoes = document.querySelectorAll('.domino-tile');
-        }
-        if (boardDominoes.length === 0) {
-          console.log('🔍 No domino tiles found, trying [class*="domino"]');
-          boardDominoes = document.querySelectorAll('[class*="domino"]');
-        }
-        console.log(`🎯 Found ${boardDominoes.length} domino elements for animation`);
-        
+        const boardDominoes = document.querySelectorAll('.domino-tile-board');
         boardDominoes.forEach((domino: Element, index: number) => {
           const htmlDomino = domino as HTMLElement;
           
@@ -893,9 +866,8 @@ export const useGameVisualSettings = () => {
 
   // Disarm hard slam mode (only turn off, don't toggle)
   const disarmHardSlam = () => {
-    console.log('🔥 disarmHardSlam called - resetting all shake states');
+    console.log('🔥 disarmHardSlam called - setting to false');
     setHardSlamMode(false);
-    setPendingShake(false); // Also reset pending shake
     hardSlamRef.current = false; // Update ref immediately
   };
 
