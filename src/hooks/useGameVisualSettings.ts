@@ -574,22 +574,8 @@ export const useGameVisualSettings = () => {
           boardDominoes = document.querySelectorAll('.domino-tile');
         }
         
-        boardDominoes.forEach((domino: Element, index: number) => {
-          const htmlDomino = domino as HTMLElement;
-          
-          // Generate a new random rotation for this domino (-20 to +20 degrees)
-          const newRandomRotation = (Math.random() - 0.5) * 40;
-          
-          // Update the data attribute with the new random rotation
-          htmlDomino.dataset.originalRotation = newRandomRotation.toString();
-          
-          // Apply the new permanent rotation immediately
-          const currentTransform = htmlDomino.style.transform || '';
-          const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + newRandomRotation}deg)`.trim();
-          
-          console.log(`🎯 Domino ${index} got new permanent rotation: ${newRandomRotation.toFixed(1)}°`);
-        });
+        // Geen nieuwe rotaties - laat de stenen gewoon liggen zoals ze zijn
+        console.log('🎬 Shake animation completed - dominoes stay as they are');
         
         setIsAnimating(false);
         setAnimationMode(null);
