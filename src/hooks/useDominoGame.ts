@@ -16,7 +16,39 @@ const shuffleArray = <T>(array: T[]): void => {
 };
 
 export const useDominoGame = (startShakeAnimation?: () => void) => {
-  const { settings } = useGameVisualSettings();
+  // Callback function to handle new rotations from shake animation
+  const handleShakeComplete = useCallback((newRotations: Record<string, number>) => {
+    console.log('🔄 handleShakeComplete called with:', newRotations);
+    
+    setGameState(prev => {
+      const updatedDominoes = { ...prev.dominoes };
+      
+      // Update the rotationZ values in gameState
+      Object.entries(newRotations).forEach(([dominoId, rotationZ]) => {
+        if (updatedDominoes[dominoId]) {
+          updatedDominoes[dominoId] = {
+            ...updatedDominoes[dominoId],
+            rotationZ: rotationZ,
+            // Keep backwards compatibility
+            rotation: rotationZ
+          };
+          console.log(`🔄 Updated domino ${dominoId} rotation to ${rotationZ}°`);
+        }
+      });
+      
+      const newState = {
+        ...prev,
+        dominoes: updatedDominoes
+      };
+      
+      // Update the ref for potential callbacks
+      gameStateRef.current = newState;
+      
+      return newState;
+    });
+  }, []);
+
+  const { settings } = useGameVisualSettings(handleShakeComplete);
   const { toast } = useToast();
   const [gameState, setGameState] = useState<GameState>({
     dominoes: {},
@@ -68,7 +100,8 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
       orientation,
       flipped,
       isSpinner: isDouble(data),
-      rotation: (Math.random() - 0.5) * 40, // Random rotation between -20 and +20 degrees
+      rotation: (Math.random() - 0.5) * 10, // Small random rotation for new game
+      rotationZ: (Math.random() - 0.5) * 10, // Z-axis rotation for consistency
     };
 
     const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
