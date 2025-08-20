@@ -16,14 +16,28 @@ export default function Game() {
   const { toast } = useToast();
   const savedRef = useRef(false);
   
+  // Hard slam functionality
+  const visualSettings = useGameVisualSettings();
+  const { hardSlamMode, startShakeAnimation, disarmHardSlam, executePendingShake, pendingShake } = visualSettings;
+  
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
   
   // Use the domino game hook with shake animation support
-  const gameHook = useDominoGame();
+  const gameHook = useDominoGame(startShakeAnimation);
   const { gameState, setGameState } = gameHook;
+
+  // Ref om Changa-detectie te markeren tussen pre- en post-move
+  const changaRef = useRef(false);
   
-  // Sync local state to remote after local actions
+  // Sync the game state when synced state changes
+  useEffect(() => {
+    if (syncState.gameState && !syncState.isLoading) {
+      setGameState(syncState.gameState);
+    }
+  }, [syncState.gameState, syncState.isLoading, setGameState]);
+
+  // Sync my local hand/boneyard/board to Supabase after local actions to avoid duplicates
   const syncLocalToRemote = useCallback(() => {
     if (!syncState.gameState || !syncState.gameData) return;
     const remote = syncState.gameState as any;
@@ -48,57 +62,6 @@ export default function Game() {
     };
     updateGameState(newStateToSave);
   }, [syncState.gameState, syncState.gameData, syncState.playerPosition, gameState, updateGameState]);
-  
-  // Callback function to handle new rotations from shake animation and sync to database
-  const handleShakeComplete = useCallback((newRotations: Record<string, number>) => {
-    console.log('🔄 Game.tsx handleShakeComplete called with:', newRotations);
-    
-    // Update the local gameState immediately
-    setGameState(prev => {
-      const updatedDominoes = { ...prev.dominoes };
-      
-      // Update the rotationZ values in gameState
-      Object.entries(newRotations).forEach(([dominoId, rotationZ]) => {
-        if (updatedDominoes[dominoId]) {
-          updatedDominoes[dominoId] = {
-            ...updatedDominoes[dominoId],
-            rotationZ: rotationZ,
-            // Keep backwards compatibility
-            rotation: rotationZ
-          };
-          console.log(`🔄 Updated domino ${dominoId} rotation to ${rotationZ}°`);
-        }
-      });
-      
-      const newState = {
-        ...prev,
-        dominoes: updatedDominoes
-      };
-      
-      // Sync to database immediately to share with other players
-      setTimeout(() => {
-        console.log('🔄 Syncing new rotations to database for lobby sharing...');
-        syncLocalToRemote();
-      }, 100);
-      
-      return newState;
-    });
-  }, [setGameState, syncLocalToRemote]);
-
-  // Hard slam functionality
-  const visualSettings = useGameVisualSettings(handleShakeComplete);
-  const { hardSlamMode, startShakeAnimation, disarmHardSlam, executePendingShake, pendingShake } = visualSettings;
-
-  // Ref om Changa-detectie te markeren tussen pre- en post-move
-  const changaRef = useRef(false);
-  
-  // Sync the game state when synced state changes
-  useEffect(() => {
-    if (syncState.gameState && !syncState.isLoading) {
-      setGameState(syncState.gameState);
-    }
-  }, [syncState.gameState, syncState.isLoading, setGameState]);
-
 
   // Wrap local actions and then sync
   const wrappedExecuteMove = useCallback((move: any) => {

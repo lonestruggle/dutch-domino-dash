@@ -99,7 +99,7 @@ const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
   mobile: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile },
 };
 
-export const useGameVisualSettings = (onShakeComplete?: (newRotations: Record<string, number>) => void) => {
+export const useGameVisualSettings = () => {
   const deviceType = useDeviceType();
   const { user } = useAuth();
   
@@ -574,37 +574,22 @@ export const useGameVisualSettings = (onShakeComplete?: (newRotations: Record<st
           boardDominoes = document.querySelectorAll('.domino-tile');
         }
         
-        // Track new rotations for gameState sync
-        const newRotations: Record<string, number> = {};
-        
         boardDominoes.forEach((domino: Element, index: number) => {
           const htmlDomino = domino as HTMLElement;
-          const dominoId = htmlDomino.id;
           
-          // Generate a new random rotation for this domino (using global settings amplitude)
-          const newRandomRotation = (Math.random() - 0.5) * 2 * currentSettings.rotationAmplitudeZ;
+          // Generate a new random rotation for this domino (-20 to +20 degrees)
+          const newRandomRotation = (Math.random() - 0.5) * 40;
           
           // Update the data attribute with the new random rotation
           htmlDomino.dataset.originalRotation = newRandomRotation.toString();
           
-          // Track for gameState update
-          if (dominoId) {
-            newRotations[dominoId] = newRandomRotation;
-          }
-          
-          // Apply the new permanent rotation smoothly (no abrupt visual jump)
+          // Apply the new permanent rotation immediately
           const currentTransform = htmlDomino.style.transform || '';
           const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
           htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + newRandomRotation}deg)`.trim();
           
           console.log(`🎯 Domino ${index} got new permanent rotation: ${newRandomRotation.toFixed(1)}°`);
         });
-        
-        // Send new rotations back to gameState via callback
-        if (onShakeComplete && Object.keys(newRotations).length > 0) {
-          console.log('🎬 ✅ Calling onShakeComplete with new rotations:', newRotations);
-          onShakeComplete(newRotations);
-        }
         
         setIsAnimating(false);
         setAnimationMode(null);
