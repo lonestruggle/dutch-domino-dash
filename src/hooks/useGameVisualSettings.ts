@@ -744,6 +744,12 @@ export const useGameVisualSettings = () => {
 
   // Function to apply original rotations without animation 
   const applyOriginalRotations = () => {
+    // Don't apply rotations if we're animating or just finished animating
+    if (isAnimating) {
+      console.log('🚫 Skipping applyOriginalRotations - animation in progress');
+      return;
+    }
+    
     const currentSettings = allSettings[deviceType];
     let boardDominoes = document.querySelectorAll('.domino-tile-board');
     if (boardDominoes.length === 0) {
