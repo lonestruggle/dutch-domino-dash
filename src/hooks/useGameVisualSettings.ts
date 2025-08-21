@@ -91,9 +91,9 @@ const DEFAULT_SETTINGS: GameVisualSettings = {
 };
 
 const DEFAULT_DEVICE_PERSONAL_SETTINGS: DeviceSpecificPersonalSettings = {
-  desktop: { dominoScale: 1.0, handDominoScale: 1.0, durationAdjustment: 0, speedAdjustment: 0 },
-  tablet: { dominoScale: 0.9, handDominoScale: 0.9, durationAdjustment: 0, speedAdjustment: 0 },
-  mobile: { dominoScale: 1.2, handDominoScale: 1.2, durationAdjustment: 0, speedAdjustment: 0 },
+  desktop: { dominoScale: 1.0, handDominoScale: 0.8, durationAdjustment: 0, speedAdjustment: 0 },
+  tablet: { dominoScale: 0.9, handDominoScale: 0.7, durationAdjustment: 0, speedAdjustment: 0 },
+  mobile: { dominoScale: 1.2, handDominoScale: 0.9, durationAdjustment: 0, speedAdjustment: 0 },
 };
 
 const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
