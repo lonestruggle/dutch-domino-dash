@@ -31,11 +31,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
   
-  // Get effective cell size that scales with domino scale for proportional spacing
-  const getEffectiveCellSize = () => {
-    const currentDominoScale = settings.dominoScale || 1.0;
-    return 48 * currentDominoScale; // BASE_CELL_SIZE = 48
-  };
+  // Use base cell size - let GameBoard's automatic scaling handle all proportions
+  const BASE_CELL_SIZE = 48;
   
   return (
     <div
@@ -47,9 +44,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         className
       )}
       style={{
-        // Perfect grid alignment - use dynamic cell size for proportional spacing
-        width: `${width * getEffectiveCellSize()}px`,
-        height: `${height * getEffectiveCellSize()}px`,
+        // Perfect grid alignment - GameBoard's automatic scaling handles proportions
+        width: `${width * BASE_CELL_SIZE}px`,
+        height: `${height * BASE_CELL_SIZE}px`,
         left: style?.left,
         top: style?.top,
         // No additional transform scaling needed - size is already proportional
