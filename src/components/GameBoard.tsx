@@ -21,6 +21,7 @@ interface GameBoardProps {
   tableBackgroundUrl?: string;
   onRotateDomino?: (dominoId: string) => void;
   hardSlamMode?: boolean;
+  isMyTurn?: boolean;
 }
 
 // Grid-based constants - each domino occupies 2 grid cells
@@ -40,7 +41,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   backgroundChoice = 'domino-table-2',
   tableBackgroundUrl,
   onRotateDomino,
-  hardSlamMode
+  hardSlamMode,
+  isMyTurn = true
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);

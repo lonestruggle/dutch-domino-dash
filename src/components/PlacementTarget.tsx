@@ -14,6 +14,7 @@ interface PlacementTargetProps {
   style?: React.CSSProperties;
   className?: string;
   isInitialPlacement?: boolean;
+  disabled?: boolean;
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -26,7 +27,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   onClick,
   style,
   className,
-  isInitialPlacement = false
+  isInitialPlacement = false,
+  disabled = false
 }) => {
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
@@ -57,7 +59,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
       }}
       onClick={(e) => {
         e.stopPropagation();
-        onClick();
+        if (!disabled) {
+          onClick();
+        }
       }}
       onTouchStart={isMobile ? (e) => e.stopPropagation() : undefined}
     />

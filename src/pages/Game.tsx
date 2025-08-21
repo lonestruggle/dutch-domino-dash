@@ -21,7 +21,7 @@ export default function Game() {
   const { hardSlamMode, startShakeAnimation, disarmHardSlam, executePendingShake, pendingShake } = visualSettings;
   
   // Use the existing synced game state hook
-  const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
+  const { syncState, updateGameState, startNewGame: syncedStartNewGame, validateGameMove } = useSyncedDominoGameState(gameId || '', user?.id || '');
   
   // Use the domino game hook with shake animation support
   const gameHook = useDominoGame(startShakeAnimation);
@@ -67,6 +67,16 @@ export default function Game() {
   const wrappedExecuteMove = useCallback((move: any) => {
     console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
     console.log('🔥 pendingShake status:', pendingShake);
+    
+    // Frontend turn validation - block if not player's turn
+    if (syncState.currentPlayer !== syncState.playerPosition) {
+      toast({
+        title: "Niet jouw beurt!",
+        description: `Het is de beurt van speler ${syncState.currentPlayer + 1}`,
+        variant: "destructive"
+      });
+      return;
+    }
     // Pre-move: detecteer CHANGA (ook bij dubbel)
     const myHand = gameState.playerHand || [];
     const isLastStone = myHand.length === 1;
@@ -108,6 +118,10 @@ export default function Game() {
       console.log('🎬 ✨ No pending shake to execute');
     }
 
+    // Advance to next player turn after successful move
+    const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
+    console.log('🎯 Advancing turn from', syncState.currentPlayer, 'to', nextPlayerTurn);
+
     // Markeer CHANGA direct en veilig op basis van de nieuwste state
     setTimeout(() => {
       if (!changaRef.current) return;
@@ -115,7 +129,7 @@ export default function Game() {
       setGameState(prev => {
         if (prev.isGameOver) return prev;
         const after = { ...(prev as any), isGameOver: true, gameEndReason: 'changa', winner_position: myPos } as any;
-        updateGameState(after);
+        updateGameState(after, nextPlayerTurn); // Update with next player turn
         return after;
       });
       // Optionele feedback
@@ -123,15 +137,41 @@ export default function Game() {
       changaRef.current = false;
     }, 50);
 
-    setTimeout(syncLocalToRemote, 60);
+    // Sync with next player turn
+    setTimeout(() => {
+      syncLocalToRemote();
+      // Update the current player turn in database
+      if (syncState.gameData && !gameState.isGameOver) {
+        updateGameState(gameState, nextPlayerTurn);
+      }
+    }, 60);
     
     return moveResult;
-  }, [gameHook, gameState, syncState.playerPosition, setGameState, updateGameState, syncLocalToRemote, toast, pendingShake, visualSettings, executePendingShake]);
+  }, [gameHook, gameState, syncState.playerPosition, syncState.currentPlayer, syncState.allPlayers.length, setGameState, updateGameState, syncLocalToRemote, toast, pendingShake, visualSettings, executePendingShake]);
 
   const wrappedDrawFromBoneyard = useCallback(() => {
+    // Frontend turn validation - block if not player's turn
+    if (syncState.currentPlayer !== syncState.playerPosition) {
+      toast({
+        title: "Niet jouw beurt!",
+        description: `Het is de beurt van speler ${syncState.currentPlayer + 1}`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     (gameHook as any).drawFromBoneyard();
-    setTimeout(syncLocalToRemote, 60);
-  }, [gameHook, syncLocalToRemote]);
+    
+    // Advance to next player turn after drawing
+    const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
+    console.log('🎯 Advancing turn after draw from', syncState.currentPlayer, 'to', nextPlayerTurn);
+    
+    setTimeout(() => {
+      syncLocalToRemote();
+      // Update the current player turn in database
+      updateGameState(gameState, nextPlayerTurn);
+    }, 60);
+  }, [gameHook, syncLocalToRemote, syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, gameState, updateGameState, toast]);
 
   const wrappedStartNewGame = useCallback(async () => {
     // Reset opslagvlag voor scorebord zodat nieuwe uitslag later kan worden opgeslagen

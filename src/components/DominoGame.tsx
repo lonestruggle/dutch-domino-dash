@@ -289,18 +289,43 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <Card className={isMobile ? "p-3" : "p-4"}>
           <h3 className={`font-semibold mb-3 ${isMobile ? "text-sm" : ""}`}>Players</h3>
           <div className="flex flex-wrap gap-2">
-            {syncState?.allPlayers?.map((player: any) => (
-              <Badge 
-                key={player.position} 
-                variant={player.position === gameState?.currentPlayer ? "default" : "outline"}
-                className={`flex items-center space-x-1 ${isMobile ? "text-xs" : ""}`}
-              >
-                <span>{player.username}</span>
-                <span className="text-xs opacity-75">
-                  ({gameState?.playerHands?.[player.position]?.length || 0})
-                </span>
-              </Badge>
-            ))}
+            {syncState?.allPlayers?.map((player: any) => {
+              const isCurrentPlayer = player.position === syncState?.currentPlayer;
+              const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition && player.position === syncState?.playerPosition;
+              return (
+                <Badge 
+                  key={player.position} 
+                  variant={isCurrentPlayer ? "default" : "outline"}
+                  className={cn(
+                    "flex items-center space-x-1 transition-all duration-300",
+                    isMobile ? "text-xs" : "",
+                    isCurrentPlayer && "ring-2 ring-primary ring-offset-2 bg-primary text-primary-foreground",
+                    isMyTurn && "animate-pulse shadow-lg"
+                  )}
+                >
+                  <span>{player.username}</span>
+                  <span className="text-xs opacity-75">
+                    ({gameState?.playerHands?.[player.position]?.length || 0})
+                  </span>
+                  {isCurrentPlayer && <span className="text-xs ml-1">🎯</span>}
+                </Badge>
+              );
+            })}
+          </div>
+          {/* Turn indicator */}
+          <div className="mt-3 pt-2 border-t">
+            <div className={cn(
+              "text-center font-medium transition-all duration-300",
+              isMobile ? "text-sm" : "text-base",
+              syncState?.currentPlayer === syncState?.playerPosition 
+                ? "text-primary animate-pulse" 
+                : "text-muted-foreground"
+            )}>
+              {syncState?.currentPlayer === syncState?.playerPosition 
+                ? "🎯 Jouw beurt!" 
+                : `Beurt van ${syncState?.allPlayers?.find(p => p.position === syncState?.currentPlayer)?.username || 'Speler'}`
+              }
+            </div>
           </div>
         </Card>
 
@@ -314,6 +339,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           backgroundChoice={gameData?.background_choice}
           tableBackgroundUrl={gameData?.table_background_url}
           onRotateDomino={rotateDomino}
+          isMyTurn={syncState?.currentPlayer === syncState?.playerPosition}
           
         />
 

@@ -219,6 +219,27 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     }
   }, [gameId, syncState.currentPlayer, toast]);
 
+  // Validate game move using server-side function
+  const validateGameMove = useCallback(async (gameId: string, playerPosition: number, moveData: any) => {
+    try {
+      const { data, error } = await supabase.rpc('validate_game_move', {
+        _game_id: gameId,
+        _player_position: playerPosition,
+        _move_data: moveData
+      });
+
+      if (error) {
+        console.error('Move validation error:', error);
+        return false;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error validating move:', error);
+      return false;
+    }
+  }, []);
+
   // Start new game (updates database)
   const startNewGame = useCallback(async () => {
     if (!gameId || !syncState.isHost) return undefined;
@@ -386,6 +407,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     syncState,
     loadGameState,
     updateGameState,
-    startNewGame
+    startNewGame,
+    validateGameMove
   };
 };
