@@ -903,13 +903,6 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
       if (prev.hardSlamNextMove) {
         console.log('🔥 HARD SLAM ACTIVATED - Starting shake animation!');
         
-        // Show toast notification for Hard Slam activation
-        toast({
-          title: "🔥 HARD SLAM!",
-          description: "Alle stenen krijgen nieuwe rotaties en schudden!",
-          duration: 3000,
-        });
-        
         // Call the shake animation directly, just like the Schudden button does
         // The shake animation will handle generating and applying new rotations
         setTimeout(() => {
