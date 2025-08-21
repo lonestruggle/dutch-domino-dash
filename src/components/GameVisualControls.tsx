@@ -15,6 +15,7 @@ import {
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { DeviceType } from '@/hooks/useDeviceType';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
 
 
@@ -31,6 +32,7 @@ const deviceLabels = {
 };
 
 export const GameVisualControls: React.FC = () => {
+  const { isAdmin, loading } = useUserRoles();
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -39,6 +41,10 @@ export const GameVisualControls: React.FC = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const dialogRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Only render for admins
+  if (loading) return null;
+  if (!isAdmin) return null;
   const { 
     currentDeviceType, 
     getSettingsForDevice, 
