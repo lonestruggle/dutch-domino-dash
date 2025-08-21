@@ -110,26 +110,6 @@ export const useLobbies = () => {
       return { error: null };
     }
 
-    // Get current players count and find next available position
-    const { data: players, error: playersError } = await supabase
-      .from('lobby_players')
-      .select('player_position')
-      .eq('lobby_id', lobbyId)
-      .order('player_position');
-
-    if (playersError) return { error: playersError };
-
-    // Find next available position
-    let nextPosition = 0;
-    const usedPositions = players?.map(p => p.player_position) || [];
-    while (usedPositions.includes(nextPosition) && nextPosition < 4) {
-      nextPosition++;
-    }
-
-    if (nextPosition >= 4) {
-      return { error: 'Lobby is full' };
-    }
-
     // Get username from profiles table
     const { data: profile } = await supabase
       .from('profiles')
@@ -139,16 +119,32 @@ export const useLobbies = () => {
 
     const username = profile?.username || user.email || 'Player';
 
-    const { error } = await supabase
-      .from('lobby_players')
-      .insert({
-        lobby_id: lobbyId,
-         user_id: user.id,
-         username: username,
-        player_position: nextPosition
-      });
+    // Try positions 0-3 until we find one that works (atomic operation)
+    for (let position = 0; position < 4; position++) {
+      const { error } = await supabase
+        .from('lobby_players')
+        .insert({
+          lobby_id: lobbyId,
+          user_id: user.id,
+          username: username,
+          player_position: position
+        });
 
-    return { error };
+      if (!error) {
+        // Successfully joined at this position
+        return { error: null };
+      }
+
+      // If it's not a unique constraint violation, return the error
+      if (!error.message.includes('duplicate key value violates unique constraint')) {
+        return { error };
+      }
+
+      // Otherwise, try next position
+    }
+
+    // All positions are taken
+    return { error: 'Lobby is vol' };
   };
 
   useEffect(() => {
