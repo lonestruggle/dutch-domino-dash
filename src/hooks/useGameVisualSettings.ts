@@ -11,7 +11,15 @@ export interface PersonalSettings {
   speedAdjustment: number; // -300 to +300ms, each step = 10ms
 }
 
-// Global settings (same for everyone)
+// Truly global settings (SAME for ALL devices and users - stored once)
+export interface TrulyGlobalSettings {
+  // Hard slam amplitude settings - SAME FOR ALL DEVICES
+  rotationAmplitudeX: number; // -500 to 500 degrees
+  rotationAmplitudeY: number; // -500 to 500 degrees
+  rotationAmplitudeZ: number; // -500 to 500 degrees
+}
+
+// Global settings (same for everyone but per device)
 export interface GlobalSettings {
   // 3D Rotation settings - GLOBAL FOR EVERYONE
   rotateX: number; // -90 to 90 degrees
@@ -19,9 +27,6 @@ export interface GlobalSettings {
   rotateZ: number; // -90 to 90 degrees
   // Animation settings - GLOBAL FOR EVERYONE
   rotationSpeed: number; // 0.1 to 10x speed
-  rotationAmplitudeX: number; // -500 to 500 degrees
-  rotationAmplitudeY: number; // -500 to 500 degrees
-  rotationAmplitudeZ: number; // -500 to 500 degrees
   animationDuration: number; // 0.1 to 10 seconds
   // Shake settings - GLOBAL FOR EVERYONE
   shakeIntensity: number; // 0.1 to 2.0 intensity multiplier
@@ -33,7 +38,7 @@ export interface GlobalSettings {
 }
 
 // Combined interface for easy access
-export interface GameVisualSettings extends PersonalSettings, GlobalSettings {}
+export interface GameVisualSettings extends PersonalSettings, GlobalSettings, TrulyGlobalSettings {}
 
 export interface DeviceSpecificPersonalSettings {
   desktop: PersonalSettings;
@@ -60,14 +65,17 @@ const DEFAULT_PERSONAL_SETTINGS: PersonalSettings = {
   speedAdjustment: 0,
 };
 
+const DEFAULT_TRULY_GLOBAL_SETTINGS: TrulyGlobalSettings = {
+  rotationAmplitudeX: 200, // Higher default for better visibility on all devices
+  rotationAmplitudeY: 200, // Higher default for better visibility on all devices
+  rotationAmplitudeZ: 100, // Add Z rotation for more dramatic effect
+};
+
 const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   rotateX: 0,
   rotateY: 0,
   rotateZ: 0,
   rotationSpeed: 5,
-  rotationAmplitudeX: 45,
-  rotationAmplitudeY: 45,
-  rotationAmplitudeZ: 0,
   animationDuration: 2,
   shakeIntensity: 1.0,
   shakeDuration: 1.5,
@@ -79,6 +87,7 @@ const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
 const DEFAULT_SETTINGS: GameVisualSettings = {
   ...DEFAULT_PERSONAL_SETTINGS,
   ...DEFAULT_GLOBAL_SETTINGS,
+  ...DEFAULT_TRULY_GLOBAL_SETTINGS,
 };
 
 const DEFAULT_DEVICE_PERSONAL_SETTINGS: DeviceSpecificPersonalSettings = {
@@ -94,16 +103,16 @@ const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
 };
 
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
-  desktop: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.desktop, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop },
-  tablet: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.tablet, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet },
-  mobile: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile },
+  desktop: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.desktop, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop, ...DEFAULT_TRULY_GLOBAL_SETTINGS },
+  tablet: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.tablet, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet, ...DEFAULT_TRULY_GLOBAL_SETTINGS },
+  mobile: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile, ...DEFAULT_TRULY_GLOBAL_SETTINGS },
 };
 
 export const useGameVisualSettings = () => {
   const deviceType = useDeviceType();
   const { user } = useAuth();
   
-  // Separate storage for personal and global settings
+  // Separate storage for personal, global and truly global settings
   const getPersonalStorageKey = () => {
     const userId = user?.id || 'anonymous';
     return `domino-personal-settings-v3-${userId}`;
@@ -111,6 +120,10 @@ export const useGameVisualSettings = () => {
   
   const getGlobalStorageKey = () => {
     return `domino-global-settings-v3`; // No user ID - same for everyone
+  };
+
+  const getTrulyGlobalStorageKey = () => {
+    return `domino-truly-global-settings-v1`; // SAME for ALL devices and users
   };
   
   const loadPersonalSettingsFromStorage = (): DeviceSpecificPersonalSettings => {
@@ -158,20 +171,40 @@ export const useGameVisualSettings = () => {
       return DEFAULT_DEVICE_GLOBAL_SETTINGS;
     }
   };
+
+  const loadTrulyGlobalSettingsFromStorage = (): TrulyGlobalSettings => {
+    try {
+      const storageKey = getTrulyGlobalStorageKey();
+      console.log('🌎 Loading TRULY GLOBAL settings with key:', storageKey);
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const merged = { ...DEFAULT_TRULY_GLOBAL_SETTINGS, ...parsed };
+        console.log('🌎 Loaded TRULY GLOBAL settings:', merged);
+        return merged;
+      }
+      console.log('🌎 No truly global settings found, using defaults');
+      return DEFAULT_TRULY_GLOBAL_SETTINGS;
+    } catch {
+      console.log('🌎 Error loading truly global settings, using defaults');
+      return DEFAULT_TRULY_GLOBAL_SETTINGS;
+    }
+  };
   
-  const combineSettings = (personal: DeviceSpecificPersonalSettings, global: DeviceSpecificGlobalSettings): DeviceSpecificSettings => {
+  const combineSettings = (personal: DeviceSpecificPersonalSettings, global: DeviceSpecificGlobalSettings, trulyGlobal: TrulyGlobalSettings): DeviceSpecificSettings => {
     return {
-      desktop: { ...personal.desktop, ...global.desktop },
-      tablet: { ...personal.tablet, ...global.tablet },
-      mobile: { ...personal.mobile, ...global.mobile },
+      desktop: { ...personal.desktop, ...global.desktop, ...trulyGlobal },
+      tablet: { ...personal.tablet, ...global.tablet, ...trulyGlobal },
+      mobile: { ...personal.mobile, ...global.mobile, ...trulyGlobal },
     };
   };
   
   const [personalSettings, setPersonalSettings] = useState<DeviceSpecificPersonalSettings>(loadPersonalSettingsFromStorage);
   const [globalSettings, setGlobalSettings] = useState<DeviceSpecificGlobalSettings>(loadGlobalSettingsFromStorage);
+  const [trulyGlobalSettings, setTrulyGlobalSettings] = useState<TrulyGlobalSettings>(loadTrulyGlobalSettingsFromStorage);
   
-  // Combine personal and global settings
-  const allSettings = combineSettings(personalSettings, globalSettings);
+  // Combine personal, global and truly global settings
+  const allSettings = combineSettings(personalSettings, globalSettings, trulyGlobalSettings);
   
   // Reload personal settings when user changes
   useEffect(() => {
@@ -183,6 +216,12 @@ export const useGameVisualSettings = () => {
   useEffect(() => {
     const newGlobalSettings = loadGlobalSettingsFromStorage();
     setGlobalSettings(newGlobalSettings);
+  }, []);
+
+  // Load truly global settings once (same for ALL devices and users)
+  useEffect(() => {
+    const newTrulyGlobalSettings = loadTrulyGlobalSettingsFromStorage();
+    setTrulyGlobalSettings(newTrulyGlobalSettings);
   }, []);
 
   // Animation state - moved after initial settings
@@ -216,6 +255,17 @@ export const useGameVisualSettings = () => {
     }
   }, [globalSettings]);
 
+  // Save truly global settings
+  useEffect(() => {
+    try {
+      const storageKey = getTrulyGlobalStorageKey();
+      localStorage.setItem(storageKey, JSON.stringify(trulyGlobalSettings));
+      console.log('🌎💾 Saved TRULY GLOBAL settings:', trulyGlobalSettings);
+    } catch (error) {
+      console.warn('Failed to save truly global settings:', error);
+    }
+  }, [trulyGlobalSettings]);
+
   // Listen for force save events
   useEffect(() => {
     const handleForceSave = (event: CustomEvent) => {
@@ -229,6 +279,10 @@ export const useGameVisualSettings = () => {
         const globalKey = getGlobalStorageKey();
         localStorage.setItem(globalKey, JSON.stringify(globalSettings));
         
+        // Force save current truly global settings
+        const trulyGlobalKey = getTrulyGlobalStorageKey();
+        localStorage.setItem(trulyGlobalKey, JSON.stringify(trulyGlobalSettings));
+        
         console.log('💾 Force saved all settings to localStorage');
       } catch (error) {
         console.error('Failed to force save settings:', error);
@@ -239,7 +293,7 @@ export const useGameVisualSettings = () => {
     return () => {
       window.removeEventListener('forceSettingsSave', handleForceSave as EventListener);
     };
-  }, [personalSettings, globalSettings, user?.id]);
+  }, [personalSettings, globalSettings, trulyGlobalSettings, user?.id]);
 
   // Broadcast and apply live visual settings globally on any change
   useEffect(() => {
@@ -289,6 +343,7 @@ export const useGameVisualSettings = () => {
     } else {
       setPersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS);
       setGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
+      setTrulyGlobalSettings(DEFAULT_TRULY_GLOBAL_SETTINGS);
     }
   };
 
@@ -322,14 +377,16 @@ export const useGameVisualSettings = () => {
 
   const getSettingsForDevice = (device: DeviceType) => {
     // ✅ FIX: Always load fresh settings from localStorage to avoid race conditions
-    // Load both personal and global settings fresh from localStorage
+    // Load personal, global and truly global settings fresh from localStorage
     const freshPersonalSettings = loadPersonalSettingsFromStorage();
     const freshGlobalSettings = loadGlobalSettingsFromStorage();
+    const freshTrulyGlobalSettings = loadTrulyGlobalSettingsFromStorage();
     
     // Combine them just like allSettings does
     const combined = {
       ...freshPersonalSettings[device],
-      ...freshGlobalSettings[device]
+      ...freshGlobalSettings[device],
+      ...freshTrulyGlobalSettings
     };
     
     return combined || DEFAULT_DEVICE_SETTINGS[device];
@@ -804,13 +861,16 @@ export const useGameVisualSettings = () => {
     }));
   };
 
-  const updateRotationAmplitude = (axis: 'X' | 'Y' | 'Z', value: number, targetDevice?: DeviceType) => {
+  const updateRotationAmplitude = (axis: 'X' | 'Y' | 'Z', value: number) => {
+    // ✅ NEW: Update truly global settings for ALL devices
     const clampedValue = Math.max(-1000, Math.min(1000, value));
-    const device = targetDevice || deviceType;
-    const property = `rotationAmplitude${axis}` as keyof GlobalSettings;
-    setGlobalSettings(prev => ({
+    const property = `rotationAmplitude${axis}` as keyof TrulyGlobalSettings;
+    
+    console.log(`🌎 Updating ${property} to ${clampedValue} for ALL devices`);
+    
+    setTrulyGlobalSettings(prev => ({
       ...prev,
-      [device]: { ...prev[device], [property]: clampedValue }
+      [property]: clampedValue
     }));
   };
 

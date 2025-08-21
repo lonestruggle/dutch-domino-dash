@@ -506,49 +506,49 @@ export const GameVisualControls: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Amplitude X-as: {deviceSettings.rotationAmplitudeX.toFixed(1)}°
+              <div className="border border-primary/20 p-3 rounded-lg bg-primary/5">
+                <div className="text-xs font-medium mb-2 text-primary flex items-center gap-1">
+                  🌎 Amplitude X-as: {deviceSettings.rotationAmplitudeX.toFixed(1)}° (Alle Devices)
                 </div>
-                <Slider
-                  min={-1000}
-                  max={1000}
-                  step={0.1}
-                  value={[deviceSettings.rotationAmplitudeX]}
-                  onValueChange={([value]) => updateRotationAmplitude('X', value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Amplitude Y-as: {deviceSettings.rotationAmplitudeY.toFixed(1)}°
-                </div>
-                <Slider
-                  min={-1000}
-                  max={1000}
-                  step={0.1}
-                  value={[deviceSettings.rotationAmplitudeY]}
-                  onValueChange={([value]) => updateRotationAmplitude('Y', value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Amplitude Z-as: {deviceSettings.rotationAmplitudeZ.toFixed(1)}°
-                </div>
-                <Slider
-                  min={-1000}
-                  max={1000}
-                  step={0.1}
-                  value={[deviceSettings.rotationAmplitudeZ]}
-                  onValueChange={([value]) => updateRotationAmplitude('Z', value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
+                 <Slider
+                   min={-1000}
+                   max={1000}
+                   step={0.1}
+                   value={[deviceSettings.rotationAmplitudeX]}
+                   onValueChange={([value]) => updateRotationAmplitude('X', value)}
+                   disabled={isAnimating}
+                   className="w-full"
                  />
+              </div>
+
+              <div className="border border-primary/20 p-3 rounded-lg bg-primary/5">
+                <div className="text-xs font-medium mb-2 text-primary flex items-center gap-1">
+                  🌎 Amplitude Y-as: {deviceSettings.rotationAmplitudeY.toFixed(1)}° (Alle Devices)
+                </div>
+                 <Slider
+                   min={-1000}
+                   max={1000}
+                   step={0.1}
+                   value={[deviceSettings.rotationAmplitudeY]}
+                   onValueChange={([value]) => updateRotationAmplitude('Y', value)}
+                   disabled={isAnimating}
+                   className="w-full"
+                 />
+              </div>
+
+              <div className="border border-primary/20 p-3 rounded-lg bg-primary/5">
+                <div className="text-xs font-medium mb-2 text-primary flex items-center gap-1">
+                  🌎 Amplitude Z-as: {deviceSettings.rotationAmplitudeZ.toFixed(1)}° (Alle Devices)
+                </div>
+                 <Slider
+                   min={-1000}
+                   max={1000}
+                   step={0.1}
+                   value={[deviceSettings.rotationAmplitudeZ]}
+                   onValueChange={([value]) => updateRotationAmplitude('Z', value)}
+                   disabled={isAnimating}
+                   className="w-full"
+                  />
                 </div>
               </div>
             </CardContent>
