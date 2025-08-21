@@ -47,11 +47,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const { settings, applyOriginalRotations, isAnimating, animationMode } = useGameVisualSettings();
 
-  // Get effective cell size that scales with domino scale for proportional spacing
-  const getEffectiveCellSize = () => {
-    const currentDominoScale = settings.dominoScale || 1.0;
-    return BASE_CELL_SIZE * currentDominoScale;
-  };
 
   // Listen for live settings updates and reapply scaling
   useEffect(() => {
@@ -160,9 +155,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     });
 
     const extraPadding = 4;
-    const effectiveCellSize = getEffectiveCellSize();
-    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * effectiveCellSize;
-    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * effectiveCellSize;
+    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * BASE_CELL_SIZE;
+    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * BASE_CELL_SIZE;
 
     const scaleX = availableWidth / requiredWidth;
     const scaleY = availableHeight / requiredHeight;
@@ -189,9 +183,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       maxY = Math.max(maxY, domino.y + dominoHeight - 1);
     });
 
-    const effectiveCellSize = getEffectiveCellSize();
-    const requiredWidth = (maxX - minX + 1) * effectiveCellSize + PADDING * 2;
-    const requiredHeight = (maxY - minY + 1) * effectiveCellSize + PADDING * 2;
+    const requiredWidth = (maxX - minX + 1) * BASE_CELL_SIZE + PADDING * 2;
+    const requiredHeight = (maxY - minY + 1) * BASE_CELL_SIZE + PADDING * 2;
     const requiredSize = Math.max(requiredWidth, requiredHeight, MIN_BOARD_SIZE);
     
     return Math.max(requiredSize, MIN_BOARD_SIZE);
@@ -238,10 +231,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     const containerRect = containerRef.current.getBoundingClientRect();
     const boardSize = calculateBoardSize();
-    const effectiveCellSize = getEffectiveCellSize();
     
-    const pixelCenterX = boardSize / 2 + centerX * effectiveCellSize;
-    const pixelCenterY = boardSize / 2 + centerY * effectiveCellSize;
+    const pixelCenterX = boardSize / 2 + centerX * BASE_CELL_SIZE;
+    const pixelCenterY = boardSize / 2 + centerY * BASE_CELL_SIZE;
     
     const optimalScrollX = pixelCenterX - containerRect.width / 2;
     const optimalScrollY = pixelCenterY - containerRect.height / 2;
@@ -300,9 +292,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       
-      const effectiveCellSize = getEffectiveCellSize();
-      const pixelCenterX = boardSize / 2 + centerX * effectiveCellSize * currentScale;
-      const pixelCenterY = boardSize / 2 + centerY * effectiveCellSize * currentScale;
+      const pixelCenterX = boardSize / 2 + centerX * BASE_CELL_SIZE * currentScale;
+      const pixelCenterY = boardSize / 2 + centerY * BASE_CELL_SIZE * currentScale;
       
       const optimalScrollX = pixelCenterX - containerRect.width / 2;
       const optimalScrollY = pixelCenterY - containerRect.height / 2;
@@ -322,9 +313,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       const firstDomino = Object.values(gameState.dominoes)[0];
-      const effectiveCellSize = getEffectiveCellSize();
-      const firstDominoX = firstDomino.x * effectiveCellSize * dynamicScale;
-      const firstDominoY = firstDomino.y * effectiveCellSize * dynamicScale;
+      const firstDominoX = firstDomino.x * BASE_CELL_SIZE * dynamicScale;
+      const firstDominoY = firstDomino.y * BASE_CELL_SIZE * dynamicScale;
       
       setTimeout(() => {
         containerRef.current?.scrollTo({
@@ -396,8 +386,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 key={id}
                 className="absolute"
                 style={{
-                  left: boardSize / 2 + domino.x * getEffectiveCellSize(),
-                  top: boardSize / 2 + domino.y * getEffectiveCellSize(),
+                  left: boardSize / 2 + domino.x * BASE_CELL_SIZE,
+                  top: boardSize / 2 + domino.y * BASE_CELL_SIZE,
                 }}
               >
                 <DominoTile
@@ -449,8 +439,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 onClick={() => onMoveExecute(move)}
                 style={{
                   // Position exactly on grid coordinates - like dominos, no centering
-                  left: boardSize / 2 + x * getEffectiveCellSize(),
-                  top: boardSize / 2 + y * getEffectiveCellSize(),
+                  left: boardSize / 2 + x * BASE_CELL_SIZE,
+                  top: boardSize / 2 + y * BASE_CELL_SIZE,
                 }}
               />
             );
