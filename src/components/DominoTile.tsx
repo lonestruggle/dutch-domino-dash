@@ -74,9 +74,10 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   const isHorizontal = orientation === 'horizontal';
   const thickness = `${settings.dominoThickness}px`;
   
-  // Dynamic dimensions based on settings
-  const dominoWidth = settings.dominoWidth;
-  const dominoHeight = settings.dominoHeight;
+  // Grid-based dimensions - each domino spans 2 grid cells
+  const GRID_CELL_SIZE = 40; // Match GameBoard grid size
+  const dominoWidth = orientation === 'horizontal' ? GRID_CELL_SIZE * 2 : GRID_CELL_SIZE;
+  const dominoHeight = orientation === 'horizontal' ? GRID_CELL_SIZE : GRID_CELL_SIZE * 2;
 
   return (
     <div
@@ -94,9 +95,9 @@ export const DominoTile: React.FC<DominoTileProps> = ({
       style={{
         '--domino-rotation': `${rotation}deg`,
         transformStyle: 'preserve-3d',
-        // Dynamic dimensions
-        width: orientation === 'horizontal' ? `${dominoWidth}px` : `${dominoHeight}px`,
-        height: orientation === 'horizontal' ? `${dominoHeight}px` : `${dominoWidth}px`,
+        // Grid-based dimensions - each domino spans exactly 2 grid cells
+        width: `${dominoWidth}px`,
+        height: `${dominoHeight}px`,
         // Spread alle andere style properties EERST
         ...style,
         // CRITICAL: Include original rotation in initial transform
