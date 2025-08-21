@@ -152,8 +152,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     });
 
     const extraPadding = 4;
-    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * BASE_CELL_SIZE;
-    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * BASE_CELL_SIZE;
+    const requiredWidth = (maxX - minX + 1 + extraPadding * 2) * settings.dominoWidth;
+    const requiredHeight = (maxY - minY + 1 + extraPadding * 2) * settings.dominoWidth;
 
     const scaleX = availableWidth / requiredWidth;
     const scaleY = availableHeight / requiredHeight;
@@ -180,8 +180,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       maxY = Math.max(maxY, domino.y + dominoHeight - 1);
     });
 
-    const requiredWidth = (maxX - minX + 1) * BASE_CELL_SIZE + PADDING * 2;
-    const requiredHeight = (maxY - minY + 1) * BASE_CELL_SIZE + PADDING * 2;
+    const requiredWidth = (maxX - minX + 1) * settings.dominoWidth + PADDING * 2;
+    const requiredHeight = (maxY - minY + 1) * settings.dominoWidth + PADDING * 2;
     const requiredSize = Math.max(requiredWidth, requiredHeight, MIN_BOARD_SIZE);
     
     return Math.max(requiredSize, MIN_BOARD_SIZE);
@@ -229,8 +229,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const containerRect = containerRef.current.getBoundingClientRect();
     const boardSize = calculateBoardSize();
     
-    const pixelCenterX = boardSize / 2 + centerX * BASE_CELL_SIZE;
-    const pixelCenterY = boardSize / 2 + centerY * BASE_CELL_SIZE;
+    const pixelCenterX = boardSize / 2 + centerX * settings.dominoWidth;
+    const pixelCenterY = boardSize / 2 + centerY * settings.dominoWidth;
     
     const optimalScrollX = pixelCenterX - containerRect.width / 2;
     const optimalScrollY = pixelCenterY - containerRect.height / 2;
@@ -289,8 +289,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       
-      const pixelCenterX = boardSize / 2 + centerX * BASE_CELL_SIZE * currentScale;
-      const pixelCenterY = boardSize / 2 + centerY * BASE_CELL_SIZE * currentScale;
+      const pixelCenterX = boardSize / 2 + centerX * settings.dominoWidth * currentScale;
+      const pixelCenterY = boardSize / 2 + centerY * settings.dominoWidth * currentScale;
       
       const optimalScrollX = pixelCenterX - containerRect.width / 2;
       const optimalScrollY = pixelCenterY - containerRect.height / 2;
@@ -310,8 +310,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       const firstDomino = Object.values(gameState.dominoes)[0];
-      const firstDominoX = firstDomino.x * BASE_CELL_SIZE * dynamicScale;
-      const firstDominoY = firstDomino.y * BASE_CELL_SIZE * dynamicScale;
+      const firstDominoX = firstDomino.x * settings.dominoWidth * dynamicScale;
+      const firstDominoY = firstDomino.y * settings.dominoWidth * dynamicScale;
       
       setTimeout(() => {
         containerRef.current?.scrollTo({
@@ -383,8 +383,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 key={id}
                 className="absolute"
                 style={{
-                  left: boardSize / 2 + domino.x * BASE_CELL_SIZE,
-                  top: boardSize / 2 + domino.y * BASE_CELL_SIZE,
+                  left: boardSize / 2 + domino.x * settings.dominoWidth,
+                  top: boardSize / 2 + domino.y * settings.dominoWidth,
                 }}
               >
                 <DominoTile
@@ -436,8 +436,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 onClick={() => onMoveExecute(move)}
                 style={{
                   // Position exactly on grid coordinates - like dominos, no centering
-                  left: boardSize / 2 + x * BASE_CELL_SIZE,
-                  top: boardSize / 2 + y * BASE_CELL_SIZE,
+                  left: boardSize / 2 + x * settings.dominoWidth,
+                  top: boardSize / 2 + y * settings.dominoWidth,
                 }}
               />
             );
