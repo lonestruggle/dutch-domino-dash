@@ -705,98 +705,99 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
       // Skip forbidden positions for the very first domino
       const isFirstDomino = Object.keys(prev.dominoes).length === 0;
       
+      // Create new forbiddens object to avoid mutation
+      const newForbiddens = { ...prev.forbiddens };
+      
       if (!isFirstDomino) {
         if (isDouble(dominoData)) {
           // Mark the double domino positions themselves as forbidden first
-          prev.forbiddens[`${x},${y}`] = true;
+          newForbiddens[`${x},${y}`] = true;
           if (orientation === 'horizontal') {
-            prev.forbiddens[`${x + 1},${y}`] = true;
+            newForbiddens[`${x + 1},${y}`] = true;
           } else {
-            prev.forbiddens[`${x},${y + 1}`] = true;
+            newForbiddens[`${x},${y + 1}`] = true;
           }
           
           // Then add comprehensive forbidden positions around it
           let dir = end.fromDir;
           if (dir === 'N') {
             // Forbidden positions around North direction for doubles
-            prev.forbiddens[`${x - 1},${y + 2}`] = true;
-            prev.forbiddens[`${x + 1},${y + 2}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y + 3}`] = true;
-            prev.forbiddens[`${x},${y + 2}`] = true;
+            newForbiddens[`${x - 1},${y + 2}`] = true;
+            newForbiddens[`${x + 1},${y + 2}`] = true;
+            newForbiddens[`${x - 1},${y + 1}`] = true;
+            newForbiddens[`${x + 1},${y + 1}`] = true;
+            newForbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
+            newForbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
+            newForbiddens[`${x},${y + 3}`] = true;
+            newForbiddens[`${x},${y + 2}`] = true;
           }
           if (dir === 'S') {
             // Forbidden positions around South direction for doubles
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y - 2}`] = true;
-            prev.forbiddens[`${x + 1},${y - 2}`] = true;
-            prev.forbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y - 2}`] = true;
-            prev.forbiddens[`${x},${y - 3}`] = true;
+            newForbiddens[`${x - 1},${y - 1}`] = true;
+            newForbiddens[`${x + 1},${y - 1}`] = true;
+            newForbiddens[`${x - 1},${y - 2}`] = true;
+            newForbiddens[`${x + 1},${y - 2}`] = true;
+            newForbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
+            newForbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
+            newForbiddens[`${x},${y - 2}`] = true;
+            newForbiddens[`${x},${y - 3}`] = true;
           }
           if (dir === 'E') {
             // Forbidden positions around East direction for doubles
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 2},${y + 1}`] = true;
-            prev.forbiddens[`${x - 2},${y - 1}`] = true;
-            prev.forbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x - 2},${y}`] = true;
-            prev.forbiddens[`${x - 3},${y}`] = true;
+            newForbiddens[`${x - 1},${y + 1}`] = true;
+            newForbiddens[`${x - 1},${y - 1}`] = true;
+            newForbiddens[`${x - 2},${y + 1}`] = true;
+            newForbiddens[`${x - 2},${y - 1}`] = true;
+            newForbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
+            newForbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
+            newForbiddens[`${x - 2},${y}`] = true;
+            newForbiddens[`${x - 3},${y}`] = true;
           }
           if (dir === 'W') {
             // Forbidden positions around West direction for doubles
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            prev.forbiddens[`${x + 2},${y + 1}`] = true;
-            prev.forbiddens[`${x + 2},${y - 1}`] = true;
-            prev.forbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
-            prev.forbiddens[`${x + 2},${y}`] = true;
-            prev.forbiddens[`${x + 3},${y}`] = true;
+            newForbiddens[`${x + 1},${y + 1}`] = true;
+            newForbiddens[`${x + 1},${y - 1}`] = true;
+            newForbiddens[`${x + 2},${y + 1}`] = true;
+            newForbiddens[`${x + 2},${y - 1}`] = true;
+            newForbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
+            newForbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
+            newForbiddens[`${x + 2},${y}`] = true;
+            newForbiddens[`${x + 3},${y}`] = true;
           }
         } else {
           let dir = end.fromDir;
           if (dir === 'N') {
-            prev.forbiddens[`${x - 1},${y + 2}`] = true;
-            prev.forbiddens[`${x + 1},${y + 2}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x},${y + 3}`] = true;
+            newForbiddens[`${x - 1},${y + 2}`] = true;
+            newForbiddens[`${x + 1},${y + 2}`] = true;
+            newForbiddens[`${x - 1},${y + 1}`] = true;
+            newForbiddens[`${x + 1},${y + 1}`] = true;
+            newForbiddens[`${x},${y + 3}`] = true;
           }
           if (dir === 'S') {
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y}`] = true;
-            prev.forbiddens[`${x + 1},${y}`] = true;
-            prev.forbiddens[`${x},${y - 2}`] = true;
+            newForbiddens[`${x - 1},${y - 1}`] = true;
+            newForbiddens[`${x + 1},${y - 1}`] = true;
+            newForbiddens[`${x - 1},${y}`] = true;
+            newForbiddens[`${x + 1},${y}`] = true;
+            newForbiddens[`${x},${y - 2}`] = true;
           }
           if (dir === 'W') {
-            prev.forbiddens[`${x + 2},${y + 1}`] = true;
-            prev.forbiddens[`${x + 2},${y - 1}`] = true;
-            prev.forbiddens[`${x + 1},${y + 1}`] = true;
-            prev.forbiddens[`${x + 1},${y - 1}`] = true;
-            if (`${x + 3},${y}` !== '1,0') prev.forbiddens[`${x + 3},${y}`] = true;
+            newForbiddens[`${x + 2},${y + 1}`] = true;
+            newForbiddens[`${x + 2},${y - 1}`] = true;
+            newForbiddens[`${x + 1},${y + 1}`] = true;
+            newForbiddens[`${x + 1},${y - 1}`] = true;
+            if (`${x + 3},${y}` !== '1,0') newForbiddens[`${x + 3},${y}`] = true;
           }
           if (dir === 'E') {
-            prev.forbiddens[`${x - 1},${y - 1}`] = true;
-            prev.forbiddens[`${x - 1},${y + 1}`] = true;
-            prev.forbiddens[`${x},${y - 1}`] = true;
-            prev.forbiddens[`${x},${y + 1}`] = true;
-            if (`${x - 2},${y}` !== '-1,0') prev.forbiddens[`${x - 2},${y}`] = true;
+            newForbiddens[`${x - 1},${y - 1}`] = true;
+            newForbiddens[`${x - 1},${y + 1}`] = true;
+            newForbiddens[`${x},${y - 1}`] = true;
+            newForbiddens[`${x},${y + 1}`] = true;
+            if (`${x - 2},${y}` !== '-1,0') newForbiddens[`${x - 2},${y}`] = true;
           }
         }
       }
 
-      if (!prev.spinnerId && isDouble(dominoData)) {
-        prev.spinnerId = id;
-      }
+      const newSpinnerId = (!prev.spinnerId && isDouble(dominoData)) ? id : prev.spinnerId;
 
       const newPlayerHand = [...prev.playerHand];
       newPlayerHand.splice(index, 1);
@@ -920,6 +921,8 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
         ...prev,
         dominoes: { ...prev.dominoes, [id]: dominoState },
         board: newBoard,
+        forbiddens: newForbiddens,
+        spinnerId: newSpinnerId,
         playerHand: newPlayerHand,
         selectedHandIndex: null,
         nextDominoId: prev.nextDominoId + 1,
