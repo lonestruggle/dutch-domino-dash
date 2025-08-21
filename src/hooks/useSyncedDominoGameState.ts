@@ -123,7 +123,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         spinnerId: gameState.spinnerId || null,
         isGameOver: gameState.isGameOver || false,
         selectedHandIndex: gameState.selectedHandIndex || null,
-        currentPlayer: gameData?.current_player_turn || 0, // ALWAYS use database column as source of truth
+        // Remove currentPlayer from game_state JSON to avoid confusion - use only database column
       } : null;
 
       // Defensive fix: remove any tiles from hands/boneyard that already appear on the table
@@ -195,8 +195,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
 
     try {
       // Mark this as a self-initiated update to prevent immediate reload flicker
-      // Increased timeout for better sync stability
-      selfUpdateSuppressUntilRef.current = Date.now() + 200;
+      // Increased timeout for better sync stability and race condition prevention
+      selfUpdateSuppressUntilRef.current = Date.now() + 500;
 
       console.log('📤 UPDATING DATABASE:', {
         gameId,
@@ -400,12 +400,12 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
 
           console.log('🔄 Game updated by other player, reloading state...', payload);
           console.log('🔄 BEFORE RELOAD - Current dominoes:', Object.keys(syncState.gameState?.dominoes || {}));
-          // Add small delay to ensure database consistency before reload
+          // Add debouncing delay to ensure database consistency and prevent rapid-fire updates
           setTimeout(() => {
             loadGameState().then(() => {
               console.log('🔄 AFTER RELOAD - Reloaded dominoes:', Object.keys(syncState.gameState?.dominoes || {}));
             });
-          }, 50);
+          }, 250); // Increased delay for better debouncing
         }
       )
       .subscribe();

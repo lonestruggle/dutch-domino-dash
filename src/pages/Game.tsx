@@ -37,33 +37,9 @@ export default function Game() {
     }
   }, [syncState.gameState, syncState.isLoading, setGameState]);
 
-  // Sync my local hand/boneyard/board to Supabase after local actions to avoid duplicates
-  const syncLocalToRemote = useCallback(() => {
-    if (!syncState.gameState || !syncState.gameData) return;
-    const remote = syncState.gameState as any;
-    const myPos = syncState.playerPosition || 0;
-    const nextHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
-    nextHands[myPos] = gameState.playerHand || [];
+  // Removed syncLocalToRemote - now using SINGLE consolidated updates instead of double updates
 
-    const newStateToSave = {
-      ...remote,
-      dominoes: gameState.dominoes,
-      board: gameState.board,
-      boneyard: gameState.boneyard,
-      forbiddens: gameState.forbiddens,
-      openEnds: gameState.openEnds,
-      nextDominoId: gameState.nextDominoId,
-      spinnerId: gameState.spinnerId,
-      isGameOver: gameState.isGameOver,
-      playerHand: gameState.playerHand,
-      playerHands: nextHands,
-      gameEndReason: (gameState as any).gameEndReason,
-      winner_position: (gameState as any).winner_position,
-    };
-    updateGameState(newStateToSave);
-  }, [syncState.gameState, syncState.gameData, syncState.playerPosition, gameState, updateGameState]);
-
-  // Wrap local actions and then sync
+  // Wrap local actions and then sync - SINGLE CONSOLIDATED UPDATE
   const wrappedExecuteMove = useCallback((move: any) => {
     console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
     console.log('🔥 pendingShake status:', pendingShake);
@@ -77,6 +53,7 @@ export default function Game() {
       });
       return;
     }
+    
     // Pre-move: detecteer CHANGA (ook bij dubbel)
     const myHand = gameState.playerHand || [];
     const isLastStone = myHand.length === 1;
@@ -101,54 +78,67 @@ export default function Game() {
 
     changaRef.current = isChangaCandidate;
 
-    // Execute the move
+    // Execute the move locally
     const moveResult = (gameHook as any).executeMove(move);
     
     // Execute pending shake after domino placement
-    console.log('🎬 ✨ Checking for pending shake after domino placement...');
-    console.log('🎬 ✨ Pending shake state:', pendingShake);
-    console.log('🎬 ✨ Visual settings object:', visualSettings);
-    console.log('🎬 ✨ Visual settings pendingShake:', visualSettings.pendingShake);
-    
     if (visualSettings.pendingShake) {
       console.log('🎬 ✨ EXECUTING PENDING SHAKE NOW!');
-      const result = visualSettings.executePendingShake();
-      console.log('🎬 ✨ Execute pending shake result:', result);
-    } else {
-      console.log('🎬 ✨ No pending shake to execute');
+      visualSettings.executePendingShake();
     }
 
-    // Advance to next player turn after successful move
+    // Calculate next player turn
     const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
     console.log('🎯 Advancing turn from', syncState.currentPlayer, 'to', nextPlayerTurn);
 
-    // Consolidated database update with turn advancement
+    // SINGLE CONSOLIDATED DATABASE UPDATE - capture fresh state
     setTimeout(() => {
-      console.log('🔄 CONSOLIDATED UPDATE - Syncing local to remote and advancing turn');
-      
-      // Check for CHANGA first
-      if (changaRef.current) {
+      setGameState(currentState => {
+        console.log('🔄 SINGLE CONSOLIDATED UPDATE - capturing fresh state');
+        
+        // Prepare consolidated state with turn advancement
+        const remote = syncState.gameState as any;
         const myPos = syncState.playerPosition || 0;
-        setGameState(prev => {
-          if (prev.isGameOver) return prev;
-          const changaState = { ...(prev as any), isGameOver: true, gameEndReason: 'changa', winner_position: myPos } as any;
-          // Single database update with CHANGA state and next player turn
-          updateGameState(changaState, nextPlayerTurn);
-          return changaState;
-        });
-        toast({ title: 'CHANGA!', description: 'Je hebt gewonnen met CHANGA!' });
-        changaRef.current = false;
-      } else {
-        // Normal move: sync local state and advance turn in single update
-        syncLocalToRemote();
-        if (syncState.gameData && !gameState.isGameOver) {
-          updateGameState(gameState, nextPlayerTurn);
+        const nextHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
+        nextHands[myPos] = currentState.playerHand || [];
+
+        let finalState = {
+          ...remote,
+          dominoes: currentState.dominoes,
+          board: currentState.board,
+          boneyard: currentState.boneyard,
+          forbiddens: currentState.forbiddens,
+          openEnds: currentState.openEnds,
+          nextDominoId: currentState.nextDominoId,
+          spinnerId: currentState.spinnerId,
+          isGameOver: currentState.isGameOver,
+          playerHand: currentState.playerHand,
+          playerHands: nextHands,
+          gameEndReason: (currentState as any).gameEndReason,
+          winner_position: (currentState as any).winner_position,
+        };
+
+        // Check for CHANGA and update state accordingly
+        if (changaRef.current) {
+          finalState = {
+            ...finalState,
+            isGameOver: true,
+            gameEndReason: 'changa',
+            winner_position: myPos
+          };
+          toast({ title: 'CHANGA!', description: 'Je hebt gewonnen met CHANGA!' });
+          changaRef.current = false;
         }
-      }
-    }, 100);
+
+        // SINGLE database update with consolidated state AND turn advancement
+        updateGameState(finalState, nextPlayerTurn);
+        
+        return currentState; // Return current state to avoid double setting
+      });
+    }, 150); // Slightly longer delay for better state consistency
     
     return moveResult;
-  }, [gameHook, gameState, syncState.playerPosition, syncState.currentPlayer, syncState.allPlayers.length, setGameState, updateGameState, syncLocalToRemote, toast, pendingShake, visualSettings, executePendingShake]);
+  }, [gameHook, gameState, syncState.playerPosition, syncState.currentPlayer, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState, toast, pendingShake, visualSettings]);
 
   const wrappedDrawFromBoneyard = useCallback(() => {
     // Frontend turn validation - block if not player's turn
@@ -161,19 +151,47 @@ export default function Game() {
       return;
     }
     
+    // Execute draw locally
     (gameHook as any).drawFromBoneyard();
     
-    // Advance to next player turn after drawing
+    // Calculate next player turn
     const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
     console.log('🎯 Advancing turn after draw from', syncState.currentPlayer, 'to', nextPlayerTurn);
     
+    // SINGLE CONSOLIDATED UPDATE for draw
     setTimeout(() => {
-      console.log('🔄 DRAW FROM BONEYARD - Syncing and advancing turn');
-      syncLocalToRemote();
-      // Update the current player turn in database
-      updateGameState(gameState, nextPlayerTurn);
-    }, 100);
-  }, [gameHook, syncLocalToRemote, syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, gameState, updateGameState, toast]);
+      setGameState(currentState => {
+        console.log('🔄 SINGLE DRAW UPDATE - capturing fresh state');
+        
+        // Prepare consolidated state
+        const remote = syncState.gameState as any;
+        const myPos = syncState.playerPosition || 0;
+        const nextHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
+        nextHands[myPos] = currentState.playerHand || [];
+
+        const finalState = {
+          ...remote,
+          dominoes: currentState.dominoes,
+          board: currentState.board,
+          boneyard: currentState.boneyard,
+          forbiddens: currentState.forbiddens,
+          openEnds: currentState.openEnds,
+          nextDominoId: currentState.nextDominoId,
+          spinnerId: currentState.spinnerId,
+          isGameOver: currentState.isGameOver,
+          playerHand: currentState.playerHand,
+          playerHands: nextHands,
+          gameEndReason: (currentState as any).gameEndReason,
+          winner_position: (currentState as any).winner_position,
+        };
+
+        // SINGLE database update with state AND turn advancement
+        updateGameState(finalState, nextPlayerTurn);
+        
+        return currentState;
+      });
+    }, 150);
+  }, [gameHook, syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState, toast]);
 
   const wrappedStartNewGame = useCallback(async () => {
     // Reset opslagvlag voor scorebord zodat nieuwe uitslag later kan worden opgeslagen
@@ -430,8 +448,11 @@ export default function Game() {
     // Pass doesn't change game state, just advances turn
     setTimeout(() => {
       console.log('🔄 PASS MOVE - Advancing turn only');
-      updateGameState(gameState, nextPlayerTurn);
-    }, 100);
+      // Only update the turn, no game state changes needed for pass
+      if (syncState.gameData) {
+        updateGameState(syncState.gameState, nextPlayerTurn);
+      }
+    }, 150);
   }, [syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, gameState, updateGameState, toast]);
 
   // Sla automatisch de uitslag op naar het scoreboard zodra het spel eindigt
