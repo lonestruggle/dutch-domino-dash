@@ -646,10 +646,10 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       toast({
         title: "Error", 
-        description: "Wachtwoord moet minimaal 6 karakters lang zijn",
+        description: "Wachtwoord moet minimaal 8 karakters lang zijn",
         variant: "destructive",
       });
       return;
@@ -1752,9 +1752,9 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
                 )}
               </div>
               
-              {newPassword.length > 0 && newPassword.length < 6 && (
+              {newPassword.length > 0 && newPassword.length < 8 && (
                 <p className="text-sm text-destructive">
-                  Wachtwoord moet minimaal 6 karakters lang zijn
+                  Wachtwoord moet minimaal 8 karakters lang zijn
                 </p>
               )}
             </div>
@@ -1765,7 +1765,7 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
               </Button>
               <Button 
                 onClick={handleResetPassword}
-                disabled={!newPassword || newPassword.length < 6}
+                disabled={!newPassword || newPassword.length < 8}
               >
                 <Key className="h-4 w-4 mr-1" />
                 Reset Wachtwoord

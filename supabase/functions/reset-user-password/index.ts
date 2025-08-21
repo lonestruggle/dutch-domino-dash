@@ -82,7 +82,7 @@ serve(async (req) => {
     }
 
     // Check if password contains at least one letter and one number
-    if (!/^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword)) {
+    if (!/(?=.*[A-Za-z])(?=.*\d)/.test(newPassword)) {
       console.error('Password does not meet complexity requirements');
       return new Response(
         JSON.stringify({ error: 'Wachtwoord moet minimaal één letter en één cijfer bevatten' }), 
@@ -96,7 +96,7 @@ serve(async (req) => {
     console.log('Password validation passed. Length:', newPassword.length);
 
     // Create Supabase admin client
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
