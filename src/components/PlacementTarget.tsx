@@ -32,7 +32,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   const { settings } = useGameVisualSettings();
   
   // Use grid cell size - each domino occupies 2 grid cells
-  const GRID_CELL_SIZE = 40;
+  // Use settings-based grid size for consistent scaling across devices
+  const GRID_CELL_SIZE = settings.dominoWidth / 2;
   
   return (
     <div

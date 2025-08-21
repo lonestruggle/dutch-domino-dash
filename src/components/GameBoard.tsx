@@ -24,7 +24,7 @@ interface GameBoardProps {
 }
 
 // Grid-based constants - each domino occupies 2 grid cells
-const GRID_CELL_SIZE = 40; // Square grid cells (40x40px)
+// GRID_CELL_SIZE is now dynamic based on settings
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 1.0;
 const MIN_BOARD_SIZE = 1200;
@@ -46,6 +46,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { settings, applyOriginalRotations, isAnimating, animationMode } = useGameVisualSettings();
+  
+  // Dynamic grid cell size based on settings - each domino = 2 grid cells
+  const GRID_CELL_SIZE = settings.dominoWidth / 2;
 
 
   // Listen for live settings updates and reapply scaling

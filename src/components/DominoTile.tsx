@@ -75,7 +75,8 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   const thickness = `${settings.dominoThickness}px`;
   
   // Grid-based dimensions - each domino spans 2 grid cells
-  const GRID_CELL_SIZE = 40; // Match GameBoard grid size
+  // Use settings-based grid size for consistent scaling across devices
+  const GRID_CELL_SIZE = settings.dominoWidth / 2;
   const dominoWidth = orientation === 'horizontal' ? GRID_CELL_SIZE * 2 : GRID_CELL_SIZE;
   const dominoHeight = orientation === 'horizontal' ? GRID_CELL_SIZE : GRID_CELL_SIZE * 2;
 
