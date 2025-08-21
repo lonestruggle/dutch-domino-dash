@@ -83,13 +83,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const finalScale = baseScale * userScale;
     const selectedScale = finalScale * 1.05;
     const hoverScale = finalScale;
-    const targetScale = finalScale;
     
     const rootElement = document.documentElement;
     rootElement.style.setProperty('--domino-scale', finalScale.toString());
     rootElement.style.setProperty('--domino-scale-selected', selectedScale.toString());
     rootElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
-    rootElement.style.setProperty('--domino-target-scale', targetScale.toString());
     // IMPORTANT: Hand domino scale must be independent from board scale
     rootElement.style.setProperty('--hand-domino-scale', (latest.handDominoScale || 1).toString());
     
@@ -99,8 +97,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--domino-thickness', (latest.dominoThickness || 8).toString() + 'px');
     
     // Calculate dynamic double offset for proper centering
-    const effectiveCellSize = BASE_CELL_SIZE * (latest.dominoScale || 1.0);
-    const doubleOffset = effectiveCellSize / 2;
+    const doubleOffset = BASE_CELL_SIZE / 2;
     rootElement.style.setProperty('--double-offset', `-${doubleOffset}px`);
     
     if (boardRef.current) {
