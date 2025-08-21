@@ -31,6 +31,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
   
+  // Use base cell size - let GameBoard's automatic scaling handle all proportions
+  const BASE_CELL_SIZE = 48;
+  
   return (
     <div
       className={cn(
@@ -41,9 +44,9 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         className
       )}
       style={{
-        // Use domino settings for exact size matching with dominoes
-        width: `${width * settings.dominoWidth}px`,
-        height: `${height * settings.dominoHeight}px`,
+        // Perfect grid alignment - GameBoard's automatic scaling handles proportions
+        width: `${width * BASE_CELL_SIZE}px`,
+        height: `${height * BASE_CELL_SIZE}px`,
         left: style?.left,
         top: style?.top,
         // No additional transform scaling needed - size is already proportional
