@@ -189,13 +189,21 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     }
   }, [gameId, userId, toast, ignoringSync]);
 
-  // Update game state in database
+  // Update game state in database with consolidated update
   const updateGameState = useCallback(async (newGameState: any, newCurrentPlayer?: number) => {
     if (!gameId) return;
 
     try {
       // Mark this as a self-initiated update to prevent immediate reload flicker
-      selfUpdateSuppressUntilRef.current = Date.now() + 1200;
+      // Increased timeout for better sync stability
+      selfUpdateSuppressUntilRef.current = Date.now() + 200;
+
+      console.log('📤 UPDATING DATABASE:', {
+        gameId,
+        newCurrentPlayer,
+        dominoesCount: Object.keys(newGameState?.dominoes || {}).length,
+        timestamp: new Date().toISOString()
+      });
 
       const { error } = await supabase
         .from('games')
@@ -213,6 +221,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
           description: "Failed to update game state",
           variant: "destructive"
         });
+      } else {
+        console.log('✅ DATABASE UPDATE SUCCESS');
       }
     } catch (error) {
       console.error('Error updating game state:', error);
@@ -390,10 +400,12 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
 
           console.log('🔄 Game updated by other player, reloading state...', payload);
           console.log('🔄 BEFORE RELOAD - Current dominoes:', Object.keys(syncState.gameState?.dominoes || {}));
-          // Reload the game state when other player makes a move
-          loadGameState().then(() => {
-            console.log('🔄 AFTER RELOAD - Reloaded dominoes:', Object.keys(syncState.gameState?.dominoes || {}));
-          });
+          // Add small delay to ensure database consistency before reload
+          setTimeout(() => {
+            loadGameState().then(() => {
+              console.log('🔄 AFTER RELOAD - Reloaded dominoes:', Object.keys(syncState.gameState?.dominoes || {}));
+            });
+          }, 50);
         }
       )
       .subscribe();

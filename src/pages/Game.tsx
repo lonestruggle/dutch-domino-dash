@@ -122,29 +122,30 @@ export default function Game() {
     const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
     console.log('🎯 Advancing turn from', syncState.currentPlayer, 'to', nextPlayerTurn);
 
-    // Markeer CHANGA direct en veilig op basis van de nieuwste state
+    // Consolidated database update with turn advancement
     setTimeout(() => {
-      if (!changaRef.current) return;
-      const myPos = syncState.playerPosition || 0;
-      setGameState(prev => {
-        if (prev.isGameOver) return prev;
-        const after = { ...(prev as any), isGameOver: true, gameEndReason: 'changa', winner_position: myPos } as any;
-        updateGameState(after, nextPlayerTurn); // Update with next player turn
-        return after;
-      });
-      // Optionele feedback
-      toast({ title: 'CHANGA!', description: 'Je hebt gewonnen met CHANGA!' });
-      changaRef.current = false;
-    }, 50);
-
-    // Sync with next player turn
-    setTimeout(() => {
-      syncLocalToRemote();
-      // Update the current player turn in database
-      if (syncState.gameData && !gameState.isGameOver) {
-        updateGameState(gameState, nextPlayerTurn);
+      console.log('🔄 CONSOLIDATED UPDATE - Syncing local to remote and advancing turn');
+      
+      // Check for CHANGA first
+      if (changaRef.current) {
+        const myPos = syncState.playerPosition || 0;
+        setGameState(prev => {
+          if (prev.isGameOver) return prev;
+          const changaState = { ...(prev as any), isGameOver: true, gameEndReason: 'changa', winner_position: myPos } as any;
+          // Single database update with CHANGA state and next player turn
+          updateGameState(changaState, nextPlayerTurn);
+          return changaState;
+        });
+        toast({ title: 'CHANGA!', description: 'Je hebt gewonnen met CHANGA!' });
+        changaRef.current = false;
+      } else {
+        // Normal move: sync local state and advance turn in single update
+        syncLocalToRemote();
+        if (syncState.gameData && !gameState.isGameOver) {
+          updateGameState(gameState, nextPlayerTurn);
+        }
       }
-    }, 60);
+    }, 100);
     
     return moveResult;
   }, [gameHook, gameState, syncState.playerPosition, syncState.currentPlayer, syncState.allPlayers.length, setGameState, updateGameState, syncLocalToRemote, toast, pendingShake, visualSettings, executePendingShake]);
@@ -167,10 +168,11 @@ export default function Game() {
     console.log('🎯 Advancing turn after draw from', syncState.currentPlayer, 'to', nextPlayerTurn);
     
     setTimeout(() => {
+      console.log('🔄 DRAW FROM BONEYARD - Syncing and advancing turn');
       syncLocalToRemote();
       // Update the current player turn in database
       updateGameState(gameState, nextPlayerTurn);
-    }, 60);
+    }, 100);
   }, [gameHook, syncLocalToRemote, syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, gameState, updateGameState, toast]);
 
   const wrappedStartNewGame = useCallback(async () => {
@@ -409,6 +411,29 @@ export default function Game() {
     updateGameState(updatedGameState);
   }, [gameState, gameHook, syncState.allPlayers, setGameState, updateGameState]);
 
+  // Pass move function
+  const passMove = useCallback(() => {
+    // Frontend turn validation
+    if (syncState.currentPlayer !== syncState.playerPosition) {
+      toast({
+        title: "Niet jouw beurt!",
+        description: `Het is de beurt van speler ${syncState.currentPlayer + 1}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Advance to next player turn after pass
+    const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
+    console.log('🎯 Pass move - advancing turn from', syncState.currentPlayer, 'to', nextPlayerTurn);
+    
+    // Pass doesn't change game state, just advances turn
+    setTimeout(() => {
+      console.log('🔄 PASS MOVE - Advancing turn only');
+      updateGameState(gameState, nextPlayerTurn);
+    }, 100);
+  }, [syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, gameState, updateGameState, toast]);
+
   // Sla automatisch de uitslag op naar het scoreboard zodra het spel eindigt
   useEffect(() => {
     if (!gameState?.isGameOver || !syncState?.gameData || savedRef.current) return;
@@ -498,6 +523,7 @@ export default function Game() {
           ...gameHook, 
           executeMove: wrappedExecuteMove,
           drawFromBoneyard: wrappedDrawFromBoneyard,
+          passMove,
           manualBlockedCheck,
           startNewGame: wrappedStartNewGame,
           syncState,
