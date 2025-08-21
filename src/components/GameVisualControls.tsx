@@ -41,10 +41,6 @@ export const GameVisualControls: React.FC = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const dialogRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-
-  // Only render for admins
-  if (loading) return null;
-  if (!isAdmin) return null;
   const { 
     currentDeviceType, 
     getSettingsForDevice, 
@@ -651,6 +647,10 @@ export const GameVisualControls: React.FC = () => {
       </div>
     );
   };
+
+  // Only render for admins - placed after all hooks
+  if (loading) return null;
+  if (!isAdmin) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
