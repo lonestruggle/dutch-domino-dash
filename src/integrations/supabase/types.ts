@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -594,6 +594,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_favorite_table_backgrounds: {
+        Row: {
+          background_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          background_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          background_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           can_chat: boolean
@@ -696,8 +720,8 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -716,10 +740,10 @@ export type Database = {
       record_game_outcome: {
         Args: {
           _game_id: string
-          _lobby_id: string
-          _winner_user_id: string
           _is_blocked: boolean
+          _lobby_id: string
           _players: Json
+          _winner_user_id: string
         }
         Returns: boolean
       }
@@ -736,7 +760,7 @@ export type Database = {
         Returns: boolean
       }
       validate_game_move: {
-        Args: { _game_id: string; _player_position: number; _move_data: Json }
+        Args: { _game_id: string; _move_data: Json; _player_position: number }
         Returns: boolean
       }
       validate_invitation_code: {
