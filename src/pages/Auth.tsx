@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserCheck, AlertCircle } from 'lucide-react';
+import { Loader2, UserCheck, AlertCircle, Instagram } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
@@ -473,6 +473,19 @@ const Auth = () => {
                     'Account Aanmaken'
                   )}
                 </Button>
+                
+                {/* Instagram Link */}
+                <div className="text-center mt-4">
+                  <a 
+                    href="https://www.instagram.com/wegidomino"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Instagram className="h-4 w-4" />
+                    Volg ons op Instagram @wegidomino
+                  </a>
+                </div>
               </form>
             </TabsContent>
           </Tabs>
