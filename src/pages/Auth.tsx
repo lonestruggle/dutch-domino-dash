@@ -344,7 +344,7 @@ const Auth = () => {
             </Alert>
           )}
           
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs defaultValue={searchParams.get('tab') === 'signup' ? 'signup' : 'signin'} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Inloggen</TabsTrigger>
               <TabsTrigger value="signup">Registreren</TabsTrigger>

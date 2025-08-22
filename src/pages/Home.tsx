@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
-import { Play, Users, UserCircle, LogOut, LogIn, Settings } from 'lucide-react';
+import { Play, Users, UserCircle, LogOut, LogIn, Settings, UserPlus } from 'lucide-react';
 import { DominoIcon } from '@/components/DominoIcon';
 
 export default function Home() {
@@ -89,10 +89,20 @@ export default function Home() {
                     </Button>
                   </>
                 ) : (
-                  <Button onClick={() => navigate('/auth')} className="w-full sm:w-auto bg-primary hover:bg-primary/80 text-white">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Inloggen
-                  </Button>
+                  <div className="flex w-full sm:w-auto flex-col gap-2 sm:flex-row">
+                    <Button onClick={() => navigate('/auth')} className="w-full sm:w-auto bg-primary hover:bg-primary/80 text-white">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Inloggen
+                    </Button>
+                    <Button 
+                      onClick={() => navigate('/auth?tab=signup')} 
+                      variant="outline" 
+                      className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20"
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Registreren
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
