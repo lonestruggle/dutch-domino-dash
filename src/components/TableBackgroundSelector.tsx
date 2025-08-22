@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check } from 'lucide-react';
+import { Check, Heart, HeartOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useFavoriteTableBackground } from '@/hooks/useFavoriteTableBackground';
 
 interface TableBackground {
   id: string;
@@ -25,6 +26,7 @@ export const TableBackgroundSelector: React.FC<TableBackgroundSelectorProps> = (
 }) => {
   const [backgrounds, setBackgrounds] = useState<TableBackground[]>([]);
   const [loading, setLoading] = useState(true);
+  const { favoriteBackground, setFavoriteTableBackground } = useFavoriteTableBackground();
 
   useEffect(() => {
     const fetchTableBackgrounds = async () => {
@@ -46,6 +48,19 @@ export const TableBackgroundSelector: React.FC<TableBackgroundSelectorProps> = (
 
     fetchTableBackgrounds();
   }, []);
+
+  // Use favorite background as default when component mounts
+  useEffect(() => {
+    if (favoriteBackground && selectedTableBackground === null) {
+      onTableBackgroundChange(favoriteBackground);
+    }
+  }, [favoriteBackground, selectedTableBackground, onTableBackgroundChange]);
+
+  const handleFavoriteToggle = async (backgroundUrl: string | null, event: React.MouseEvent) => {
+    event.stopPropagation();
+    const isFavorite = favoriteBackground === backgroundUrl;
+    await setFavoriteTableBackground(isFavorite ? null : backgroundUrl);
+  };
 
   if (loading) {
     return (
@@ -87,6 +102,20 @@ export const TableBackgroundSelector: React.FC<TableBackgroundSelectorProps> = (
                 <Check className="h-4 w-4 absolute top-1 right-1" />
               )}
             </div>
+            {/* Favorite button for standard */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => handleFavoriteToggle(null, e)}
+              disabled={disabled}
+              className="absolute top-1 left-1 p-1 h-6 w-6"
+            >
+              {favoriteBackground === null ? (
+                <Heart className="h-3 w-3 fill-red-500 text-red-500" />
+              ) : (
+                <HeartOff className="h-3 w-3 text-muted-foreground" />
+              )}
+            </Button>
           </Button>
 
           {/* Custom backgrounds */}
@@ -112,6 +141,20 @@ export const TableBackgroundSelector: React.FC<TableBackgroundSelectorProps> = (
                   <Check className="h-4 w-4 text-white absolute top-1 right-1" />
                 )}
               </div>
+              {/* Favorite button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => handleFavoriteToggle(background.background_url, e)}
+                disabled={disabled}
+                className="absolute top-1 left-1 p-1 h-6 w-6 z-20"
+              >
+                {favoriteBackground === background.background_url ? (
+                  <Heart className="h-3 w-3 fill-red-500 text-red-500" />
+                ) : (
+                  <HeartOff className="h-3 w-3 text-white hover:text-red-400" />
+                )}
+              </Button>
             </Button>
           ))}
         </div>
