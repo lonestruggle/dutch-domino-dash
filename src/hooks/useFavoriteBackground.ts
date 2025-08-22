@@ -2,14 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-interface FavoriteBackground {
-  id: string;
-  user_id: string;
-  background_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export const useFavoriteBackground = () => {
   const { toast } = useToast();
   const [favoriteBackground, setFavoriteBackground] = useState<string | null>(null);
@@ -102,8 +94,8 @@ export const useFavoriteBackground = () => {
       toast({
         title: "Succes",
         description: backgroundId 
-          ? "Favoriet tafel achtergrond ingesteld" 
-          : "Favoriet tafel achtergrond verwijderd",
+          ? "Favoriet achtergrond ingesteld" 
+          : "Favoriet achtergrond verwijderd",
       });
 
     } catch (error) {

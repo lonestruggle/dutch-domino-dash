@@ -594,6 +594,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_favorite_backgrounds: {
+        Row: {
+          background_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          background_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          background_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_favorite_table_backgrounds: {
         Row: {
           background_url: string | null

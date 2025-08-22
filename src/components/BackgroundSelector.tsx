@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check } from 'lucide-react';
+import { Check, Heart, HeartOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCustomBackgrounds } from '@/hooks/useCustomBackgrounds';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useFavoriteBackground } from '@/hooks/useFavoriteBackground';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -36,7 +37,23 @@ export const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({
 }) => {
   const { backgrounds: customBackgrounds, loading } = useCustomBackgrounds();
   const { isAdmin, isModerator } = useUserRoles();
+  const { favoriteBackground, setFavoriteBackground } = useFavoriteBackground();
   const [allBackgrounds, setAllBackgrounds] = useState<BackgroundOption[]>(defaultBackgroundOptions);
+
+  // Set the selected background to favorite on load if no background is selected
+  useEffect(() => {
+    if (favoriteBackground && !selectedBackground) {
+      onBackgroundChange(favoriteBackground);
+    }
+  }, [favoriteBackground, selectedBackground, onBackgroundChange]);
+
+  const handleFavoriteToggle = async (backgroundId: string) => {
+    if (favoriteBackground === backgroundId) {
+      await setFavoriteBackground(null);
+    } else {
+      await setFavoriteBackground(backgroundId);
+    }
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -100,30 +117,49 @@ export const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {allBackgrounds.map((option) => (
-            <Button
-              key={option.id}
-              variant="outline"
-              className={`relative h-20 p-2 overflow-hidden ${
-                selectedBackground === option.id ? 'ring-2 ring-primary' : ''
-              }`}
-              onClick={() => !disabled && onBackgroundChange(option.id)}
-              disabled={disabled}
-            >
-              <div 
-                className="absolute inset-2 rounded bg-cover bg-center opacity-70"
-                style={{ 
-                  backgroundImage: `url(${option.image})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
+            <div key={option.id} className="relative">
+              <Button
+                variant="outline"
+                className={`relative h-20 p-2 overflow-hidden w-full ${
+                  selectedBackground === option.id ? 'ring-2 ring-primary' : ''
+                }`}
+                onClick={() => !disabled && onBackgroundChange(option.id)}
+                disabled={disabled}
+              >
+                <div 
+                  className="absolute inset-2 rounded bg-cover bg-center opacity-70"
+                  style={{ 
+                    backgroundImage: `url(${option.image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  }}
+                />
+                <div className="relative z-10 flex flex-col items-center justify-center h-full bg-black/40 rounded text-white text-xs font-medium">
+                  <span>{option.name}</span>
+                  {selectedBackground === option.id && (
+                    <Check className="h-4 w-4 mt-1" />
+                  )}
+                </div>
+              </Button>
+              
+              {/* Favorite Toggle Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-1 right-1 h-6 w-6 p-0 bg-black/50 hover:bg-black/70 text-white z-20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFavoriteToggle(option.id);
                 }}
-              />
-              <div className="relative z-10 flex flex-col items-center justify-center h-full bg-black/40 rounded text-white text-xs font-medium">
-                <span>{option.name}</span>
-                {selectedBackground === option.id && (
-                  <Check className="h-4 w-4 mt-1" />
+                disabled={disabled}
+              >
+                {favoriteBackground === option.id ? (
+                  <Heart className="h-3 w-3 fill-red-500 text-red-500" />
+                ) : (
+                  <HeartOff className="h-3 w-3" />
                 )}
-              </div>
-            </Button>
+              </Button>
+            </div>
           ))}
         </div>
       </CardContent>
