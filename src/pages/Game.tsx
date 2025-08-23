@@ -116,6 +116,8 @@ export default function Game() {
           playerHands: nextHands,
           gameEndReason: (currentState as any).gameEndReason,
           winner_position: (currentState as any).winner_position,
+          hardSlamNextMove: currentState.hardSlamNextMove,
+          isHardSlamming: currentState.isHardSlamming,
         };
 
         // Check for CHANGA and update state accordingly
@@ -183,6 +185,8 @@ export default function Game() {
           playerHands: nextHands,
           gameEndReason: (currentState as any).gameEndReason,
           winner_position: (currentState as any).winner_position,
+          hardSlamNextMove: currentState.hardSlamNextMove,
+          isHardSlamming: currentState.isHardSlamming,
         };
 
         // SINGLE database update with state AND turn advancement
