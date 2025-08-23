@@ -30,6 +30,9 @@ port = 54324
 [functions.cleanup-invitations]
 verify_jwt = true
 
+[functions.cleanup-lobbies]
+verify_jwt = false
+
 [functions.reset-user-password]
 verify_jwt = true
 

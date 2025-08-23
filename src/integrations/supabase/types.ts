@@ -727,6 +727,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      cleanup_expired_lobbies: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_active_season_id: {
         Args: Record<PropertyKey, never>
         Returns: string
