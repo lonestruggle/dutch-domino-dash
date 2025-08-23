@@ -123,6 +123,9 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         spinnerId: gameState.spinnerId || null,
         isGameOver: gameState.isGameOver || false,
         selectedHandIndex: gameState.selectedHandIndex || null,
+        // Preserve hard slam flags from database
+        hardSlamNextMove: gameState.hardSlamNextMove || false,
+        isHardSlamming: gameState.isHardSlamming || false,
         // Remove currentPlayer from game_state JSON to avoid confusion - use only database column
       } : null;
 
@@ -392,6 +395,16 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'games', filter: `lobby_id=eq.${gameId}` },
         (payload) => {
+          const newGameState = payload.new?.game_state;
+          const isHardSlamUpdate = newGameState?.hardSlamNextMove || newGameState?.isHardSlamming;
+          
+          // For hard slam updates, skip self-update suppression and reload immediately
+          if (isHardSlamUpdate) {
+            console.log('🔥 HARD SLAM DETECTED - Immediate reload!');
+            loadGameState();
+            return;
+          }
+
           // Skip reload if this update was triggered by ourselves very recently
           if (Date.now() < selfUpdateSuppressUntilRef.current) {
             console.log('⏭️ Skipping realtime reload (self update in progress)');
