@@ -314,8 +314,11 @@ export default function Lobby() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'lobbies', filter: `id=eq.${lobbyId}` },
         (payload) => {
+          console.log('🎮 Lobby status change detected:', payload);
           if (payload.eventType === 'UPDATE' && payload.new.status === 'playing') {
-            navigate(`/game/${lobbyId}`);
+            console.log('🚀 Game started! Navigating to game...');
+            // Force navigation to game for all players
+            navigate(`/game/${lobbyId}`, { replace: true });
           } else {
             fetchLobby();
           }
