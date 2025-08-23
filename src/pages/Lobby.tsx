@@ -307,7 +307,7 @@ export default function Lobby() {
 
     fetchLobby();
 
-    // Subscribe to lobby changes
+    // Subscribe to lobby changes with enhanced monitoring
     const channel = supabase
       .channel(`lobby-${lobbyId}`)
       .on(
@@ -329,9 +329,36 @@ export default function Lobby() {
         { event: '*', schema: 'public', table: 'lobby_players', filter: `lobby_id=eq.${lobbyId}` },
         () => fetchLobby()
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to lobby changes');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Subscription error - falling back to polling');
+        }
+      });
+
+    // Add polling fallback mechanism - check every 3 seconds
+    const pollInterval = setInterval(async () => {
+      if (!lobbyId) return;
+      
+      console.log('🔄 Polling lobby status...');
+      const { data, error } = await supabase
+        .from('lobbies')
+        .select('status')
+        .eq('id', lobbyId)
+        .single();
+        
+      if (!error && data && data.status === 'playing') {
+        console.log('🎯 Polling detected game started! Navigating...');
+        clearInterval(pollInterval);
+        navigate(`/game/${lobbyId}`, { replace: true });
+      }
+    }, 3000);
 
     return () => {
+      console.log('🧹 Cleaning up lobby subscriptions and polling');
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
   }, [lobbyId, isAuthenticated, authLoading, navigate]);
