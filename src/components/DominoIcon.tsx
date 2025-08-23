@@ -15,54 +15,74 @@ export const DominoIcon: React.FC<DominoIconProps> = ({ className = "", size = 2
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Gouden domino steen achtergrond */}
+      {/* Achterste domino steen (wit met zwarte stippen) */}
       <rect
-        x="3"
-        y="6"
-        width="18"
-        height="12"
-        rx="2"
-        ry="2"
-        fill="#F4D03F"
-        stroke="#B7950B"
+        x="8"
+        y="2"
+        width="12"
+        height="18"
+        rx="3"
+        ry="3"
+        fill="white"
+        stroke="#1f2937"
+        strokeWidth="2"
+        transform="rotate(15 14 11)"
+      />
+      
+      {/* Middenlijn achterste steen */}
+      <line
+        x1="12"
+        y1="4"
+        x2="16"
+        y2="18"
+        stroke="#1f2937"
+        strokeWidth="1.5"
+        transform="rotate(15 14 11)"
+      />
+      
+      {/* Stippen achterste steen - boven (1 stip) */}
+      <circle cx="14" cy="7" r="1.2" fill="#1f2937" transform="rotate(15 14 11)" />
+      
+      {/* Stippen achterste steen - onder (2 stippen) */}
+      <circle cx="12.5" cy="15" r="1.2" fill="#1f2937" transform="rotate(15 14 11)" />
+      <circle cx="15.5" cy="15" r="1.2" fill="#1f2937" transform="rotate(15 14 11)" />
+      
+      {/* Voorste domino steen (zwart met witte stippen) */}
+      <rect
+        x="2"
+        y="4"
+        width="12"
+        height="18"
+        rx="3"
+        ry="3"
+        fill="#1f2937"
+        stroke="#1f2937"
+        strokeWidth="2"
+      />
+      
+      {/* Middenlijn voorste steen */}
+      <line
+        x1="8"
+        y1="6"
+        x2="8"
+        y2="20"
+        stroke="white"
         strokeWidth="1.5"
       />
       
-      {/* Schaduw effect */}
-      <rect
-        x="3.5"
-        y="6.5"
-        width="17"
-        height="11"
-        rx="1.5"
-        ry="1.5"
-        fill="none"
-        stroke="#D4AF37"
-        strokeWidth="0.5"
-      />
+      {/* Stippen voorste steen - boven (6 stippen) */}
+      <circle cx="5.5" cy="8" r="1" fill="white" />
+      <circle cx="10.5" cy="8" r="1" fill="white" />
+      <circle cx="5.5" cy="10.5" r="1" fill="white" />
+      <circle cx="10.5" cy="10.5" r="1" fill="white" />
+      <circle cx="5.5" cy="13" r="1" fill="white" />
+      <circle cx="10.5" cy="13" r="1" fill="white" />
       
-      {/* Middenlijn */}
-      <line
-        x1="12"
-        y1="7"
-        x2="12"
-        y2="17"
-        stroke="#B7950B"
-        strokeWidth="1"
-      />
-      
-      {/* Linker kant - 6 stippen patroon */}
-      <circle cx="6.5" cy="8.5" r="0.8" fill="#2C3E50" />
-      <circle cx="9.5" cy="8.5" r="0.8" fill="#2C3E50" />
-      <circle cx="6.5" cy="12" r="0.8" fill="#2C3E50" />
-      <circle cx="9.5" cy="12" r="0.8" fill="#2C3E50" />
-      <circle cx="6.5" cy="15.5" r="0.8" fill="#2C3E50" />
-      <circle cx="9.5" cy="15.5" r="0.8" fill="#2C3E50" />
-      
-      {/* Rechter kant - 3 stippen patroon */}
-      <circle cx="14.5" cy="9" r="0.8" fill="#2C3E50" />
-      <circle cx="16.5" cy="12" r="0.8" fill="#2C3E50" />
-      <circle cx="14.5" cy="15" r="0.8" fill="#2C3E50" />
+      {/* Stippen voorste steen - onder (4 stippen) */}
+      <circle cx="5.5" cy="16" r="1" fill="white" />
+      <circle cx="10.5" cy="16" r="1" fill="white" />
+      <circle cx="5.5" cy="19" r="1" fill="white" />
+      <circle cx="10.5" cy="19" r="1" fill="white" />
     </svg>
   );
 };
