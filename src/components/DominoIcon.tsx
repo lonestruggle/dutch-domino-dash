@@ -15,48 +15,52 @@ export const DominoIcon: React.FC<DominoIconProps> = ({ className = "", size = 2
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Domino tile background - dark border */}
-      <rect
-        x="3"
-        y="7"
-        width="18"
-        height="10"
-        rx="1.5"
-        ry="1.5"
-        fill="#1f2937"
-        stroke="#1f2937"
-        strokeWidth="1"
-      />
-      
-      {/* Inner white background */}
+      {/* Modern domino tile with rounded corners */}
       <rect
         x="4"
-        y="8"
+        y="4"
         width="16"
-        height="8"
+        height="16"
+        rx="3"
+        ry="3"
+        fill="hsl(var(--primary))"
+        stroke="hsl(var(--border))"
+        strokeWidth="2"
+      />
+      
+      {/* Top section with dots pattern */}
+      <rect
+        x="6"
+        y="6"
+        width="12"
+        height="5"
         rx="1"
-        ry="1"
-        fill="white"
+        fill="hsl(var(--background))"
       />
       
-      {/* Divider line in the middle */}
-      <line
-        x1="12"
-        y1="8"
-        x2="12"
-        y2="16"
-        stroke="#1f2937"
-        strokeWidth="1"
+      {/* Bottom section with dots pattern */}
+      <rect
+        x="6"
+        y="13"
+        width="12"
+        height="5"
+        rx="1"
+        fill="hsl(var(--background))"
       />
       
-      {/* Left side - 3 dots */}
-      <circle cx="7.5" cy="9.5" r="1" fill="#1f2937" />
-      <circle cx="7.5" cy="12" r="1" fill="#1f2937" />
-      <circle cx="7.5" cy="14.5" r="1" fill="#1f2937" />
+      {/* Top dots - 6 pattern */}
+      <circle cx="8.5" cy="7.5" r="0.8" fill="hsl(var(--primary))" />
+      <circle cx="12" cy="7.5" r="0.8" fill="hsl(var(--primary))" />
+      <circle cx="15.5" cy="7.5" r="0.8" fill="hsl(var(--primary))" />
+      <circle cx="8.5" cy="9.5" r="0.8" fill="hsl(var(--primary))" />
+      <circle cx="12" cy="9.5" r="0.8" fill="hsl(var(--primary))" />
+      <circle cx="15.5" cy="9.5" r="0.8" fill="hsl(var(--primary))" />
       
-      {/* Right side - 2 dots */}
-      <circle cx="16.5" cy="10.5" r="1" fill="#1f2937" />
-      <circle cx="16.5" cy="13.5" r="1" fill="#1f2937" />
+      {/* Bottom dots - 4 pattern */}
+      <circle cx="9" cy="14.5" r="0.8" fill="hsl(var(--primary))" />
+      <circle cx="15" cy="14.5" r="0.8" fill="hsl(var(--primary))" />
+      <circle cx="9" cy="16.5" r="0.8" fill="hsl(var(--primary))" />
+      <circle cx="15" cy="16.5" r="0.8" fill="hsl(var(--primary))" />
     </svg>
   );
 };
