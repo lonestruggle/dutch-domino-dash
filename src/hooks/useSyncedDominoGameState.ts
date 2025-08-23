@@ -401,6 +401,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
           // For hard slam updates, skip self-update suppression and reload immediately
           if (isHardSlamUpdate) {
             console.log('🔥 HARD SLAM DETECTED - Immediate reload!');
+            // Clear any self-update suppression for hard slam events
+            selfUpdateSuppressUntilRef.current = 0;
             loadGameState();
             return;
           }

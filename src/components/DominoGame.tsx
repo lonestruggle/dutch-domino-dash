@@ -38,9 +38,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     gameData
   } = gameHook;
 
-  // Hard Slam logic
+  // Hard Slam logic - separate local button state from global effect
   const canUseHardSlam = canHardSlam && !gameState?.isGameOver;
-  const hardSlamActive = gameState?.hardSlamNextMove || gameState?.isHardSlamming;
+  const [localHardSlamActive, setLocalHardSlamActive] = useState(false);
+  const hardSlamActive = localHardSlamActive || (gameState?.isHardSlamming && syncState?.currentPlayer === syncState?.playerPosition);
 
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   const [hasShownDialog, setHasShownDialog] = useState(false);
@@ -86,6 +87,22 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
       setHasShownDialog(false);
     }
   }, [gameState?.isGameOver, hasShownDialog]);
+
+  // Reset local hard slam state when move is executed
+  useEffect(() => {
+    if (!gameState?.hardSlamNextMove && !gameState?.isHardSlamming) {
+      setLocalHardSlamActive(false);
+    }
+  }, [gameState?.hardSlamNextMove, gameState?.isHardSlamming]);
+
+  // Trigger shake animation for incoming hard slam events from other players
+  useEffect(() => {
+    const isOtherPlayerHardSlam = gameState?.isHardSlamming && syncState?.currentPlayer !== syncState?.playerPosition;
+    if (isOtherPlayerHardSlam && startShakeAnimation) {
+      console.log('🔥 Triggering shake animation for other player hard slam');
+      startShakeAnimation();
+    }
+  }, [gameState?.isHardSlamming, syncState?.currentPlayer, syncState?.playerPosition, startShakeAnimation]);
 
   // Show dialog when game becomes over - but prevent multiple triggers
   useEffect(() => {
@@ -386,7 +403,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </Button>
 {canHardSlam && (
                   <Button
-                    onClick={gameHook.hardSlam}
+                    onClick={() => {
+                      setLocalHardSlamActive(true);
+                      gameHook.hardSlam();
+                    }}
                     disabled={!canUseHardSlam || hardSlamActive}
                     size="sm"
                     className={cn(
@@ -447,9 +467,12 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 >
                   🔧 Check Blocked
                 </Button>
-{canHardSlam && (
+                {canHardSlam && (
                   <Button
-                    onClick={gameHook.hardSlam}
+                    onClick={() => {
+                      setLocalHardSlamActive(true);
+                      gameHook.hardSlam();
+                    }}
                     disabled={!canUseHardSlam || hardSlamActive}
                     className={cn(
                       "transition-all duration-300",
