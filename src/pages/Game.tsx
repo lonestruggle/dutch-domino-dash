@@ -25,7 +25,7 @@ export default function Game() {
   
   // Use the domino game hook with shake animation support
   const gameHook = useDominoGame(startShakeAnimation);
-  const { gameState, setGameState } = gameHook;
+  const { gameState, setGameState, hardSlam } = gameHook;
 
   // Ref om Changa-detectie te markeren tussen pre- en post-move
   const changaRef = useRef(false);
@@ -541,6 +541,30 @@ export default function Game() {
     })();
   }, [gameState?.isGameOver, syncState?.gameData, toast]);
 
+  // Wrapper for hardSlam that immediately syncs to database
+  const wrappedHardSlam = useCallback(async () => {
+    console.log('🔥 HARD SLAM ACTIVATED - SYNCING TO DATABASE!');
+    
+    // First activate hard slam locally
+    hardSlam();
+    
+    // Then immediately sync to database
+    if (updateGameState) {
+      try {
+        const updatedState = {
+          ...gameState,
+          hardSlamNextMove: true,
+          isHardSlamming: true,
+        };
+        
+        await updateGameState(updatedState);
+        console.log('✅ Hard Slam synced to database successfully');
+      } catch (error) {
+        console.error('❌ Failed to sync Hard Slam to database:', error);
+      }
+    }
+  }, [hardSlam, gameState, updateGameState]);
+
   return (
     <div className="min-h-screen bg-background">
       <DominoGame 
@@ -551,6 +575,7 @@ export default function Game() {
           passMove,
           manualBlockedCheck,
           startNewGame: wrappedStartNewGame,
+          hardSlam: wrappedHardSlam,
           syncState,
           gameData: syncState.gameData || { background_choice: null }
         }}
