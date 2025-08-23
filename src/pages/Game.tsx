@@ -545,25 +545,26 @@ export default function Game() {
   const wrappedHardSlam = useCallback(async () => {
     console.log('🔥 HARD SLAM ACTIVATED - SYNCING TO DATABASE!');
     
-    // First activate hard slam locally
-    hardSlam();
+    // Construct the new state directly with hard slam flags
+    const newStateWithHardSlam = {
+      ...gameState,
+      hardSlamNextMove: true,
+      isHardSlamming: true,
+    };
     
-    // Then immediately sync to database
+    // Update local state first
+    setGameState(newStateWithHardSlam);
+    
+    // Then immediately sync the same state to database
     if (updateGameState) {
       try {
-        const updatedState = {
-          ...gameState,
-          hardSlamNextMove: true,
-          isHardSlamming: true,
-        };
-        
-        await updateGameState(updatedState);
+        await updateGameState(newStateWithHardSlam);
         console.log('✅ Hard Slam synced to database successfully');
       } catch (error) {
         console.error('❌ Failed to sync Hard Slam to database:', error);
       }
     }
-  }, [hardSlam, gameState, updateGameState]);
+  }, [gameState, updateGameState, setGameState]);
 
   return (
     <div className="min-h-screen bg-background">
