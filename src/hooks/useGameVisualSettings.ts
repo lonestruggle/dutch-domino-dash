@@ -471,17 +471,18 @@ export const useGameVisualSettings = () => {
   };
 
   const startShakeAnimationDirectWithSettings = async (forcedIntensity?: number, forcedDuration?: number) => {
-    console.log('🎬 🚨 Starting shake animation with forced settings');
+    console.log('🎬 🚨 Starting shake animation with FORCED SETTINGS FOR ALL PLAYERS');
     
-    // Use forced settings or fall back to current settings
-    const shakeIntensity = forcedIntensity ?? settings.shakeIntensity;
-    const shakeDuration = forcedDuration ?? settings.shakeDuration;
+    // FORCE ALL SHAKE SETTINGS TO ENSURE PERFECT SYNC BETWEEN ALL PLAYERS
+    const forcedShakeSettings = {
+      intensity: forcedIntensity ?? 1.0,     // Fixed for all players
+      duration: forcedDuration ?? 1.5,       // Fixed for all players
+      rotationAmplitudeX: 300,                // Fixed for all players
+      rotationAmplitudeY: 300,                // Fixed for all players  
+      rotationAmplitudeZ: 100                 // Fixed for all players
+    };
     
-    console.log('🎬 🚨 Using shake settings:', {
-      intensity: shakeIntensity,
-      duration: shakeDuration,
-      forced: !!forcedIntensity
-    });
+    console.log('🔥 🚨 FORCED shake settings for ALL players (no more differences!):', forcedShakeSettings);
     
     if (isAnimating) {
       console.log('🎬 ⚠️ Animation already running, forcing stop first');
@@ -508,22 +509,8 @@ export const useGameVisualSettings = () => {
       }
     }
     
-    // ✅ FIX: Use getSettingsForDevice() for consistent settings retrieval
-    const currentSettings = getSettingsForDevice(deviceType);
-    console.log('🎬 SHAKE BUTTON DEBUG: Current device:', deviceType);
-    console.log('🎬 SHAKE BUTTON DEBUG: Current settings amplitude X/Y/Z:', {
-      X: currentSettings.rotationAmplitudeX,
-      Y: currentSettings.rotationAmplitudeY, 
-      Z: currentSettings.rotationAmplitudeZ
-    });
-    console.log('🎬 SHAKE BUTTON DEBUG: Settings from getSettingsForDevice():', currentSettings);
-    
-    if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
-      console.log('🎬 ❌ All amplitudes are 0, cannot shake');
-      return { success: false, message: "De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen." };
-    }
-    
-    console.log('🎬 Starting shake animation with settings:', currentSettings);
+    // Skip the amplitude check since we're forcing non-zero values
+    console.log('🎬 🔥 Starting shake animation with FORCED settings (no more amplitude issues!):', forcedShakeSettings);
     
     // Try multiple selectors to find board dominoes
     let boardDominoes = document.querySelectorAll('.domino-tile-board');
@@ -566,15 +553,15 @@ export const useGameVisualSettings = () => {
       
       console.log('🎬 ✅ Animation state set:', { isAnimating: true, animationMode: 'shake' });
     
-    // Store base rotation values
+    // Store base rotation values - use FORCED settings
     baseRotationRef.current = {
-      X: currentSettings.rotateX,
-      Y: currentSettings.rotateY,
-      Z: currentSettings.rotateZ
+      X: 0, // Fixed for sync
+      Y: 0, // Fixed for sync
+      Z: 0  // Fixed for sync
     };
     
     startTimeRef.current = performance.now();
-    const durationInMs = currentSettings.shakeDuration * 1000; // Use shake duration setting
+    const durationInMs = forcedShakeSettings.duration * 1000; // Use FORCED duration
     let shouldContinue = true; // Local variable voor animatie controle
     
     const animate = (timestamp: number) => {
@@ -584,14 +571,13 @@ export const useGameVisualSettings = () => {
       const progress = elapsedTime / durationInMs;
       
       if (progress < 1) {
-        const wave = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000);
+        const wave = Math.cos(elapsedTime * 5 * Math.PI / 1000); // Fixed rotation speed for sync
         const decayFactor = Math.pow(1 - progress, 1.5);
         
-        // Apply animation on top of base rotation with shake intensity
-        const shakeIntensity = currentSettings.shakeIntensity;
-        const newX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * wave * decayFactor * shakeIntensity);
-        const newY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * wave * decayFactor * shakeIntensity);
-        const newZ = baseRotationRef.current.Z + (currentSettings.rotationAmplitudeZ * wave * decayFactor * shakeIntensity);
+        // Apply animation with FORCED settings
+        const newX = baseRotationRef.current.X + (forcedShakeSettings.rotationAmplitudeX * wave * decayFactor * forcedShakeSettings.intensity);
+        const newY = baseRotationRef.current.Y + (forcedShakeSettings.rotationAmplitudeY * wave * decayFactor * forcedShakeSettings.intensity);
+        const newZ = baseRotationRef.current.Z + (forcedShakeSettings.rotationAmplitudeZ * wave * decayFactor * forcedShakeSettings.intensity);
         
         console.log('🎯 Shaking:', { newX, newY, newZ, wave, decayFactor, progress });
         
@@ -612,9 +598,9 @@ export const useGameVisualSettings = () => {
           const randomPhaseY = Math.cos(seed * 0.001) * 2 * Math.PI;
           const randomPhaseZ = Math.sin(seed * 0.002) * 2 * Math.PI;
           
-          const waveX = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000 + randomPhaseX);
-          const waveY = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000 + randomPhaseY);
-          const waveZ = Math.cos(elapsedTime * currentSettings.rotationSpeed * Math.PI / 1000 + randomPhaseZ);
+          const waveX = Math.cos(elapsedTime * 5 * Math.PI / 1000 + randomPhaseX); // Fixed rotation speed for sync
+          const waveY = Math.cos(elapsedTime * 5 * Math.PI / 1000 + randomPhaseY); // Fixed rotation speed for sync
+          const waveZ = Math.cos(elapsedTime * 5 * Math.PI / 1000 + randomPhaseZ); // Fixed rotation speed for sync
           
           // Individual random amplitude multipliers based on stored seed (0.5 to 1.5)
           const amplitudeMultX = 0.5 + Math.sin(seed * 0.003);
@@ -624,10 +610,10 @@ export const useGameVisualSettings = () => {
           // Get the original domino rotation from the data attribute or rotation prop
           const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
           
-          const shakeIntensity = currentSettings.shakeIntensity;
-          const individualX = baseRotationRef.current.X + (currentSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX * shakeIntensity);
-          const individualY = baseRotationRef.current.Y + (currentSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY * shakeIntensity);
-          const individualZ = baseRotationRef.current.Z + originalRotationZ + (currentSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ * shakeIntensity);
+          // Use FORCED settings for perfect sync
+          const individualX = baseRotationRef.current.X + (forcedShakeSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX * forcedShakeSettings.intensity);
+          const individualY = baseRotationRef.current.Y + (forcedShakeSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY * forcedShakeSettings.intensity);
+          const individualZ = baseRotationRef.current.Z + originalRotationZ + (forcedShakeSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ * forcedShakeSettings.intensity);
           
           // Keep only non-rotation transforms (like translate, scale) and add our complete rotation
           const currentTransform = htmlDomino.style.transform || '';
