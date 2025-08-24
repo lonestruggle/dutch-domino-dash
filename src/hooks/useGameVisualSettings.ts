@@ -454,12 +454,18 @@ export const useGameVisualSettings = () => {
     return startShakeAnimationDirectWithSettings(forcedShakeSettings.intensity, forcedShakeSettings.duration);
   };
 
-  const startShakeAnimation = () => {
+  const startShakeAnimation = (isOtherPlayerHardSlam = false) => {
     // Get stack trace to see which button called this
     const stack = new Error().stack;
     const caller = stack?.split('\n')[2]?.trim() || 'unknown';
     
-    console.log('🎬 SHAKE BUTTON DEBUG: Called from:', caller);
+    console.log('🎬 SHAKE BUTTON DEBUG: Called from:', caller, 'isOtherPlayerHardSlam:', isOtherPlayerHardSlam);
+    
+    // For other player hard slam, execute directly without queuing
+    if (isOtherPlayerHardSlam) {
+      console.log('🔥 Direct execution for other player hard slam');
+      return startShakeAnimationDirectWithSettings(1.0, 1.5);
+    }
     
     // In game context, queue the shake instead of executing immediately
     if (caller.includes('DominoGame') || caller.includes('onClick')) {

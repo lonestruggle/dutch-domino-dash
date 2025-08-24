@@ -124,7 +124,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     // 3. NOT my turn (so I see others' hard slam animations)
     if (dominoWasPlaced && isHardSlamActive && !isMyTurn && startShakeAnimation) {
       console.log('🔥 Triggering shake animation for hard slam domino placement from other player');
-      startShakeAnimation();
+      startShakeAnimation(true); // Pass true to indicate this is from another player's hard slam
     }
     
     setPreviousDominoCount(currentDominoCount);
