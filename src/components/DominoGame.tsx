@@ -98,28 +98,32 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Track dominoes count to detect when new tiles are placed
   const [previousDominoCount, setPreviousDominoCount] = useState(0);
   
-  // Trigger shake animation only when domino is placed WITH hard slam active
+  // Trigger shake animation when ANY player places a domino with hard slam active
   useEffect(() => {
     const currentDominoCount = Object.keys(gameState?.dominoes || {}).length;
     const dominoWasPlaced = currentDominoCount > previousDominoCount;
-    const isOtherPlayerHardSlam = gameState?.isHardSlamming && syncState?.currentPlayer !== syncState?.playerPosition;
+    const isHardSlamActive = gameState?.isHardSlamming;
+    const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition;
     
     // Debug shake settings to ensure all players use same values
-    if (dominoWasPlaced && isOtherPlayerHardSlam) {
+    if (dominoWasPlaced && isHardSlamActive) {
       console.log('🔥 Hard slam domino placement detected');
       console.log('🔥 Shake settings:', {
         intensity: visualSettings?.shakeIntensity,
         duration: visualSettings?.shakeDuration,
         deviceType,
-        isOtherPlayer: true
+        isMyTurn,
+        currentPlayer: syncState?.currentPlayer,
+        playerPosition: syncState?.playerPosition
       });
     }
     
-    // Only trigger animation when:
-    // 1. A new domino was placed (count increased)
-    // 2. Hard slam is active from another player
-    if (dominoWasPlaced && isOtherPlayerHardSlam && startShakeAnimation) {
-      console.log('🔥 Triggering shake animation for hard slam domino placement');
+    // Trigger animation when:
+    // 1. A new domino was placed (count increased) 
+    // 2. Hard slam is active
+    // 3. NOT my turn (so I see others' hard slam animations)
+    if (dominoWasPlaced && isHardSlamActive && !isMyTurn && startShakeAnimation) {
+      console.log('🔥 Triggering shake animation for hard slam domino placement from other player');
       startShakeAnimation();
     }
     
