@@ -442,6 +442,13 @@ export const useGameVisualSettings = () => {
     
     console.log('🎬 ✨ Executing pending shake now!');
     
+    // Log shake settings when executing
+    console.log('🔥 Executing shake with settings:', {
+      intensity: settings.shakeIntensity,
+      duration: settings.shakeDuration,
+      deviceType
+    });
+    
     // Execute the shake
     return startShakeAnimationDirect();
   };
@@ -885,19 +892,25 @@ export const useGameVisualSettings = () => {
 
   const updateShakeIntensity = (intensity: number, targetDevice?: DeviceType) => {
     const clampedIntensity = Math.max(0.1, Math.min(2.0, intensity));
-    const device = targetDevice || deviceType;
+    
+    // Force shake settings to be the same for ALL devices to ensure sync
+    console.log('🔧 Updating shake intensity globally for all devices:', clampedIntensity);
     setGlobalSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], shakeIntensity: clampedIntensity }
+      desktop: { ...prev.desktop, shakeIntensity: clampedIntensity },
+      tablet: { ...prev.tablet, shakeIntensity: clampedIntensity },
+      mobile: { ...prev.mobile, shakeIntensity: clampedIntensity }
     }));
   };
 
   const updateShakeDuration = (duration: number, targetDevice?: DeviceType) => {
     const clampedDuration = Math.max(0.5, Math.min(5.0, duration));
-    const device = targetDevice || deviceType;
+    
+    // Force shake settings to be the same for ALL devices to ensure sync
+    console.log('🔧 Updating shake duration globally for all devices:', clampedDuration);
     setGlobalSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], shakeDuration: clampedDuration }
+      desktop: { ...prev.desktop, shakeDuration: clampedDuration },
+      tablet: { ...prev.tablet, shakeDuration: clampedDuration },
+      mobile: { ...prev.mobile, shakeDuration: clampedDuration }
     }));
   };
 

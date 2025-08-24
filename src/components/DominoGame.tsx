@@ -23,7 +23,7 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { startShakeAnimation, pendingShake } = useGameVisualSettings();
+  const { startShakeAnimation, pendingShake, settings: visualSettings, currentDeviceType: deviceType } = useGameVisualSettings();
   const { canHardSlam } = useUserPermissions();
   
   const {
@@ -104,6 +104,17 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     const dominoWasPlaced = currentDominoCount > previousDominoCount;
     const isOtherPlayerHardSlam = gameState?.isHardSlamming && syncState?.currentPlayer !== syncState?.playerPosition;
     
+    // Debug shake settings to ensure all players use same values
+    if (dominoWasPlaced && isOtherPlayerHardSlam) {
+      console.log('🔥 Hard slam domino placement detected');
+      console.log('🔥 Shake settings:', {
+        intensity: visualSettings?.shakeIntensity,
+        duration: visualSettings?.shakeDuration,
+        deviceType,
+        isOtherPlayer: true
+      });
+    }
+    
     // Only trigger animation when:
     // 1. A new domino was placed (count increased)
     // 2. Hard slam is active from another player
@@ -113,7 +124,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     }
     
     setPreviousDominoCount(currentDominoCount);
-  }, [gameState?.dominoes, gameState?.isHardSlamming, syncState?.currentPlayer, syncState?.playerPosition, startShakeAnimation, previousDominoCount]);
+  }, [gameState?.dominoes, gameState?.isHardSlamming, syncState?.currentPlayer, syncState?.playerPosition, startShakeAnimation, previousDominoCount, visualSettings?.shakeIntensity, visualSettings?.shakeDuration, deviceType]);
 
   // Show dialog when game becomes over - but prevent multiple triggers
   useEffect(() => {
