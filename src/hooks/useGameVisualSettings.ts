@@ -442,15 +442,16 @@ export const useGameVisualSettings = () => {
     
     console.log('🎬 ✨ Executing pending shake now!');
     
-    // Log shake settings when executing
-    console.log('🔥 Executing shake with settings:', {
-      intensity: settings.shakeIntensity,
-      duration: settings.shakeDuration,
-      deviceType
-    });
+    // FORCE USE FIXED SHAKE SETTINGS TO ENSURE ALL PLAYERS ARE SYNCED
+    const forcedShakeSettings = {
+      intensity: 1.0, // Fixed value for all players
+      duration: 1.5   // Fixed value for all players
+    };
     
-    // Execute the shake
-    return startShakeAnimationDirect();
+    console.log('🔥 FORCED shake settings for ALL players:', forcedShakeSettings);
+    
+    // Execute the shake with forced settings
+    return startShakeAnimationDirectWithSettings(forcedShakeSettings.intensity, forcedShakeSettings.duration);
   };
 
   const startShakeAnimation = () => {
@@ -465,19 +466,28 @@ export const useGameVisualSettings = () => {
       return queueShakeAnimation();
     }
     
-    // Direct execution for other contexts (like settings)
-    return startShakeAnimationDirect();
+    // Direct execution for other contexts (like settings) - use forced settings
+    return startShakeAnimationDirectWithSettings(1.0, 1.5);
   };
 
-  const startShakeAnimationDirect = async () => {
-    console.log('🎬 startShakeAnimationDirect called!');
-    console.log('🎬 Current animation state:', { 
-      isAnimating, 
-      animationMode, 
-      hasActiveRef: !!animationRef.current.current,
-      hasStopFunction: !!animationRef.current.stopFunction 
+  const startShakeAnimationDirectWithSettings = async (forcedIntensity?: number, forcedDuration?: number) => {
+    console.log('🎬 🚨 Starting shake animation with forced settings');
+    
+    // Use forced settings or fall back to current settings
+    const shakeIntensity = forcedIntensity ?? settings.shakeIntensity;
+    const shakeDuration = forcedDuration ?? settings.shakeDuration;
+    
+    console.log('🎬 🚨 Using shake settings:', {
+      intensity: shakeIntensity,
+      duration: shakeDuration,
+      forced: !!forcedIntensity
     });
     
+    if (isAnimating) {
+      console.log('🎬 ⚠️ Animation already running, forcing stop first');
+      forceStopAnimation();
+    }
+
     // Check user permissions first
     if (user?.id) {
       try {
