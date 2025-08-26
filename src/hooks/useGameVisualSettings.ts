@@ -464,7 +464,7 @@ export const useGameVisualSettings = () => {
     // For other player hard slam, execute directly without queuing
     if (isOtherPlayerHardSlam) {
       console.log('🔥 Direct execution for other player hard slam');
-      return startShakeAnimationDirectWithSettings(1.0, 1.5);
+      return startShakeAnimationDirectWithSettings(1.0, 1.5, true); // Bypass permissions for other player hard slam
     }
     
     // In game context, queue the shake instead of executing immediately
@@ -476,8 +476,8 @@ export const useGameVisualSettings = () => {
     return startShakeAnimationDirectWithSettings(1.0, 1.5);
   };
 
-  const startShakeAnimationDirectWithSettings = async (forcedIntensity?: number, forcedDuration?: number) => {
-    console.log('🎬 🚨 Starting shake animation with FORCED SETTINGS FOR ALL PLAYERS');
+  const startShakeAnimationDirectWithSettings = async (forcedIntensity?: number, forcedDuration?: number, bypassPermissions = false) => {
+    console.log('🎬 🚨 Starting shake animation with FORCED SETTINGS FOR ALL PLAYERS, bypassPermissions:', bypassPermissions);
     
     // FORCE ALL SHAKE SETTINGS TO ENSURE PERFECT SYNC BETWEEN ALL PLAYERS
     const forcedShakeSettings = {
@@ -495,8 +495,8 @@ export const useGameVisualSettings = () => {
       forceStopAnimation();
     }
 
-    // Check user permissions first
-    if (user?.id) {
+    // Check user permissions first - unless we're bypassing them for other player hard slam
+    if (!bypassPermissions && user?.id) {
       try {
         const { data: permissions } = await supabase
           .from('user_permissions')
@@ -513,6 +513,8 @@ export const useGameVisualSettings = () => {
         console.error('Error checking permissions:', error);
         // Continue with default permission (true) if there's an error
       }
+    } else if (bypassPermissions) {
+      console.log('🔥 Bypassing permission check for other player hard slam');
     }
     
     // Skip the amplitude check since we're forcing non-zero values
