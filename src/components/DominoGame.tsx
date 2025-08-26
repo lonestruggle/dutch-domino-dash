@@ -97,22 +97,25 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   // Track dominoes count to detect when new tiles are placed
   const [previousDominoCount, setPreviousDominoCount] = useState(0);
+  // Track previous hard slam state to detect when it becomes active
+  const [previousHardSlamState, setPreviousHardSlamState] = useState(false);
   
-  // Trigger shake animation when ANY player places a domino with hard slam active
+  // Trigger shake animation when hard slam becomes active (for ALL players)
   useEffect(() => {
     const currentDominoCount = Object.keys(gameState?.dominoes || {}).length;
     const dominoWasPlaced = currentDominoCount > previousDominoCount;
     const isHardSlamActive = gameState?.isHardSlamming;
-    const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition;
     
-    // Debug shake settings to ensure all players use same values
-    if (dominoWasPlaced && isHardSlamActive) {
-      console.log('🔥 Hard slam domino placement detected');
+    // Detect when hard slam transitions from false to true
+    const hardSlamJustActivated = isHardSlamActive && !previousHardSlamState;
+    
+    // Debug logging
+    if (dominoWasPlaced && hardSlamJustActivated) {
+      console.log('🔥 Hard slam domino placement detected - triggering for ALL players');
       console.log('🔥 Shake settings:', {
         intensity: visualSettings?.shakeIntensity,
         duration: visualSettings?.shakeDuration,
         deviceType,
-        isMyTurn,
         currentPlayer: syncState?.currentPlayer,
         playerPosition: syncState?.playerPosition
       });
@@ -120,14 +123,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     
     // Trigger animation when:
     // 1. A new domino was placed (count increased) 
-    // 2. Hard slam is active
-    // 3. NOT my turn (so I see others' hard slam animations)
-    if (dominoWasPlaced && isHardSlamActive && !isMyTurn && startShakeAnimation) {
-      console.log('🔥 Triggering shake animation for hard slam domino placement from other player');
-      startShakeAnimation(true); // Pass true to indicate this is from another player's hard slam
+    // 2. Hard slam just became active (for ANY player)
+    if (dominoWasPlaced && hardSlamJustActivated && startShakeAnimation) {
+      console.log('🔥 Triggering shake animation for hard slam domino placement');
+      startShakeAnimation(true);
     }
     
     setPreviousDominoCount(currentDominoCount);
+    setPreviousHardSlamState(isHardSlamActive || false);
   }, [gameState?.dominoes, gameState?.isHardSlamming, syncState?.currentPlayer, syncState?.playerPosition, startShakeAnimation, previousDominoCount, visualSettings?.shakeIntensity, visualSettings?.shakeDuration, deviceType]);
 
   // Show dialog when game becomes over - but prevent multiple triggers
