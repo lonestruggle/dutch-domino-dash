@@ -98,13 +98,37 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Track dominoes count to detect when new tiles are placed
   const [previousDominoCount, setPreviousDominoCount] = useState(0);
   
-  // Trigger shake animation for all players when triggerShakeForAll flag is set
+  // Trigger shake animation when ANY player places a domino with hard slam active
   useEffect(() => {
-    if (gameState?.triggerShakeForAll && startShakeAnimation) {
-      console.log('🔥 Triggering shake animation for ALL players due to triggerShakeForAll flag');
-      startShakeAnimation(true); // Always pass true to bypass permission checks
+    const currentDominoCount = Object.keys(gameState?.dominoes || {}).length;
+    const dominoWasPlaced = currentDominoCount > previousDominoCount;
+    const isHardSlamActive = gameState?.isHardSlamming;
+    const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition;
+    
+    // Debug shake settings to ensure all players use same values
+    if (dominoWasPlaced && isHardSlamActive) {
+      console.log('🔥 Hard slam domino placement detected');
+      console.log('🔥 Shake settings:', {
+        intensity: visualSettings?.shakeIntensity,
+        duration: visualSettings?.shakeDuration,
+        deviceType,
+        isMyTurn,
+        currentPlayer: syncState?.currentPlayer,
+        playerPosition: syncState?.playerPosition
+      });
     }
-  }, [gameState?.triggerShakeForAll, startShakeAnimation]);
+    
+    // Trigger animation when:
+    // 1. A new domino was placed (count increased) 
+    // 2. Hard slam is active
+    // 3. NOT my turn (so I see others' hard slam animations)
+    if (dominoWasPlaced && isHardSlamActive && !isMyTurn && startShakeAnimation) {
+      console.log('🔥 Triggering shake animation for hard slam domino placement from other player');
+      startShakeAnimation(true); // Pass true to indicate this is from another player's hard slam
+    }
+    
+    setPreviousDominoCount(currentDominoCount);
+  }, [gameState?.dominoes, gameState?.isHardSlamming, syncState?.currentPlayer, syncState?.playerPosition, startShakeAnimation, previousDominoCount, visualSettings?.shakeIntensity, visualSettings?.shakeDuration, deviceType]);
 
   // Show dialog when game becomes over - but prevent multiple triggers
   useEffect(() => {
