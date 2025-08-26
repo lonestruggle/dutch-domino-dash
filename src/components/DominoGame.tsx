@@ -120,11 +120,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     
     // Trigger animation when:
     // 1. A new domino was placed (count increased) 
-    // 2. Hard slam is active
-    // 3. NOT my turn (so I see others' hard slam animations)
-    if (dominoWasPlaced && isHardSlamActive && !isMyTurn && startShakeAnimation) {
-      console.log('🔥 Triggering shake animation for hard slam domino placement from other player');
-      startShakeAnimation(true); // Pass true to indicate this is from another player's hard slam
+    // 2. Hard slam is active (from database sync)
+    // Remove turn check - ALL players should see hard slam animation when state syncs
+    if (dominoWasPlaced && isHardSlamActive && startShakeAnimation) {
+      console.log('🔥 Triggering shake animation for hard slam domino placement (database sync)');
+      startShakeAnimation(true); // Pass true to indicate this is from hard slam
     }
     
     setPreviousDominoCount(currentDominoCount);
