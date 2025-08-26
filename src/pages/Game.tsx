@@ -118,6 +118,7 @@ export default function Game() {
           winner_position: (currentState as any).winner_position,
           hardSlamNextMove: currentState.hardSlamNextMove,
           isHardSlamming: currentState.isHardSlamming,
+          triggerShakeForAll: false, // Reset shake flag after move execution
         };
 
         // Check for CHANGA and update state accordingly
@@ -550,6 +551,7 @@ export default function Game() {
       ...gameState,
       hardSlamNextMove: true,
       isHardSlamming: true,
+      triggerShakeForAll: true,
     };
     
     // Update local state first

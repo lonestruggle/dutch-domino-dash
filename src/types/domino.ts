@@ -55,6 +55,7 @@ export interface GameState {
   // Hard Slam properties
   hardSlamNextMove?: boolean;
   isHardSlamming?: boolean;
+  triggerShakeForAll?: boolean;
 
   // Nieuw voor spelafloop
   gameEndReason?: 'blocked' | 'changa' | 'normal';
