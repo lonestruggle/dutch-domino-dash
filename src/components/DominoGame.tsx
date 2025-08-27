@@ -440,7 +440,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   <Button
                     onClick={() => {
                       setLocalHardSlamActive(true);
-                      gameHook.hardSlam();
                     }}
                     disabled={!canUseHardSlam || hardSlamActive}
                     size="sm"
@@ -506,7 +505,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   <Button
                     onClick={() => {
                       setLocalHardSlamActive(true);
-                      gameHook.hardSlam();
                     }}
                     disabled={!canUseHardSlam || hardSlamActive}
                     className={cn(
