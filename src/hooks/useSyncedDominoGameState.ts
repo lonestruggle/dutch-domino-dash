@@ -29,7 +29,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
 
 
   // Load initial game state from database
-  const loadGameState = useCallback(async () => {
+  const loadGameState = useCallback(async (forceReload = false) => {
     if (!gameId || !userId) {
       console.log('Missing gameId or userId:', { gameId, userId });
       return;
@@ -40,8 +40,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
       return;
     }
 
-    // Suppress immediate reloads during our own local updates to avoid state flicker
-    if (Date.now() < selfUpdateSuppressUntilRef.current) {
+    // Only suppress reloads if not forced and within self-update window
+    if (!forceReload && Date.now() < selfUpdateSuppressUntilRef.current) {
       console.log('⏭️ Skipping load during local update window');
       return;
     }
@@ -198,8 +198,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
 
     try {
       // Mark this as a self-initiated update to prevent immediate reload flicker
-      // Increased timeout for better sync stability and race condition prevention
-      selfUpdateSuppressUntilRef.current = Date.now() + 500;
+      // Reduced timeout to minimize race conditions while preventing flicker
+      selfUpdateSuppressUntilRef.current = Date.now() + 200;
 
       console.log('📤 UPDATING DATABASE:', {
         gameId,
@@ -372,7 +372,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
       
       // FORCE herlaad van de game state na het opslaan (na suppressie-venster)
       setTimeout(() => {
-        loadGameState();
+        loadGameState(true);
       }, 1300);
 
       // Geef de nieuwe state terug zodat de UI direct kan updaten
@@ -396,14 +396,34 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         { event: 'UPDATE', schema: 'public', table: 'games', filter: `lobby_id=eq.${gameId}` },
         (payload) => {
           const newGameState = payload.new?.game_state;
+          const newCurrentPlayer = payload.new?.current_player_turn;
           const isHardSlamUpdate = newGameState?.hardSlamNextMove || newGameState?.isHardSlamming;
           
-          // For hard slam updates, skip self-update suppression and reload immediately
+          console.log('🔄 Realtime update received:', {
+            currentPlayer: newCurrentPlayer,
+            oldCurrentPlayer: syncState.currentPlayer,
+            isHardSlam: isHardSlamUpdate,
+            suppressUntil: selfUpdateSuppressUntilRef.current,
+            now: Date.now()
+          });
+          
+          // For hard slam updates, force immediate reload
           if (isHardSlamUpdate) {
-            console.log('🔥 HARD SLAM DETECTED - Immediate reload!');
-            // Clear any self-update suppression for hard slam events
-            selfUpdateSuppressUntilRef.current = 0;
-            loadGameState();
+            console.log('🔥 HARD SLAM DETECTED - Force reload!');
+            loadGameState(true);
+            return;
+          }
+
+          // Check if this is a turn change update (critical for synchronization)
+          const isTurnChange = newCurrentPlayer !== undefined && newCurrentPlayer !== syncState.currentPlayer;
+          
+          // Force reload for turn changes even during self-update suppression window
+          if (isTurnChange) {
+            console.log('🎯 TURN CHANGE DETECTED - Force reload!', {
+              from: syncState.currentPlayer,
+              to: newCurrentPlayer
+            });
+            loadGameState(true);
             return;
           }
 
@@ -414,13 +434,10 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
           }
 
           console.log('🔄 Game updated by other player, reloading state...', payload);
-          console.log('🔄 BEFORE RELOAD - Current dominoes:', Object.keys(syncState.gameState?.dominoes || {}));
-          // Add debouncing delay to ensure database consistency and prevent rapid-fire updates
+          // Minimal delay for database consistency
           setTimeout(() => {
-            loadGameState().then(() => {
-              console.log('🔄 AFTER RELOAD - Reloaded dominoes:', Object.keys(syncState.gameState?.dominoes || {}));
-            });
-          }, 250); // Increased delay for better debouncing
+            loadGameState(true);
+          }, 100);
         }
       )
       .subscribe();
