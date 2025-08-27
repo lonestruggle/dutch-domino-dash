@@ -47,7 +47,7 @@ export const useLobbies = () => {
       max_players: lobby.max_players,
       status: lobby.status as 'waiting' | 'playing' | 'finished',
       created_at: lobby.created_at,
-      player_count: lobby.lobby_players?.length || 0
+      player_count: lobby.lobby_players?.[0]?.count || 0
     })) || [];
 
     setLobbies(lobbiesWithCount);
