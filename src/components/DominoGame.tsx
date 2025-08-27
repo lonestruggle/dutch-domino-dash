@@ -41,7 +41,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Hard Slam logic - separate local button state from global effect
   const canUseHardSlam = canHardSlam && !gameState?.isGameOver;
   const [localHardSlamActive, setLocalHardSlamActive] = useState(false);
-  const hardSlamActive = localHardSlamActive || (gameState?.isHardSlamming && syncState?.currentPlayer === syncState?.playerPosition);
+  const hardSlamActive = localHardSlamActive; // Only local activation - each player controls their own
 
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   const [hasShownDialog, setHasShownDialog] = useState(false);
