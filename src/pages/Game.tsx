@@ -90,10 +90,14 @@ export default function Game() {
       // Reset hard slam in database after 3 seconds so all players get the reset
       setTimeout(() => {
         console.log('🔥 Resetting hard slam in database after animation');
-        updateGameState({
-          ...syncState.gameState,
-          isHardSlamming: false,
-        }, syncState.currentPlayer);
+        // Get the current state at timeout execution time to avoid overwriting newer updates
+        setGameState(currentState => {
+          updateGameState({
+            ...currentState,
+            isHardSlamming: false,
+          }, syncState.currentPlayer);
+          return currentState;
+        });
       }, 3000);
     }
     
