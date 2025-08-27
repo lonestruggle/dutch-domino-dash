@@ -178,8 +178,16 @@ export default function Game() {
     
     // SINGLE CONSOLIDATED UPDATE for draw (player keeps turn after drawing)
     setTimeout(() => {
+      // EXTRA VALIDATION: Double-check turn ownership before database update
+      if (syncState.currentPlayer !== syncState.playerPosition) {
+        console.log('🚫 BONEYARD DRAW BLOCKED: Turn changed during timeout, aborting database update');
+        console.log('Expected player:', syncState.playerPosition, 'Current player:', syncState.currentPlayer);
+        return;
+      }
+      
       setGameState(currentState => {
         console.log('🔄 SINGLE DRAW UPDATE - capturing fresh state, player keeps turn');
+        console.log('✅ BONEYARD DRAW VALIDATED: Player', syncState.playerPosition, 'confirmed as current player');
         
         // Prepare consolidated state
         const remote = syncState.gameState as any;
@@ -205,8 +213,8 @@ export default function Game() {
           isHardSlamming: currentState.isHardSlamming,
         };
 
-        // SINGLE database update with state (player keeps current turn)
-        updateGameState(finalState, syncState.currentPlayer);
+        // SINGLE database update with playerPosition to ensure consistency
+        updateGameState(finalState, syncState.playerPosition);
         
         return currentState;
       });
