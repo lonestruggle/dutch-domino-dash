@@ -41,7 +41,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Hard Slam logic - separate local button state from global effect
   const canUseHardSlam = canHardSlam && !gameState?.isGameOver;
   const [localHardSlamActive, setLocalHardSlamActive] = useState(false);
-  const hardSlamActive = localHardSlamActive; // Only local activation - each player controls their own
+  const hardSlamActive = localHardSlamActive; // Local activation controls when to send hard slam to database
 
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   const [hasShownDialog, setHasShownDialog] = useState(false);
@@ -102,7 +102,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   useEffect(() => {
     const currentDominoCount = Object.keys(gameState?.dominoes || {}).length;
     const dominoWasPlaced = currentDominoCount > previousDominoCount;
-    const isHardSlamActive = gameState?.isHardSlamming;
+    const isHardSlamActive = gameState?.isHardSlamming; // Global animation - visible to all players
     const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition;
     
     // Debug shake settings to ensure all players use same values
@@ -376,7 +376,16 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <GameBoard 
           gameState={gameState}
           legalMoves={legalMovesWithIndex}
-          onMoveExecute={(move) => gameHook.executeMove(move)}
+          onMoveExecute={(move) => {
+            // Pass local hard slam state to the move execution
+            const moveWithHardSlam = { ...move, localHardSlamActive };
+            gameHook.executeMove(moveWithHardSlam);
+            
+            // Reset local hard slam after move execution
+            if (localHardSlamActive) {
+              setLocalHardSlamActive(false);
+            }
+          }}
           onCenterView={() => {}}
           hasDifferentNeighbor={hasDifferentNeighbor}
           backgroundChoice={gameData?.background_choice}

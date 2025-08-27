@@ -43,6 +43,7 @@ export default function Game() {
   const wrappedExecuteMove = useCallback((move: any) => {
     console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
     console.log('🔥 pendingShake status:', pendingShake);
+    console.log('🔥 localHardSlamActive:', move?.localHardSlamActive);
     
     // Frontend turn validation - block if not player's turn
     if (syncState.currentPlayer !== syncState.playerPosition) {
@@ -80,6 +81,12 @@ export default function Game() {
 
     // Execute the move locally
     const moveResult = (gameHook as any).executeMove(move);
+    
+    // If this player activated hard slam, trigger it for the database
+    if (move?.localHardSlamActive) {
+      console.log('🔥 Hard slam was activated locally, triggering for database');
+      gameHook.hardSlam();
+    }
     
     // Execute pending shake after domino placement
     if (visualSettings.pendingShake) {
