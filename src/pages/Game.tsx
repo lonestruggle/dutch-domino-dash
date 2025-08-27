@@ -107,9 +107,9 @@ export default function Game() {
       visualSettings.executePendingShake();
     }
 
-    // Calculate next player turn
-    const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
-    console.log('🎯 Advancing turn from', syncState.currentPlayer, 'to', nextPlayerTurn);
+    // Calculate next player turn - use playerPosition to ensure consistent turn advancement
+    const nextPlayerTurn = (syncState.playerPosition + 1) % syncState.allPlayers.length;
+    console.log('🎯 Advancing turn from', syncState.playerPosition, 'to', nextPlayerTurn);
 
     // SINGLE CONSOLIDATED DATABASE UPDATE - capture fresh state
     setTimeout(() => {
