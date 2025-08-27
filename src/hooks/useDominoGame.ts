@@ -943,18 +943,6 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
         newState.isGameOver = isBlocked;
       }
       
-      // If hard slam was activated, reset it after animation time
-      // This ensures other players see isHardSlamming: true in database sync
-      if (prev.isHardSlamming) {
-        console.log('🔥 Hard Slam active - will reset after 3 seconds for other players');
-        setTimeout(() => {
-          setGameState(currentState => ({
-            ...currentState,
-            isHardSlamming: false,
-          }));
-          console.log('🔥 Hard Slam reset to false after animation time');
-        }, 3000); // 3 seconds for animation
-      }
       
       return newState;
     });

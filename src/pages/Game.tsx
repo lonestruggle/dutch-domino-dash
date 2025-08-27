@@ -86,6 +86,15 @@ export default function Game() {
     if (move?.localHardSlamActive) {
       console.log('🔥 Hard slam was activated locally, triggering for database');
       gameHook.hardSlam();
+      
+      // Reset hard slam in database after 3 seconds so all players get the reset
+      setTimeout(() => {
+        console.log('🔥 Resetting hard slam in database after animation');
+        updateGameState({
+          ...syncState.gameState,
+          isHardSlamming: false,
+        }, syncState.currentPlayer);
+      }, 3000);
     }
     
     // Execute pending shake after domino placement
