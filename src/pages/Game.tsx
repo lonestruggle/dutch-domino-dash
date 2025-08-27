@@ -469,13 +469,21 @@ export default function Game() {
       return;
     }
 
-    // Advance to next player turn after pass
-    const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
-    console.log('🎯 Pass move - advancing turn from', syncState.currentPlayer, 'to', nextPlayerTurn);
+    // Advance to next player turn after pass - USE PLAYER POSITION for consistency
+    const nextPlayerTurn = (syncState.playerPosition + 1) % syncState.allPlayers.length;
+    console.log('🎯 Pass move - advancing turn from', syncState.playerPosition, 'to', nextPlayerTurn);
     
     // Pass doesn't change game state, just advances turn
     setTimeout(() => {
+      // EXTRA VALIDATION: Double-check turn ownership before database update
+      if (syncState.currentPlayer !== syncState.playerPosition) {
+        console.log('🚫 PASS MOVE BLOCKED: Turn changed during timeout, aborting database update');
+        console.log('Expected player:', syncState.playerPosition, 'Current player:', syncState.currentPlayer);
+        return;
+      }
+      
       console.log('🔄 PASS MOVE - Advancing turn only');
+      console.log('✅ PASS MOVE VALIDATED: Player', syncState.playerPosition, 'confirmed as current player');
       // Only update the turn, no game state changes needed for pass
       if (syncState.gameData) {
         updateGameState(syncState.gameState, nextPlayerTurn);
