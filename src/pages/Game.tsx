@@ -176,14 +176,10 @@ export default function Game() {
     // Execute draw locally
     (gameHook as any).drawFromBoneyard();
     
-    // Calculate next player turn
-    const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
-    console.log('🎯 Advancing turn after draw from', syncState.currentPlayer, 'to', nextPlayerTurn);
-    
-    // SINGLE CONSOLIDATED UPDATE for draw
+    // SINGLE CONSOLIDATED UPDATE for draw (player keeps turn after drawing)
     setTimeout(() => {
       setGameState(currentState => {
-        console.log('🔄 SINGLE DRAW UPDATE - capturing fresh state');
+        console.log('🔄 SINGLE DRAW UPDATE - capturing fresh state, player keeps turn');
         
         // Prepare consolidated state
         const remote = syncState.gameState as any;
@@ -209,8 +205,8 @@ export default function Game() {
           isHardSlamming: currentState.isHardSlamming,
         };
 
-        // SINGLE database update with state AND turn advancement
-        updateGameState(finalState, nextPlayerTurn);
+        // SINGLE database update with state (player keeps current turn)
+        updateGameState(finalState, syncState.currentPlayer);
         
         return currentState;
       });
