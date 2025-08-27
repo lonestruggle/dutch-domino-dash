@@ -928,7 +928,8 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
         nextDominoId: prev.nextDominoId + 1,
         isGameOver: isGameWon,
         hardSlamNextMove: false, // Reset hard slam flag after use
-        isHardSlamming: false,
+        // DON'T reset isHardSlamming immediately - let other players see it in database sync
+        // It will be reset after animation time via setTimeout below
       };
       
       // Generate new open ends and check for blocked game
@@ -940,6 +941,19 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
         const allHands = newState.playerHands || [newPlayerHand];
         const isBlocked = checkBlockedGame(newOpenEnds, newBoard, allHands, newState.boneyard);
         newState.isGameOver = isBlocked;
+      }
+      
+      // If hard slam was activated, reset it after animation time
+      // This ensures other players see isHardSlamming: true in database sync
+      if (prev.isHardSlamming) {
+        console.log('🔥 Hard Slam active - will reset after 3 seconds for other players');
+        setTimeout(() => {
+          setGameState(currentState => ({
+            ...currentState,
+            isHardSlamming: false,
+          }));
+          console.log('🔥 Hard Slam reset to false after animation time');
+        }, 3000); // 3 seconds for animation
       }
       
       return newState;
