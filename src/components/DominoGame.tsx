@@ -159,8 +159,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     );
   }
 
-  const isMyTurn = gameState?.currentPlayer === syncState?.playerPosition;
-  const currentPlayerName = syncState?.allPlayers?.find((p: any) => p.position === gameState?.currentPlayer)?.username || 'Unknown';
+  const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition;
+  const currentPlayerName = syncState?.allPlayers?.find((p: any) => p.position === syncState?.currentPlayer)?.username || 'Unknown';
   
 
   
