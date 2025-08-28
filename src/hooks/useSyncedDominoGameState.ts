@@ -192,18 +192,23 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     }
   }, [gameId, userId, toast, ignoringSync]);
 
-  // Update game state in database with consolidated update
-  const updateGameState = useCallback(async (newGameState: any, newCurrentPlayer?: number) => {
+  // Update game state in database with MANDATORY turn advancement
+  const updateGameState = useCallback(async (newGameState: any, nextPlayerTurn: number) => {
     if (!gameId) return;
+
+    console.log('🔄 Updating game state with MANDATORY turn advancement:', { 
+      gameId, 
+      currentTurn: syncState.currentPlayer,
+      nextPlayerTurn 
+    });
 
     try {
       // Mark this as a self-initiated update to prevent immediate reload flicker
-      // Reduced timeout to minimize race conditions while preventing flicker
       selfUpdateSuppressUntilRef.current = Date.now() + 200;
 
       console.log('📤 UPDATING DATABASE:', {
         gameId,
-        newCurrentPlayer,
+        nextPlayerTurn,
         dominoesCount: Object.keys(newGameState?.dominoes || {}).length,
         timestamp: new Date().toISOString()
       });
@@ -212,7 +217,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         .from('games')
         .update({
           game_state: newGameState as any,
-          current_player_turn: newCurrentPlayer !== undefined ? newCurrentPlayer : syncState.currentPlayer,
+          current_player_turn: nextPlayerTurn, // ALWAYS advance turn
           updated_at: new Date().toISOString()
         })
         .eq('lobby_id', gameId);
@@ -225,7 +230,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
           variant: "destructive"
         });
       } else {
-        console.log('✅ DATABASE UPDATE SUCCESS');
+        console.log('✅ DATABASE UPDATE SUCCESS with turn advanced to:', nextPlayerTurn);
       }
     } catch (error) {
       console.error('Error updating game state:', error);

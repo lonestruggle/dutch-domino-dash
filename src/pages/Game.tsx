@@ -45,15 +45,7 @@ export default function Game() {
     console.log('🔥 pendingShake status:', pendingShake);
     console.log('🔥 localHardSlamActive:', move?.localHardSlamActive);
     
-    // Frontend turn validation - block if not player's turn
-    if (syncState.currentPlayer !== syncState.playerPosition) {
-      toast({
-        title: "Niet jouw beurt!",
-        description: `Het is de beurt van speler ${syncState.currentPlayer + 1}`,
-        variant: "destructive"
-      });
-      return;
-    }
+    // Turn validation removed - database controls turns completely now
     
     // Pre-move: detecteer CHANGA (ook bij dubbel)
     const myHand = gameState.playerHand || [];
@@ -92,11 +84,18 @@ export default function Game() {
         console.log('🔥 Resetting hard slam in database after animation');
         // Get the current state at timeout execution time to avoid overwriting newer updates
         setGameState(currentState => {
+          // Hard slam cleanup - no turn advancement needed, keep current turn
           updateGameState({
             ...currentState,
             isHardSlamming: false,
+            hardSlamNextMove: false
           }, syncState.currentPlayer);
-          return currentState;
+          
+          return {
+            ...currentState,
+            isHardSlamming: false,
+            hardSlamNextMove: false
+          };
         });
       }, 3000);
     }
@@ -163,129 +162,15 @@ export default function Game() {
   }, [gameHook, gameState, syncState.playerPosition, syncState.currentPlayer, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState, toast, pendingShake, visualSettings]);
 
   const wrappedDrawFromBoneyard = useCallback(async () => {
-    console.log('🎯 DRAW ATTEMPT - Starting validation:', {
-      syncCurrentPlayer: syncState.currentPlayer,
-      syncPlayerPosition: syncState.playerPosition,
-      gameId,
-      timestamp: new Date().toISOString()
-    });
+    console.log('🎲 Draw from boneyard - turn validation removed, database controls turns');
 
-    // Get fresh player position to avoid stale closure issues
-    const freshPlayerPosition = syncState.allPlayers.findIndex(p => p.user_id === user?.id);
-    
-    // Frontend turn validation - block if not player's turn  
-    if (syncState.currentPlayer !== freshPlayerPosition) {
-      console.log('🚫 FRONTEND VALIDATION FAILED:', {
-        currentPlayer: syncState.currentPlayer,
-        freshPlayerPosition,
-        staleSyncPlayerPosition: syncState.playerPosition
-      });
-      toast({
-        title: "Niet jouw beurt!",
-        description: `Het is de beurt van speler ${syncState.currentPlayer + 1}`,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('✅ FRONTEND VALIDATION PASSED - checking database...');
-
-    // REALTIME DATABASE VALIDATION - Extra check against database current_player_turn
-    try {
-      const { data: gameData, error } = await supabase
-        .from('games')
-        .select('current_player_turn')
-        .eq('lobby_id', gameId)
-        .single();
-      
-      if (error || !gameData) {
-        console.error('❌ Failed to validate turn from database:', error);
-        toast({
-          title: "Fout bij validatie",
-          description: "Kon beurt niet valideren van database",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Check if database turn matches our fresh player position
-      if (gameData.current_player_turn !== freshPlayerPosition) {
-        console.log('🚫 REALTIME VALIDATION FAILED:', {
-          dbCurrentPlayer: gameData.current_player_turn,
-          localPlayerPosition: syncState.playerPosition,
-          localCurrentPlayer: syncState.currentPlayer
-        });
-        toast({
-          title: "Niet jouw beurt!",
-          description: `Database toont dat het de beurt is van speler ${gameData.current_player_turn + 1}`,
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      console.log('✅ REALTIME VALIDATION PASSED:', {
-        dbCurrentPlayer: gameData.current_player_turn,
-        localPlayerPosition: syncState.playerPosition
-      });
-      
-    } catch (error) {
-      console.error('❌ Database validation error:', error);
-      toast({
-        title: "Validatiefout",
-        description: "Kon beurt niet valideren",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Execute draw locally only after all validations pass
+    // Execute draw locally - database will validate turn
     (gameHook as any).drawFromBoneyard();
     
-    // SINGLE CONSOLIDATED UPDATE for draw (player keeps turn after drawing)
-    setTimeout(async () => {
-      // FINAL DATABASE VALIDATION: Re-check turn right before database update
-      try {
-        const { data: finalGameData, error: finalError } = await supabase
-          .from('games')
-          .select('current_player_turn')
-          .eq('lobby_id', gameId)
-          .single();
-        
-        if (finalError || !finalGameData) {
-          console.error('❌ FINAL validation failed:', finalError);
-          return;
-        }
-        
-        if (finalGameData.current_player_turn !== syncState.playerPosition) {
-          console.log('🚫 FINAL VALIDATION FAILED - Turn changed, blocking database update:', {
-            dbCurrentPlayer: finalGameData.current_player_turn,
-            localPlayerPosition: syncState.playerPosition,
-            syncCurrentPlayer: syncState.currentPlayer
-          });
-          
-          // Force reload to get fresh state
-          console.log('🔄 Forcing state reload due to turn mismatch...');
-          // Don't update database, just return
-          return;
-        }
-        
-        console.log('✅ FINAL VALIDATION PASSED - Turn confirmed, proceeding with database update');
-        
-      } catch (error) {
-        console.error('❌ Final database validation error:', error);
-        return;
-      }
-      
-      // EXTRA VALIDATION: Double-check turn ownership before database update
-      if (syncState.currentPlayer !== syncState.playerPosition) {
-        console.log('🚫 BONEYARD DRAW BLOCKED: Turn changed during timeout, aborting database update');
-        console.log('Expected player:', syncState.playerPosition, 'Current player:', syncState.currentPlayer);
-        return;
-      }
-      
+    // Calculate next player turn - drawing advances turn
+    setTimeout(() => {
       setGameState(currentState => {
-        console.log('🔄 SINGLE DRAW UPDATE - capturing fresh state, player keeps turn');
-        console.log('✅ BONEYARD DRAW VALIDATED: Player', syncState.playerPosition, 'confirmed as current player');
+        console.log('🔄 Drawing with MANDATORY turn advancement');
         
         // Prepare consolidated state
         const remote = syncState.gameState as any;
@@ -311,13 +196,17 @@ export default function Game() {
           isHardSlamming: currentState.isHardSlamming,
         };
 
-        // SINGLE database update with playerPosition to ensure consistency
-        updateGameState(finalState, syncState.playerPosition);
+        // Calculate next player turn
+        const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
+        console.log('🎯 DRAW - Turn advancement:', { from: syncState.currentPlayer, to: nextPlayerTurn });
+
+        // MANDATORY turn advancement
+        updateGameState(finalState, nextPlayerTurn);
         
         return currentState;
       });
     }, 150);
-  }, [gameHook, syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState, toast, gameId, supabase]);
+  }, [gameHook, syncState.currentPlayer, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState]);
 
   const wrappedStartNewGame = useCallback(async () => {
     // Reset opslagvlag voor scorebord zodat nieuwe uitslag later kan worden opgeslagen
@@ -392,7 +281,8 @@ export default function Game() {
           gameEndReason: 'blocked'
         };
         setGameState(blockedState);
-        updateGameState(blockedState);
+        // Game over - no turn advancement needed, keep current turn
+        updateGameState(blockedState, syncState.currentPlayer);
         return;
       }
       
@@ -483,7 +373,8 @@ export default function Game() {
             gameEndReason: 'blocked'
           };
           setGameState(blockedState);
-          updateGameState(blockedState);
+          // Game over - no turn advancement needed, keep current turn
+          updateGameState(blockedState, syncState.currentPlayer);
           return;
         }
       }
@@ -514,7 +405,8 @@ export default function Game() {
         isGameOver: true,
       };
       setGameState(updatedGameState);
-      updateGameState(updatedGameState);
+      // Game over - no turn advancement needed, keep current turn
+      updateGameState(updatedGameState, syncState.currentPlayer);
       return;
     }
     
@@ -552,20 +444,13 @@ export default function Game() {
       isGameOver: true,
     };
     setGameState(updatedGameState);
-    updateGameState(updatedGameState);
+    // Game over - no turn advancement needed, keep current turn
+    updateGameState(updatedGameState, syncState.currentPlayer);
   }, [gameState, gameHook, syncState.allPlayers, setGameState, updateGameState]);
 
   // Pass move function
   const passMove = useCallback(() => {
-    // Frontend turn validation
-    if (syncState.currentPlayer !== syncState.playerPosition) {
-      toast({
-        title: "Niet jouw beurt!",
-        description: `Het is de beurt van speler ${syncState.currentPlayer + 1}`,
-        variant: "destructive"
-      });
-      return;
-    }
+    // Turn validation removed - database controls turns completely now
 
     // Advance to next player turn after pass - USE PLAYER POSITION for consistency
     const nextPlayerTurn = (syncState.playerPosition + 1) % syncState.allPlayers.length;
@@ -688,7 +573,8 @@ export default function Game() {
     // Then immediately sync the same state to database
     if (updateGameState) {
       try {
-        await updateGameState(newStateWithHardSlam);
+        // Hard slam - no turn advancement needed, keep current turn
+        await updateGameState(newStateWithHardSlam, syncState.currentPlayer);
         console.log('✅ Hard Slam synced to database successfully');
       } catch (error) {
         console.error('❌ Failed to sync Hard Slam to database:', error);
