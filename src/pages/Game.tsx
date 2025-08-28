@@ -170,11 +170,15 @@ export default function Game() {
       timestamp: new Date().toISOString()
     });
 
-    // Frontend turn validation - block if not player's turn
-    if (syncState.currentPlayer !== syncState.playerPosition) {
+    // Get fresh player position to avoid stale closure issues
+    const freshPlayerPosition = syncState.allPlayers.findIndex(p => p.user_id === user?.id);
+    
+    // Frontend turn validation - block if not player's turn  
+    if (syncState.currentPlayer !== freshPlayerPosition) {
       console.log('🚫 FRONTEND VALIDATION FAILED:', {
         currentPlayer: syncState.currentPlayer,
-        playerPosition: syncState.playerPosition
+        freshPlayerPosition,
+        staleSyncPlayerPosition: syncState.playerPosition
       });
       toast({
         title: "Niet jouw beurt!",
@@ -204,8 +208,8 @@ export default function Game() {
         return;
       }
       
-      // Check if database turn matches our expected turn
-      if (gameData.current_player_turn !== syncState.playerPosition) {
+      // Check if database turn matches our fresh player position
+      if (gameData.current_player_turn !== freshPlayerPosition) {
         console.log('🚫 REALTIME VALIDATION FAILED:', {
           dbCurrentPlayer: gameData.current_player_turn,
           localPlayerPosition: syncState.playerPosition,

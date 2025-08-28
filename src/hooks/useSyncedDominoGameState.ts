@@ -419,6 +419,9 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
           const oldCurrentPlayer = payload.old?.current_player_turn;
           const isTurnChange = newCurrentPlayer !== undefined && newCurrentPlayer !== oldCurrentPlayer;
           
+          // Also fix stale playerPosition by using fresh data from database
+          const currentPlayerPositionFromDB = syncState.allPlayers.findIndex(p => p.user_id === userId);
+          
           console.log('🔍 TURN CHANGE DEBUG:', {
             newCurrentPlayer,
             oldCurrentPlayer,
