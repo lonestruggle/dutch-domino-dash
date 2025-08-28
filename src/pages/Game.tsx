@@ -162,7 +162,7 @@ export default function Game() {
     return moveResult;
   }, [gameHook, gameState, syncState.playerPosition, syncState.currentPlayer, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState, toast, pendingShake, visualSettings]);
 
-  const wrappedDrawFromBoneyard = useCallback(() => {
+  const wrappedDrawFromBoneyard = useCallback(async () => {
     // Frontend turn validation - block if not player's turn
     if (syncState.currentPlayer !== syncState.playerPosition) {
       toast({
@@ -172,8 +172,56 @@ export default function Game() {
       });
       return;
     }
+
+    // REALTIME DATABASE VALIDATION - Extra check against database current_player_turn
+    try {
+      const { data: gameData, error } = await supabase
+        .from('games')
+        .select('current_player_turn')
+        .eq('lobby_id', gameId)
+        .single();
+      
+      if (error || !gameData) {
+        console.error('❌ Failed to validate turn from database:', error);
+        toast({
+          title: "Fout bij validatie",
+          description: "Kon beurt niet valideren van database",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Check if database turn matches our expected turn
+      if (gameData.current_player_turn !== syncState.playerPosition) {
+        console.log('🚫 REALTIME VALIDATION FAILED:', {
+          dbCurrentPlayer: gameData.current_player_turn,
+          localPlayerPosition: syncState.playerPosition,
+          localCurrentPlayer: syncState.currentPlayer
+        });
+        toast({
+          title: "Niet jouw beurt!",
+          description: `Database toont dat het de beurt is van speler ${gameData.current_player_turn + 1}`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log('✅ REALTIME VALIDATION PASSED:', {
+        dbCurrentPlayer: gameData.current_player_turn,
+        localPlayerPosition: syncState.playerPosition
+      });
+      
+    } catch (error) {
+      console.error('❌ Database validation error:', error);
+      toast({
+        title: "Validatiefout",
+        description: "Kon beurt niet valideren",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    // Execute draw locally
+    // Execute draw locally only after all validations pass
     (gameHook as any).drawFromBoneyard();
     
     // SINGLE CONSOLIDATED UPDATE for draw (player keeps turn after drawing)
@@ -219,7 +267,7 @@ export default function Game() {
         return currentState;
       });
     }, 150);
-  }, [gameHook, syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState, toast]);
+  }, [gameHook, syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState, toast, gameId, supabase]);
 
   const wrappedStartNewGame = useCallback(async () => {
     // Reset opslagvlag voor scorebord zodat nieuwe uitslag later kan worden opgeslagen
