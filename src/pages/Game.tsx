@@ -163,8 +163,19 @@ export default function Game() {
   }, [gameHook, gameState, syncState.playerPosition, syncState.currentPlayer, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState, toast, pendingShake, visualSettings]);
 
   const wrappedDrawFromBoneyard = useCallback(async () => {
+    console.log('🎯 DRAW ATTEMPT - Starting validation:', {
+      syncCurrentPlayer: syncState.currentPlayer,
+      syncPlayerPosition: syncState.playerPosition,
+      gameId,
+      timestamp: new Date().toISOString()
+    });
+
     // Frontend turn validation - block if not player's turn
     if (syncState.currentPlayer !== syncState.playerPosition) {
+      console.log('🚫 FRONTEND VALIDATION FAILED:', {
+        currentPlayer: syncState.currentPlayer,
+        playerPosition: syncState.playerPosition
+      });
       toast({
         title: "Niet jouw beurt!",
         description: `Het is de beurt van speler ${syncState.currentPlayer + 1}`,
@@ -172,6 +183,8 @@ export default function Game() {
       });
       return;
     }
+
+    console.log('✅ FRONTEND VALIDATION PASSED - checking database...');
 
     // REALTIME DATABASE VALIDATION - Extra check against database current_player_turn
     try {
@@ -225,7 +238,40 @@ export default function Game() {
     (gameHook as any).drawFromBoneyard();
     
     // SINGLE CONSOLIDATED UPDATE for draw (player keeps turn after drawing)
-    setTimeout(() => {
+    setTimeout(async () => {
+      // FINAL DATABASE VALIDATION: Re-check turn right before database update
+      try {
+        const { data: finalGameData, error: finalError } = await supabase
+          .from('games')
+          .select('current_player_turn')
+          .eq('lobby_id', gameId)
+          .single();
+        
+        if (finalError || !finalGameData) {
+          console.error('❌ FINAL validation failed:', finalError);
+          return;
+        }
+        
+        if (finalGameData.current_player_turn !== syncState.playerPosition) {
+          console.log('🚫 FINAL VALIDATION FAILED - Turn changed, blocking database update:', {
+            dbCurrentPlayer: finalGameData.current_player_turn,
+            localPlayerPosition: syncState.playerPosition,
+            syncCurrentPlayer: syncState.currentPlayer
+          });
+          
+          // Force reload to get fresh state
+          console.log('🔄 Forcing state reload due to turn mismatch...');
+          // Don't update database, just return
+          return;
+        }
+        
+        console.log('✅ FINAL VALIDATION PASSED - Turn confirmed, proceeding with database update');
+        
+      } catch (error) {
+        console.error('❌ Final database validation error:', error);
+        return;
+      }
+      
       // EXTRA VALIDATION: Double-check turn ownership before database update
       if (syncState.currentPlayer !== syncState.playerPosition) {
         console.log('🚫 BONEYARD DRAW BLOCKED: Turn changed during timeout, aborting database update');
