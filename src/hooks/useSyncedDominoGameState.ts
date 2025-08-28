@@ -414,15 +414,37 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
             return;
           }
 
-          // Check if this is a turn change update (critical for synchronization)
-          const isTurnChange = newCurrentPlayer !== undefined && newCurrentPlayer !== syncState.currentPlayer;
+          // STALE CLOSURE FIX: Use payload.old instead of syncState.currentPlayer
+          // This prevents stale closure issues after multiple turn changes
+          const oldCurrentPlayer = payload.old?.current_player_turn;
+          const isTurnChange = newCurrentPlayer !== undefined && newCurrentPlayer !== oldCurrentPlayer;
+          
+          console.log('🔍 TURN CHANGE DEBUG:', {
+            newCurrentPlayer,
+            oldCurrentPlayer,
+            syncStateCurrentPlayer: syncState.currentPlayer,
+            isTurnChange,
+            payloadOld: payload.old,
+            payloadNew: payload.new
+          });
           
           // Force reload for turn changes even during self-update suppression window
           if (isTurnChange) {
             console.log('🎯 TURN CHANGE DETECTED - Force reload!', {
-              from: syncState.currentPlayer,
-              to: newCurrentPlayer
+              from: oldCurrentPlayer,
+              to: newCurrentPlayer,
+              fixingStaleClosureIssue: true
             });
+            
+            // Skip self-update suppression for turn changes to ensure immediate sync
+            selfUpdateSuppressUntilRef.current = 0;
+            
+            // Force immediate update of currentPlayer in local state
+            setSyncState(prevState => ({
+              ...prevState,
+              currentPlayer: newCurrentPlayer
+            }));
+            
             loadGameState(true);
             return;
           }
