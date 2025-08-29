@@ -79,17 +79,21 @@ export default function Game() {
       console.log('🔥 Hard slam was activated locally, triggering for database');
       gameHook.hardSlam();
       
+      // Capture the original player position before any state changes
+      const originalPlayerPosition = syncState.playerPosition;
+      
       // Reset hard slam in database after 3 seconds so all players get the reset
       setTimeout(() => {
         console.log('🔥 Resetting hard slam in database after animation');
+        console.log('🔥 Original player position for cleanup:', originalPlayerPosition);
         // Get the current state at timeout execution time to avoid overwriting newer updates
         setGameState(currentState => {
-          // Hard slam cleanup - no turn advancement needed, keep current turn
+          // Hard slam cleanup - use original player position to prevent double advancement
           updateGameState({
             ...currentState,
             isHardSlamming: false,
             hardSlamNextMove: false
-          }, syncState.currentPlayer);
+          }, originalPlayerPosition);
           
           return {
             ...currentState,
