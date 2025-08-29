@@ -122,20 +122,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     // 1. A new domino was placed (count increased) 
     // 2. Hard slam is active (from database sync)
     // 3. The placed domino matches the hard slam domino ID
-    if (dominoWasPlaced && isHardSlamActive && startShakeAnimation) {
-      // Check if a specific hard slam domino was placed
-      if (gameState?.hardSlamDominoId) {
-        const hardSlamDominoExists = gameState.dominoes[gameState.hardSlamDominoId];
-        if (hardSlamDominoExists) {
-          console.log('🔥 Triggering shake animation for hard slam domino:', gameState.hardSlamDominoId);
-          startShakeAnimation(true); // Pass true to indicate this is from hard slam
-        } else {
-          console.log('🔥 Hard slam domino not yet placed, waiting...');
-        }
-      } else {
-        // Fallback for backwards compatibility - trigger if hard slam is active
-        console.log('🔥 Triggering shake animation for hard slam (legacy fallback)');
-        startShakeAnimation(true);
+    if (dominoWasPlaced && isHardSlamActive && startShakeAnimation && gameState?.hardSlamDominoId) {
+      const hardSlamDominoExists = gameState.dominoes[gameState.hardSlamDominoId];
+      if (hardSlamDominoExists) {
+        console.log('🔥 Triggering shake animation for hard slam domino:', gameState.hardSlamDominoId);
+        startShakeAnimation(true); // Pass true to indicate this is from hard slam
       }
     }
     
