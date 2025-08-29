@@ -77,6 +77,17 @@ export default function Game() {
     // If this player activated hard slam, trigger it for the database
     if (move?.localHardSlamActive) {
       console.log('🔥 Hard slam was activated locally, triggering for database');
+      
+      // Track which domino will trigger the hard slam animation
+      const hardSlamDominoId = `d${gameState.nextDominoId}`;
+      console.log('🔥 Hard slam domino ID:', hardSlamDominoId);
+      
+      // Update local state with hard slam domino ID
+      setGameState(currentState => ({
+        ...currentState,
+        hardSlamDominoId
+      }));
+      
       gameHook.hardSlam();
       
       // Capture the original player position before any state changes
@@ -89,7 +100,8 @@ export default function Game() {
         setGameState(currentState => ({
           ...currentState,
           isHardSlamming: false,
-          hardSlamNextMove: false
+          hardSlamNextMove: false,
+          hardSlamDominoId: undefined
         }));
       }, 3000);
     }

@@ -55,6 +55,7 @@ export interface GameState {
   // Hard Slam properties
   hardSlamNextMove?: boolean;
   isHardSlamming?: boolean;
+  hardSlamDominoId?: string; // Track which specific domino triggered the hard slam
 
   // Nieuw voor spelafloop
   gameEndReason?: 'blocked' | 'changa' | 'normal';
