@@ -196,12 +196,11 @@ export default function Game() {
           isHardSlamming: currentState.isHardSlamming,
         };
 
-        // Calculate next player turn
-        const nextPlayerTurn = (syncState.currentPlayer + 1) % syncState.allPlayers.length;
-        console.log('🎯 DRAW - Turn advancement:', { from: syncState.currentPlayer, to: nextPlayerTurn });
+        // NO turn advancement for boneyard draw - player stays on turn
+        console.log('🎯 DRAW - No turn advancement, player stays on turn:', syncState.currentPlayer);
 
-        // MANDATORY turn advancement
-        updateGameState(finalState, nextPlayerTurn);
+        // Keep current player on turn (no advancement)
+        updateGameState(finalState, syncState.currentPlayer);
         
         return currentState;
       });
