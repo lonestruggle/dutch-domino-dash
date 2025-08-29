@@ -82,25 +82,15 @@ export default function Game() {
       // Capture the original player position before any state changes
       const originalPlayerPosition = syncState.playerPosition;
       
-      // Reset hard slam in database after 3 seconds so all players get the reset
+      // Reset hard slam visuals locally after 3 seconds (no database update needed)
       setTimeout(() => {
-        console.log('🔥 Resetting hard slam in database after animation');
-        console.log('🔥 Original player position for cleanup:', originalPlayerPosition);
-        // Get the current state at timeout execution time to avoid overwriting newer updates
-        setGameState(currentState => {
-          // Hard slam cleanup - use original player position to prevent double advancement
-          updateGameState({
-            ...currentState,
-            isHardSlamming: false,
-            hardSlamNextMove: false
-          }, originalPlayerPosition);
-          
-          return {
-            ...currentState,
-            isHardSlamming: false,
-            hardSlamNextMove: false
-          };
-        });
+        console.log('🔥 Resetting hard slam visuals locally (no database update)');
+        // Only reset local state for visual effects - no database sync
+        setGameState(currentState => ({
+          ...currentState,
+          isHardSlamming: false,
+          hardSlamNextMove: false
+        }));
       }, 3000);
     }
     
