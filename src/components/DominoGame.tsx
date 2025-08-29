@@ -410,7 +410,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               <div className="grid grid-cols-2 gap-2">
                 <Button 
                   onClick={boneyardViewEnabled ? () => setShowBoneyardDialog(true) : drawFromBoneyard}
-                  disabled={!gameState?.boneyard?.length}
+                  disabled={!gameState?.boneyard?.length || !isMyTurn}
                   variant="outline"
                   size="sm"
                   className="text-xs"
@@ -430,6 +430,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               <div className="grid grid-cols-2 gap-2">
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
+                  disabled={!isMyTurn}
                   variant="outline"
                   size="sm"
                   className="text-xs bg-slate-100 hover:bg-slate-200"
@@ -441,7 +442,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     onClick={() => {
                       setLocalHardSlamActive(true);
                     }}
-                    disabled={!canUseHardSlam || hardSlamActive}
+                    disabled={!canUseHardSlam || hardSlamActive || !isMyTurn}
                     size="sm"
                     className={cn(
                       "text-xs transition-all duration-300",
@@ -479,7 +480,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               <div className="flex space-x-2">
                 <Button 
                   onClick={boneyardViewEnabled ? () => setShowBoneyardDialog(true) : drawFromBoneyard}
-                  disabled={!gameState?.boneyard?.length}
+                  disabled={!gameState?.boneyard?.length || !isMyTurn}
                   variant="outline"
                   className="flex items-center space-x-2"
                 >
@@ -496,6 +497,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
+                  disabled={!isMyTurn}
                   variant="outline"
                   className="bg-slate-100 hover:bg-slate-200"
                 >
@@ -506,7 +508,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     onClick={() => {
                       setLocalHardSlamActive(true);
                     }}
-                    disabled={!canUseHardSlam || hardSlamActive}
+                    disabled={!canUseHardSlam || hardSlamActive || !isMyTurn}
                     className={cn(
                       "transition-all duration-300",
                       hardSlamActive 
@@ -546,7 +548,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
         {/* Boneyard Dialog */}
         <Dialog 
-          open={showBoneyardDialog} 
+          open={showBoneyardDialog && isMyTurn} 
           onOpenChange={(open) => {
             if (!open) setShowBoneyardDialog(false);
           }}
