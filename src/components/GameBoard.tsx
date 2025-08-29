@@ -438,6 +438,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 orientation={orientation}
                 isDouble={isDouble}
                 isInitialPlacement={isInitialPlacement}
+                disabled={!isMyTurn}
                 onClick={() => onMoveExecute(move)}
                 style={{
                   // Position exactly on grid coordinates - like dominos, no centering

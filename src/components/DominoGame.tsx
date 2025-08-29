@@ -400,6 +400,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           hand={gameState?.playerHand || []}
           selectedIndex={gameState?.selectedHandIndex}
           onDominoSelect={selectHandDomino}
+          isMyTurn={isMyTurn}
         />
 
         {/* Game Actions */}

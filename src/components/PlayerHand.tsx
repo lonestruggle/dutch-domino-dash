@@ -9,6 +9,7 @@ interface PlayerHandProps {
   hand: DominoData[];
   selectedIndex: number | null;
   onDominoSelect: (index: number) => void;
+  isMyTurn?: boolean;
 }
 
 const isDouble = (data: DominoData) => data.value1 === data.value2;
@@ -20,7 +21,8 @@ const getDominoKey = (domino: DominoData, index: number) =>
 export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   hand,
   selectedIndex,
-  onDominoSelect
+  onDominoSelect,
+  isMyTurn = true
 }) => {
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
@@ -78,7 +80,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             rotateX={settings.rotateX}
             rotateY={settings.rotateY}
             rotateZ={settings.rotateZ}
-            onClick={() => onDominoSelect(index)}
+            onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
             className="relative transition-all duration-200 domino-tile-hand hover:z-20"
           />
         ))}
