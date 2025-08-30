@@ -130,17 +130,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     if (currentIsHardSlamming && !previousIsHardSlamming) {
       console.log('🔥 Hard slam state change detected via realtime update');
       
-      // Wait a bit for the domino to potentially be placed, then trigger animation
-      setTimeout(() => {
-        if (gameState?.hardSlamDominoId && gameState.dominoes[gameState.hardSlamDominoId]) {
-          console.log('🔥 Triggering shake animation for hard slam domino (realtime):', gameState.hardSlamDominoId);
-          startShakeAnimation(true);
-        } else {
-          // Fallback: trigger animation even without specific domino ID
-          console.log('🔥 Triggering shake animation for hard slam (realtime fallback)');
-          startShakeAnimation(true);
-        }
-      }, 100);
+      // Only trigger animation if we have a valid hard slam domino ID and the domino exists
+      if (gameState?.hardSlamDominoId && gameState.dominoes[gameState.hardSlamDominoId]) {
+        console.log('🔥 Triggering shake animation for hard slam domino (realtime):', gameState.hardSlamDominoId);
+        startShakeAnimation(true);
+      }
     }
     
     setPreviousIsHardSlamming(currentIsHardSlamming || false);
