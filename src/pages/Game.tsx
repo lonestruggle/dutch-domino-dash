@@ -93,17 +93,8 @@ export default function Game() {
       // Capture the original player position before any state changes
       const originalPlayerPosition = syncState.playerPosition;
       
-      // Reset hard slam visuals locally after 3 seconds (no database update needed)
-      setTimeout(() => {
-        console.log('🔥 Resetting hard slam visuals locally (no database update)');
-        // Only reset local state for visual effects - no database sync
-        setGameState(currentState => ({
-          ...currentState,
-          isHardSlamming: false,
-          hardSlamNextMove: false,
-          hardSlamDominoId: undefined
-        }));
-      }, 3000);
+      // Hard slam animation will be triggered by state change in DominoGame.tsx
+      // Animation has built-in 1.5s fade-away, no timer needed
     }
     
     // Execute pending shake after domino placement
@@ -127,23 +118,24 @@ export default function Game() {
         const nextHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
         nextHands[myPos] = currentState.playerHand || [];
 
-        let finalState = {
-          ...remote,
-          dominoes: currentState.dominoes,
-          board: currentState.board,
-          boneyard: currentState.boneyard,
-          forbiddens: currentState.forbiddens,
-          openEnds: currentState.openEnds,
-          nextDominoId: currentState.nextDominoId,
-          spinnerId: currentState.spinnerId,
-          isGameOver: currentState.isGameOver,
-          playerHand: currentState.playerHand,
-          playerHands: nextHands,
-          gameEndReason: (currentState as any).gameEndReason,
-          winner_position: (currentState as any).winner_position,
-          hardSlamNextMove: currentState.hardSlamNextMove,
-          isHardSlamming: currentState.isHardSlamming,
-        };
+         let finalState = {
+           ...remote,
+           dominoes: currentState.dominoes,
+           board: currentState.board,
+           boneyard: currentState.boneyard,
+           forbiddens: currentState.forbiddens,
+           openEnds: currentState.openEnds,
+           nextDominoId: currentState.nextDominoId,
+           spinnerId: currentState.spinnerId,
+           isGameOver: currentState.isGameOver,
+           playerHand: currentState.playerHand,
+           playerHands: nextHands,
+           gameEndReason: (currentState as any).gameEndReason,
+           winner_position: (currentState as any).winner_position,
+           hardSlamNextMove: currentState.hardSlamNextMove,
+           // Reset hard slam animation after domino placement
+           isHardSlamming: false,
+         };
 
         // Check for CHANGA and update state accordingly
         if (changaRef.current) {
