@@ -98,47 +98,42 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Track dominoes count to detect when new tiles are placed
   const [previousDominoCount, setPreviousDominoCount] = useState(0);
   
-  // Track isHardSlamming state to detect realtime changes
-  const [previousIsHardSlamming, setPreviousIsHardSlamming] = useState(false);
-  
-  // Trigger shake animation for LOCAL domino placement with hard slam
-  useEffect(() => {
-    const currentDominoCount = Object.keys(gameState?.dominoes || {}).length;
-    const dominoWasPlaced = currentDominoCount > previousDominoCount;
-    const isHardSlamActive = gameState?.isHardSlamming; // Global animation - visible to all players
-    
-    // Trigger animation when:
-    // 1. A new domino was placed (count increased) 
-    // 2. Hard slam is active (from database sync)
-    // 3. The placed domino matches the hard slam domino ID
-    if (dominoWasPlaced && isHardSlamActive && startShakeAnimation && gameState?.hardSlamDominoId) {
-      const hardSlamDominoExists = gameState.dominoes[gameState.hardSlamDominoId];
-      if (hardSlamDominoExists) {
-        console.log('🔥 Triggering shake animation for hard slam domino (local placement):', gameState.hardSlamDominoId);
-        startShakeAnimation(true); // Pass true to indicate this is from hard slam
-      }
-    }
-    
-    setPreviousDominoCount(currentDominoCount);
-  }, [gameState?.dominoes, gameState?.isHardSlamming, startShakeAnimation, previousDominoCount]);
+  // Track hard slam state for animation timing
+  const [previousIsHardSlamming, setPreviousIsHardSlamming] = useState<boolean>(false);
+  const [processedHardSlamEvents, setProcessedHardSlamEvents] = useState<Set<string>>(new Set());
 
-  // Trigger shake animation for REALTIME hard slam state changes (other players' hard slams)
+  // Handle hard slam animation for all scenarios (local and realtime)
   useEffect(() => {
-    const currentIsHardSlamming = gameState?.isHardSlamming;
+    const currentIsHardSlamming = gameState?.isHardSlamming || false;
+    const hardSlamDominoId = gameState?.hardSlamDominoId;
+    const dominoExists = hardSlamDominoId && gameState.dominoes[hardSlamDominoId];
     
-    // Detect when isHardSlamming changes from false to true (realtime update from other player)
-    if (currentIsHardSlamming && !previousIsHardSlamming) {
-      console.log('🔥 Hard slam state change detected via realtime update');
+    // Create unique event ID to prevent duplicate processing
+    const eventId = `${hardSlamDominoId}-${Date.now()}`;
+    
+    // Trigger animation if BOTH conditions are met:
+    // 1. Hard slam is active 
+    // 2. AND the hard slam domino exists on the board
+    if (currentIsHardSlamming && dominoExists && startShakeAnimation) {
+      // Check if this specific hard slam domino hasn't been animated yet
+      const alreadyProcessed = Array.from(processedHardSlamEvents).some(id => 
+        id.startsWith(`${hardSlamDominoId}-`)
+      );
       
-      // Only trigger animation if we have a valid hard slam domino ID and the domino exists
-      if (gameState?.hardSlamDominoId && gameState.dominoes[gameState.hardSlamDominoId]) {
-        console.log('🔥 Triggering shake animation for hard slam domino (realtime):', gameState.hardSlamDominoId);
+      if (!alreadyProcessed) {
+        console.log('🔥 Triggering shake animation for hard slam domino:', hardSlamDominoId);
         startShakeAnimation(true);
+        setProcessedHardSlamEvents(prev => new Set(prev).add(eventId));
       }
     }
     
-    setPreviousIsHardSlamming(currentIsHardSlamming || false);
-  }, [gameState?.isHardSlamming, gameState?.hardSlamDominoId, gameState?.dominoes, startShakeAnimation, previousIsHardSlamming]);
+    // Clean up processed events when hard slam becomes inactive
+    if (!currentIsHardSlamming && previousIsHardSlamming) {
+      setProcessedHardSlamEvents(new Set());
+    }
+    
+    setPreviousIsHardSlamming(currentIsHardSlamming);
+  }, [gameState?.isHardSlamming, gameState?.hardSlamDominoId, gameState?.dominoes, startShakeAnimation]);
 
   // Show dialog when game becomes over - but prevent multiple triggers
   useEffect(() => {
