@@ -98,25 +98,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Track dominoes count to detect when new tiles are placed
   const [previousDominoCount, setPreviousDominoCount] = useState(0);
   
-  // Trigger shake animation when ANY player places a domino with hard slam active
+  // Track isHardSlamming state to detect realtime changes
+  const [previousIsHardSlamming, setPreviousIsHardSlamming] = useState(false);
+  
+  // Trigger shake animation for LOCAL domino placement with hard slam
   useEffect(() => {
     const currentDominoCount = Object.keys(gameState?.dominoes || {}).length;
     const dominoWasPlaced = currentDominoCount > previousDominoCount;
     const isHardSlamActive = gameState?.isHardSlamming; // Global animation - visible to all players
-    const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition;
-    
-    // Debug shake settings to ensure all players use same values
-    if (dominoWasPlaced && isHardSlamActive) {
-      console.log('🔥 Hard slam domino placement detected');
-      console.log('🔥 Shake settings:', {
-        intensity: visualSettings?.shakeIntensity,
-        duration: visualSettings?.shakeDuration,
-        deviceType,
-        isMyTurn,
-        currentPlayer: syncState?.currentPlayer,
-        playerPosition: syncState?.playerPosition
-      });
-    }
     
     // Trigger animation when:
     // 1. A new domino was placed (count increased) 
@@ -125,13 +114,37 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     if (dominoWasPlaced && isHardSlamActive && startShakeAnimation && gameState?.hardSlamDominoId) {
       const hardSlamDominoExists = gameState.dominoes[gameState.hardSlamDominoId];
       if (hardSlamDominoExists) {
-        console.log('🔥 Triggering shake animation for hard slam domino:', gameState.hardSlamDominoId);
+        console.log('🔥 Triggering shake animation for hard slam domino (local placement):', gameState.hardSlamDominoId);
         startShakeAnimation(true); // Pass true to indicate this is from hard slam
       }
     }
     
     setPreviousDominoCount(currentDominoCount);
-  }, [gameState?.dominoes, gameState?.isHardSlamming, syncState?.currentPlayer, syncState?.playerPosition, startShakeAnimation, previousDominoCount, visualSettings?.shakeIntensity, visualSettings?.shakeDuration, deviceType]);
+  }, [gameState?.dominoes, gameState?.isHardSlamming, startShakeAnimation, previousDominoCount]);
+
+  // Trigger shake animation for REALTIME hard slam state changes (other players' hard slams)
+  useEffect(() => {
+    const currentIsHardSlamming = gameState?.isHardSlamming;
+    
+    // Detect when isHardSlamming changes from false to true (realtime update from other player)
+    if (currentIsHardSlamming && !previousIsHardSlamming) {
+      console.log('🔥 Hard slam state change detected via realtime update');
+      
+      // Wait a bit for the domino to potentially be placed, then trigger animation
+      setTimeout(() => {
+        if (gameState?.hardSlamDominoId && gameState.dominoes[gameState.hardSlamDominoId]) {
+          console.log('🔥 Triggering shake animation for hard slam domino (realtime):', gameState.hardSlamDominoId);
+          startShakeAnimation(true);
+        } else {
+          // Fallback: trigger animation even without specific domino ID
+          console.log('🔥 Triggering shake animation for hard slam (realtime fallback)');
+          startShakeAnimation(true);
+        }
+      }, 100);
+    }
+    
+    setPreviousIsHardSlamming(currentIsHardSlamming || false);
+  }, [gameState?.isHardSlamming, gameState?.hardSlamDominoId, gameState?.dominoes, startShakeAnimation, previousIsHardSlamming]);
 
   // Show dialog when game becomes over - but prevent multiple triggers
   useEffect(() => {
