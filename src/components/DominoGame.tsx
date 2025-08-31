@@ -127,8 +127,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
       );
       
       if (!alreadyProcessed) {
-        console.log('🔥 Triggering shake animation for hard slam domino:', hardSlamDominoId);
-        startShakeAnimation(true);
+        console.log('🔥 Triggering GLOBAL shake animation for ALL dominoes on board (hard slam trigger)');
+        startShakeAnimation(true); // This triggers isAnimating=true for ALL board dominoes
         setProcessedHardSlamEvents(prev => new Set(prev).add(eventId));
       }
     }
