@@ -56,6 +56,7 @@ export interface GameState {
   hardSlamNextMove?: boolean;
   isHardSlamming?: boolean;
   hardSlamDominoId?: string; // Track which specific domino triggered the hard slam
+  triggerHardSlamAnimation?: boolean; // Separate flag for animation sync across all players
 
   // Nieuw voor spelafloop
   gameEndReason?: 'blocked' | 'changa' | 'normal';

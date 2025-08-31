@@ -133,8 +133,9 @@ export default function Game() {
            gameEndReason: (currentState as any).gameEndReason,
            winner_position: (currentState as any).winner_position,
            hardSlamNextMove: currentState.hardSlamNextMove,
-           // Reset hard slam animation after domino placement
+           // Reset hard slam game logic after domino placement
            isHardSlamming: false,
+           // Keep triggerHardSlamAnimation for other players to see
          };
 
         // Check for CHANGA and update state accordingly
@@ -562,6 +563,7 @@ export default function Game() {
       ...gameState,
       hardSlamNextMove: true,
       isHardSlamming: true,
+      triggerHardSlamAnimation: true, // New animation flag for all players
     };
     
     // Update local state first
@@ -573,11 +575,22 @@ export default function Game() {
         // Hard slam - no turn advancement needed, keep current turn
         await updateGameState(newStateWithHardSlam, syncState.currentPlayer);
         console.log('✅ Hard Slam synced to database successfully');
+        
+        // Reset animation trigger after 2 seconds (allows 1.5s animation + buffer)
+        setTimeout(async () => {
+          const resetState = {
+            ...newStateWithHardSlam,
+            triggerHardSlamAnimation: false,
+          };
+          await updateGameState(resetState, syncState.currentPlayer);
+          console.log('🔥 Reset triggerHardSlamAnimation after 2 seconds');
+        }, 2000);
+        
       } catch (error) {
         console.error('❌ Failed to sync Hard Slam to database:', error);
       }
     }
-  }, [gameState, updateGameState, setGameState]);
+  }, [gameState, updateGameState, setGameState, syncState.currentPlayer]);
 
   return (
     <div className="min-h-screen bg-background">
