@@ -56,6 +56,10 @@ export default function Game() {
   const { user } = useAuth();
   const { toast } = useToast();
   const savedRef = useRef(false);
+  const executeMoveSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const drawSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const passMoveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hardSlamResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Hard slam functionality
   const { startShakeAnimation, disarmHardSlam, executePendingShake, pendingShake } = useGameVisualSettings();
@@ -69,6 +73,15 @@ export default function Game() {
 
   // Ref om Changa-detectie te markeren tussen pre- en post-move
   const changaRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (executeMoveSyncTimeoutRef.current) clearTimeout(executeMoveSyncTimeoutRef.current);
+      if (drawSyncTimeoutRef.current) clearTimeout(drawSyncTimeoutRef.current);
+      if (passMoveTimeoutRef.current) clearTimeout(passMoveTimeoutRef.current);
+      if (hardSlamResetTimeoutRef.current) clearTimeout(hardSlamResetTimeoutRef.current);
+    };
+  }, []);
   
   // Sync the game state when synced state changes
   useEffect(() => {
@@ -144,7 +157,12 @@ export default function Game() {
     console.log('🎯 Advancing turn from', syncState.playerPosition, 'to', nextPlayerTurn);
 
     // SINGLE CONSOLIDATED DATABASE UPDATE - capture fresh state
-    setTimeout(() => {
+    if (executeMoveSyncTimeoutRef.current) {
+      clearTimeout(executeMoveSyncTimeoutRef.current);
+    }
+
+    executeMoveSyncTimeoutRef.current = setTimeout(() => {
+      executeMoveSyncTimeoutRef.current = null;
       setGameState(currentState => {
         console.log('🔄 SINGLE CONSOLIDATED UPDATE - capturing fresh state');
         
@@ -184,7 +202,12 @@ export default function Game() {
     gameHook.drawFromBoneyard();
     
     // Keep current turn after drawing from boneyard
-    setTimeout(() => {
+    if (drawSyncTimeoutRef.current) {
+      clearTimeout(drawSyncTimeoutRef.current);
+    }
+
+    drawSyncTimeoutRef.current = setTimeout(() => {
+      drawSyncTimeoutRef.current = null;
       setGameState(currentState => {
         console.log('🔄 Drawing with MANDATORY turn advancement');
         
@@ -378,7 +401,7 @@ export default function Game() {
     }, 100); // Small delay to ensure state consistency
     
     return () => clearTimeout(timeoutId);
-  }, [gameState?.board, gameState?.currentPlayer, gameState?.isGameOver, syncState.allPlayers, gameHook, setGameState, updateGameState]);
+  }, [gameState, syncState.allPlayers, syncState.currentPlayer, gameHook, setGameState, updateGameState]);
 
   // Function to manually trigger blocked game check
   const manualBlockedCheck = useCallback(() => {
@@ -440,7 +463,7 @@ export default function Game() {
     setGameState(updatedGameState);
     // Game over - no turn advancement needed, keep current turn
     updateGameState(updatedGameState, syncState.currentPlayer);
-  }, [gameState, gameHook, syncState.allPlayers, setGameState, updateGameState]);
+  }, [gameState, gameHook, syncState.allPlayers, syncState.currentPlayer, setGameState, updateGameState]);
 
   // Pass move function
   const passMove = useCallback(() => {
@@ -451,7 +474,12 @@ export default function Game() {
     console.log('🎯 Pass move - advancing turn from', syncState.playerPosition, 'to', nextPlayerTurn);
     
     // Pass doesn't change game state, just advances turn
-    setTimeout(() => {
+    if (passMoveTimeoutRef.current) {
+      clearTimeout(passMoveTimeoutRef.current);
+    }
+
+    passMoveTimeoutRef.current = setTimeout(() => {
+      passMoveTimeoutRef.current = null;
       // EXTRA VALIDATION: Double-check turn ownership before database update
       if (syncState.currentPlayer !== syncState.playerPosition) {
         console.log('🚫 PASS MOVE BLOCKED: Turn changed during timeout, aborting database update');
@@ -466,7 +494,7 @@ export default function Game() {
         updateGameState(syncState.gameState, nextPlayerTurn);
       }
     }, 150);
-  }, [syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, gameState, updateGameState, toast]);
+  }, [syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, syncState.gameData, syncState.gameState, updateGameState]);
 
   // Sla automatisch de uitslag op naar het scoreboard zodra het spel eindigt
   useEffect(() => {
@@ -550,7 +578,7 @@ export default function Game() {
         });
       }
     })();
-  }, [gameState?.isGameOver, syncState?.gameData, toast]);
+  }, [gameState?.isGameOver, gameState?.gameEndReason, gameState?.winner_position, gameState?.playerHands, syncState?.gameData, syncState.allPlayers, toast]);
 
   // Wrapper for hardSlam that immediately syncs to database
   const wrappedHardSlam = useCallback(async () => {
@@ -575,7 +603,12 @@ export default function Game() {
         console.log('✅ Hard Slam synced to database successfully');
         
         // Reset animation trigger after 2 seconds (allows 1.5s animation + buffer)
-        setTimeout(async () => {
+        if (hardSlamResetTimeoutRef.current) {
+          clearTimeout(hardSlamResetTimeoutRef.current);
+        }
+
+        hardSlamResetTimeoutRef.current = setTimeout(async () => {
+          hardSlamResetTimeoutRef.current = null;
           const resetState = {
             ...newStateWithHardSlam,
             triggerHardSlamAnimation: false,
