@@ -64,13 +64,13 @@ export default function Game() {
   const hardSlamResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Hard slam functionality
-  const { startShakeAnimation, disarmHardSlam, executePendingShake, pendingShake } = useGameVisualSettings();
+  const { disarmHardSlam } = useGameVisualSettings();
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
   
   // Use the domino game hook with shake animation support
-  const gameHook = useDominoGame(startShakeAnimation);
+  const gameHook = useDominoGame();
   const { gameState, setGameState } = gameHook;
 
   // Ref om Changa-detectie te markeren tussen pre- en post-move
@@ -97,7 +97,6 @@ export default function Game() {
   // Wrap local actions and then sync - SINGLE CONSOLIDATED UPDATE
   const wrappedExecuteMove = useCallback((move: MoveWithEffects) => {
     console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
-    console.log('🔥 pendingShake status:', pendingShake);
     console.log('🔥 localHardSlamActive:', move?.localHardSlamActive);
     
     // Turn validation removed - database controls turns completely now
@@ -142,12 +141,6 @@ export default function Game() {
     // Execute the move locally
     gameHook.executeMove(move);
     
-    // Execute pending shake after domino placement
-    if (pendingShake) {
-      console.log('🎬 ✨ EXECUTING PENDING SHAKE NOW!');
-      executePendingShake();
-    }
-
     if (!syncState.allPlayers.length) return;
 
     // Calculate next player turn - use playerPosition to ensure consistent turn advancement
@@ -192,7 +185,7 @@ export default function Game() {
         return currentState; // Return current state to avoid double setting
       });
     }, 150); // Slightly longer delay for better state consistency
-  }, [executePendingShake, gameHook, gameState, pendingShake, setGameState, syncState.allPlayers.length, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
+  }, [gameHook, gameState, setGameState, syncState.allPlayers.length, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
 
   const wrappedDrawFromBoneyard = useCallback(async () => {
     console.log('🎲 Draw from boneyard - turn validation removed, database controls turns');

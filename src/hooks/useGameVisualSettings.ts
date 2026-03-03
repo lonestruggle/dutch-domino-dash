@@ -248,7 +248,6 @@ const useGameVisualSettingsState = () => {
   // Animation state - moved after initial settings
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationMode, setAnimationMode] = useState<'shake' | 'rotate' | null>(null);
-  const [pendingShake, setPendingShake] = useState(false); // NEW: Track pending shake
   const animationRef = useRef<{ current: number | null; stopFunction?: (() => void) | null }>({ current: null });
   const startTimeRef = useRef<number | null>(null);
   const baseRotationRef = useRef({ X: 0, Y: 0, Z: 0 });
@@ -434,7 +433,6 @@ const useGameVisualSettingsState = () => {
   const getBoardDominoElements = () => {
     let boardDominoes = document.querySelectorAll('.domino-tile-board');
     if (boardDominoes.length === 0) boardDominoes = document.querySelectorAll('.board-domino');
-    if (boardDominoes.length === 0) boardDominoes = document.querySelectorAll('.domino-tile');
     return boardDominoes;
   };
 
@@ -459,22 +457,6 @@ const useGameVisualSettingsState = () => {
       const baseTransform = currentTransform.replace(/translate3d\([^)]*\)|rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
       htmlDomino.style.transform = `${baseTransform} rotateX(0deg) rotateY(0deg) rotateZ(${originalRotationZ}deg)`.trim();
     });
-  };
-
-  // Queue shake to execute after domino placement
-  const queueShakeAnimation = () => {
-    setPendingShake(true);
-    return { success: true, message: "Shake ingepland na volgende zet" };
-  };
-
-  // Execute pending shake (called after domino placement)
-  const executePendingShake = () => {
-    if (!pendingShake) {
-      return { success: false, message: "Geen ingeplande shake om uit te voeren." };
-    }
-
-    setPendingShake(false);
-    return startShakeAnimationDirectWithSettings();
   };
 
   const startShakeAnimation = (isOtherPlayerHardSlam = false) => {
@@ -518,7 +500,6 @@ const useGameVisualSettingsState = () => {
 
     const boardDominoes = getBoardDominoElements();
     if (boardDominoes.length === 0) {
-      setPendingShake(false);
       return { success: false, message: "Geen domino's op het bord gevonden om te schudden." };
     }
 
@@ -848,7 +829,6 @@ const useGameVisualSettingsState = () => {
   const disarmHardSlam = () => {
     console.log('🔥 disarmHardSlam called - resetting all shake states');
     setHardSlamMode(false);
-    setPendingShake(false); // Also reset pending shake
     hardSlamRef.current = false; // Update ref immediately
   };
 
@@ -875,14 +855,11 @@ const useGameVisualSettingsState = () => {
     // Animation controls
     isAnimating,
     animationMode,
-    pendingShake,
     hardSlamMode,
     hardSlamRef, // Export the ref so it can be accessed
     toggleHardSlamMode,
     disarmHardSlam,
     startShakeAnimation,
-    queueShakeAnimation,
-    executePendingShake,
     startContinuousRotate,
     stopAnimation,
     applyOriginalRotations,

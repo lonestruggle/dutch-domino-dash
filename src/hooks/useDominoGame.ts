@@ -15,7 +15,7 @@ const shuffleArray = <T>(array: T[]): void => {
   }
 };
 
-export const useDominoGame = (startShakeAnimation?: () => void) => {
+export const useDominoGame = () => {
   const { settings } = useGameVisualSettings();
   const { toast } = useToast();
   const [gameState, setGameState] = useState<GameState>({
@@ -866,22 +866,6 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
 
       // Check for win condition - if player has no more dominoes
       const isGameWon = newPlayerHand.length === 0;
-      
-      // Apply Hard Slam effect if activated
-      if (prev.hardSlamNextMove) {
-        console.log('🔥 HARD SLAM ACTIVATED - Starting shake animation!');
-        
-        // Call the shake animation directly, just like the Schudden button does
-        // The shake animation will handle generating and applying new rotations
-        setTimeout(() => {
-          if (startShakeAnimation) {
-            console.log('🎬 Calling startShakeAnimation directly from Hard Slam - same as Schudden');
-            startShakeAnimation();
-          } else {
-            console.warn('⚠️ startShakeAnimation not available in Hard Slam');
-          }
-        }, 100);
-      }
       
       // Create normal state
       const newState = {
