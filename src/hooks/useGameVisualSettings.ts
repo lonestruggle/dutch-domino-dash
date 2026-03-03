@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { useDeviceType, DeviceType } from './useDeviceType';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import type { ShakeAnimationProfile } from '@/types/domino';
 
 // Personal settings (per user)
 export interface PersonalSettings {
@@ -103,6 +104,18 @@ const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
 };
 
 type GlobalAnimationPatch = Partial<Pick<GlobalSettings, 'rotateX' | 'rotateY' | 'rotateZ' | 'rotationSpeed' | 'animationDuration' | 'shakeIntensity' | 'shakeDuration'>>;
+type StartShakeOptions = boolean | {
+  isOtherPlayerHardSlam?: boolean;
+  profile?: ShakeAnimationProfile;
+};
+
+const createSeededRandom = (seed: number) => {
+  let state = (seed >>> 0) || 1;
+  return () => {
+    state = (1664525 * state + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+};
 
 const normalizeGlobalAnimationSettings = (settings: DeviceSpecificGlobalSettings): DeviceSpecificGlobalSettings => {
   const source = settings.desktop || DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop;
@@ -430,10 +443,24 @@ const useGameVisualSettingsState = () => {
     console.log('🎬 ✅ Animation force stopped and cleaned up');
   };
 
-  const getBoardDominoElements = () => {
-    let boardDominoes = document.querySelectorAll('.domino-tile-board');
-    if (boardDominoes.length === 0) boardDominoes = document.querySelectorAll('.board-domino');
-    return boardDominoes;
+  const getBoardDominoElements = (): HTMLElement[] => {
+    let boardDominoes = Array.from(document.querySelectorAll<HTMLElement>('.domino-tile-board'));
+    if (boardDominoes.length === 0) {
+      boardDominoes = Array.from(document.querySelectorAll<HTMLElement>('.board-domino'));
+    }
+
+    return boardDominoes.sort((a, b) => {
+      const aId = a.dataset.dominoId || '';
+      const bId = b.dataset.dominoId || '';
+      const aMatch = aId.match(/^d(\d+)$/);
+      const bMatch = bId.match(/^d(\d+)$/);
+
+      if (aMatch && bMatch) {
+        return Number(aMatch[1]) - Number(bMatch[1]);
+      }
+
+      return aId.localeCompare(bId);
+    });
   };
 
   const getSharedAnimationSettings = () => {
@@ -459,14 +486,24 @@ const useGameVisualSettingsState = () => {
     });
   };
 
-  const startShakeAnimation = (isOtherPlayerHardSlam = false) => {
-    return startShakeAnimationDirectWithSettings(undefined, undefined, isOtherPlayerHardSlam);
+  const startShakeAnimation = (options?: StartShakeOptions) => {
+    const normalizedOptions = typeof options === 'boolean'
+      ? { isOtherPlayerHardSlam: options }
+      : options;
+
+    return startShakeAnimationDirectWithSettings(
+      undefined,
+      undefined,
+      Boolean(normalizedOptions?.isOtherPlayerHardSlam),
+      normalizedOptions?.profile
+    );
   };
 
   const startShakeAnimationDirectWithSettings = async (
     forcedIntensity?: number,
     forcedDuration?: number,
-    skipPermissionCheck = false
+    skipPermissionCheck = false,
+    profile?: ShakeAnimationProfile
   ) => {
     if (isAnimating) {
       forceStopAnimation();
@@ -490,12 +527,12 @@ const useGameVisualSettingsState = () => {
 
     const sharedSettings = getSharedAnimationSettings();
     const shakeSettings = {
-      intensity: forcedIntensity ?? sharedSettings.intensity,
-      duration: forcedDuration ?? sharedSettings.duration,
-      rotationAmplitudeX: sharedSettings.rotationAmplitudeX,
-      rotationAmplitudeY: sharedSettings.rotationAmplitudeY,
-      rotationAmplitudeZ: sharedSettings.rotationAmplitudeZ,
-      rotationSpeed: sharedSettings.rotationSpeed,
+      intensity: forcedIntensity ?? profile?.intensity ?? sharedSettings.intensity,
+      duration: forcedDuration ?? profile?.duration ?? sharedSettings.duration,
+      rotationAmplitudeX: profile?.rotationAmplitudeX ?? sharedSettings.rotationAmplitudeX,
+      rotationAmplitudeY: profile?.rotationAmplitudeY ?? sharedSettings.rotationAmplitudeY,
+      rotationAmplitudeZ: profile?.rotationAmplitudeZ ?? sharedSettings.rotationAmplitudeZ,
+      rotationSpeed: profile?.rotationSpeed ?? sharedSettings.rotationSpeed,
     };
 
     const boardDominoes = getBoardDominoElements();
@@ -507,14 +544,17 @@ const useGameVisualSettingsState = () => {
 
     setTimeout(() => {
       const allBoardDominoes = getBoardDominoElements();
-      randomSeedsRef.current = Array.from({ length: allBoardDominoes.length }, () => Math.random() * 10000);
+      const randomSource = profile ? createSeededRandom(profile.seed) : Math.random;
+      randomSeedsRef.current = Array.from({ length: allBoardDominoes.length }, () => randomSource() * 10000);
 
       setIsAnimating(true);
       setAnimationMode('shake');
 
       baseRotationRef.current = { X: 0, Y: 0, Z: 0 };
-      startTimeRef.current = performance.now();
       const durationInMs = Math.max(0.1, shakeSettings.duration) * 1000;
+      const syncedElapsedMs = profile?.startedAtMs ? Math.max(0, Date.now() - profile.startedAtMs) : 0;
+      const initialElapsedMs = Math.min(syncedElapsedMs, durationInMs);
+      startTimeRef.current = performance.now() - initialElapsedMs;
       const speedMultiplier = Math.max(0.1, shakeSettings.rotationSpeed);
       let shouldContinue = true;
 

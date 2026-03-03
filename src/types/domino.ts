@@ -38,6 +38,18 @@ export interface LegalMove {
   index?: number;
 }
 
+export interface ShakeAnimationProfile {
+  eventId: string;
+  seed: number;
+  startedAtMs: number;
+  intensity: number;
+  duration: number;
+  rotationAmplitudeX: number;
+  rotationAmplitudeY: number;
+  rotationAmplitudeZ: number;
+  rotationSpeed: number;
+}
+
 export interface GameState {
   dominoes: Record<string, DominoState>;
   board: Record<string, { dominoId: string; value: number }>;
@@ -57,6 +69,7 @@ export interface GameState {
   isHardSlamming?: boolean;
   hardSlamDominoId?: string; // Track which specific domino triggered the hard slam
   triggerHardSlamAnimation?: boolean; // Separate flag for animation sync across all players
+  hardSlamAnimationProfile?: ShakeAnimationProfile; // Shared profile so all clients render the same hard slam motion
 
   // Nieuw voor spelafloop
   gameEndReason?: 'blocked' | 'changa' | 'normal';

@@ -167,6 +167,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         isHardSlamming: persistedGameState.isHardSlamming || false,
         hardSlamDominoId: persistedGameState.hardSlamDominoId,
         triggerHardSlamAnimation: persistedGameState.triggerHardSlamAnimation || false,
+        hardSlamAnimationProfile: persistedGameState.hardSlamAnimationProfile,
         // Remove currentPlayer from game_state JSON to avoid confusion - use only database column
       } : null;
 
@@ -444,7 +445,10 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
           const currentSyncState = syncStateRef.current;
           const newGameState = asPersistedGameState(payload.new?.game_state as Json);
           const newCurrentPlayer = payload.new?.current_player_turn;
-          const isHardSlamUpdate = newGameState?.hardSlamNextMove || newGameState?.isHardSlamming;
+          const isHardSlamUpdate =
+            newGameState?.hardSlamNextMove ||
+            newGameState?.isHardSlamming ||
+            newGameState?.triggerHardSlamAnimation;
           
           console.log('🔄 Realtime update received:', {
             currentPlayer: newCurrentPlayer,

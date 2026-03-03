@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import type { GameState, LegalMove } from '@/types/domino';
+import type { GameState, LegalMove, ShakeAnimationProfile } from '@/types/domino';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
 
@@ -50,6 +50,7 @@ const buildConsolidatedState = (
     isHardSlamming: currentState.isHardSlamming,
     hardSlamDominoId: currentState.hardSlamDominoId,
     triggerHardSlamAnimation: currentState.triggerHardSlamAnimation,
+    hardSlamAnimationProfile: currentState.hardSlamAnimationProfile,
   };
 };
 
@@ -64,7 +65,7 @@ export default function Game() {
   const hardSlamResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Hard slam functionality
-  const { disarmHardSlam } = useGameVisualSettings();
+  const { disarmHardSlam, settings } = useGameVisualSettings();
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
@@ -126,6 +127,19 @@ export default function Game() {
     changaRef.current = isChangaCandidate;
 
     const hardSlamDominoId = move?.localHardSlamActive ? `d${gameState.nextDominoId}` : undefined;
+    const hardSlamAnimationProfile: ShakeAnimationProfile | undefined = (move?.localHardSlamActive && hardSlamDominoId)
+      ? {
+          eventId: `${hardSlamDominoId}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`,
+          seed: Math.floor(Math.random() * 0x7fffffff),
+          startedAtMs: Date.now(),
+          intensity: settings.shakeIntensity,
+          duration: settings.shakeDuration,
+          rotationAmplitudeX: settings.rotationAmplitudeX,
+          rotationAmplitudeY: settings.rotationAmplitudeY,
+          rotationAmplitudeZ: settings.rotationAmplitudeZ,
+          rotationSpeed: settings.rotationSpeed,
+        }
+      : undefined;
 
     if (move?.localHardSlamActive && hardSlamDominoId) {
       // Arm hard slam BEFORE move execution so executeMove can apply the effect on this move.
@@ -135,6 +149,7 @@ export default function Game() {
         isHardSlamming: true,
         hardSlamDominoId,
         triggerHardSlamAnimation: true,
+        hardSlamAnimationProfile,
       }));
     }
 
@@ -165,6 +180,7 @@ export default function Game() {
           isHardSlamming: false,
           triggerHardSlamAnimation: Boolean(move?.localHardSlamActive),
           hardSlamDominoId: move?.localHardSlamActive ? hardSlamDominoId : currentState.hardSlamDominoId,
+          hardSlamAnimationProfile: move?.localHardSlamActive ? hardSlamAnimationProfile : currentState.hardSlamAnimationProfile,
         };
 
         // Check for CHANGA and update state accordingly
@@ -185,7 +201,7 @@ export default function Game() {
         return currentState; // Return current state to avoid double setting
       });
     }, 150); // Slightly longer delay for better state consistency
-  }, [gameHook, gameState, setGameState, syncState.allPlayers.length, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
+  }, [gameHook, gameState, setGameState, settings.rotationAmplitudeX, settings.rotationAmplitudeY, settings.rotationAmplitudeZ, settings.rotationSpeed, settings.shakeDuration, settings.shakeIntensity, syncState.allPlayers.length, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
 
   const wrappedDrawFromBoneyard = useCallback(async () => {
     console.log('🎲 Draw from boneyard - turn validation removed, database controls turns');
@@ -575,6 +591,17 @@ export default function Game() {
   // Wrapper for hardSlam that immediately syncs to database
   const wrappedHardSlam = useCallback(async () => {
     console.log('🔥 HARD SLAM ACTIVATED - SYNCING TO DATABASE!');
+    const hardSlamAnimationProfile: ShakeAnimationProfile = {
+      eventId: `queued-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`,
+      seed: Math.floor(Math.random() * 0x7fffffff),
+      startedAtMs: Date.now(),
+      intensity: settings.shakeIntensity,
+      duration: settings.shakeDuration,
+      rotationAmplitudeX: settings.rotationAmplitudeX,
+      rotationAmplitudeY: settings.rotationAmplitudeY,
+      rotationAmplitudeZ: settings.rotationAmplitudeZ,
+      rotationSpeed: settings.rotationSpeed,
+    };
     
     // Construct the new state directly with hard slam flags
     const newStateWithHardSlam = {
@@ -582,6 +609,7 @@ export default function Game() {
       hardSlamNextMove: true,
       isHardSlamming: true,
       triggerHardSlamAnimation: true, // New animation flag for all players
+      hardSlamAnimationProfile,
     };
     
     // Update local state first
@@ -613,7 +641,18 @@ export default function Game() {
         console.error('❌ Failed to sync Hard Slam to database:', error);
       }
     }
-  }, [gameState, updateGameState, setGameState, syncState.currentPlayer]);
+  }, [
+    gameState,
+    settings.rotationAmplitudeX,
+    settings.rotationAmplitudeY,
+    settings.rotationAmplitudeZ,
+    settings.rotationSpeed,
+    settings.shakeDuration,
+    settings.shakeIntensity,
+    updateGameState,
+    setGameState,
+    syncState.currentPlayer
+  ]);
 
   return (
     <div className="min-h-screen bg-background">

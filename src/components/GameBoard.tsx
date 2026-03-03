@@ -399,6 +399,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               >
                 <DominoTile
                   data={domino.data}
+                  dominoId={id}
                   orientation={domino.orientation}
                   flipped={domino.flipped}
                   rotation={domino.rotation || 0}

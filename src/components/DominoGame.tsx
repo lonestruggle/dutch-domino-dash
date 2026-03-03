@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { cn } from '@/lib/utils';
-import type { DominoData } from '@/types/domino';
+import type { DominoData, ShakeAnimationProfile } from '@/types/domino';
 
 interface DominoGameProps {
   gameHook: any;
@@ -105,30 +105,30 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   useEffect(() => {
     const shouldTriggerAnimation = gameState?.triggerHardSlamAnimation || false;
     const hardSlamDominoId = gameState?.hardSlamDominoId;
+    const animationProfile = gameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
+    const animationEventId = animationProfile?.eventId || hardSlamDominoId || null;
     const dominoExists = hardSlamDominoId && gameState?.dominoes?.[hardSlamDominoId];
     
     console.log('🔥 Hard slam animation check:', {
       triggerHardSlamAnimation: shouldTriggerAnimation,
       hardSlamDominoId,
-      dominoExists: !!dominoExists
+      dominoExists: !!dominoExists,
+      animationEventId
     });
-    
-    // Create unique event ID to prevent duplicate processing
-    const eventId = `${hardSlamDominoId}-${Date.now()}`;
-    
+
     // Trigger animation if BOTH conditions are met:
     // 1. triggerHardSlamAnimation flag is true (set for all players via database)
     // 2. AND the hard slam domino exists on the board
-    if (shouldTriggerAnimation && dominoExists && startShakeAnimation) {
-      // Check if this specific hard slam domino hasn't been animated yet
-      const alreadyProcessed = Array.from(processedHardSlamEvents).some(id => 
-        id.startsWith(`${hardSlamDominoId}-`)
-      );
+    if (shouldTriggerAnimation && dominoExists && animationEventId && startShakeAnimation) {
+      const alreadyProcessed = processedHardSlamEvents.has(animationEventId);
       
       if (!alreadyProcessed) {
         console.log('🔥 Triggering GLOBAL shake animation for ALL dominoes on board (hard slam trigger)');
-        startShakeAnimation(true); // This triggers isAnimating=true for ALL board dominoes
-        setProcessedHardSlamEvents(prev => new Set(prev).add(eventId));
+        startShakeAnimation({
+          isOtherPlayerHardSlam: true,
+          profile: animationProfile
+        });
+        setProcessedHardSlamEvents(prev => new Set(prev).add(animationEventId));
       }
     }
     
@@ -138,7 +138,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     }
     
     setPreviousIsHardSlamming(shouldTriggerAnimation);
-  }, [gameState?.triggerHardSlamAnimation, gameState?.hardSlamDominoId, gameState?.dominoes, processedHardSlamEvents, previousIsHardSlamming, startShakeAnimation]);
+  }, [
+    gameState?.triggerHardSlamAnimation,
+    gameState?.hardSlamDominoId,
+    gameState?.hardSlamAnimationProfile,
+    gameState?.dominoes,
+    processedHardSlamEvents,
+    previousIsHardSlamming,
+    startShakeAnimation
+  ]);
 
   useEffect(() => {
     return () => {

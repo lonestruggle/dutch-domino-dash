@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 
 interface DominoTileProps {
   data: DominoData;
+  dominoId?: string;
   orientation?: 'horizontal' | 'vertical';
   flipped?: boolean;
   className?: string;
@@ -22,6 +23,7 @@ const isDouble = (data: DominoData) => data.value1 === data.value2;
 
 export const DominoTile: React.FC<DominoTileProps> = ({
   data,
+  dominoId,
   orientation = 'horizontal',
   flipped = false,
   className,
@@ -92,6 +94,7 @@ export const DominoTile: React.FC<DominoTileProps> = ({
       )}
       onClick={onClick}
       data-original-rotation={rotation} // Store original rotation for animations
+      data-domino-id={dominoId}
       style={{
         '--domino-rotation': `${rotation}deg`,
         transformStyle: 'preserve-3d',
