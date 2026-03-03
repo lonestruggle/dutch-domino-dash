@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
@@ -10,11 +10,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Hand } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { cn } from '@/lib/utils';
+import type { DominoData } from '@/types/domino';
 
 interface DominoGameProps {
   gameHook: any;
@@ -23,7 +24,7 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { startShakeAnimation, pendingShake, settings: visualSettings, currentDeviceType: deviceType } = useGameVisualSettings();
+  const { startShakeAnimation } = useGameVisualSettings();
   const { canHardSlam } = useUserPermissions();
   
   const {
@@ -47,8 +48,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [hasShownDialog, setHasShownDialog] = useState(false);
   const [showBoneyardDialog, setShowBoneyardDialog] = useState(false);
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
-  const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
+  const [previewDomino, setPreviewDomino] = useState<{ domino: DominoData; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [startingNewGame, setStartingNewGame] = useState(false);
   const [confirmNewGameOpen, setConfirmNewGameOpen] = useState(false);
@@ -95,9 +97,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     }
   }, [gameState?.hardSlamNextMove, gameState?.isHardSlamming]);
 
-  // Track dominoes count to detect when new tiles are placed
-  const [previousDominoCount, setPreviousDominoCount] = useState(0);
-  
   // Track hard slam state for animation timing
   const [previousIsHardSlamming, setPreviousIsHardSlamming] = useState<boolean>(false);
   const [processedHardSlamEvents, setProcessedHardSlamEvents] = useState<Set<string>>(new Set());
@@ -106,7 +105,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   useEffect(() => {
     const shouldTriggerAnimation = gameState?.triggerHardSlamAnimation || false;
     const hardSlamDominoId = gameState?.hardSlamDominoId;
-    const dominoExists = hardSlamDominoId && gameState.dominoes[hardSlamDominoId];
+    const dominoExists = hardSlamDominoId && gameState?.dominoes?.[hardSlamDominoId];
     
     console.log('🔥 Hard slam animation check:', {
       triggerHardSlamAnimation: shouldTriggerAnimation,
@@ -139,7 +138,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     }
     
     setPreviousIsHardSlamming(shouldTriggerAnimation);
-  }, [gameState?.triggerHardSlamAnimation, gameState?.hardSlamDominoId, gameState?.dominoes, startShakeAnimation]);
+  }, [gameState?.triggerHardSlamAnimation, gameState?.hardSlamDominoId, gameState?.dominoes, processedHardSlamEvents, previousIsHardSlamming, startShakeAnimation]);
+
+  useEffect(() => {
+    return () => {
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Show dialog when game becomes over - but prevent multiple triggers
   useEffect(() => {
@@ -250,12 +257,17 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
 
   // Handle boneyard stone preview
-  const handleStonePreview = (domino: any, index: number) => {
+  const handleStonePreview = (domino: DominoData, index: number) => {
     setPreviewDomino({ domino, index });
     
+    if (previewTimeoutRef.current) {
+      clearTimeout(previewTimeoutRef.current);
+    }
+
     // Auto-hide preview after 3 seconds
-    setTimeout(() => {
+    previewTimeoutRef.current = setTimeout(() => {
       setPreviewDomino(null);
+      previewTimeoutRef.current = null;
     }, 3000);
   };
 
@@ -265,6 +277,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
       gameHook.drawSpecificFromBoneyard(index);
       setShowBoneyardDialog(false);
       setPreviewDomino(null);
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+        previewTimeoutRef.current = null;
+      }
     }
   };
 

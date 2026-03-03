@@ -612,7 +612,7 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
   // BLOCKED GAME CHECK: Game is only blocked if NO moves possible AND boneyard is empty
-  const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
+  const checkBlockedGame = useCallback((_openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
     console.log('🔍 CHECKING BLOCKED GAME - Using findLegalMoves for each tile');
     console.log('🔍 All player hands:', allPlayerHands.map((hand, i) => `Player ${i}: ${hand.length} tiles`));
     console.log('🔍 Boneyard:', boneyard.length, 'tiles');
@@ -652,40 +652,7 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
     
     console.log('❌ NO LEGAL MOVES FOUND AND BONEYARD EMPTY - Game is BLOCKED');
     return true; // Game is blocked
-
-    // Check if ANY player has a matching domino using findLegalMoves logic
-    for (let playerIndex = 0; playerIndex < allPlayerHands.length; playerIndex++) {
-      const playerHand = allPlayerHands[playerIndex];
-      
-      for (const domino of playerHand) {
-        // Use the same logic as findLegalMoves to check if this domino can be placed
-        const foundValidMove = openEnds.some(end => {
-          // Check if domino matches this open end (same logic as findLegalMoves)
-          return (end.value === domino.value1) || (end.value === domino.value2);
-        });
-        
-        if (foundValidMove) {
-          console.log(`✅ Game NOT blocked - Player ${playerIndex} has matching domino ${domino.value1}|${domino.value2}`);
-          return false;
-        }
-      }
-    }
-
-    // Check if boneyard has any matching dominoes using same logic
-    for (const domino of boneyard) {
-      const foundValidMove = openEnds.some(end => {
-        return (end.value === domino.value1) || (end.value === domino.value2);
-      });
-      
-      if (foundValidMove) {
-        console.log(`✅ Game NOT blocked - Boneyard has matching domino ${domino.value1}|${domino.value2}`);
-        return false;
-      }
-    }
-
-    console.log('❌ Game is BLOCKED - No player hands or boneyard have matching dominoes');
-    return true;
-  }, []);
+  }, [findLegalMoves]);
 
   const executeMove = useCallback((move: LegalMove) => {
     const { index, end, dominoData, flipped, orientation } = move;

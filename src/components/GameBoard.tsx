@@ -5,7 +5,6 @@ import { GameVisualControls } from './GameVisualControls';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import { cn } from '@/lib/utils';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -30,7 +29,15 @@ const MIN_SCALE = 0.25;
 const MAX_SCALE = 1.0;
 const MIN_BOARD_SIZE = 1200;
 const PADDING = 400;
-const SCROLL_PADDING = 200;
+
+const getStableAngleFromId = (dominoId: string): number => {
+  // Stable pseudo-random angle so dominoes don't "jitter" between renders.
+  let hash = 0;
+  for (let i = 0; i < dominoId.length; i += 1) {
+    hash = (hash * 31 + dominoId.charCodeAt(i)) >>> 0;
+  }
+  return 5 + (hash % 1500) / 100; // 5.00 .. 19.99 degrees
+};
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameState, 
@@ -58,6 +65,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const handleAnyUpdate = () => {
       updateDominoScaling();
     };
+
+    window.addEventListener('vibrationSettingsUpdated', handleAnyUpdate);
+    window.addEventListener('visualSettingsUpdated', handleAnyUpdate);
 
     return () => {
       window.removeEventListener('vibrationSettingsUpdated', handleAnyUpdate);
@@ -106,7 +116,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--double-offset', `-${doubleOffset}px`);
     
     if (boardRef.current) {
-      boardRef.current.offsetHeight;
+      boardRef.current.getBoundingClientRect();
     }
   };
 
@@ -376,12 +386,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         >
           {/* Original PC domino rendering */}
           {Object.entries(gameState.dominoes).map(([id, domino]) => {
-            // Elke dominosteen krijgt zijn eigen willekeurige rotatie hoek (tussen 5 en 20 graden)
-            const individualAngle = 5 + Math.random() * 15; // 5-20 graden
+            const individualAngle = getStableAngleFromId(id);
             
             // Connect to actual animation state from useGameVisualSettings
             const shouldAnimate = isAnimating && animationMode === 'shake';
-            const selectedAnimation = shouldAnimate ? 'shake' : 'none';
             
             return (
               <div
