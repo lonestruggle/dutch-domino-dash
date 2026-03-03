@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useDeviceType, DeviceType } from './useDeviceType';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -129,7 +129,7 @@ const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
   mobile: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile, ...DEFAULT_TRULY_GLOBAL_SETTINGS },
 };
 
-export const useGameVisualSettings = () => {
+const useGameVisualSettingsState = () => {
   const deviceType = useDeviceType();
   const { user } = useAuth();
   
@@ -905,4 +905,21 @@ export const useGameVisualSettings = () => {
     stopAnimation,
     applyOriginalRotations,
   };
+};
+
+type GameVisualSettingsContextValue = ReturnType<typeof useGameVisualSettingsState>;
+
+const GameVisualSettingsContext = createContext<GameVisualSettingsContextValue | null>(null);
+
+export const GameVisualSettingsProvider = ({ children }: { children: React.ReactNode }) => {
+  const value = useGameVisualSettingsState();
+  return React.createElement(GameVisualSettingsContext.Provider, { value }, children);
+};
+
+export const useGameVisualSettings = () => {
+  const context = useContext(GameVisualSettingsContext);
+  if (!context) {
+    throw new Error('useGameVisualSettings must be used within GameVisualSettingsProvider');
+  }
+  return context;
 };

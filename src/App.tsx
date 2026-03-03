@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import DominoTileDemo from "./components/DominoTileDemo";
 import { GameVisualControls } from "@/components/GameVisualControls";
 import Scoreboard from "./pages/Scoreboard";
+import { GameVisualSettingsProvider } from "@/hooks/useGameVisualSettings";
 
 console.log('App.tsx: Creating QueryClient...');
 const queryClient = new QueryClient({
@@ -44,25 +45,27 @@ const App = () => {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/single-player" element={<Index />} />
-              <Route path="/lobbies" element={<Lobbies />} />
-              <Route path="/lobby/:lobbyId" element={<Lobby />} />
-              <Route path="/game/:gameId" element={<Game />} />
-              <Route path="/scoreboard" element={<Scoreboard />} />
-              <Route path="/demo" element={<DominoTileDemo />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <ConditionalControls />
-          </BrowserRouter>
+          <GameVisualSettingsProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/single-player" element={<Index />} />
+                <Route path="/lobbies" element={<Lobbies />} />
+                <Route path="/lobby/:lobbyId" element={<Lobby />} />
+                <Route path="/game/:gameId" element={<Game />} />
+                <Route path="/scoreboard" element={<Scoreboard />} />
+                <Route path="/demo" element={<DominoTileDemo />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <ConditionalControls />
+            </BrowserRouter>
+          </GameVisualSettingsProvider>
         </TooltipProvider>
       </QueryClientProvider>
     );
