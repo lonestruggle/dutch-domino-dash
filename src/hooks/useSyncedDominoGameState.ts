@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { GameState, DominoData } from '@/types/domino';
+import { GameState, DominoData, ShakeAnimationProfile } from '@/types/domino';
 import { Json, Tables } from '@/integrations/supabase/types';
 
 export type PersistedGameState = GameState & Record<string, unknown>;
@@ -48,6 +48,14 @@ const getResetCounter = (value: Json | null | undefined): number => {
   return typeof maybeCounter === 'number' ? maybeCounter : 0;
 };
 
+const parseServerTimestampMs = (payload: { commit_timestamp?: string; new?: { updated_at?: string | null } }): number | null => {
+  const raw = payload.commit_timestamp || payload.new?.updated_at || null;
+  if (!raw) return null;
+
+  const parsed = Date.parse(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 export const useSyncedDominoGameState = (gameId: string, userId: string, ignoringSync = false) => {
   const { toast } = useToast();
   const [syncState, setSyncState] = useState<SyncedGameState>({
@@ -62,10 +70,75 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
   const startLockRef = useRef(false);
   const selfUpdateSuppressUntilRef = useRef<number>(0);
   const syncStateRef = useRef(syncState);
+  const hardSlamServerStartByEventRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     syncStateRef.current = syncState;
   }, [syncState]);
+
+  const applyServerHardSlamStart = useCallback((state: PersistedGameState | null): PersistedGameState | null => {
+    if (!state?.hardSlamAnimationProfile) return state;
+
+    const profile = state.hardSlamAnimationProfile as ShakeAnimationProfile;
+    if (!profile || typeof profile.eventId !== 'string') return state;
+
+    const serverStartMs = hardSlamServerStartByEventRef.current[profile.eventId];
+    if (typeof serverStartMs !== 'number' || Number.isNaN(serverStartMs) || profile.startedAtMs === serverStartMs) {
+      return state;
+    }
+
+    return {
+      ...state,
+      hardSlamAnimationProfile: {
+        ...profile,
+        startedAtMs: serverStartMs,
+      },
+    };
+  }, []);
+
+  const buildLocalGameState = useCallback((persistedGameState: PersistedGameState | null, playerPosition: number): PersistedGameState | null => {
+    if (!persistedGameState) return null;
+
+    const persistedHands = toDominoHands(persistedGameState.playerHands);
+    const playerHand = persistedHands[playerPosition] || [];
+
+    const localGameState: PersistedGameState = {
+      ...persistedGameState,
+      dominoes: persistedGameState.dominoes || {},
+      board: persistedGameState.board || {},
+      playerHand: [...playerHand],
+      playerHands: persistedHands,
+      boneyard: toDominoArray(persistedGameState.boneyard),
+      openEnds: persistedGameState.openEnds || [],
+      forbiddens: persistedGameState.forbiddens || {},
+      nextDominoId: persistedGameState.nextDominoId || 0,
+      spinnerId: persistedGameState.spinnerId || null,
+      isGameOver: persistedGameState.isGameOver || false,
+      selectedHandIndex: persistedGameState.selectedHandIndex || null,
+      hardSlamNextMove: persistedGameState.hardSlamNextMove || false,
+      isHardSlamming: persistedGameState.isHardSlamming || false,
+      hardSlamDominoId: persistedGameState.hardSlamDominoId,
+      triggerHardSlamAnimation: persistedGameState.triggerHardSlamAnimation || false,
+      hardSlamAnimationProfile: persistedGameState.hardSlamAnimationProfile,
+    };
+
+    // Defensive fix: remove any tiles from hands/boneyard that already appear on the table
+    const keyOf = (d: DominoData) => `${Math.min(d.value1, d.value2)}|${Math.max(d.value1, d.value2)}`;
+    const placedKeys = new Set<string>();
+    for (const id in localGameState.dominoes) {
+      placedKeys.add(keyOf(localGameState.dominoes[id].data));
+    }
+    if (placedKeys.size > 0) {
+      const sanitizedHands = (localGameState.playerHands || []).map((hand: DominoData[] = []) =>
+        hand.filter((d) => !placedKeys.has(keyOf(d)))
+      );
+      localGameState.playerHands = sanitizedHands;
+      localGameState.playerHand = sanitizedHands[playerPosition] || [];
+      localGameState.boneyard = (localGameState.boneyard || []).filter((d) => !placedKeys.has(keyOf(d)));
+    }
+
+    return applyServerHardSlamStart(localGameState);
+  }, [applyServerHardSlamStart]);
 
 
   // Load initial game state from database
@@ -144,53 +217,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
       // Extract player's hand from game state
       const playerPosition = playerData?.player_position || 0;
       const persistedGameState = asPersistedGameState(gameData?.game_state);
-      
-      const persistedHands = toDominoHands(persistedGameState?.playerHands);
-      const playerHand = persistedHands[playerPosition] || [];
-
-      // Create local game state from database state
-      const localGameState: PersistedGameState | null = persistedGameState ? {
-        ...persistedGameState,
-        dominoes: persistedGameState.dominoes || {},
-        board: persistedGameState.board || {},
-        playerHand: [...playerHand], // Create a copy to avoid circular reference
-        playerHands: persistedHands, // Keep original playerHands from database
-        boneyard: toDominoArray(persistedGameState.boneyard),
-        openEnds: persistedGameState.openEnds || [],
-        forbiddens: persistedGameState.forbiddens || {},
-        nextDominoId: persistedGameState.nextDominoId || 0,
-        spinnerId: persistedGameState.spinnerId || null,
-        isGameOver: persistedGameState.isGameOver || false,
-        selectedHandIndex: persistedGameState.selectedHandIndex || null,
-        // Preserve hard slam flags from database
-        hardSlamNextMove: persistedGameState.hardSlamNextMove || false,
-        isHardSlamming: persistedGameState.isHardSlamming || false,
-        hardSlamDominoId: persistedGameState.hardSlamDominoId,
-        triggerHardSlamAnimation: persistedGameState.triggerHardSlamAnimation || false,
-        hardSlamAnimationProfile: persistedGameState.hardSlamAnimationProfile,
-        // Remove currentPlayer from game_state JSON to avoid confusion - use only database column
-      } : null;
-
-      // Defensive fix: remove any tiles from hands/boneyard that already appear on the table
-      if (localGameState) {
-        const keyOf = (d: DominoData) => `${Math.min(d.value1, d.value2)}|${Math.max(d.value1, d.value2)}`;
-        const placedKeys = new Set<string>();
-        for (const id in localGameState.dominoes) {
-          placedKeys.add(keyOf(localGameState.dominoes[id].data));
-        }
-        if (placedKeys.size > 0) {
-          // Filter from all player hands
-          const sanitizedHands = (localGameState.playerHands || []).map((hand: DominoData[] = []) =>
-            hand.filter((d) => !placedKeys.has(keyOf(d)))
-          );
-          // Ensure array length at least up to current player position
-          localGameState.playerHands = sanitizedHands;
-          // Sync my visible hand too
-          localGameState.playerHand = sanitizedHands[playerPosition] || [];
-          // Filter boneyard as well
-          localGameState.boneyard = (localGameState.boneyard || []).filter((d) => !placedKeys.has(keyOf(d)));
-        }
-      }
+      const localGameState = buildLocalGameState(persistedGameState, playerPosition);
       
       console.log('🔍 LOADED FROM DATABASE:', {
         dominoes: Object.keys(persistedGameState?.dominoes || {}),
@@ -232,7 +259,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         variant: "destructive"
       });
     }
-  }, [gameId, userId, toast, ignoringSync]);
+  }, [buildLocalGameState, gameId, userId, toast, ignoringSync]);
 
   // Update game state in database with MANDATORY turn advancement
   const updateGameState = useCallback(async (newGameState: PersistedGameState | null, nextPlayerTurn: number) => {
@@ -445,6 +472,17 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
           const currentSyncState = syncStateRef.current;
           const newGameState = asPersistedGameState(payload.new?.game_state as Json);
           const newCurrentPlayer = payload.new?.current_player_turn;
+          const hardSlamProfile = newGameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
+          const hardSlamEventId = hardSlamProfile?.eventId;
+          const serverStartMs = parseServerTimestampMs({
+            commit_timestamp: (payload as { commit_timestamp?: string }).commit_timestamp,
+            new: { updated_at: payload.new?.updated_at as string | null | undefined }
+          });
+
+          if (hardSlamEventId && serverStartMs !== null) {
+            hardSlamServerStartByEventRef.current[hardSlamEventId] = serverStartMs;
+          }
+
           const isHardSlamUpdate =
             newGameState?.hardSlamNextMove ||
             newGameState?.isHardSlamming ||
@@ -460,8 +498,21 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
           
           // For hard slam updates, force immediate reload
           if (isHardSlamUpdate) {
-            console.log('🔥 HARD SLAM DETECTED - Force reload!');
-            loadGameState(true);
+            console.log('🔥 HARD SLAM DETECTED - Applying strict lockstep with server timestamp');
+
+            const localRealtimeGameState = buildLocalGameState(newGameState, currentSyncState.playerPosition);
+            if (localRealtimeGameState) {
+              setSyncState((prevState) => ({
+                ...prevState,
+                gameState: localRealtimeGameState,
+                currentPlayer: typeof newCurrentPlayer === 'number' ? newCurrentPlayer : prevState.currentPlayer,
+              }));
+            }
+
+            // Follow-up reload to keep full state consistency.
+            setTimeout(() => {
+              loadGameState(true);
+            }, 100);
             return;
           }
 
@@ -518,7 +569,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameId, userId, loadGameState]);
+  }, [gameId, userId, loadGameState, buildLocalGameState]);
 
   return {
     syncState,
