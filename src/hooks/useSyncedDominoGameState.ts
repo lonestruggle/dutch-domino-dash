@@ -165,6 +165,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         // Preserve hard slam flags from database
         hardSlamNextMove: persistedGameState.hardSlamNextMove || false,
         isHardSlamming: persistedGameState.isHardSlamming || false,
+        hardSlamDominoId: persistedGameState.hardSlamDominoId,
+        triggerHardSlamAnimation: persistedGameState.triggerHardSlamAnimation || false,
         // Remove currentPlayer from game_state JSON to avoid confusion - use only database column
       } : null;
 

@@ -48,6 +48,8 @@ const buildConsolidatedState = (
     winner_position: currentState.winner_position,
     hardSlamNextMove: currentState.hardSlamNextMove,
     isHardSlamming: currentState.isHardSlamming,
+    hardSlamDominoId: currentState.hardSlamDominoId,
+    triggerHardSlamAnimation: currentState.triggerHardSlamAnimation,
   };
 };
 
@@ -124,25 +126,21 @@ export default function Game() {
 
     changaRef.current = isChangaCandidate;
 
+    const hardSlamDominoId = move?.localHardSlamActive ? `d${gameState.nextDominoId}` : undefined;
+
+    if (move?.localHardSlamActive && hardSlamDominoId) {
+      // Arm hard slam BEFORE move execution so executeMove can apply the effect on this move.
+      setGameState((currentState) => ({
+        ...currentState,
+        hardSlamNextMove: true,
+        isHardSlamming: true,
+        hardSlamDominoId,
+        triggerHardSlamAnimation: true,
+      }));
+    }
+
     // Execute the move locally
     gameHook.executeMove(move);
-    
-    // If this player activated hard slam, trigger it for the database
-    if (move?.localHardSlamActive) {
-      console.log('🔥 Hard slam was activated locally, triggering for database');
-      
-      // Track which domino will trigger the hard slam animation
-      const hardSlamDominoId = `d${gameState.nextDominoId}`;
-      console.log('🔥 Hard slam domino ID:', hardSlamDominoId);
-      
-      // Update local state with hard slam domino ID
-      setGameState(currentState => ({
-        ...currentState,
-        hardSlamDominoId
-      }));
-      
-      gameHook.hardSlam();
-    }
     
     // Execute pending shake after domino placement
     if (pendingShake) {
@@ -172,7 +170,8 @@ export default function Game() {
           ...buildConsolidatedState(syncState.gameState, currentState, myPos),
           // Reset hard slam game logic after domino placement
           isHardSlamming: false,
-          // Keep triggerHardSlamAnimation for other players to see
+          triggerHardSlamAnimation: Boolean(move?.localHardSlamActive),
+          hardSlamDominoId: move?.localHardSlamActive ? hardSlamDominoId : currentState.hardSlamDominoId,
         };
 
         // Check for CHANGA and update state accordingly

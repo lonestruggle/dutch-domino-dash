@@ -102,6 +102,27 @@ const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
   mobile: { ...DEFAULT_GLOBAL_SETTINGS },
 };
 
+type GlobalAnimationPatch = Partial<Pick<GlobalSettings, 'rotateX' | 'rotateY' | 'rotateZ' | 'rotationSpeed' | 'animationDuration' | 'shakeIntensity' | 'shakeDuration'>>;
+
+const normalizeGlobalAnimationSettings = (settings: DeviceSpecificGlobalSettings): DeviceSpecificGlobalSettings => {
+  const source = settings.desktop || DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop;
+  const sharedAnimationValues: GlobalAnimationPatch = {
+    rotateX: source.rotateX,
+    rotateY: source.rotateY,
+    rotateZ: source.rotateZ,
+    rotationSpeed: source.rotationSpeed,
+    animationDuration: source.animationDuration,
+    shakeIntensity: source.shakeIntensity,
+    shakeDuration: source.shakeDuration,
+  };
+
+  return {
+    desktop: { ...settings.desktop, ...sharedAnimationValues },
+    tablet: { ...settings.tablet, ...sharedAnimationValues },
+    mobile: { ...settings.mobile, ...sharedAnimationValues },
+  };
+};
+
 const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
   desktop: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.desktop, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop, ...DEFAULT_TRULY_GLOBAL_SETTINGS },
   tablet: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.tablet, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet, ...DEFAULT_TRULY_GLOBAL_SETTINGS },
@@ -156,19 +177,19 @@ export const useGameVisualSettings = () => {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
-        const merged = {
+        const merged = normalizeGlobalAnimationSettings({
           desktop: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop, ...parsed.desktop },
           tablet: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet, ...parsed.tablet },
           mobile: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile, ...parsed.mobile },
-        };
+        });
         console.log('🌍 Loaded GLOBAL settings:', merged);
         return merged;
       }
       console.log('🌍 No global settings found, using defaults');
-      return DEFAULT_DEVICE_GLOBAL_SETTINGS;
+      return normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
     } catch {
       console.log('🌍 Error loading global settings, using defaults');
-      return DEFAULT_DEVICE_GLOBAL_SETTINGS;
+      return normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
     }
   };
 
@@ -301,7 +322,9 @@ export const useGameVisualSettings = () => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).__dominoSettings = currentSettings;
-    } catch {}
+    } catch (error) {
+      void error;
+    }
 
     // Notify listeners (GameBoard, PlayerHand, etc.)
     window.dispatchEvent(new CustomEvent('visualSettingsUpdated', {
@@ -336,13 +359,13 @@ export const useGameVisualSettings = () => {
         ...prev,
         [targetDevice]: DEFAULT_DEVICE_PERSONAL_SETTINGS[targetDevice]
       }));
-      setGlobalSettings(prev => ({
+      setGlobalSettings(prev => normalizeGlobalAnimationSettings({
         ...prev,
         [targetDevice]: DEFAULT_DEVICE_GLOBAL_SETTINGS[targetDevice]
       }));
     } else {
       setPersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS);
-      setGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
+      setGlobalSettings(normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS));
       setTrulyGlobalSettings(DEFAULT_TRULY_GLOBAL_SETTINGS);
     }
   };
@@ -376,20 +399,7 @@ export const useGameVisualSettings = () => {
   };
 
   const getSettingsForDevice = (device: DeviceType) => {
-    // ✅ FIX: Always load fresh settings from localStorage to avoid race conditions
-    // Load personal, global and truly global settings fresh from localStorage
-    const freshPersonalSettings = loadPersonalSettingsFromStorage();
-    const freshGlobalSettings = loadGlobalSettingsFromStorage();
-    const freshTrulyGlobalSettings = loadTrulyGlobalSettingsFromStorage();
-    
-    // Combine them just like allSettings does
-    const combined = {
-      ...freshPersonalSettings[device],
-      ...freshGlobalSettings[device],
-      ...freshTrulyGlobalSettings
-    };
-    
-    return combined || DEFAULT_DEVICE_SETTINGS[device];
+    return allSettings[device] || DEFAULT_DEVICE_SETTINGS[device];
   };
 
   // Animation functions met exacte logica uit DominoTileDemo
@@ -419,247 +429,163 @@ export const useGameVisualSettings = () => {
     console.log('🎬 ✅ Animation force stopped and cleaned up');
   };
 
+  const getBoardDominoElements = () => {
+    let boardDominoes = document.querySelectorAll('.domino-tile-board');
+    if (boardDominoes.length === 0) boardDominoes = document.querySelectorAll('.board-domino');
+    if (boardDominoes.length === 0) boardDominoes = document.querySelectorAll('.domino-tile');
+    return boardDominoes;
+  };
+
+  const getSharedAnimationSettings = () => {
+    const currentSettings = getSettingsForDevice(deviceType);
+    return {
+      intensity: currentSettings.shakeIntensity,
+      duration: currentSettings.shakeDuration,
+      rotationAmplitudeX: currentSettings.rotationAmplitudeX,
+      rotationAmplitudeY: currentSettings.rotationAmplitudeY,
+      rotationAmplitudeZ: currentSettings.rotationAmplitudeZ,
+      rotationSpeed: currentSettings.rotationSpeed,
+    };
+  };
+
   // Queue shake to execute after domino placement
   const queueShakeAnimation = () => {
-    console.log('🎬 🚨 🎯 Queueing shake animation for after next domino placement');
-    console.log('🎬 🚨 🎯 Setting pendingShake to true');
     setPendingShake(true);
     return { success: true, message: "Shake ingepland na volgende zet" };
   };
 
   // Execute pending shake (called after domino placement)
   const executePendingShake = () => {
-    console.log('🎬 ✨ executePendingShake called');
-    console.log('🎬 ✨ pendingShake state:', pendingShake);
-    
     if (!pendingShake) {
-      console.log('🎬 ✨ No pending shake to execute');
       return { success: false, message: "Geen ingeplande shake om uit te voeren." };
     }
-    
-    // Reset pending shake immediately to prevent double execution
+
     setPendingShake(false);
-    
-    console.log('🎬 ✨ Executing pending shake now!');
-    
-    // FORCE USE FIXED SHAKE SETTINGS TO ENSURE ALL PLAYERS ARE SYNCED
-    const forcedShakeSettings = {
-      intensity: 1.0, // Fixed value for all players
-      duration: 1.5   // Fixed value for all players
-    };
-    
-    console.log('🔥 FORCED shake settings for ALL players:', forcedShakeSettings);
-    
-    // Execute the shake with forced settings
-    return startShakeAnimationDirectWithSettings(forcedShakeSettings.intensity, forcedShakeSettings.duration);
+    return startShakeAnimationDirectWithSettings();
   };
 
   const startShakeAnimation = (isOtherPlayerHardSlam = false) => {
-    // Get stack trace to see which button called this
-    const stack = new Error().stack;
-    const caller = stack?.split('\n')[2]?.trim() || 'unknown';
-    
-    console.log('🎬 SHAKE BUTTON DEBUG: Called from:', caller, 'isOtherPlayerHardSlam:', isOtherPlayerHardSlam);
-    
-    // For other player hard slam, execute directly without queuing
-    if (isOtherPlayerHardSlam) {
-      console.log('🔥 Direct execution for other player hard slam');
-      return startShakeAnimationDirectWithSettings(1.0, 1.5);
-    }
-    
-    // In game context, queue the shake instead of executing immediately
-    if (caller.includes('DominoGame') || caller.includes('onClick')) {
-      return queueShakeAnimation();
-    }
-    
-    // Direct execution for other contexts (like settings) - use forced settings
-    return startShakeAnimationDirectWithSettings(1.0, 1.5);
+    // Hard Slam from another player should always play, regardless of local permissions.
+    return startShakeAnimationDirectWithSettings(undefined, undefined, isOtherPlayerHardSlam);
   };
 
-  const startShakeAnimationDirectWithSettings = async (forcedIntensity?: number, forcedDuration?: number) => {
-    console.log('🎬 🚨 Starting shake animation with FORCED SETTINGS FOR ALL PLAYERS');
-    
-    // FORCE ALL SHAKE SETTINGS TO ENSURE PERFECT SYNC BETWEEN ALL PLAYERS
-    const forcedShakeSettings = {
-      intensity: forcedIntensity ?? 1.0,     // Fixed for all players
-      duration: forcedDuration ?? 1.5,       // Fixed for all players
-      rotationAmplitudeX: 300,                // Fixed for all players
-      rotationAmplitudeY: 300,                // Fixed for all players  
-      rotationAmplitudeZ: 100                 // Fixed for all players
-    };
-    
-    console.log('🔥 🚨 FORCED shake settings for ALL players (no more differences!):', forcedShakeSettings);
-    
+  const startShakeAnimationDirectWithSettings = async (
+    forcedIntensity?: number,
+    forcedDuration?: number,
+    skipPermissionCheck = false
+  ) => {
     if (isAnimating) {
-      console.log('🎬 ⚠️ Animation already running, forcing stop first');
       forceStopAnimation();
     }
 
-    // Check user permissions first
-    if (user?.id) {
+    if (!skipPermissionCheck && user?.id) {
       try {
         const { data: permissions } = await supabase
           .from('user_permissions')
           .select('can_hard_slam')
           .eq('user_id', user.id)
           .maybeSingle();
-        
-        // If permissions exist and can_hard_slam is false, deny access
+
         if (permissions && !permissions.can_hard_slam) {
-          console.log('🎬 ❌ User does not have hard slam permission');
           return { success: false, message: "Je hebt geen toestemming om te schudden. Neem contact op met een beheerder." };
         }
       } catch (error) {
         console.error('Error checking permissions:', error);
-        // Continue with default permission (true) if there's an error
       }
     }
-    
-    // Skip the amplitude check since we're forcing non-zero values
-    console.log('🎬 🔥 Starting shake animation with FORCED settings (no more amplitude issues!):', forcedShakeSettings);
-    
-    // Try multiple selectors to find board dominoes
-    let boardDominoes = document.querySelectorAll('.domino-tile-board');
-    if (boardDominoes.length === 0) {
-      boardDominoes = document.querySelectorAll('.board-domino');
+
+    const sharedSettings = getSharedAnimationSettings();
+    const shakeSettings = {
+      intensity: forcedIntensity ?? sharedSettings.intensity,
+      duration: forcedDuration ?? sharedSettings.duration,
+      rotationAmplitudeX: sharedSettings.rotationAmplitudeX,
+      rotationAmplitudeY: sharedSettings.rotationAmplitudeY,
+      rotationAmplitudeZ: sharedSettings.rotationAmplitudeZ,
+      rotationSpeed: sharedSettings.rotationSpeed,
+    };
+
+    if (
+      shakeSettings.rotationAmplitudeX === 0 &&
+      shakeSettings.rotationAmplitudeY === 0 &&
+      shakeSettings.rotationAmplitudeZ === 0
+    ) {
+      return { success: false, message: "Schud-amplitude staat op 0°. Verhoog amplitude om Hard Slam zichtbaar te maken." };
     }
+
+    const boardDominoes = getBoardDominoElements();
     if (boardDominoes.length === 0) {
-      boardDominoes = document.querySelectorAll('.domino-tile');
-    }
-    console.log('🎬 🚨 Found board dominoes:', boardDominoes.length, 'using selector:', 
-      boardDominoes.length > 0 ? (boardDominoes[0] as HTMLElement).className : 'none');
-    
-    if (boardDominoes.length === 0) {
-      console.log('🎬 ❌ No board dominoes found to shake!');
-      console.log('🎬 🔍 Available elements:', Array.from(document.querySelectorAll('[class*="domino"]')).map(el => el.className));
-      // Reset pending shake even if we can't shake
       setPendingShake(false);
       return { success: false, message: "Geen domino's op het bord gevonden om te schudden." };
     }
-    
-    // Force stop any existing animation first
+
     forceStopAnimation();
-    
-    // Small delay to ensure cleanup is complete
+
     setTimeout(() => {
-      console.log('🎬 ⏰ Starting animation after cleanup delay');
-    
-      // Generate new random seeds for each domino - use same selector logic
-      let allBoardDominoes = document.querySelectorAll('.domino-tile-board');
-      if (allBoardDominoes.length === 0) {
-        allBoardDominoes = document.querySelectorAll('.board-domino');
-      }
-      if (allBoardDominoes.length === 0) {
-        allBoardDominoes = document.querySelectorAll('.domino-tile');
-      }
+      const allBoardDominoes = getBoardDominoElements();
       randomSeedsRef.current = Array.from({ length: allBoardDominoes.length }, () => Math.random() * 10000);
-      
+
       setIsAnimating(true);
       setAnimationMode('shake');
-      
-      console.log('🎬 ✅ Animation state set:', { isAnimating: true, animationMode: 'shake' });
-    
-    // Store base rotation values - use FORCED settings
-    baseRotationRef.current = {
-      X: 0, // Fixed for sync
-      Y: 0, // Fixed for sync
-      Z: 0  // Fixed for sync
-    };
-    
-    startTimeRef.current = performance.now();
-    const durationInMs = forcedShakeSettings.duration * 1000; // Use FORCED duration
-    let shouldContinue = true; // Local variable voor animatie controle
-    
-    const animate = (timestamp: number) => {
-      if (!startTimeRef.current || !shouldContinue) return;
-      
-      const elapsedTime = timestamp - startTimeRef.current;
-      const progress = elapsedTime / durationInMs;
-      
-      if (progress < 1) {
-        const wave = Math.cos(elapsedTime * 5 * Math.PI / 1000); // Fixed rotation speed for sync
-        const decayFactor = Math.pow(1 - progress, 1.5);
-        
-        // Apply animation with FORCED settings
-        const newX = baseRotationRef.current.X + (forcedShakeSettings.rotationAmplitudeX * wave * decayFactor * forcedShakeSettings.intensity);
-        const newY = baseRotationRef.current.Y + (forcedShakeSettings.rotationAmplitudeY * wave * decayFactor * forcedShakeSettings.intensity);
-        const newZ = baseRotationRef.current.Z + (forcedShakeSettings.rotationAmplitudeZ * wave * decayFactor * forcedShakeSettings.intensity);
-        
-        console.log('🎯 Shaking:', { newX, newY, newZ, wave, decayFactor, progress });
-        
-        // Apply individual random animation to each existing board domino - use same selector logic
-        let animatedDominoes = document.querySelectorAll('.domino-tile-board');
-        if (animatedDominoes.length === 0) {
-          animatedDominoes = document.querySelectorAll('.board-domino');
+
+      baseRotationRef.current = { X: 0, Y: 0, Z: 0 };
+      startTimeRef.current = performance.now();
+      const durationInMs = Math.max(0.1, shakeSettings.duration) * 1000;
+      const speedMultiplier = Math.max(0.1, shakeSettings.rotationSpeed);
+      let shouldContinue = true;
+
+      const animate = (timestamp: number) => {
+        if (!startTimeRef.current || !shouldContinue) return;
+
+        const elapsedTime = timestamp - startTimeRef.current;
+        const progress = elapsedTime / durationInMs;
+
+        if (progress < 1) {
+          const wave = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000);
+          const decayFactor = Math.pow(1 - progress, 1.5);
+
+          const animatedDominoes = getBoardDominoElements();
+          animatedDominoes.forEach((domino: Element, index: number) => {
+            const htmlDomino = domino as HTMLElement;
+            const seed = randomSeedsRef.current[index] || (index * 1000);
+            const randomPhaseX = Math.sin(seed * 0.001) * 2 * Math.PI;
+            const randomPhaseY = Math.cos(seed * 0.001) * 2 * Math.PI;
+            const randomPhaseZ = Math.sin(seed * 0.002) * 2 * Math.PI;
+
+            const waveX = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + randomPhaseX);
+            const waveY = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + randomPhaseY);
+            const waveZ = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + randomPhaseZ);
+
+            const amplitudeMultX = 0.5 + Math.sin(seed * 0.003);
+            const amplitudeMultY = 0.5 + Math.cos(seed * 0.003);
+            const amplitudeMultZ = 0.5 + Math.sin(seed * 0.004);
+
+            const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
+            const individualX = baseRotationRef.current.X + (shakeSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX * shakeSettings.intensity);
+            const individualY = baseRotationRef.current.Y + (shakeSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY * shakeSettings.intensity);
+            const individualZ = baseRotationRef.current.Z + originalRotationZ + (shakeSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ * shakeSettings.intensity);
+
+            const currentTransform = htmlDomino.style.transform || '';
+            const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
+            htmlDomino.style.transform = `${baseTransform} rotateX(${individualX}deg) rotateY(${individualY}deg) rotateZ(${individualZ}deg)`.trim();
+          });
+
+          animationRef.current.current = requestAnimationFrame(animate);
+          return;
         }
-        if (animatedDominoes.length === 0) {
-          animatedDominoes = document.querySelectorAll('.domino-tile');
-        }
-        animatedDominoes.forEach((domino: Element, index: number) => {
-          const htmlDomino = domino as HTMLElement;
-          
-          // Use stored random seed for this domino to maintain consistency during animation
-          const seed = randomSeedsRef.current[index] || (index * 1000);
-          const randomPhaseX = Math.sin(seed * 0.001) * 2 * Math.PI;
-          const randomPhaseY = Math.cos(seed * 0.001) * 2 * Math.PI;
-          const randomPhaseZ = Math.sin(seed * 0.002) * 2 * Math.PI;
-          
-          const waveX = Math.cos(elapsedTime * 5 * Math.PI / 1000 + randomPhaseX); // Fixed rotation speed for sync
-          const waveY = Math.cos(elapsedTime * 5 * Math.PI / 1000 + randomPhaseY); // Fixed rotation speed for sync
-          const waveZ = Math.cos(elapsedTime * 5 * Math.PI / 1000 + randomPhaseZ); // Fixed rotation speed for sync
-          
-          // Individual random amplitude multipliers based on stored seed (0.5 to 1.5)
-          const amplitudeMultX = 0.5 + Math.sin(seed * 0.003);
-          const amplitudeMultY = 0.5 + Math.cos(seed * 0.003);
-          const amplitudeMultZ = 0.5 + Math.sin(seed * 0.004);
-          
-          // Get the original domino rotation from the data attribute or rotation prop
-          const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
-          
-          // Use FORCED settings for perfect sync
-          const individualX = baseRotationRef.current.X + (forcedShakeSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX * forcedShakeSettings.intensity);
-          const individualY = baseRotationRef.current.Y + (forcedShakeSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY * forcedShakeSettings.intensity);
-          const individualZ = baseRotationRef.current.Z + originalRotationZ + (forcedShakeSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ * forcedShakeSettings.intensity);
-          
-          // Keep only non-rotation transforms (like translate, scale) and add our complete rotation
-          const currentTransform = htmlDomino.style.transform || '';
-          const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-          htmlDomino.style.transform = `${baseTransform} rotateX(${individualX}deg) rotateY(${individualY}deg) rotateZ(${individualZ}deg)`.trim();
-        });
-        
-        animationRef.current.current = requestAnimationFrame(animate);
-      } else {
-        console.log('💥 HARD SLAM EFFECT - Starting shake animation and randomizing rotations!');
-        
-        // Return to base rotation AND randomize permanent rotations (HARD SLAM effect)
-        let boardDominoes = document.querySelectorAll('.domino-tile-board');
-        if (boardDominoes.length === 0) {
-          boardDominoes = document.querySelectorAll('.board-domino');
-        }
-        if (boardDominoes.length === 0) {
-          boardDominoes = document.querySelectorAll('.domino-tile');
-        }
-        
-        // Geen nieuwe rotaties - laat de stenen gewoon liggen zoals ze zijn
-        console.log('🎬 Shake animation completed - dominoes stay as they are');
-        
+
         setIsAnimating(false);
         setAnimationMode(null);
-        console.log('🎬 Shake animation completed with new permanent rotations');
-      }
-    };
-    
-    // Store the stop function to cancel the animation
-    animationRef.current.stopFunction = () => {
-      shouldContinue = false;
-      setIsAnimating(false);
-      setAnimationMode(null);
-    };
-    
+      };
+
+      animationRef.current.stopFunction = () => {
+        shouldContinue = false;
+        setIsAnimating(false);
+        setAnimationMode(null);
+      };
+
       animationRef.current.current = requestAnimationFrame(animate);
-      console.log('🎬 ✅ Shake animation started successfully');
-    }, 50); // 50ms delay for cleanup
-    
+    }, 50);
+
     return { success: true, message: "De dominostenen schudden..." };
   };
 
@@ -842,32 +768,28 @@ export const useGameVisualSettings = () => {
     };
   }, []);
 
-  const updateRotation = (axis: 'X' | 'Y' | 'Z', value: number, targetDevice?: DeviceType) => {
+  const applyGlobalAnimationPatch = (patch: GlobalAnimationPatch) => {
+    setGlobalSettings(prev => ({
+      desktop: { ...prev.desktop, ...patch },
+      tablet: { ...prev.tablet, ...patch },
+      mobile: { ...prev.mobile, ...patch },
+    }));
+  };
+
+  const updateRotation = (axis: 'X' | 'Y' | 'Z', value: number, _targetDevice?: DeviceType) => {
     // Don't allow manual rotation during animation
     if (isAnimating) return;
     
     const clampedValue = Math.max(-90, Math.min(90, value));
-    const device = targetDevice || deviceType;
-    const property = `rotate${axis}` as keyof GlobalSettings;
+    const property = `rotate${axis}` as 'rotateX' | 'rotateY' | 'rotateZ';
     
-    setGlobalSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], [property]: clampedValue }
-    }));
-    
-    // Update base rotation reference for current device
-    if (device === deviceType) {
-      baseRotationRef.current[axis] = clampedValue;
-    }
+    applyGlobalAnimationPatch({ [property]: clampedValue });
+    baseRotationRef.current[axis] = clampedValue;
   };
 
-  const updateRotationSpeed = (speed: number, targetDevice?: DeviceType) => {
+  const updateRotationSpeed = (speed: number, _targetDevice?: DeviceType) => {
     const clampedSpeed = Math.max(0.1, Math.min(10, speed));
-    const device = targetDevice || deviceType;
-    setGlobalSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], rotationSpeed: clampedSpeed }
-    }));
+    applyGlobalAnimationPatch({ rotationSpeed: clampedSpeed });
   };
 
   const updateRotationAmplitude = (axis: 'X' | 'Y' | 'Z', value: number) => {
@@ -883,37 +805,19 @@ export const useGameVisualSettings = () => {
     }));
   };
 
-  const updateAnimationDuration = (duration: number, targetDevice?: DeviceType) => {
+  const updateAnimationDuration = (duration: number, _targetDevice?: DeviceType) => {
     const clampedDuration = Math.max(0.1, Math.min(10, duration));
-    const device = targetDevice || deviceType;
-    setGlobalSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], animationDuration: clampedDuration }
-    }));
+    applyGlobalAnimationPatch({ animationDuration: clampedDuration });
   };
 
-  const updateShakeIntensity = (intensity: number, targetDevice?: DeviceType) => {
+  const updateShakeIntensity = (intensity: number, _targetDevice?: DeviceType) => {
     const clampedIntensity = Math.max(0.1, Math.min(2.0, intensity));
-    
-    // Force shake settings to be the same for ALL devices to ensure sync
-    console.log('🔧 Updating shake intensity globally for all devices:', clampedIntensity);
-    setGlobalSettings(prev => ({
-      desktop: { ...prev.desktop, shakeIntensity: clampedIntensity },
-      tablet: { ...prev.tablet, shakeIntensity: clampedIntensity },
-      mobile: { ...prev.mobile, shakeIntensity: clampedIntensity }
-    }));
+    applyGlobalAnimationPatch({ shakeIntensity: clampedIntensity });
   };
 
-  const updateShakeDuration = (duration: number, targetDevice?: DeviceType) => {
+  const updateShakeDuration = (duration: number, _targetDevice?: DeviceType) => {
     const clampedDuration = Math.max(0.5, Math.min(5.0, duration));
-    
-    // Force shake settings to be the same for ALL devices to ensure sync
-    console.log('🔧 Updating shake duration globally for all devices:', clampedDuration);
-    setGlobalSettings(prev => ({
-      desktop: { ...prev.desktop, shakeDuration: clampedDuration },
-      tablet: { ...prev.tablet, shakeDuration: clampedDuration },
-      mobile: { ...prev.mobile, shakeDuration: clampedDuration }
-    }));
+    applyGlobalAnimationPatch({ shakeDuration: clampedDuration });
   };
 
   // Domino dimension update functions

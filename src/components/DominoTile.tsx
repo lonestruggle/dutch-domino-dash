@@ -34,7 +34,6 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   rotateY = 0,
   rotateZ = 0
 }) => {
-  console.log(`🎯 DominoTile render - rotation: ${rotation}, data: ${data.value1}|${data.value2}, isShaking: ${isShaking}`, style);
   const { settings } = useGameVisualSettings();
   const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
   const double = isDouble(data);
