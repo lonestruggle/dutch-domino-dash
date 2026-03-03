@@ -3,12 +3,53 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { DominoGame } from '@/components/DominoGame';
 import { useDominoGame } from '@/hooks/useDominoGame';
-import { useSyncedDominoGameState } from '@/hooks/useSyncedDominoGameState';
+import { PersistedGameState, useSyncedDominoGameState } from '@/hooks/useSyncedDominoGameState';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import type { GameState } from '@/types/domino';
+import type { GameState, LegalMove } from '@/types/domino';
+
+type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
+
+interface GameOutcomePlayerPayload {
+  user_id: string;
+  player_position: number;
+  points_scored: number;
+  pips_remaining: number;
+  won: boolean;
+  hard_slams_used: number;
+  turns_played: number;
+  won_by_changa: boolean;
+}
+
+const buildConsolidatedState = (
+  remoteState: PersistedGameState | null,
+  currentState: GameState,
+  myPos: number
+): PersistedGameState => {
+  const remote = remoteState ?? ({} as PersistedGameState);
+  const nextHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
+  nextHands[myPos] = currentState.playerHand || [];
+
+  return {
+    ...remote,
+    dominoes: currentState.dominoes,
+    board: currentState.board,
+    boneyard: currentState.boneyard,
+    forbiddens: currentState.forbiddens,
+    openEnds: currentState.openEnds,
+    nextDominoId: currentState.nextDominoId,
+    spinnerId: currentState.spinnerId,
+    isGameOver: currentState.isGameOver,
+    playerHand: currentState.playerHand,
+    playerHands: nextHands,
+    gameEndReason: currentState.gameEndReason,
+    winner_position: currentState.winner_position,
+    hardSlamNextMove: currentState.hardSlamNextMove,
+    isHardSlamming: currentState.isHardSlamming,
+  };
+};
 
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -17,15 +58,14 @@ export default function Game() {
   const savedRef = useRef(false);
   
   // Hard slam functionality
-  const visualSettings = useGameVisualSettings();
-  const { hardSlamMode, startShakeAnimation, disarmHardSlam, executePendingShake, pendingShake } = visualSettings;
+  const { startShakeAnimation, disarmHardSlam, executePendingShake, pendingShake } = useGameVisualSettings();
   
   // Use the existing synced game state hook
-  const { syncState, updateGameState, startNewGame: syncedStartNewGame, validateGameMove } = useSyncedDominoGameState(gameId || '', user?.id || '');
+  const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
   
   // Use the domino game hook with shake animation support
   const gameHook = useDominoGame(startShakeAnimation);
-  const { gameState, setGameState, hardSlam } = gameHook;
+  const { gameState, setGameState } = gameHook;
 
   // Ref om Changa-detectie te markeren tussen pre- en post-move
   const changaRef = useRef(false);
@@ -40,7 +80,7 @@ export default function Game() {
   // Removed syncLocalToRemote - now using SINGLE consolidated updates instead of double updates
 
   // Wrap local actions and then sync - SINGLE CONSOLIDATED UPDATE
-  const wrappedExecuteMove = useCallback((move: any) => {
+  const wrappedExecuteMove = useCallback((move: MoveWithEffects) => {
     console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
     console.log('🔥 pendingShake status:', pendingShake);
     console.log('🔥 localHardSlamActive:', move?.localHardSlamActive);
@@ -72,7 +112,7 @@ export default function Game() {
     changaRef.current = isChangaCandidate;
 
     // Execute the move locally
-    const moveResult = (gameHook as any).executeMove(move);
+    gameHook.executeMove(move);
     
     // If this player activated hard slam, trigger it for the database
     if (move?.localHardSlamActive) {
@@ -89,19 +129,15 @@ export default function Game() {
       }));
       
       gameHook.hardSlam();
-      
-      // Capture the original player position before any state changes
-      const originalPlayerPosition = syncState.playerPosition;
-      
-      // Hard slam animation will be triggered by state change in DominoGame.tsx
-      // Animation has built-in 1.5s fade-away, no timer needed
     }
     
     // Execute pending shake after domino placement
-    if (visualSettings.pendingShake) {
+    if (pendingShake) {
       console.log('🎬 ✨ EXECUTING PENDING SHAKE NOW!');
-      visualSettings.executePendingShake();
+      executePendingShake();
     }
+
+    if (!syncState.allPlayers.length) return;
 
     // Calculate next player turn - use playerPosition to ensure consistent turn advancement
     const nextPlayerTurn = (syncState.playerPosition + 1) % syncState.allPlayers.length;
@@ -113,30 +149,13 @@ export default function Game() {
         console.log('🔄 SINGLE CONSOLIDATED UPDATE - capturing fresh state');
         
         // Prepare consolidated state with turn advancement
-        const remote = syncState.gameState as any;
         const myPos = syncState.playerPosition || 0;
-        const nextHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
-        nextHands[myPos] = currentState.playerHand || [];
-
-         let finalState = {
-           ...remote,
-           dominoes: currentState.dominoes,
-           board: currentState.board,
-           boneyard: currentState.boneyard,
-           forbiddens: currentState.forbiddens,
-           openEnds: currentState.openEnds,
-           nextDominoId: currentState.nextDominoId,
-           spinnerId: currentState.spinnerId,
-           isGameOver: currentState.isGameOver,
-           playerHand: currentState.playerHand,
-           playerHands: nextHands,
-           gameEndReason: (currentState as any).gameEndReason,
-           winner_position: (currentState as any).winner_position,
-           hardSlamNextMove: currentState.hardSlamNextMove,
-           // Reset hard slam game logic after domino placement
-           isHardSlamming: false,
-           // Keep triggerHardSlamAnimation for other players to see
-         };
+        let finalState: PersistedGameState = {
+          ...buildConsolidatedState(syncState.gameState, currentState, myPos),
+          // Reset hard slam game logic after domino placement
+          isHardSlamming: false,
+          // Keep triggerHardSlamAnimation for other players to see
+        };
 
         // Check for CHANGA and update state accordingly
         if (changaRef.current) {
@@ -156,44 +175,22 @@ export default function Game() {
         return currentState; // Return current state to avoid double setting
       });
     }, 150); // Slightly longer delay for better state consistency
-    
-    return moveResult;
-  }, [gameHook, gameState, syncState.playerPosition, syncState.currentPlayer, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState, toast, pendingShake, visualSettings]);
+  }, [executePendingShake, gameHook, gameState, pendingShake, setGameState, syncState.allPlayers.length, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
 
   const wrappedDrawFromBoneyard = useCallback(async () => {
     console.log('🎲 Draw from boneyard - turn validation removed, database controls turns');
 
     // Execute draw locally - database will validate turn
-    (gameHook as any).drawFromBoneyard();
+    gameHook.drawFromBoneyard();
     
-    // Calculate next player turn - drawing advances turn
+    // Keep current turn after drawing from boneyard
     setTimeout(() => {
       setGameState(currentState => {
         console.log('🔄 Drawing with MANDATORY turn advancement');
         
         // Prepare consolidated state
-        const remote = syncState.gameState as any;
         const myPos = syncState.playerPosition || 0;
-        const nextHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
-        nextHands[myPos] = currentState.playerHand || [];
-
-        const finalState = {
-          ...remote,
-          dominoes: currentState.dominoes,
-          board: currentState.board,
-          boneyard: currentState.boneyard,
-          forbiddens: currentState.forbiddens,
-          openEnds: currentState.openEnds,
-          nextDominoId: currentState.nextDominoId,
-          spinnerId: currentState.spinnerId,
-          isGameOver: currentState.isGameOver,
-          playerHand: currentState.playerHand,
-          playerHands: nextHands,
-          gameEndReason: (currentState as any).gameEndReason,
-          winner_position: (currentState as any).winner_position,
-          hardSlamNextMove: currentState.hardSlamNextMove,
-          isHardSlamming: currentState.isHardSlamming,
-        };
+        const finalState = buildConsolidatedState(syncState.gameState, currentState, myPos);
 
         // NO turn advancement for boneyard draw - player stays on turn
         console.log('🎯 DRAW - No turn advancement, player stays on turn:', syncState.currentPlayer);
@@ -204,15 +201,15 @@ export default function Game() {
         return currentState;
       });
     }, 150);
-  }, [gameHook, syncState.currentPlayer, syncState.allPlayers.length, syncState.gameState, setGameState, updateGameState]);
+  }, [gameHook, setGameState, syncState.currentPlayer, syncState.gameState, syncState.playerPosition, updateGameState]);
 
   const wrappedStartNewGame = useCallback(async () => {
     // Reset opslagvlag voor scorebord zodat nieuwe uitslag later kan worden opgeslagen
     savedRef.current = false;
 
     // Reset alle shake states bij nieuw spel
-    if (visualSettings?.disarmHardSlam) {
-      visualSettings.disarmHardSlam();
+    if (disarmHardSlam) {
+      disarmHardSlam();
     }
 
     const blank: GameState = {
@@ -235,7 +232,7 @@ export default function Game() {
     if (newState) {
       setGameState(newState);
     }
-  }, [setGameState, syncedStartNewGame, visualSettings]);
+  }, [disarmHardSlam, setGameState, syncedStartNewGame]);
 
   // Auto-check for blocked game after each move
   useEffect(() => {
@@ -245,7 +242,7 @@ export default function Game() {
     const anyEmptyHand =
       (gameState.playerHand?.length === 0) ||
       (gameState.playerHands || []).some(h => Array.isArray(h) && h.length === 0);
-    if (anyEmptyHand || (gameState as any).gameEndReason === 'changa') return;
+    if (anyEmptyHand || gameState.gameEndReason === 'changa') return;
     
     const hasValidGameState = gameState.board && Object.keys(gameState.board).length > 0;
     if (!hasValidGameState) return;
@@ -260,9 +257,8 @@ export default function Game() {
       });
 
       // Herhaal guard binnen timeout
-      const stateNow: any = gameState;
-      const anyEmptyNow = (stateNow.playerHand?.length === 0) || (stateNow.playerHands || []).some((h: any) => Array.isArray(h) && h.length === 0);
-      if (anyEmptyNow || stateNow.gameEndReason === 'changa') {
+      const anyEmptyNow = (gameState.playerHand?.length === 0) || (gameState.playerHands || []).some((h) => Array.isArray(h) && h.length === 0);
+      if (anyEmptyNow || gameState.gameEndReason === 'changa') {
         return;
       }
       
@@ -496,21 +492,22 @@ export default function Game() {
         }
 
         const hands = gameState.playerHands || [];
-        const winnerPos = (gameState as any).winner_position !== undefined
-          ? (gameState as any).winner_position
+        const winnerPos = gameState.winner_position !== undefined
+          ? gameState.winner_position
           : hands.findIndex(h => Array.isArray(h) && h.length === 0);
 
-        const winnerUserId = winnerPos >= 0 && (syncState.allPlayers[winnerPos] as any)?.user_id
-          ? (syncState.allPlayers[winnerPos] as any).user_id
+        const winnerUserId = winnerPos >= 0
+          ? (syncState.allPlayers[winnerPos]?.user_id ?? null)
           : null;
 
-        const wonByChanga = (gameState as any).gameEndReason === 'changa';
+        const wonByChanga = gameState.gameEndReason === 'changa';
 
-        const players = syncState.allPlayers.map((p: any, index: number) => {
+        const players: GameOutcomePlayerPayload[] = syncState.allPlayers.flatMap((p, index) => {
+          if (!p.user_id) return []; // sla bots of onbekenden over
+
           const hand = hands[index] || [];
-          const pips_remaining = hand.reduce((sum: number, d: any) => sum + d.value1 + d.value2, 0);
-          if (!p.user_id) return null; // sla bots of onbekenden over
-          return {
+          const pips_remaining = hand.reduce((sum, d) => sum + d.value1 + d.value2, 0);
+          return [{
             user_id: p.user_id,
             player_position: index,
             points_scored: 0,
@@ -519,14 +516,14 @@ export default function Game() {
             hard_slams_used: 0,
             turns_played: 0,
             won_by_changa: index === winnerPos ? wonByChanga : false,
-          };
-        }).filter(Boolean);
+          }];
+        });
 
         const { error } = await supabase.rpc('record_game_outcome', {
           _game_id: syncState.gameData.id,
           _lobby_id: syncState.gameData.lobby_id,
           _winner_user_id: winnerUserId,
-          _is_blocked: (gameState as any).gameEndReason === 'blocked',
+          _is_blocked: gameState.gameEndReason === 'blocked',
           _players: players,
         });
 
@@ -543,11 +540,12 @@ export default function Game() {
             description: wonByChanga ? 'Scorebord bijgewerkt — gewonnen met CHANGA!' : 'Scorebord bijgewerkt.' 
           });
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const description = err instanceof Error ? err.message : 'Onbekende fout bij opslaan.';
         console.error('Result save flow error', err);
         toast({
           title: 'Opslaan mislukt',
-          description: err?.message || 'Onbekende fout bij opslaan.',
+          description,
           variant: 'destructive'
         });
       }
