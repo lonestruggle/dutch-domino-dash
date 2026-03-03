@@ -107,9 +107,10 @@ type GlobalAnimationPatch = Partial<Pick<GlobalSettings, 'rotateX' | 'rotateY' |
 const normalizeGlobalAnimationSettings = (settings: DeviceSpecificGlobalSettings): DeviceSpecificGlobalSettings => {
   const source = settings.desktop || DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop;
   const sharedAnimationValues: GlobalAnimationPatch = {
-    rotateX: source.rotateX,
-    rotateY: source.rotateY,
-    rotateZ: source.rotateZ,
+    // Keep base board orientation flat by default to avoid side-tilted startup.
+    rotateX: DEFAULT_GLOBAL_SETTINGS.rotateX,
+    rotateY: DEFAULT_GLOBAL_SETTINGS.rotateY,
+    rotateZ: DEFAULT_GLOBAL_SETTINGS.rotateZ,
     rotationSpeed: source.rotationSpeed,
     animationDuration: source.animationDuration,
     shakeIntensity: source.shakeIntensity,

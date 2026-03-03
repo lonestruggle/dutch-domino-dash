@@ -4,6 +4,7 @@ import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
+import { cn } from '@/lib/utils';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -407,7 +408,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   rotateZ={(domino.rotationZ !== undefined ? domino.rotationZ : settings.rotateZ)}
                   isShaking={shouldAnimate}
                   onClick={undefined}
-                  className="domino-tile-board board-domino"
+                  className={cn(
+                    "domino-tile-board board-domino",
+                    shouldAnimate && "is-animating"
+                  )}
                   style={{
                     '--individual-angle': `${individualAngle}deg`,
                   } as React.CSSProperties}
