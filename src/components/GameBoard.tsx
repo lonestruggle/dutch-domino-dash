@@ -4,7 +4,6 @@ import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import { cn } from '@/lib/utils';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -403,15 +402,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   orientation={domino.orientation}
                   flipped={domino.flipped}
                   rotation={domino.rotation || 0}
-                  rotateX={(domino.rotationX !== undefined ? domino.rotationX : settings.rotateX)}
-                  rotateY={(domino.rotationY !== undefined ? domino.rotationY : settings.rotateY)}
-                  rotateZ={(domino.rotationZ !== undefined ? domino.rotationZ : settings.rotateZ)}
+                  rotateX={(domino.rotationX !== undefined ? domino.rotationX : 0)}
+                  rotateY={(domino.rotationY !== undefined ? domino.rotationY : 0)}
+                  rotateZ={(domino.rotationZ !== undefined ? domino.rotationZ : 0)}
                   isShaking={shouldAnimate}
                   onClick={undefined}
-                  className={cn(
-                    "domino-tile-board board-domino",
-                    shouldAnimate && "is-animating"
-                  )}
+                  className={`domino-tile-board board-domino${shouldAnimate ? ' is-animating' : ''}`}
                   style={{
                     '--individual-angle': `${individualAngle}deg`,
                   } as React.CSSProperties}

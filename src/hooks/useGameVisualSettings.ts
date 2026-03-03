@@ -107,10 +107,9 @@ type GlobalAnimationPatch = Partial<Pick<GlobalSettings, 'rotateX' | 'rotateY' |
 const normalizeGlobalAnimationSettings = (settings: DeviceSpecificGlobalSettings): DeviceSpecificGlobalSettings => {
   const source = settings.desktop || DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop;
   const sharedAnimationValues: GlobalAnimationPatch = {
-    // Keep base board orientation flat by default to avoid side-tilted startup.
-    rotateX: DEFAULT_GLOBAL_SETTINGS.rotateX,
-    rotateY: DEFAULT_GLOBAL_SETTINGS.rotateY,
-    rotateZ: DEFAULT_GLOBAL_SETTINGS.rotateZ,
+    rotateX: source.rotateX,
+    rotateY: source.rotateY,
+    rotateZ: source.rotateZ,
     rotationSpeed: source.rotationSpeed,
     animationDuration: source.animationDuration,
     shakeIntensity: source.shakeIntensity,
@@ -426,6 +425,8 @@ const useGameVisualSettingsState = () => {
     
     // Clear random seeds
     randomSeedsRef.current = [];
+
+    restoreBoardDominoTransforms();
     
     console.log('🎬 ✅ Animation force stopped and cleaned up');
   };
@@ -449,6 +450,17 @@ const useGameVisualSettingsState = () => {
     };
   };
 
+  const restoreBoardDominoTransforms = () => {
+    const boardDominoes = getBoardDominoElements();
+    boardDominoes.forEach((domino: Element) => {
+      const htmlDomino = domino as HTMLElement;
+      const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
+      const currentTransform = htmlDomino.style.transform || '';
+      const baseTransform = currentTransform.replace(/translate3d\([^)]*\)|rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
+      htmlDomino.style.transform = `${baseTransform} rotateX(0deg) rotateY(0deg) rotateZ(${originalRotationZ}deg)`.trim();
+    });
+  };
+
   // Queue shake to execute after domino placement
   const queueShakeAnimation = () => {
     setPendingShake(true);
@@ -466,7 +478,6 @@ const useGameVisualSettingsState = () => {
   };
 
   const startShakeAnimation = (isOtherPlayerHardSlam = false) => {
-    // Hard Slam from another player should always play, regardless of local permissions.
     return startShakeAnimationDirectWithSettings(undefined, undefined, isOtherPlayerHardSlam);
   };
 
@@ -505,14 +516,6 @@ const useGameVisualSettingsState = () => {
       rotationSpeed: sharedSettings.rotationSpeed,
     };
 
-    if (
-      shakeSettings.rotationAmplitudeX === 0 &&
-      shakeSettings.rotationAmplitudeY === 0 &&
-      shakeSettings.rotationAmplitudeZ === 0
-    ) {
-      return { success: false, message: "Schud-amplitude staat op 0°. Verhoog amplitude om Hard Slam zichtbaar te maken." };
-    }
-
     const boardDominoes = getBoardDominoElements();
     if (boardDominoes.length === 0) {
       setPendingShake(false);
@@ -541,45 +544,50 @@ const useGameVisualSettingsState = () => {
         const progress = elapsedTime / durationInMs;
 
         if (progress < 1) {
-          const wave = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000);
           const decayFactor = Math.pow(1 - progress, 1.5);
-
           const animatedDominoes = getBoardDominoElements();
+
           animatedDominoes.forEach((domino: Element, index: number) => {
             const htmlDomino = domino as HTMLElement;
             const seed = randomSeedsRef.current[index] || (index * 1000);
-            const randomPhaseX = Math.sin(seed * 0.001) * 2 * Math.PI;
-            const randomPhaseY = Math.cos(seed * 0.001) * 2 * Math.PI;
-            const randomPhaseZ = Math.sin(seed * 0.002) * 2 * Math.PI;
+            const phaseX = Math.sin(seed * 0.001) * 2 * Math.PI;
+            const phaseY = Math.cos(seed * 0.001) * 2 * Math.PI;
+            const phaseZ = Math.sin(seed * 0.002) * 2 * Math.PI;
 
-            const waveX = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + randomPhaseX);
-            const waveY = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + randomPhaseY);
-            const waveZ = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + randomPhaseZ);
+            const waveX = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + phaseX);
+            const waveY = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + phaseY);
+            const waveZ = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + phaseZ);
 
             const amplitudeMultX = 0.5 + Math.sin(seed * 0.003);
             const amplitudeMultY = 0.5 + Math.cos(seed * 0.003);
             const amplitudeMultZ = 0.5 + Math.sin(seed * 0.004);
 
             const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
-            const individualX = baseRotationRef.current.X + (shakeSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX * shakeSettings.intensity);
-            const individualY = baseRotationRef.current.Y + (shakeSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY * shakeSettings.intensity);
-            const individualZ = baseRotationRef.current.Z + originalRotationZ + (shakeSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ * shakeSettings.intensity);
+
+            const rotateX = shakeSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX * shakeSettings.intensity;
+            const rotateY = shakeSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY * shakeSettings.intensity;
+            const rotateZ = originalRotationZ + (shakeSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ * shakeSettings.intensity);
+
+            const jitterX = (shakeSettings.intensity * 2.5) * Math.sin(elapsedTime * speedMultiplier * 0.015 + phaseX);
+            const jitterY = (shakeSettings.intensity * 2.5) * Math.cos(elapsedTime * speedMultiplier * 0.015 + phaseY);
 
             const currentTransform = htmlDomino.style.transform || '';
-            const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-            htmlDomino.style.transform = `${baseTransform} rotateX(${individualX}deg) rotateY(${individualY}deg) rotateZ(${individualZ}deg)`.trim();
+            const baseTransform = currentTransform.replace(/translate3d\([^)]*\)|rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
+            htmlDomino.style.transform = `${baseTransform} translate3d(${jitterX}px, ${jitterY}px, 0) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`.trim();
           });
 
           animationRef.current.current = requestAnimationFrame(animate);
           return;
         }
 
+        restoreBoardDominoTransforms();
         setIsAnimating(false);
         setAnimationMode(null);
       };
 
       animationRef.current.stopFunction = () => {
         shouldContinue = false;
+        restoreBoardDominoTransforms();
         setIsAnimating(false);
         setAnimationMode(null);
       };
@@ -713,22 +721,7 @@ const useGameVisualSettingsState = () => {
       animationRef.current.stopFunction();
       animationRef.current.stopFunction = null;
     }
-    
-        // Return to base rotation - reset only board dominoes but keep their original rotation
-        let boardDominoes = document.querySelectorAll('.domino-tile-board');
-        if (boardDominoes.length === 0) {
-          boardDominoes = document.querySelectorAll('.board-domino');
-        }
-        if (boardDominoes.length === 0) {
-          boardDominoes = document.querySelectorAll('.domino-tile');
-        }
-        boardDominoes.forEach((domino: Element) => {
-          const htmlDomino = domino as HTMLElement;
-          const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
-          const currentTransform = htmlDomino.style.transform || '';
-          const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-          htmlDomino.style.transform = `${baseTransform} rotateX(${baseRotationRef.current.X}deg) rotateY(${baseRotationRef.current.Y}deg) rotateZ(${baseRotationRef.current.Z + originalRotationZ}deg)`.trim();
-        });
+    restoreBoardDominoTransforms();
     
     setIsAnimating(false);
     setAnimationMode(null);
@@ -743,21 +736,7 @@ const useGameVisualSettingsState = () => {
       return;
     }
     
-    const currentSettings = allSettings[deviceType];
-    let boardDominoes = document.querySelectorAll('.domino-tile-board');
-    if (boardDominoes.length === 0) {
-      boardDominoes = document.querySelectorAll('.board-domino');
-    }
-    if (boardDominoes.length === 0) {
-      boardDominoes = document.querySelectorAll('.domino-tile');
-    }
-    boardDominoes.forEach((domino: Element) => {
-      const htmlDomino = domino as HTMLElement;
-      const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
-      const currentTransform = htmlDomino.style.transform || '';
-      const baseTransform = currentTransform.replace(/rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-      htmlDomino.style.transform = `${baseTransform} rotateX(${currentSettings.rotateX}deg) rotateY(${currentSettings.rotateY}deg) rotateZ(${currentSettings.rotateZ + originalRotationZ}deg)`.trim();
-    });
+    restoreBoardDominoTransforms();
   };
 
   // Cleanup on unmount
@@ -770,7 +749,7 @@ const useGameVisualSettingsState = () => {
   }, []);
 
   const applyGlobalAnimationPatch = (patch: GlobalAnimationPatch) => {
-    setGlobalSettings(prev => ({
+    setGlobalSettings(prev => normalizeGlobalAnimationSettings({
       desktop: { ...prev.desktop, ...patch },
       tablet: { ...prev.tablet, ...patch },
       mobile: { ...prev.mobile, ...patch },
@@ -785,6 +764,8 @@ const useGameVisualSettingsState = () => {
     const property = `rotate${axis}` as 'rotateX' | 'rotateY' | 'rotateZ';
     
     applyGlobalAnimationPatch({ [property]: clampedValue });
+    
+    // Update base rotation reference for current device
     baseRotationRef.current[axis] = clampedValue;
   };
 
