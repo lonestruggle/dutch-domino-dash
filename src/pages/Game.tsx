@@ -607,6 +607,30 @@ export default function Game() {
       return;
     }
 
+    const hardSlamProfile = gameState.hardSlamAnimationProfile;
+    const hardSlamEndMs = hardSlamProfile
+      ? hardSlamProfile.startedAtMs + hardSlamProfile.duration * 1000 + 120
+      : 0;
+    const hardSlamAnimatingNow =
+      Boolean(gameState.triggerHardSlamAnimation) ||
+      Boolean(gameState.isHardSlamming) ||
+      (hardSlamEndMs > 0 && now < hardSlamEndMs);
+
+    if (hardSlamAnimatingNow) {
+      setBotDebugInfo((prev) => ({
+        ...prev,
+        status: 'waiting-animation',
+        details: `Wachten op Hard Slam animatie (${Math.max(0, hardSlamEndMs - now)}ms)`,
+        isBotTurn: true,
+        currentPlayer: syncState.currentPlayer,
+        controllerPosition: botControllerPosition,
+        turnKey: `${syncState.currentPlayer}:${gameState.nextDominoId}`,
+        boneyardSize: gameState.boneyard.length,
+        updatedAt: Date.now(),
+      }));
+      return;
+    }
+
     const localPlayerData = syncState.allPlayers.find((player) => player.position === syncState.playerPosition);
     if (localPlayerData?.is_bot) {
       setBotDebugInfo((prev) => ({

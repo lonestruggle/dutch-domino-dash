@@ -303,15 +303,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       
-      const pixelCenterX = boardSize / 2 + centerX * GRID_CELL_SIZE * currentScale;
-      const pixelCenterY = boardSize / 2 + centerY * GRID_CELL_SIZE * currentScale;
-      
-      const optimalScrollX = pixelCenterX - containerRect.width / 2;
-      const optimalScrollY = pixelCenterY - containerRect.height / 2;
+      // Scroll coordinates are based on unscaled layout space.
+      // With transform: scale(s), viewport half-size in layout space is container / (2*s).
+      const layoutCenterX = boardSize / 2 + centerX * GRID_CELL_SIZE;
+      const layoutCenterY = boardSize / 2 + centerY * GRID_CELL_SIZE;
+      const viewportHalfWidthInLayout = containerRect.width / (2 * currentScale);
+      const viewportHalfHeightInLayout = containerRect.height / (2 * currentScale);
+
+      const maxScrollLeft = Math.max(0, boardSize - containerRef.current!.clientWidth);
+      const maxScrollTop = Math.max(0, boardSize - containerRef.current!.clientHeight);
+      const optimalScrollX = Math.max(0, Math.min(layoutCenterX - viewportHalfWidthInLayout, maxScrollLeft));
+      const optimalScrollY = Math.max(0, Math.min(layoutCenterY - viewportHalfHeightInLayout, maxScrollTop));
       
       containerRef.current!.scrollTo({
-        left: Math.max(0, optimalScrollX),
-        top: Math.max(0, optimalScrollY),
+        left: optimalScrollX,
+        top: optimalScrollY,
         behavior: 'smooth'
       });
     };
@@ -324,13 +330,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       const firstDomino = Object.values(gameState.dominoes)[0];
-      const firstDominoX = firstDomino.x * GRID_CELL_SIZE * dynamicScale;
-      const firstDominoY = firstDomino.y * GRID_CELL_SIZE * dynamicScale;
+      const firstDominoX = firstDomino.x * GRID_CELL_SIZE;
+      const firstDominoY = firstDomino.y * GRID_CELL_SIZE;
+      const viewportHalfWidthInLayout = containerRef.current.clientWidth / (2 * dynamicScale);
+      const viewportHalfHeightInLayout = containerRef.current.clientHeight / (2 * dynamicScale);
+      const maxScrollLeft = Math.max(0, boardSize - containerRef.current.clientWidth);
+      const maxScrollTop = Math.max(0, boardSize - containerRef.current.clientHeight);
       
       setTimeout(() => {
         containerRef.current?.scrollTo({
-          left: boardSize / 2 + firstDominoX - containerRef.current.clientWidth / 2,
-          top: boardSize / 2 + firstDominoY - containerRef.current.clientHeight / 2,
+          left: Math.max(0, Math.min(boardSize / 2 + firstDominoX - viewportHalfWidthInLayout, maxScrollLeft)),
+          top: Math.max(0, Math.min(boardSize / 2 + firstDominoY - viewportHalfHeightInLayout, maxScrollTop)),
           behavior: 'smooth'
         });
       }, 100);
