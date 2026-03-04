@@ -294,10 +294,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       });
       
       legalMoves.forEach(move => {
-        minX = Math.min(minX, move.x);
-        maxX = Math.max(maxX, move.x + 1);
-        minY = Math.min(minY, move.y);
-        maxY = Math.max(maxY, move.y + 1);
+        const { end, orientation } = move;
+        let { x, y } = end;
+
+        if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
+        if (orientation === "vertical" && end.fromDir === "N") y -= 1;
+
+        const width = orientation === "horizontal" ? 2 : 1;
+        const height = orientation === "vertical" ? 2 : 1;
+
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x + width - 1);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y + height - 1);
       });
       
       const centerX = (minX + maxX) / 2;
