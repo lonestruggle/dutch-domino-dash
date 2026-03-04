@@ -293,22 +293,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         maxY = Math.max(maxY, domino.y + dominoHeight - 1);
       });
       
-      legalMoves.forEach(move => {
-        const { end, orientation } = move;
-        let { x, y } = end;
-
-        if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
-        if (orientation === "vertical" && end.fromDir === "N") y -= 1;
-
-        const width = orientation === "horizontal" ? 2 : 1;
-        const height = orientation === "vertical" ? 2 : 1;
-
-        minX = Math.min(minX, x);
-        maxX = Math.max(maxX, x + width - 1);
-        minY = Math.min(minY, y);
-        maxY = Math.max(maxY, y + height - 1);
-      });
-      
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       
@@ -327,7 +311,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     const timer = setTimeout(checkIfRecenterNeeded, 100);
     return () => clearTimeout(timer);
-  }, [gameState.dominoes, legalMoves, dynamicScale]);
+  }, [gameState.dominoes, dynamicScale]);
 
   // Original PC initial center logic
   useEffect(() => {
