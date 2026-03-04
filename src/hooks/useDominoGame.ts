@@ -584,6 +584,33 @@ export const useDominoGame = (localPlayerPosition?: number) => {
             }
           }
 
+          // Extra anti-clutter regel: een nieuwe steen mag alleen aan de verbindingskant contact maken.
+          // Zo voorkomen we "te dicht op elkaar" leggingen die latere zetten blokkeren.
+          const placementCells = finalOrientation === 'horizontal'
+            ? [[x, y], [x + 1, y]] as const
+            : [[x, y], [x, y + 1]] as const;
+          const placementCellSet = new Set(placementCells.map(([cx, cy]) => `${cx},${cy}`));
+          const hasIllegalSideContact = placementCells.some(([cx, cy]) => {
+            const neighborCells = [
+              [cx, cy - 1],
+              [cx, cy + 1],
+              [cx - 1, cy],
+              [cx + 1, cy],
+            ] as const;
+
+            return neighborCells.some(([nx, ny]) => {
+              const neighborKey = `${nx},${ny}`;
+              if (placementCellSet.has(neighborKey)) return false;
+              if (!currentState.board[neighborKey]) return false;
+              // Toegestaan: exact de ankercel waar deze zet op aansluit.
+              return neighborKey !== fromCellKey;
+            });
+          });
+
+          if (hasIllegalSideContact) {
+            return;
+          }
+
           // Store the valid move but don't add it yet
           validMove = { 
             end, 
