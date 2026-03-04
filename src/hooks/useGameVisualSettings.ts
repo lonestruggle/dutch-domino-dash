@@ -67,19 +67,19 @@ const DEFAULT_PERSONAL_SETTINGS: PersonalSettings = {
 };
 
 const DEFAULT_TRULY_GLOBAL_SETTINGS: TrulyGlobalSettings = {
-  rotationAmplitudeX: 200, // Higher default for better visibility on all devices
-  rotationAmplitudeY: 200, // Higher default for better visibility on all devices
-  rotationAmplitudeZ: 100, // Add Z rotation for more dramatic effect
+  rotationAmplitudeX: -10.6,
+  rotationAmplitudeY: 84.7,
+  rotationAmplitudeZ: 68.8,
 };
 
 const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
-  rotateX: 0,
-  rotateY: 0,
-  rotateZ: 0,
+  rotateX: -15.6,
+  rotateY: 9.8,
+  rotateZ: 65.5,
   rotationSpeed: 5,
-  animationDuration: 2,
-  shakeIntensity: 1.0,
-  shakeDuration: 1.5,
+  animationDuration: 1.3,
+  shakeIntensity: 0.6,
+  shakeDuration: 0.6,
   dominoWidth: 64,
   dominoHeight: 32,
   dominoThickness: 8,
