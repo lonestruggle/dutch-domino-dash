@@ -1,9 +1,10 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { DominoTile } from './DominoTile';
 import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
+import { Hand } from 'lucide-react';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -38,6 +39,17 @@ const getStableAngleFromId = (dominoId: string): number => {
   return 5 + (hash % 1500) / 100; // 5.00 .. 19.99 degrees
 };
 
+const getDominoNumericId = (dominoId: string): number => {
+  const match = dominoId.match(/^d(\d+)$/);
+  return match ? Number(match[1]) : -1;
+};
+
+interface PlaceHandAnimationState {
+  dominoId: string;
+  left: number;
+  top: number;
+}
+
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameState, 
   legalMoves, 
@@ -54,6 +66,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { settings, applyOriginalRotations, isAnimating, animationMode } = useGameVisualSettings();
+  const [placeHandAnimation, setPlaceHandAnimation] = useState<PlaceHandAnimationState | null>(null);
+  const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
+  const lastAnimatedDominoIdRef = useRef<string | null>(null);
   
   // Dynamic grid cell size based on settings - each domino = 2 grid cells
   const GRID_CELL_SIZE = settings.dominoWidth / 2;
@@ -258,6 +273,54 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardSize = calculateBoardSize();
   const dynamicScale = calculateOptimalScale();
 
+  useEffect(() => {
+    const dominoEntries = Object.entries(gameState.dominoes);
+    const dominoCount = dominoEntries.length;
+    const previousCount = prevDominoCountRef.current;
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+    if (dominoCount < previousCount) {
+      lastAnimatedDominoIdRef.current = null;
+      setPlaceHandAnimation(null);
+    } else if (dominoCount === previousCount + 1) {
+      let newestId: string | null = null;
+      let newestDomino: (typeof gameState.dominoes)[string] | null = null;
+      let newestNumericId = -1;
+
+      dominoEntries.forEach(([id, domino]) => {
+        const numericId = getDominoNumericId(id);
+        if (numericId > newestNumericId) {
+          newestNumericId = numericId;
+          newestId = id;
+          newestDomino = domino;
+        }
+      });
+
+      if (newestId && newestDomino && newestId !== lastAnimatedDominoIdRef.current) {
+        const widthCells = newestDomino.orientation === 'horizontal' ? 2 : 1;
+        const heightCells = newestDomino.orientation === 'vertical' ? 2 : 1;
+        const centerX = newestDomino.x + widthCells / 2;
+        const centerY = newestDomino.y + heightCells / 2;
+
+        setPlaceHandAnimation({
+          dominoId: newestId,
+          left: boardSize / 2 + centerX * GRID_CELL_SIZE,
+          top: boardSize / 2 + centerY * GRID_CELL_SIZE,
+        });
+        lastAnimatedDominoIdRef.current = newestId;
+
+        hideTimer = setTimeout(() => {
+          setPlaceHandAnimation((current) => (current?.dominoId === newestId ? null : current));
+        }, 560);
+      }
+    }
+
+    prevDominoCountRef.current = dominoCount;
+    return () => {
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, [gameState.dominoes, boardSize, GRID_CELL_SIZE]);
+
   const getBackgroundImage = (backgroundChoice?: string) => {
     const backgroundMap: { [key: string]: string } = {
       'domino-table-1': dominoTable1,
@@ -409,6 +472,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               </div>
             );
           })}
+
+          {placeHandAnimation && (
+            <div
+              className="absolute pointer-events-none z-[70] -translate-x-1/2 -translate-y-full"
+              style={{
+                left: placeHandAnimation.left,
+                top: placeHandAnimation.top,
+              }}
+            >
+              <Hand className="domino-place-hand h-8 w-8 text-amber-100" strokeWidth={2.5} />
+            </div>
+          )}
 
           {/* Original PC placement target rendering */}
           {legalMoves.map((move, index) => {

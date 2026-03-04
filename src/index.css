@@ -341,6 +341,33 @@
     }
   }
 
+  @keyframes handPlaceMove {
+    0% {
+      opacity: 0;
+      transform: translate3d(72px, 120px, 0) scale(0.84) rotate(-18deg);
+    }
+    20% {
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    }
+    86% {
+      opacity: 1;
+      transform: translate3d(0, 2px, 0) scale(0.94) rotate(-3deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate3d(8px, -20px, 0) scale(0.86) rotate(8deg);
+    }
+  }
+
+  .domino-place-hand {
+    animation: handPlaceMove 560ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    filter: drop-shadow(0 8px 12px rgb(0 0 0 / 0.35));
+  }
+
   /* Mobile-specific styles */
   @media (max-width: 768px) {
     .placement-target:active {
