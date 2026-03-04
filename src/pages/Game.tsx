@@ -73,10 +73,11 @@ export default function Game() {
   const passMoveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hardSlamResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const botTurnExecutionRef = useRef<string | null>(null);
+  const botTurnObservedAtRef = useRef<Record<string, number>>({});
   
   // Hard slam functionality
   const { disarmHardSlam, settings } = useGameVisualSettings();
-  const { makeBotMove } = useBotAI();
+  const { calculateBestMove } = useBotAI();
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
@@ -538,10 +539,6 @@ export default function Game() {
   // One deterministic human client drives bot turns (single authority to avoid duplicate bot moves).
   useEffect(() => {
     if (gameState.isGameOver || !syncState.allPlayers.length) return;
-    if (botControllerPosition === null || syncState.playerPosition !== botControllerPosition) {
-      botTurnExecutionRef.current = null;
-      return;
-    }
 
     const currentPlayerData = syncState.allPlayers.find((player) => player.position === syncState.currentPlayer);
     if (!currentPlayerData?.is_bot) {
@@ -549,14 +546,31 @@ export default function Game() {
       return;
     }
 
+    const localPlayerData = syncState.allPlayers.find((player) => player.position === syncState.playerPosition);
+    if (localPlayerData?.is_bot) return;
+
     const actorPosition = syncState.currentPlayer;
+    const turnIdentity = `${actorPosition}:${gameState.nextDominoId}`;
+    if (!botTurnObservedAtRef.current[turnIdentity]) {
+      botTurnObservedAtRef.current[turnIdentity] = Date.now();
+    }
+    const turnAgeMs = Date.now() - botTurnObservedAtRef.current[turnIdentity];
+    const isDesignatedController = botControllerPosition !== null && syncState.playerPosition === botControllerPosition;
+
+    // Fallback takeover: if designated controller did nothing, any human can execute after delay.
+    if (!isDesignatedController && turnAgeMs < 1800) {
+      return;
+    }
+
     const botHand = gameState.playerHands?.[actorPosition] || [];
     const botTurnKey = `${actorPosition}:${gameState.nextDominoId}:${botHand.length}:${gameState.boneyard.length}`;
     if (botTurnExecutionRef.current === botTurnKey) return;
 
     botTurnExecutionRef.current = botTurnKey;
 
-    const timer = setTimeout(async () => {
+    let cancelled = false;
+
+    const runBotTurn = async () => {
       const latestBotHand = gameState.playerHands?.[actorPosition] || [];
       let legalMovesForBot: MoveWithEffects[] = [];
 
@@ -570,32 +584,59 @@ export default function Game() {
       });
 
       try {
-        await makeBotMove(
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        if (cancelled) return;
+
+        const boneyardSize = gameState.boneyard.length;
+        const difficulty = getBotDifficulty(currentPlayerData.username);
+        const selectedMove = calculateBestMove(
           latestBotHand,
           legalMovesForBot,
-          gameState.boneyard.length,
-          (selectedMove) => wrappedExecuteMove({ ...selectedMove, actorPosition }),
-          () => {
-            void wrappedDrawFromBoneyard(actorPosition);
-          },
-          () => passMove(actorPosition),
-          {
-            difficulty: getBotDifficulty(currentPlayerData.username),
-            thinkingTime: 900,
-          }
+          { difficulty, thinkingTime: 0 }
         );
+
+        if (selectedMove) {
+          wrappedExecuteMove({ ...selectedMove, actorPosition });
+          // Wait for turn advancement; unlock via fallback if sync lags.
+          setTimeout(() => {
+            if (botTurnExecutionRef.current === botTurnKey) {
+              botTurnExecutionRef.current = null;
+            }
+          }, 2500);
+          return;
+        }
+
+        if (boneyardSize > 0) {
+          botTurnExecutionRef.current = null;
+          void wrappedDrawFromBoneyard(actorPosition);
+          return;
+        }
+
+        passMove(actorPosition);
+        setTimeout(() => {
+          if (botTurnExecutionRef.current === botTurnKey) {
+            botTurnExecutionRef.current = null;
+          }
+        }, 2500);
       } catch (error) {
         console.error('❌ Bot move execution failed:', error);
         botTurnExecutionRef.current = null;
       }
-    }, 750);
+    };
 
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => {
+      void runBotTurn();
+    }, 150);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [
     gameHook,
     gameState,
+    calculateBestMove,
     getBotDifficulty,
-    makeBotMove,
     passMove,
     syncState.allPlayers,
     botControllerPosition,
