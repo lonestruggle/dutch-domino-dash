@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import type { GameState, LegalMove, ShakeAnimationProfile } from '@/types/domino';
+import type { GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
 
@@ -73,6 +73,42 @@ const buildConsolidatedState = (
     triggerHardSlamAnimation: currentState.triggerHardSlamAnimation,
     hardSlamAnimationProfile: currentState.hardSlamAnimationProfile,
   };
+};
+
+const getOpenEndAnchorKey = (end: OpenEnd): string | null => {
+  if (typeof end.anchorX === 'number' && typeof end.anchorY === 'number') {
+    return `${end.anchorX},${end.anchorY}`;
+  }
+
+  switch (end.fromDir) {
+    case 'N':
+      return `${end.x},${end.y + 1}`;
+    case 'S':
+      return `${end.x},${end.y - 1}`;
+    case 'W':
+      return `${end.x + 1},${end.y}`;
+    case 'E':
+      return `${end.x - 1},${end.y}`;
+    default:
+      return null;
+  }
+};
+
+const getStrictChainEndValues = (openEnds: OpenEnd[]): [number, number] | null => {
+  const valueByAnchor = new Map<string, number>();
+
+  openEnds.forEach((end) => {
+    const anchorKey = getOpenEndAnchorKey(end);
+    if (!anchorKey) return;
+    if (!valueByAnchor.has(anchorKey)) {
+      valueByAnchor.set(anchorKey, end.value);
+    }
+  });
+
+  // Strict CHANGA rule: only the two real chain ends count.
+  if (valueByAnchor.size !== 2) return null;
+  const values = Array.from(valueByAnchor.values());
+  return [values[0], values[1]];
 };
 
 export default function Game() {
@@ -148,18 +184,21 @@ export default function Game() {
 
     if (isLastStone && move?.dominoData) {
       const currentOpenEnds = gameHook.regenerateOpenEnds(gameState) || [];
-      const endValues = currentOpenEnds.map(e => e.value);
+      const strictEndValues = getStrictChainEndValues(currentOpenEnds);
       const v1 = move.dominoData.value1;
       const v2 = move.dominoData.value2;
 
-      if (v1 === v2) {
-        // Dubbel: CHANGA als er minimaal twee open einden met deze waarde zijn
-        const sameCount = endValues.filter(v => v === v1).length;
-        isChangaCandidate = sameCount >= 2;
-      } else {
-        // Niet-dubbel: CHANGA als beide waardes aanwezig zijn in de open einden
-        const set = new Set(endValues);
-        isChangaCandidate = set.has(v1) && set.has(v2);
+      if (strictEndValues) {
+        const [endA, endB] = strictEndValues;
+        if (v1 === v2) {
+          // Last tile is double: both real ends must match that value.
+          isChangaCandidate = endA === v1 && endB === v1;
+        } else {
+          // Last tile is non-double: its two values must cover the two real ends.
+          isChangaCandidate =
+            (v1 === endA && v2 === endB) ||
+            (v1 === endB && v2 === endA);
+        }
       }
     }
 
