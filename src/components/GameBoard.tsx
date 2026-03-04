@@ -29,6 +29,13 @@ const MAX_SCALE = 1.0;
 const MIN_BOARD_SIZE = 1200;
 const PADDING = 400;
 
+const clampSetting = (value: unknown, fallback: number, min: number, max: number): number => {
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.min(max, Math.max(min, value));
+};
+
 const getStableAngleFromId = (dominoId: string): number => {
   // Stable pseudo-random angle so dominoes don't "jitter" between renders.
   let hash = 0;
@@ -56,7 +63,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const { settings, applyOriginalRotations, isAnimating, animationMode } = useGameVisualSettings();
   
   // Dynamic grid cell size based on settings - each domino = 2 grid cells
-  const GRID_CELL_SIZE = settings.dominoWidth / 2;
+  const safeDominoWidth = clampSetting(settings.dominoWidth, 64, 40, 120);
+  const GRID_CELL_SIZE = safeDominoWidth / 2;
 
 
   // Listen for live settings updates and reapply scaling
@@ -92,9 +100,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
     })();
 
+    const latestDominoScale = clampSetting(latest.dominoScale, 1, 0.5, 2.0);
+    const latestHandDominoScale = clampSetting(latest.handDominoScale, 1, 0.5, 2.0);
+    const latestDominoWidth = clampSetting(latest.dominoWidth, 64, 40, 120);
+    const latestDominoHeight = clampSetting(latest.dominoHeight, 32, 20, 60);
+    const latestDominoThickness = clampSetting(latest.dominoThickness, 8, 4, 16);
     const baseScale = calculateDominoScale();
-    const userScale = latest.dominoScale;
-    const finalScale = baseScale * userScale;
+    const finalScale = baseScale * latestDominoScale;
     const selectedScale = finalScale * 1.05;
     const hoverScale = finalScale;
     
@@ -103,15 +115,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--domino-scale-selected', selectedScale.toString());
     rootElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
     // IMPORTANT: Hand domino scale must be independent from board scale
-    rootElement.style.setProperty('--hand-domino-scale', (latest.handDominoScale || 1).toString());
+    rootElement.style.setProperty('--hand-domino-scale', latestHandDominoScale.toString());
     
     // Apply global domino dimension settings
-    rootElement.style.setProperty('--domino-width', (latest.dominoWidth || 80).toString() + 'px');
-    rootElement.style.setProperty('--domino-height', (latest.dominoHeight || 40).toString() + 'px');
-    rootElement.style.setProperty('--domino-thickness', (latest.dominoThickness || 8).toString() + 'px');
+    rootElement.style.setProperty('--domino-width', `${latestDominoWidth}px`);
+    rootElement.style.setProperty('--domino-height', `${latestDominoHeight}px`);
+    rootElement.style.setProperty('--domino-thickness', `${latestDominoThickness}px`);
     
     // Calculate dynamic double offset for proper centering (based on grid cell size)
-    const doubleOffset = GRID_CELL_SIZE / 2;
+    const doubleOffset = latestDominoWidth / 4;
     rootElement.style.setProperty('--double-offset', `-${doubleOffset}px`);
     
     if (boardRef.current) {

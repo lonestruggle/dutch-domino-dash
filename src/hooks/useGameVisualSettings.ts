@@ -103,6 +103,47 @@ const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
   mobile: { ...DEFAULT_GLOBAL_SETTINGS },
 };
 
+const clampNumber = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const toFiniteNumber = (value: unknown, fallback: number) => {
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
+    return fallback;
+  }
+  return value;
+};
+
+const sanitizePersonalSettings = (candidate: Partial<PersonalSettings> | undefined): PersonalSettings => ({
+  dominoScale: clampNumber(toFiniteNumber(candidate?.dominoScale, DEFAULT_PERSONAL_SETTINGS.dominoScale), 0.5, 2.0),
+  handDominoScale: clampNumber(toFiniteNumber(candidate?.handDominoScale, DEFAULT_PERSONAL_SETTINGS.handDominoScale), 0.5, 2.0),
+  durationAdjustment: clampNumber(toFiniteNumber(candidate?.durationAdjustment, DEFAULT_PERSONAL_SETTINGS.durationAdjustment), -5, 5),
+  speedAdjustment: clampNumber(toFiniteNumber(candidate?.speedAdjustment, DEFAULT_PERSONAL_SETTINGS.speedAdjustment), -30, 30),
+});
+
+const sanitizeGlobalSettings = (candidate: Partial<GlobalSettings> | undefined): GlobalSettings => ({
+  rotateX: clampNumber(toFiniteNumber(candidate?.rotateX, DEFAULT_GLOBAL_SETTINGS.rotateX), -90, 90),
+  rotateY: clampNumber(toFiniteNumber(candidate?.rotateY, DEFAULT_GLOBAL_SETTINGS.rotateY), -90, 90),
+  rotateZ: clampNumber(toFiniteNumber(candidate?.rotateZ, DEFAULT_GLOBAL_SETTINGS.rotateZ), -90, 90),
+  rotationSpeed: clampNumber(toFiniteNumber(candidate?.rotationSpeed, DEFAULT_GLOBAL_SETTINGS.rotationSpeed), 0.1, 10),
+  animationDuration: clampNumber(toFiniteNumber(candidate?.animationDuration, DEFAULT_GLOBAL_SETTINGS.animationDuration), 0.1, 10),
+  shakeIntensity: clampNumber(toFiniteNumber(candidate?.shakeIntensity, DEFAULT_GLOBAL_SETTINGS.shakeIntensity), 0.1, 2.0),
+  shakeDuration: clampNumber(toFiniteNumber(candidate?.shakeDuration, DEFAULT_GLOBAL_SETTINGS.shakeDuration), 0.5, 5.0),
+  dominoWidth: clampNumber(toFiniteNumber(candidate?.dominoWidth, DEFAULT_GLOBAL_SETTINGS.dominoWidth), 40, 120),
+  dominoHeight: clampNumber(toFiniteNumber(candidate?.dominoHeight, DEFAULT_GLOBAL_SETTINGS.dominoHeight), 20, 60),
+  dominoThickness: clampNumber(toFiniteNumber(candidate?.dominoThickness, DEFAULT_GLOBAL_SETTINGS.dominoThickness), 4, 16),
+});
+
+const sanitizeTrulyGlobalSettings = (candidate: Partial<TrulyGlobalSettings> | undefined): TrulyGlobalSettings => ({
+  rotationAmplitudeX: clampNumber(toFiniteNumber(candidate?.rotationAmplitudeX, DEFAULT_TRULY_GLOBAL_SETTINGS.rotationAmplitudeX), -1000, 1000),
+  rotationAmplitudeY: clampNumber(toFiniteNumber(candidate?.rotationAmplitudeY, DEFAULT_TRULY_GLOBAL_SETTINGS.rotationAmplitudeY), -1000, 1000),
+  rotationAmplitudeZ: clampNumber(toFiniteNumber(candidate?.rotationAmplitudeZ, DEFAULT_TRULY_GLOBAL_SETTINGS.rotationAmplitudeZ), -1000, 1000),
+});
+
+const sanitizeGameVisualSettings = (candidate: Partial<GameVisualSettings> | undefined): GameVisualSettings => ({
+  ...sanitizePersonalSettings(candidate),
+  ...sanitizeGlobalSettings(candidate),
+  ...sanitizeTrulyGlobalSettings(candidate),
+});
+
 type GlobalAnimationPatch = Partial<Pick<GlobalSettings, 'rotateX' | 'rotateY' | 'rotateZ' | 'rotationSpeed' | 'animationDuration' | 'shakeIntensity' | 'shakeDuration'>>;
 type StartShakeOptions = boolean | {
   isOtherPlayerHardSlam?: boolean;
@@ -166,20 +207,28 @@ const useGameVisualSettingsState = () => {
       console.log('🔧 Loading personal settings with key:', storageKey, 'user:', user?.id);
       const stored = localStorage.getItem(storageKey);
       if (stored) {
-        const parsed = JSON.parse(stored);
+        const parsed = JSON.parse(stored) as Partial<DeviceSpecificPersonalSettings>;
         const merged = {
-          desktop: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.desktop, ...parsed.desktop },
-          tablet: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.tablet, ...parsed.tablet },
-          mobile: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...parsed.mobile },
+          desktop: sanitizePersonalSettings({ ...DEFAULT_DEVICE_PERSONAL_SETTINGS.desktop, ...parsed.desktop }),
+          tablet: sanitizePersonalSettings({ ...DEFAULT_DEVICE_PERSONAL_SETTINGS.tablet, ...parsed.tablet }),
+          mobile: sanitizePersonalSettings({ ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...parsed.mobile }),
         };
         console.log('🔧 Loaded personal settings:', merged);
         return merged;
       }
       console.log('🔧 No personal settings found, using defaults');
-      return DEFAULT_DEVICE_PERSONAL_SETTINGS;
+      return {
+        desktop: sanitizePersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS.desktop),
+        tablet: sanitizePersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS.tablet),
+        mobile: sanitizePersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile),
+      };
     } catch {
       console.log('🔧 Error loading personal settings, using defaults');
-      return DEFAULT_DEVICE_PERSONAL_SETTINGS;
+      return {
+        desktop: sanitizePersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS.desktop),
+        tablet: sanitizePersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS.tablet),
+        mobile: sanitizePersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile),
+      };
     }
   };
   
@@ -189,20 +238,28 @@ const useGameVisualSettingsState = () => {
       console.log('🌍 Loading GLOBAL settings with key:', storageKey);
       const stored = localStorage.getItem(storageKey);
       if (stored) {
-        const parsed = JSON.parse(stored);
+        const parsed = JSON.parse(stored) as Partial<DeviceSpecificGlobalSettings>;
         const merged = normalizeGlobalAnimationSettings({
-          desktop: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop, ...parsed.desktop },
-          tablet: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet, ...parsed.tablet },
-          mobile: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile, ...parsed.mobile },
+          desktop: sanitizeGlobalSettings({ ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop, ...parsed.desktop }),
+          tablet: sanitizeGlobalSettings({ ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet, ...parsed.tablet }),
+          mobile: sanitizeGlobalSettings({ ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile, ...parsed.mobile }),
         });
         console.log('🌍 Loaded GLOBAL settings:', merged);
         return merged;
       }
       console.log('🌍 No global settings found, using defaults');
-      return normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
+      return normalizeGlobalAnimationSettings({
+        desktop: sanitizeGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop),
+        tablet: sanitizeGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet),
+        mobile: sanitizeGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile),
+      });
     } catch {
       console.log('🌍 Error loading global settings, using defaults');
-      return normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
+      return normalizeGlobalAnimationSettings({
+        desktop: sanitizeGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop),
+        tablet: sanitizeGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet),
+        mobile: sanitizeGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile),
+      });
     }
   };
 
@@ -212,16 +269,16 @@ const useGameVisualSettingsState = () => {
       console.log('🌎 Loading TRULY GLOBAL settings with key:', storageKey);
       const stored = localStorage.getItem(storageKey);
       if (stored) {
-        const parsed = JSON.parse(stored);
-        const merged = { ...DEFAULT_TRULY_GLOBAL_SETTINGS, ...parsed };
+        const parsed = JSON.parse(stored) as Partial<TrulyGlobalSettings>;
+        const merged = sanitizeTrulyGlobalSettings({ ...DEFAULT_TRULY_GLOBAL_SETTINGS, ...parsed });
         console.log('🌎 Loaded TRULY GLOBAL settings:', merged);
         return merged;
       }
       console.log('🌎 No truly global settings found, using defaults');
-      return DEFAULT_TRULY_GLOBAL_SETTINGS;
+      return sanitizeTrulyGlobalSettings(DEFAULT_TRULY_GLOBAL_SETTINGS);
     } catch {
       console.log('🌎 Error loading truly global settings, using defaults');
-      return DEFAULT_TRULY_GLOBAL_SETTINGS;
+      return sanitizeTrulyGlobalSettings(DEFAULT_TRULY_GLOBAL_SETTINGS);
     }
   };
   
@@ -330,7 +387,7 @@ const useGameVisualSettingsState = () => {
 
   // Broadcast and apply live visual settings globally on any change
   useEffect(() => {
-    const currentSettings = allSettings[deviceType];
+    const currentSettings = sanitizeGameVisualSettings(allSettings[deviceType]);
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).__dominoSettings = currentSettings;
@@ -345,7 +402,7 @@ const useGameVisualSettingsState = () => {
   }, [allSettings, deviceType]);
 
   // Current device settings
-  const settings = allSettings[deviceType];
+  const settings = sanitizeGameVisualSettings(allSettings[deviceType]);
 
   const updateDominoScale = (scale: number, targetDevice?: DeviceType) => {
     const clampedScale = Math.max(0.5, Math.min(2.0, scale));
@@ -411,7 +468,7 @@ const useGameVisualSettingsState = () => {
   };
 
   const getSettingsForDevice = (device: DeviceType) => {
-    return allSettings[device] || DEFAULT_DEVICE_SETTINGS[device];
+    return sanitizeGameVisualSettings(allSettings[device] || DEFAULT_DEVICE_SETTINGS[device]);
   };
 
   // Animation functions met exacte logica uit DominoTileDemo
