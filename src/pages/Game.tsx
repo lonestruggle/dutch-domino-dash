@@ -1,5 +1,5 @@
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { DominoGame } from '@/components/DominoGame';
 import { useDominoGame } from '@/hooks/useDominoGame';
@@ -527,9 +527,21 @@ export default function Game() {
     return 'medium';
   }, []);
 
-  // Host drives bot turns in multiplayer (single authority to avoid duplicate bot moves).
+  const botControllerPosition = useMemo(() => {
+    const humanPositions = syncState.allPlayers
+      .filter((player) => !player.is_bot)
+      .map((player) => player.position)
+      .sort((a, b) => a - b);
+    return humanPositions.length > 0 ? humanPositions[0] : null;
+  }, [syncState.allPlayers]);
+
+  // One deterministic human client drives bot turns (single authority to avoid duplicate bot moves).
   useEffect(() => {
-    if (!syncState.isHost || gameState.isGameOver || !syncState.allPlayers.length) return;
+    if (gameState.isGameOver || !syncState.allPlayers.length) return;
+    if (botControllerPosition === null || syncState.playerPosition !== botControllerPosition) {
+      botTurnExecutionRef.current = null;
+      return;
+    }
 
     const currentPlayerData = syncState.allPlayers.find((player) => player.position === syncState.currentPlayer);
     if (!currentPlayerData?.is_bot) {
@@ -586,8 +598,9 @@ export default function Game() {
     makeBotMove,
     passMove,
     syncState.allPlayers,
+    botControllerPosition,
     syncState.currentPlayer,
-    syncState.isHost,
+    syncState.playerPosition,
     wrappedDrawFromBoneyard,
     wrappedExecuteMove,
   ]);
