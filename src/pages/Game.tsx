@@ -94,23 +94,6 @@ const getOpenEndAnchorKey = (end: OpenEnd): string | null => {
   }
 };
 
-const getStrictChainEndValues = (openEnds: OpenEnd[]): [number, number] | null => {
-  const valueByAnchor = new Map<string, number>();
-
-  openEnds.forEach((end) => {
-    const anchorKey = getOpenEndAnchorKey(end);
-    if (!anchorKey) return;
-    if (!valueByAnchor.has(anchorKey)) {
-      valueByAnchor.set(anchorKey, end.value);
-    }
-  });
-
-  // Strict CHANGA rule: only the two real chain ends count.
-  if (valueByAnchor.size !== 2) return null;
-  const values = Array.from(valueByAnchor.values());
-  return [values[0], values[1]];
-};
-
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
@@ -183,22 +166,25 @@ export default function Game() {
     let isChangaCandidate = false;
 
     if (isLastStone && move?.dominoData) {
-      const currentOpenEnds = gameHook.regenerateOpenEnds(gameState) || [];
-      const strictEndValues = getStrictChainEndValues(currentOpenEnds);
-      const v1 = move.dominoData.value1;
-      const v2 = move.dominoData.value2;
+      const legalMovesForLastStone = gameHook.findLegalMoves(move.dominoData) || [];
+      const nonForcedAnchors = new Set<string>();
 
-      if (strictEndValues) {
-        const [endA, endB] = strictEndValues;
-        if (v1 === v2) {
-          // Last tile is double: both real ends must match that value.
-          isChangaCandidate = endA === v1 && endB === v1;
-        } else {
-          // Last tile is non-double: its two values must cover the two real ends.
-          isChangaCandidate =
-            (v1 === endA && v2 === endB) ||
-            (v1 === endB && v2 === endA);
-        }
+      legalMovesForLastStone.forEach((candidateMove) => {
+        if (candidateMove.end.forced) return;
+        const anchorKey = getOpenEndAnchorKey(candidateMove.end);
+        if (anchorKey) nonForcedAnchors.add(anchorKey);
+      });
+
+      // Fallback for edge cases where only forced endpoints are emitted.
+      if (nonForcedAnchors.size > 0) {
+        isChangaCandidate = nonForcedAnchors.size >= 2;
+      } else {
+        const allAnchors = new Set<string>();
+        legalMovesForLastStone.forEach((candidateMove) => {
+          const anchorKey = getOpenEndAnchorKey(candidateMove.end);
+          if (anchorKey) allAnchors.add(anchorKey);
+        });
+        isChangaCandidate = allAnchors.size >= 2;
       }
     }
 
