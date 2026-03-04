@@ -608,13 +608,16 @@ export default function Game() {
     }
 
     const hardSlamProfile = gameState.hardSlamAnimationProfile;
-    const hardSlamEndMs = hardSlamProfile
-      ? hardSlamProfile.startedAtMs + hardSlamProfile.duration * 1000 + 120
-      : 0;
-    const hardSlamAnimatingNow =
-      Boolean(gameState.triggerHardSlamAnimation) ||
-      Boolean(gameState.isHardSlamming) ||
-      (hardSlamEndMs > 0 && now < hardSlamEndMs);
+    const hasUsableHardSlamProfile = Boolean(
+      hardSlamProfile &&
+      Number.isFinite(hardSlamProfile.startedAtMs) &&
+      Number.isFinite(hardSlamProfile.duration)
+    );
+    const hardSlamDurationMs = hasUsableHardSlamProfile ? Math.max(0, hardSlamProfile!.duration * 1000) : 0;
+    const hardSlamEndMs = hasUsableHardSlamProfile ? hardSlamProfile!.startedAtMs + hardSlamDurationMs + 120 : 0;
+    const hardSlamFlagsActive = Boolean(gameState.triggerHardSlamAnimation) || Boolean(gameState.isHardSlamming);
+    // Prevent stale DB flags from locking bots forever once the profile window has ended.
+    const hardSlamAnimatingNow = hasUsableHardSlamProfile ? now < hardSlamEndMs : hardSlamFlagsActive;
 
     if (hardSlamAnimatingNow) {
       setBotDebugInfo((prev) => ({
