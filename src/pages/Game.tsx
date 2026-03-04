@@ -86,6 +86,8 @@ export default function Game() {
   const hardSlamResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const botTurnExecutionRef = useRef<string | null>(null);
   const botTurnObservedAtRef = useRef<Record<string, number>>({});
+  const botAwaitingTurnAdvanceRef = useRef<{ player: number | null; until: number }>({ player: null, until: 0 });
+  const botCooldownUntilRef = useRef<number>(0);
   const [botDebugInfo, setBotDebugInfo] = useState<BotDebugInfo>({
     status: 'init',
     details: 'Bot debug gestart',
@@ -561,6 +563,8 @@ export default function Game() {
 
   // One deterministic human client drives bot turns (single authority to avoid duplicate bot moves).
   useEffect(() => {
+    const now = Date.now();
+
     if (gameState.isGameOver || !syncState.allPlayers.length) {
       setBotDebugInfo((prev) => ({
         ...prev,
@@ -575,6 +579,14 @@ export default function Game() {
         updatedAt: Date.now(),
       }));
       return;
+    }
+
+    // Release "await turn advance" lock as soon as turn changed.
+    if (
+      botAwaitingTurnAdvanceRef.current.player !== null &&
+      syncState.currentPlayer !== botAwaitingTurnAdvanceRef.current.player
+    ) {
+      botAwaitingTurnAdvanceRef.current = { player: null, until: 0 };
     }
 
     const currentPlayerData = syncState.allPlayers.find((player) => player.position === syncState.currentPlayer);
@@ -631,6 +643,39 @@ export default function Game() {
         controllerPosition: botControllerPosition,
         turnKey: turnIdentity,
         legalMoves: 0,
+        boneyardSize: gameState.boneyard.length,
+        updatedAt: Date.now(),
+      }));
+      return;
+    }
+
+    if (
+      botAwaitingTurnAdvanceRef.current.player === actorPosition &&
+      now < botAwaitingTurnAdvanceRef.current.until
+    ) {
+      setBotDebugInfo((prev) => ({
+        ...prev,
+        status: 'awaiting-turn-advance',
+        details: `Wachten op turn switch (${botAwaitingTurnAdvanceRef.current.until - now}ms)`,
+        isBotTurn: true,
+        currentPlayer: syncState.currentPlayer,
+        controllerPosition: botControllerPosition,
+        turnKey: turnIdentity,
+        boneyardSize: gameState.boneyard.length,
+        updatedAt: Date.now(),
+      }));
+      return;
+    }
+
+    if (now < botCooldownUntilRef.current) {
+      setBotDebugInfo((prev) => ({
+        ...prev,
+        status: 'cooldown',
+        details: `Bot cooldown (${botCooldownUntilRef.current - now}ms)`,
+        isBotTurn: true,
+        currentPlayer: syncState.currentPlayer,
+        controllerPosition: botControllerPosition,
+        turnKey: turnIdentity,
         boneyardSize: gameState.boneyard.length,
         updatedAt: Date.now(),
       }));
@@ -708,30 +753,29 @@ export default function Game() {
         }));
 
         if (selectedMove) {
+          botCooldownUntilRef.current = Date.now() + 900;
+          botAwaitingTurnAdvanceRef.current = { player: actorPosition, until: Date.now() + 2600 };
+          botTurnExecutionRef.current = null;
+
           wrappedExecuteMove({ ...selectedMove, actorPosition });
-          setTimeout(() => {
-            if (botTurnExecutionRef.current === botTurnKey) {
-              botTurnExecutionRef.current = null;
-            }
-          }, 2500);
           return;
         }
 
         if (boneyardSize > 0) {
+          botCooldownUntilRef.current = Date.now() + 900;
           botTurnExecutionRef.current = null;
           void wrappedDrawFromBoneyard(actorPosition);
           return;
         }
 
+        botCooldownUntilRef.current = Date.now() + 900;
+        botAwaitingTurnAdvanceRef.current = { player: actorPosition, until: Date.now() + 2600 };
+        botTurnExecutionRef.current = null;
         passMove(actorPosition);
-        setTimeout(() => {
-          if (botTurnExecutionRef.current === botTurnKey) {
-            botTurnExecutionRef.current = null;
-          }
-        }, 2500);
       } catch (error) {
         console.error('❌ Bot move execution failed:', error);
         botTurnExecutionRef.current = null;
+        botCooldownUntilRef.current = Date.now() + 700;
         setBotDebugInfo((prev) => ({
           ...prev,
           status: 'error',
