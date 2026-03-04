@@ -15,7 +15,7 @@ const shuffleArray = <T>(array: T[]): void => {
   }
 };
 
-export const useDominoGame = () => {
+export const useDominoGame = (localPlayerPosition?: number) => {
   const { settings } = useGameVisualSettings();
   const { toast } = useToast();
   const [gameState, setGameState] = useState<GameState>({
@@ -656,6 +656,7 @@ export const useDominoGame = () => {
 
   const executeMove = useCallback((move: LegalMove) => {
     const { index, end, dominoData, flipped, orientation } = move;
+    const actorPosition = move.actorPosition;
     if (index === undefined) {
       return;
     }
@@ -766,8 +767,31 @@ export const useDominoGame = () => {
 
       const newSpinnerId = (!prev.spinnerId && isDouble(dominoData)) ? id : prev.spinnerId;
 
-      const newPlayerHand = [...prev.playerHand];
-      newPlayerHand.splice(index, 1);
+      const usePlayerHands = Array.isArray(prev.playerHands);
+      const hasActorPosition = usePlayerHands && typeof actorPosition === 'number';
+      const activeHand = hasActorPosition
+        ? [...(prev.playerHands?.[actorPosition] || [])]
+        : [...prev.playerHand];
+
+      if (index < 0 || index >= activeHand.length) {
+        console.warn('❌ executeMove aborted: invalid hand index for active player', {
+          index,
+          actorPosition,
+          handLength: activeHand.length
+        });
+        return prev;
+      }
+
+      activeHand.splice(index, 1);
+
+      const nextPlayerHands = usePlayerHands ? [...(prev.playerHands || [])] : undefined;
+      if (nextPlayerHands && hasActorPosition) {
+        nextPlayerHands[actorPosition] = activeHand;
+      }
+
+      const newPlayerHand = nextPlayerHands && typeof localPlayerPosition === 'number'
+        ? [...(nextPlayerHands[localPlayerPosition] || prev.playerHand)]
+        : (hasActorPosition ? [...prev.playerHand] : activeHand);
 
       // COLLISION DETECTION - Genereer rotatie die geen overlaps veroorzaakt
       const getRotationWithoutOverlap = () => {
@@ -865,7 +889,7 @@ export const useDominoGame = () => {
       });
 
       // Check for win condition - if player has no more dominoes
-      const isGameWon = newPlayerHand.length === 0;
+      const isGameWon = activeHand.length === 0;
       
       // Create normal state
       const newState = {
@@ -874,6 +898,7 @@ export const useDominoGame = () => {
         board: newBoard,
         forbiddens: newForbiddens,
         spinnerId: newSpinnerId,
+        playerHands: nextPlayerHands || prev.playerHands,
         playerHand: newPlayerHand,
         selectedHandIndex: null,
         nextDominoId: prev.nextDominoId + 1,
@@ -897,9 +922,9 @@ export const useDominoGame = () => {
       
       return newState;
     });
-  }, [regenerateOpenEnds, checkBlockedGame]);
+  }, [checkBlockedGame, localPlayerPosition, regenerateOpenEnds]);
 
-  const drawFromBoneyard = useCallback(() => {
+  const drawFromBoneyard = useCallback((actorPosition?: number) => {
     console.log('🎯 LOCAL DRAW START - boneyard size:', gameStateRef.current.boneyard.length);
     console.log('🎯 LOCAL DRAW START - hand size:', gameStateRef.current.playerHand.length);
     
@@ -915,11 +940,16 @@ export const useDominoGame = () => {
       
       // Draw a domino from the boneyard
       const drawnDomino = prev.boneyard[prev.boneyard.length - 1];
-      const newPlayerHand = [...prev.playerHand, drawnDomino];
+      const usePlayerHands = Array.isArray(prev.playerHands);
+      const hasActorPosition = usePlayerHands && typeof actorPosition === 'number';
+      const activeHand = hasActorPosition
+        ? [...(prev.playerHands?.[actorPosition] || [])]
+        : [...prev.playerHand];
+      const newActiveHand = [...activeHand, drawnDomino];
       const newBoneyard = prev.boneyard.slice(0, -1);
       
       console.log('🎯 Drawn domino:', drawnDomino);
-      console.log('🔥 After draw - hand size:', newPlayerHand.length);
+      console.log('🔥 After draw - hand size:', newActiveHand.length);
       console.log('🔥 After draw - boneyard size:', newBoneyard.length);
       
       // Check if the newly drawn domino can be played
@@ -927,13 +957,24 @@ export const useDominoGame = () => {
       const canPlay = openEnds.some(end => 
         drawnDomino.value1 === end.value || drawnDomino.value2 === end.value
       );
-      
-      // If the drawn domino can be played, auto-select it
-      const selectedIndex = canPlay ? newPlayerHand.length - 1 : prev.selectedHandIndex;
+
+      const nextPlayerHands = usePlayerHands ? [...(prev.playerHands || [])] : undefined;
+      if (nextPlayerHands && hasActorPosition) {
+        nextPlayerHands[actorPosition] = newActiveHand;
+      }
+
+      const newPlayerHand = nextPlayerHands && typeof localPlayerPosition === 'number'
+        ? [...(nextPlayerHands[localPlayerPosition] || prev.playerHand)]
+        : (hasActorPosition ? [...prev.playerHand] : newActiveHand);
+
+      // If the drawn domino can be played, auto-select it for local player only
+      const actorIsLocal = !hasActorPosition || actorPosition === localPlayerPosition;
+      const selectedIndex = canPlay && actorIsLocal ? newActiveHand.length - 1 : prev.selectedHandIndex;
       
       const newState = {
         ...prev,
         playerHand: newPlayerHand,
+        playerHands: nextPlayerHands || prev.playerHands,
         boneyard: newBoneyard,
         selectedHandIndex: selectedIndex,
         // Don't change current player - only change when a domino is actually played
@@ -942,14 +983,14 @@ export const useDominoGame = () => {
       // After drawing, check if the game is blocked (no boneyard left and no valid moves)
       // BUT ONLY if there are actually dominoes on the board (game has started)
       const boardHasDominoes = Object.keys(prev.board).length > 0;
-      const allHands = prev.playerHands || [newPlayerHand];
+      const allHands = (nextPlayerHands && nextPlayerHands.length > 0) ? nextPlayerHands : [newPlayerHand];
       const isBlocked = boardHasDominoes && checkBlockedGame(openEnds, prev.board, allHands, newBoneyard);
       newState.isGameOver = isBlocked;
       
       console.log('✅ LOCAL DRAW COMPLETE - returning new state');
       return newState;
     });
-  }, [regenerateOpenEnds, checkBlockedGame]);
+  }, [checkBlockedGame, localPlayerPosition, regenerateOpenEnds]);
 
   const selectHandDomino = useCallback((index: number) => {
     setGameState(prev => ({

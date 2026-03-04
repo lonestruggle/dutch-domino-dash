@@ -14,6 +14,7 @@ import { Trophy, PartyPopper, Star, Eye, ArrowLeft, Grid3X3, Menu, X } from 'luc
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
 import type { DominoData, ShakeAnimationProfile } from '@/types/domino';
 
@@ -26,6 +27,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const isMobile = useIsMobile();
   const { startShakeAnimation } = useGameVisualSettings();
   const { canHardSlam } = useUserPermissions();
+  const { isAdmin } = useUserRoles();
   
   const {
     gameState,
@@ -299,6 +301,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     }
   };
 
+  const isDevMode = import.meta.env.DEV;
+  const showDevLockstepInfo = isDevMode || isAdmin;
+  const activeHardSlamProfile = gameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
+  const hardSlamPhaseMs = activeHardSlamProfile ? Math.max(0, Date.now() - activeHardSlamProfile.startedAtMs) : 0;
+
   return (
     <div className="min-h-screen bg-background p-2 md:p-4">
       <div className="max-w-6xl mx-auto space-y-3 md:space-y-6">
@@ -362,6 +369,21 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             </div>
           </div>
         </Card>
+
+        {showDevLockstepInfo && activeHardSlamProfile && (
+          <Card className="border-dashed border-amber-400 bg-amber-50/70 p-3">
+            <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-amber-900">
+              <span>DEV LOCKSTEP</span>
+              <span className="rounded bg-amber-200 px-1.5 py-0.5">Hard Slam</span>
+            </div>
+            <div className="grid gap-1 text-[11px] text-amber-900/90 md:grid-cols-2">
+              <div><strong>Event:</strong> {activeHardSlamProfile.eventId}</div>
+              <div><strong>Seed:</strong> {activeHardSlamProfile.seed}</div>
+              <div><strong>Server start:</strong> {new Date(activeHardSlamProfile.startedAtMs).toLocaleTimeString()}</div>
+              <div><strong>Local phase:</strong> {hardSlamPhaseMs} ms</div>
+            </div>
+          </Card>
+        )}
 
         {/* Players List */}
         <Card className={isMobile ? "p-3" : "p-4"}>

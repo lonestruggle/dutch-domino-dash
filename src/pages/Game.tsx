@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { DominoGame } from '@/components/DominoGame';
 import { useDominoGame } from '@/hooks/useDominoGame';
 import { PersistedGameState, useSyncedDominoGameState } from '@/hooks/useSyncedDominoGameState';
+import { useBotAI } from '@/hooks/useBotAI';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -26,11 +27,19 @@ interface GameOutcomePlayerPayload {
 const buildConsolidatedState = (
   remoteState: PersistedGameState | null,
   currentState: GameState,
-  myPos: number
+  myPos: number,
+  actorPos?: number
 ): PersistedGameState => {
   const remote = remoteState ?? ({} as PersistedGameState);
-  const nextHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
-  nextHands[myPos] = currentState.playerHand || [];
+  const remoteHands = Array.isArray(remote.playerHands) ? [...remote.playerHands] : [];
+  const nextHands = Array.isArray(currentState.playerHands) ? [...currentState.playerHands] : remoteHands;
+  const effectiveActor = typeof actorPos === 'number' ? actorPos : myPos;
+
+  if (!Array.isArray(currentState.playerHands)) {
+    nextHands[effectiveActor] = currentState.playerHand || [];
+  }
+
+  const localPlayerHand = nextHands[myPos] || currentState.playerHand || [];
 
   return {
     ...remote,
@@ -42,7 +51,7 @@ const buildConsolidatedState = (
     nextDominoId: currentState.nextDominoId,
     spinnerId: currentState.spinnerId,
     isGameOver: currentState.isGameOver,
-    playerHand: currentState.playerHand,
+    playerHand: localPlayerHand,
     playerHands: nextHands,
     gameEndReason: currentState.gameEndReason,
     winner_position: currentState.winner_position,
@@ -63,15 +72,17 @@ export default function Game() {
   const drawSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const passMoveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hardSlamResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const botTurnExecutionRef = useRef<string | null>(null);
   
   // Hard slam functionality
   const { disarmHardSlam, settings } = useGameVisualSettings();
+  const { makeBotMove } = useBotAI();
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
   
   // Use the domino game hook with shake animation support
-  const gameHook = useDominoGame();
+  const gameHook = useDominoGame(syncState.playerPosition);
   const { gameState, setGameState } = gameHook;
 
   // Ref om Changa-detectie te markeren tussen pre- en post-move
@@ -98,13 +109,15 @@ export default function Game() {
   // Wrap local actions and then sync - SINGLE CONSOLIDATED UPDATE
   const wrappedExecuteMove = useCallback((move: MoveWithEffects) => {
     console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
+    const actorPosition = typeof move.actorPosition === 'number' ? move.actorPosition : syncState.currentPlayer;
+    console.log('🎯 Acting player position:', actorPosition);
     console.log('🔥 localHardSlamActive:', move?.localHardSlamActive);
     
     // Turn validation removed - database controls turns completely now
     
     // Pre-move: detecteer CHANGA (ook bij dubbel)
-    const myHand = gameState.playerHand || [];
-    const isLastStone = myHand.length === 1;
+    const actorHand = gameState.playerHands?.[actorPosition] || (actorPosition === syncState.playerPosition ? gameState.playerHand : []);
+    const isLastStone = actorHand.length === 1;
     let isChangaCandidate = false;
 
     if (isLastStone && move?.dominoData) {
@@ -154,13 +167,13 @@ export default function Game() {
     }
 
     // Execute the move locally
-    gameHook.executeMove(move);
+    gameHook.executeMove({ ...move, actorPosition });
     
     if (!syncState.allPlayers.length) return;
 
-    // Calculate next player turn - use playerPosition to ensure consistent turn advancement
-    const nextPlayerTurn = (syncState.playerPosition + 1) % syncState.allPlayers.length;
-    console.log('🎯 Advancing turn from', syncState.playerPosition, 'to', nextPlayerTurn);
+    // Calculate next player turn using the actual acting player (human or bot).
+    const nextPlayerTurn = (actorPosition + 1) % syncState.allPlayers.length;
+    console.log('🎯 Advancing turn from', actorPosition, 'to', nextPlayerTurn);
 
     // SINGLE CONSOLIDATED DATABASE UPDATE - capture fresh state
     if (executeMoveSyncTimeoutRef.current) {
@@ -175,7 +188,7 @@ export default function Game() {
         // Prepare consolidated state with turn advancement
         const myPos = syncState.playerPosition || 0;
         let finalState: PersistedGameState = {
-          ...buildConsolidatedState(syncState.gameState, currentState, myPos),
+          ...buildConsolidatedState(syncState.gameState, currentState, myPos, actorPosition),
           // Reset hard slam game logic after domino placement
           isHardSlamming: false,
           triggerHardSlamAnimation: Boolean(move?.localHardSlamActive),
@@ -189,9 +202,12 @@ export default function Game() {
             ...finalState,
             isGameOver: true,
             gameEndReason: 'changa',
-            winner_position: myPos
+            winner_position: actorPosition
           };
-          toast({ title: 'CHANGA!', description: 'Je hebt gewonnen met CHANGA!' });
+          const winnerLabel = actorPosition === syncState.playerPosition
+            ? 'Je hebt gewonnen met CHANGA!'
+            : `${syncState.allPlayers[actorPosition]?.username || 'Een speler'} won met CHANGA!`;
+          toast({ title: 'CHANGA!', description: winnerLabel });
           changaRef.current = false;
         }
 
@@ -201,13 +217,14 @@ export default function Game() {
         return currentState; // Return current state to avoid double setting
       });
     }, 150); // Slightly longer delay for better state consistency
-  }, [gameHook, gameState, setGameState, settings.rotationAmplitudeX, settings.rotationAmplitudeY, settings.rotationAmplitudeZ, settings.rotationSpeed, settings.shakeDuration, settings.shakeIntensity, syncState.allPlayers.length, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
+  }, [gameHook, gameState, setGameState, settings.rotationAmplitudeX, settings.rotationAmplitudeY, settings.rotationAmplitudeZ, settings.rotationSpeed, settings.shakeDuration, settings.shakeIntensity, syncState.allPlayers, syncState.allPlayers.length, syncState.currentPlayer, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
 
-  const wrappedDrawFromBoneyard = useCallback(async () => {
+  const wrappedDrawFromBoneyard = useCallback(async (actorPosition?: number) => {
     console.log('🎲 Draw from boneyard - turn validation removed, database controls turns');
+    const actingPosition = typeof actorPosition === 'number' ? actorPosition : syncState.currentPlayer;
 
     // Execute draw locally - database will validate turn
-    gameHook.drawFromBoneyard();
+    gameHook.drawFromBoneyard(actingPosition);
     
     // Keep current turn after drawing from boneyard
     if (drawSyncTimeoutRef.current) {
@@ -221,7 +238,7 @@ export default function Game() {
         
         // Prepare consolidated state
         const myPos = syncState.playerPosition || 0;
-        const finalState = buildConsolidatedState(syncState.gameState, currentState, myPos);
+        const finalState = buildConsolidatedState(syncState.gameState, currentState, myPos, actingPosition);
 
         // NO turn advancement for boneyard draw - player stays on turn
         console.log('🎯 DRAW - No turn advancement, player stays on turn:', syncState.currentPlayer);
@@ -474,12 +491,12 @@ export default function Game() {
   }, [gameState, gameHook, syncState.allPlayers, syncState.currentPlayer, setGameState, updateGameState]);
 
   // Pass move function
-  const passMove = useCallback(() => {
-    // Turn validation removed - database controls turns completely now
+  const passMove = useCallback((actorPosition?: number) => {
+    const actingPosition = typeof actorPosition === 'number' ? actorPosition : syncState.currentPlayer;
 
-    // Advance to next player turn after pass - USE PLAYER POSITION for consistency
-    const nextPlayerTurn = (syncState.playerPosition + 1) % syncState.allPlayers.length;
-    console.log('🎯 Pass move - advancing turn from', syncState.playerPosition, 'to', nextPlayerTurn);
+    // Advance to next player turn after pass based on the acting player (human or bot).
+    const nextPlayerTurn = (actingPosition + 1) % syncState.allPlayers.length;
+    console.log('🎯 Pass move - advancing turn from', actingPosition, 'to', nextPlayerTurn);
     
     // Pass doesn't change game state, just advances turn
     if (passMoveTimeoutRef.current) {
@@ -489,20 +506,91 @@ export default function Game() {
     passMoveTimeoutRef.current = setTimeout(() => {
       passMoveTimeoutRef.current = null;
       // EXTRA VALIDATION: Double-check turn ownership before database update
-      if (syncState.currentPlayer !== syncState.playerPosition) {
+      if (syncState.currentPlayer !== actingPosition) {
         console.log('🚫 PASS MOVE BLOCKED: Turn changed during timeout, aborting database update');
-        console.log('Expected player:', syncState.playerPosition, 'Current player:', syncState.currentPlayer);
+        console.log('Expected player:', actingPosition, 'Current player:', syncState.currentPlayer);
         return;
       }
       
       console.log('🔄 PASS MOVE - Advancing turn only');
-      console.log('✅ PASS MOVE VALIDATED: Player', syncState.playerPosition, 'confirmed as current player');
+      console.log('✅ PASS MOVE VALIDATED: Player', actingPosition, 'confirmed as current player');
       // Only update the turn, no game state changes needed for pass
       if (syncState.gameData) {
         updateGameState(syncState.gameState, nextPlayerTurn);
       }
     }, 150);
-  }, [syncState.currentPlayer, syncState.playerPosition, syncState.allPlayers.length, syncState.gameData, syncState.gameState, updateGameState]);
+  }, [syncState.currentPlayer, syncState.allPlayers.length, syncState.gameData, syncState.gameState, updateGameState]);
+
+  const getBotDifficulty = useCallback((botName: string): 'easy' | 'medium' | 'hard' => {
+    if (botName.includes('Dave') || botName.includes('Betty')) return 'easy';
+    if (botName.includes('Raja') || botName.includes('Sam')) return 'hard';
+    return 'medium';
+  }, []);
+
+  // Host drives bot turns in multiplayer (single authority to avoid duplicate bot moves).
+  useEffect(() => {
+    if (!syncState.isHost || gameState.isGameOver || !syncState.allPlayers.length) return;
+
+    const currentPlayerData = syncState.allPlayers.find((player) => player.position === syncState.currentPlayer);
+    if (!currentPlayerData?.is_bot) {
+      botTurnExecutionRef.current = null;
+      return;
+    }
+
+    const actorPosition = syncState.currentPlayer;
+    const botHand = gameState.playerHands?.[actorPosition] || [];
+    const botTurnKey = `${actorPosition}:${gameState.nextDominoId}:${botHand.length}:${gameState.boneyard.length}`;
+    if (botTurnExecutionRef.current === botTurnKey) return;
+
+    botTurnExecutionRef.current = botTurnKey;
+
+    const timer = setTimeout(async () => {
+      const latestBotHand = gameState.playerHands?.[actorPosition] || [];
+      let legalMovesForBot: MoveWithEffects[] = [];
+
+      latestBotHand.forEach((domino, index) => {
+        const moves = gameHook.findLegalMoves(domino);
+        if (moves.length === 0) return;
+
+        legalMovesForBot = legalMovesForBot.concat(
+          moves.map((move) => ({ ...move, index, actorPosition }))
+        );
+      });
+
+      try {
+        await makeBotMove(
+          latestBotHand,
+          legalMovesForBot,
+          gameState.boneyard.length,
+          (selectedMove) => wrappedExecuteMove({ ...selectedMove, actorPosition }),
+          () => {
+            void wrappedDrawFromBoneyard(actorPosition);
+          },
+          () => passMove(actorPosition),
+          {
+            difficulty: getBotDifficulty(currentPlayerData.username),
+            thinkingTime: 900,
+          }
+        );
+      } catch (error) {
+        console.error('❌ Bot move execution failed:', error);
+        botTurnExecutionRef.current = null;
+      }
+    }, 750);
+
+    return () => clearTimeout(timer);
+  }, [
+    gameHook,
+    gameState,
+    getBotDifficulty,
+    makeBotMove,
+    passMove,
+    syncState.allPlayers,
+    syncState.currentPlayer,
+    syncState.isHost,
+    wrappedDrawFromBoneyard,
+    wrappedExecuteMove,
+  ]);
 
   // Sla automatisch de uitslag op naar het scoreboard zodra het spel eindigt
   useEffect(() => {

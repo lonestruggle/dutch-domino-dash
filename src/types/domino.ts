@@ -36,6 +36,7 @@ export interface LegalMove {
   y: number;
   fromDomino?: DominoState;
   index?: number;
+  actorPosition?: number; // Optional: which player is executing this move (for bot-hosted turns)
 }
 
 export interface ShakeAnimationProfile {

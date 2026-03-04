@@ -33,6 +33,8 @@ const deviceLabels = {
 
 export const GameVisualControls: React.FC = () => {
   const { isAdmin, loading } = useUserRoles();
+  const isDevMode = import.meta.env.DEV;
+  const canAccessVisualControls = isAdmin || isDevMode;
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -648,9 +650,9 @@ export const GameVisualControls: React.FC = () => {
     );
   };
 
-  // Only render for admins - placed after all hooks
-  if (loading) return null;
-  if (!isAdmin) return null;
+  // In production these controls are admin-only; in local dev we expose them for iteration/debugging.
+  if (loading && !isDevMode) return null;
+  if (!canAccessVisualControls) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -686,6 +688,11 @@ export const GameVisualControls: React.FC = () => {
           <DialogTitle className="flex items-center gap-2 flex-1">
             <Settings className="h-5 w-5" />
             Visuele Instellingen
+            {isDevMode && (
+              <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
+                DEV MODE
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
         
