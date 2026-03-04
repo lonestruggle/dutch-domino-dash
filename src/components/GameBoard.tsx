@@ -303,8 +303,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       
-      const pixelCenterX = boardSize / 2 + centerX * GRID_CELL_SIZE;
-      const pixelCenterY = boardSize / 2 + centerY * GRID_CELL_SIZE;
+      const pixelCenterX = boardSize / 2 + centerX * GRID_CELL_SIZE * currentScale;
+      const pixelCenterY = boardSize / 2 + centerY * GRID_CELL_SIZE * currentScale;
       
       const optimalScrollX = pixelCenterX - containerRect.width / 2;
       const optimalScrollY = pixelCenterY - containerRect.height / 2;
@@ -324,8 +324,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       const firstDomino = Object.values(gameState.dominoes)[0];
-      const firstDominoX = firstDomino.x * GRID_CELL_SIZE;
-      const firstDominoY = firstDomino.y * GRID_CELL_SIZE;
+      const firstDominoX = firstDomino.x * GRID_CELL_SIZE * dynamicScale;
+      const firstDominoY = firstDomino.y * GRID_CELL_SIZE * dynamicScale;
       
       setTimeout(() => {
         containerRef.current?.scrollTo({
