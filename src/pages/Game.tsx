@@ -1,5 +1,5 @@
 
-import { useEffect, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { DominoGame } from '@/components/DominoGame';
 import { useDominoGame } from '@/hooks/useDominoGame';
@@ -22,6 +22,18 @@ interface GameOutcomePlayerPayload {
   hard_slams_used: number;
   turns_played: number;
   won_by_changa: boolean;
+}
+
+interface BotDebugInfo {
+  status: string;
+  details: string;
+  isBotTurn: boolean;
+  currentPlayer: number;
+  controllerPosition: number | null;
+  turnKey: string;
+  legalMoves: number;
+  boneyardSize: number;
+  updatedAt: number;
 }
 
 const buildConsolidatedState = (
@@ -74,6 +86,17 @@ export default function Game() {
   const hardSlamResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const botTurnExecutionRef = useRef<string | null>(null);
   const botTurnObservedAtRef = useRef<Record<string, number>>({});
+  const [botDebugInfo, setBotDebugInfo] = useState<BotDebugInfo>({
+    status: 'init',
+    details: 'Bot debug gestart',
+    isBotTurn: false,
+    currentPlayer: 0,
+    controllerPosition: null,
+    turnKey: '-',
+    legalMoves: 0,
+    boneyardSize: 0,
+    updatedAt: Date.now(),
+  });
   
   // Hard slam functionality
   const { disarmHardSlam, settings } = useGameVisualSettings();
@@ -538,16 +561,56 @@ export default function Game() {
 
   // One deterministic human client drives bot turns (single authority to avoid duplicate bot moves).
   useEffect(() => {
-    if (gameState.isGameOver || !syncState.allPlayers.length) return;
+    if (gameState.isGameOver || !syncState.allPlayers.length) {
+      setBotDebugInfo((prev) => ({
+        ...prev,
+        status: 'idle',
+        details: gameState.isGameOver ? 'Game over' : 'Geen spelers',
+        isBotTurn: false,
+        currentPlayer: syncState.currentPlayer,
+        controllerPosition: botControllerPosition,
+        turnKey: '-',
+        legalMoves: 0,
+        boneyardSize: gameState.boneyard.length,
+        updatedAt: Date.now(),
+      }));
+      return;
+    }
 
     const currentPlayerData = syncState.allPlayers.find((player) => player.position === syncState.currentPlayer);
     if (!currentPlayerData?.is_bot) {
       botTurnExecutionRef.current = null;
+      setBotDebugInfo((prev) => ({
+        ...prev,
+        status: 'waiting-human',
+        details: `Beurt van ${currentPlayerData?.username || 'speler'}`,
+        isBotTurn: false,
+        currentPlayer: syncState.currentPlayer,
+        controllerPosition: botControllerPosition,
+        turnKey: '-',
+        legalMoves: 0,
+        boneyardSize: gameState.boneyard.length,
+        updatedAt: Date.now(),
+      }));
       return;
     }
 
     const localPlayerData = syncState.allPlayers.find((player) => player.position === syncState.playerPosition);
-    if (localPlayerData?.is_bot) return;
+    if (localPlayerData?.is_bot) {
+      setBotDebugInfo((prev) => ({
+        ...prev,
+        status: 'blocked',
+        details: 'Lokale client is bot; geen botsturing',
+        isBotTurn: true,
+        currentPlayer: syncState.currentPlayer,
+        controllerPosition: botControllerPosition,
+        turnKey: '-',
+        legalMoves: 0,
+        boneyardSize: gameState.boneyard.length,
+        updatedAt: Date.now(),
+      }));
+      return;
+    }
 
     const actorPosition = syncState.currentPlayer;
     const turnIdentity = `${actorPosition}:${gameState.nextDominoId}`;
@@ -559,18 +622,54 @@ export default function Game() {
 
     // Fallback takeover: if designated controller did nothing, any human can execute after delay.
     if (!isDesignatedController && turnAgeMs < 1800) {
+      setBotDebugInfo((prev) => ({
+        ...prev,
+        status: 'waiting-controller',
+        details: `Wachten op controller (${turnAgeMs}ms)`,
+        isBotTurn: true,
+        currentPlayer: syncState.currentPlayer,
+        controllerPosition: botControllerPosition,
+        turnKey: turnIdentity,
+        legalMoves: 0,
+        boneyardSize: gameState.boneyard.length,
+        updatedAt: Date.now(),
+      }));
       return;
     }
 
     const botHand = gameState.playerHands?.[actorPosition] || [];
     const botTurnKey = `${actorPosition}:${gameState.nextDominoId}:${botHand.length}:${gameState.boneyard.length}`;
-    if (botTurnExecutionRef.current === botTurnKey) return;
+    if (botTurnExecutionRef.current === botTurnKey) {
+      setBotDebugInfo((prev) => ({
+        ...prev,
+        status: 'locked',
+        details: 'Bot turn lock actief',
+        isBotTurn: true,
+        currentPlayer: syncState.currentPlayer,
+        controllerPosition: botControllerPosition,
+        turnKey: botTurnKey,
+        legalMoves: prev.legalMoves,
+        boneyardSize: gameState.boneyard.length,
+        updatedAt: Date.now(),
+      }));
+      return;
+    }
 
-    let cancelled = false;
-    let hasStartedExecution = false;
+    botTurnExecutionRef.current = botTurnKey;
+    setBotDebugInfo((prev) => ({
+      ...prev,
+      status: isDesignatedController ? 'controller' : 'fallback-controller',
+      details: `Bot ${currentPlayerData.username} verwerken`,
+      isBotTurn: true,
+      currentPlayer: syncState.currentPlayer,
+      controllerPosition: botControllerPosition,
+      turnKey: botTurnKey,
+      legalMoves: 0,
+      boneyardSize: gameState.boneyard.length,
+      updatedAt: Date.now(),
+    }));
 
     const runBotTurn = async () => {
-      botTurnExecutionRef.current = botTurnKey;
       const latestBotHand = gameState.playerHands?.[actorPosition] || [];
       let legalMovesForBot: MoveWithEffects[] = [];
 
@@ -585,7 +684,7 @@ export default function Game() {
 
       try {
         await new Promise((resolve) => setTimeout(resolve, 350));
-        if (cancelled) return;
+        if (botTurnExecutionRef.current !== botTurnKey) return;
 
         const boneyardSize = gameState.boneyard.length;
         const difficulty = getBotDifficulty(currentPlayerData.username);
@@ -595,9 +694,21 @@ export default function Game() {
           { difficulty, thinkingTime: 0 }
         );
 
+        setBotDebugInfo((prev) => ({
+          ...prev,
+          status: 'deciding',
+          details: selectedMove ? 'Bot kiest zet' : boneyardSize > 0 ? 'Bot trekt uit boneyard' : 'Bot past',
+          isBotTurn: true,
+          currentPlayer: syncState.currentPlayer,
+          controllerPosition: botControllerPosition,
+          turnKey: botTurnKey,
+          legalMoves: legalMovesForBot.length,
+          boneyardSize,
+          updatedAt: Date.now(),
+        }));
+
         if (selectedMove) {
           wrappedExecuteMove({ ...selectedMove, actorPosition });
-          // Wait for turn advancement; unlock via fallback if sync lags.
           setTimeout(() => {
             if (botTurnExecutionRef.current === botTurnKey) {
               botTurnExecutionRef.current = null;
@@ -621,21 +732,20 @@ export default function Game() {
       } catch (error) {
         console.error('❌ Bot move execution failed:', error);
         botTurnExecutionRef.current = null;
+        setBotDebugInfo((prev) => ({
+          ...prev,
+          status: 'error',
+          details: error instanceof Error ? error.message : 'Onbekende botfout',
+          isBotTurn: true,
+          currentPlayer: syncState.currentPlayer,
+          controllerPosition: botControllerPosition,
+          turnKey: botTurnKey,
+          updatedAt: Date.now(),
+        }));
       }
     };
 
-    const timer = setTimeout(() => {
-      hasStartedExecution = true;
-      void runBotTurn();
-    }, 150);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-      if (!hasStartedExecution && botTurnExecutionRef.current === botTurnKey) {
-        botTurnExecutionRef.current = null;
-      }
-    };
+    void runBotTurn();
   }, [
     gameHook,
     gameState,
@@ -811,6 +921,7 @@ export default function Game() {
           manualBlockedCheck,
           startNewGame: wrappedStartNewGame,
           hardSlam: wrappedHardSlam,
+          botDebugInfo,
           syncState,
           gameData: syncState.gameData || { background_choice: null }
         }}

@@ -37,6 +37,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     startNewGame,
     hasDifferentNeighbor,
     rotateDomino,
+    botDebugInfo,
     syncState,
     gameData
   } = gameHook;
@@ -370,17 +371,36 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           </div>
         </Card>
 
-        {showDevLockstepInfo && activeHardSlamProfile && (
+        {showDevLockstepInfo && (
           <Card className="border-dashed border-amber-400 bg-amber-50/70 p-3">
             <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-amber-900">
-              <span>DEV LOCKSTEP</span>
-              <span className="rounded bg-amber-200 px-1.5 py-0.5">Hard Slam</span>
+              <span>DEV DEBUG CONSOLE</span>
             </div>
-            <div className="grid gap-1 text-[11px] text-amber-900/90 md:grid-cols-2">
-              <div><strong>Event:</strong> {activeHardSlamProfile.eventId}</div>
-              <div><strong>Seed:</strong> {activeHardSlamProfile.seed}</div>
-              <div><strong>Server start:</strong> {new Date(activeHardSlamProfile.startedAtMs).toLocaleTimeString()}</div>
-              <div><strong>Local phase:</strong> {hardSlamPhaseMs} ms</div>
+            <div className="mb-2 rounded border border-amber-300 bg-amber-100/70 p-2">
+              <div className="mb-1 text-[11px] font-semibold text-amber-900">Hard Slam lockstep</div>
+              {activeHardSlamProfile ? (
+                <div className="grid gap-1 text-[11px] text-amber-900/90 md:grid-cols-2">
+                  <div><strong>Event:</strong> {activeHardSlamProfile.eventId}</div>
+                  <div><strong>Seed:</strong> {activeHardSlamProfile.seed}</div>
+                  <div><strong>Server start:</strong> {new Date(activeHardSlamProfile.startedAtMs).toLocaleTimeString()}</div>
+                  <div><strong>Local phase:</strong> {hardSlamPhaseMs} ms</div>
+                </div>
+              ) : (
+                <div className="text-[11px] text-amber-900/80">Geen actief hard slam profiel.</div>
+              )}
+            </div>
+            <div className="rounded border border-amber-300 bg-amber-100/70 p-2">
+              <div className="mb-1 text-[11px] font-semibold text-amber-900">Bot engine</div>
+              <div className="grid gap-1 text-[11px] text-amber-900/90 md:grid-cols-2">
+                <div><strong>Status:</strong> {botDebugInfo?.status || 'n/a'}</div>
+                <div><strong>Details:</strong> {botDebugInfo?.details || 'n/a'}</div>
+                <div><strong>Turn:</strong> {botDebugInfo?.currentPlayer ?? syncState?.currentPlayer}</div>
+                <div><strong>Controller:</strong> {botDebugInfo?.controllerPosition ?? 'n/a'}</div>
+                <div><strong>Turn key:</strong> {botDebugInfo?.turnKey || '-'}</div>
+                <div><strong>Legal moves:</strong> {botDebugInfo?.legalMoves ?? 0}</div>
+                <div><strong>Boneyard:</strong> {botDebugInfo?.boneyardSize ?? gameState?.boneyard?.length ?? 0}</div>
+                <div><strong>Updated:</strong> {botDebugInfo?.updatedAt ? new Date(botDebugInfo.updatedAt).toLocaleTimeString() : '-'}</div>
+              </div>
             </div>
           </Card>
         )}
