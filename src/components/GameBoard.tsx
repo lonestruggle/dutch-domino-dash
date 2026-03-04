@@ -29,13 +29,6 @@ const MAX_SCALE = 1.0;
 const MIN_BOARD_SIZE = 1200;
 const PADDING = 400;
 
-const clampSetting = (value: unknown, fallback: number, min: number, max: number): number => {
-  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
-    return fallback;
-  }
-  return Math.min(max, Math.max(min, value));
-};
-
 const getStableAngleFromId = (dominoId: string): number => {
   // Stable pseudo-random angle so dominoes don't "jitter" between renders.
   let hash = 0;
@@ -63,8 +56,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const { settings, applyOriginalRotations, isAnimating, animationMode } = useGameVisualSettings();
   
   // Dynamic grid cell size based on settings - each domino = 2 grid cells
-  const safeDominoWidth = clampSetting(settings.dominoWidth, 64, 40, 120);
-  const GRID_CELL_SIZE = safeDominoWidth / 2;
+  const GRID_CELL_SIZE = settings.dominoWidth / 2;
 
 
   // Listen for live settings updates and reapply scaling
@@ -100,13 +92,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
     })();
 
-    const latestDominoScale = clampSetting(latest.dominoScale, 1, 0.5, 2.0);
-    const latestHandDominoScale = clampSetting(latest.handDominoScale, 1, 0.5, 2.0);
-    const latestDominoWidth = clampSetting(latest.dominoWidth, 64, 40, 120);
-    const latestDominoHeight = clampSetting(latest.dominoHeight, 32, 20, 60);
-    const latestDominoThickness = clampSetting(latest.dominoThickness, 8, 4, 16);
     const baseScale = calculateDominoScale();
-    const finalScale = baseScale * latestDominoScale;
+    const userScale = latest.dominoScale;
+    const finalScale = baseScale * userScale;
     const selectedScale = finalScale * 1.05;
     const hoverScale = finalScale;
     
@@ -115,15 +103,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--domino-scale-selected', selectedScale.toString());
     rootElement.style.setProperty('--domino-scale-hover', hoverScale.toString());
     // IMPORTANT: Hand domino scale must be independent from board scale
-    rootElement.style.setProperty('--hand-domino-scale', latestHandDominoScale.toString());
+    rootElement.style.setProperty('--hand-domino-scale', (latest.handDominoScale || 1).toString());
     
     // Apply global domino dimension settings
-    rootElement.style.setProperty('--domino-width', `${latestDominoWidth}px`);
-    rootElement.style.setProperty('--domino-height', `${latestDominoHeight}px`);
-    rootElement.style.setProperty('--domino-thickness', `${latestDominoThickness}px`);
+    rootElement.style.setProperty('--domino-width', (latest.dominoWidth || 80).toString() + 'px');
+    rootElement.style.setProperty('--domino-height', (latest.dominoHeight || 40).toString() + 'px');
+    rootElement.style.setProperty('--domino-thickness', (latest.dominoThickness || 8).toString() + 'px');
     
     // Calculate dynamic double offset for proper centering (based on grid cell size)
-    const doubleOffset = latestDominoWidth / 4;
+    const doubleOffset = GRID_CELL_SIZE / 2;
     rootElement.style.setProperty('--double-offset', `-${doubleOffset}px`);
     
     if (boardRef.current) {
@@ -315,19 +303,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       
-      const safeScale = Math.max(0.01, currentScale);
-      const layoutCenterX = boardSize / 2 + centerX * GRID_CELL_SIZE;
-      const layoutCenterY = boardSize / 2 + centerY * GRID_CELL_SIZE;
-      const viewportHalfWidthInLayout = containerRect.width / (2 * safeScale);
-      const viewportHalfHeightInLayout = containerRect.height / (2 * safeScale);
-      const maxScrollLeft = Math.max(0, boardSize - containerRef.current!.clientWidth);
-      const maxScrollTop = Math.max(0, boardSize - containerRef.current!.clientHeight);
-      const optimalScrollX = Math.max(0, Math.min(layoutCenterX - viewportHalfWidthInLayout, maxScrollLeft));
-      const optimalScrollY = Math.max(0, Math.min(layoutCenterY - viewportHalfHeightInLayout, maxScrollTop));
-
+      const pixelCenterX = boardSize / 2 + centerX * GRID_CELL_SIZE * currentScale;
+      const pixelCenterY = boardSize / 2 + centerY * GRID_CELL_SIZE * currentScale;
+      
+      const optimalScrollX = pixelCenterX - containerRect.width / 2;
+      const optimalScrollY = pixelCenterY - containerRect.height / 2;
+      
       containerRef.current!.scrollTo({
-        left: optimalScrollX,
-        top: optimalScrollY,
+        left: Math.max(0, optimalScrollX),
+        top: Math.max(0, optimalScrollY),
         behavior: 'smooth'
       });
     };
@@ -340,18 +324,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
       const firstDomino = Object.values(gameState.dominoes)[0];
-      const safeScale = Math.max(0.01, dynamicScale);
-      const firstDominoX = firstDomino.x * GRID_CELL_SIZE;
-      const firstDominoY = firstDomino.y * GRID_CELL_SIZE;
-      const viewportHalfWidthInLayout = containerRef.current.clientWidth / (2 * safeScale);
-      const viewportHalfHeightInLayout = containerRef.current.clientHeight / (2 * safeScale);
-      const maxScrollLeft = Math.max(0, boardSize - containerRef.current.clientWidth);
-      const maxScrollTop = Math.max(0, boardSize - containerRef.current.clientHeight);
+      const firstDominoX = firstDomino.x * GRID_CELL_SIZE * dynamicScale;
+      const firstDominoY = firstDomino.y * GRID_CELL_SIZE * dynamicScale;
       
       setTimeout(() => {
         containerRef.current?.scrollTo({
-          left: Math.max(0, Math.min(boardSize / 2 + firstDominoX - viewportHalfWidthInLayout, maxScrollLeft)),
-          top: Math.max(0, Math.min(boardSize / 2 + firstDominoY - viewportHalfHeightInLayout, maxScrollTop)),
+          left: boardSize / 2 + firstDominoX - containerRef.current.clientWidth / 2,
+          top: boardSize / 2 + firstDominoY - containerRef.current.clientHeight / 2,
           behavior: 'smooth'
         });
       }, 100);
@@ -362,7 +341,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
       <div 
         ref={containerRef}
-        className="w-full h-full game-board overflow-auto rounded-2xl shadow-2xl"
+        className="w-full h-full game-board overflow-hidden rounded-2xl shadow-2xl"
         style={{ 
           background: tableBackgroundUrl 
             ? `linear-gradient(

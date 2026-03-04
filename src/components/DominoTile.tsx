@@ -21,13 +21,6 @@ interface DominoTileProps {
 
 const isDouble = (data: DominoData) => data.value1 === data.value2;
 
-const clampSetting = (value: unknown, fallback: number, min: number, max: number): number => {
-  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
-    return fallback;
-  }
-  return Math.min(max, Math.max(min, value));
-};
-
 export const DominoTile: React.FC<DominoTileProps> = ({
   data,
   dominoId,
@@ -80,13 +73,11 @@ export const DominoTile: React.FC<DominoTileProps> = ({
   };
 
   const isHorizontal = orientation === 'horizontal';
-  const safeDominoWidth = clampSetting(settings.dominoWidth, 64, 40, 120);
-  const safeDominoThickness = clampSetting(settings.dominoThickness, 8, 4, 16);
-  const thickness = `${safeDominoThickness}px`;
+  const thickness = `${settings.dominoThickness}px`;
   
   // Grid-based dimensions - each domino spans 2 grid cells
   // Use settings-based grid size for consistent scaling across devices
-  const GRID_CELL_SIZE = safeDominoWidth / 2;
+  const GRID_CELL_SIZE = settings.dominoWidth / 2;
   const dominoWidth = orientation === 'horizontal' ? GRID_CELL_SIZE * 2 : GRID_CELL_SIZE;
   const dominoHeight = orientation === 'horizontal' ? GRID_CELL_SIZE : GRID_CELL_SIZE * 2;
 
