@@ -566,11 +566,11 @@ export default function Game() {
     const botTurnKey = `${actorPosition}:${gameState.nextDominoId}:${botHand.length}:${gameState.boneyard.length}`;
     if (botTurnExecutionRef.current === botTurnKey) return;
 
-    botTurnExecutionRef.current = botTurnKey;
-
     let cancelled = false;
+    let hasStartedExecution = false;
 
     const runBotTurn = async () => {
+      botTurnExecutionRef.current = botTurnKey;
       const latestBotHand = gameState.playerHands?.[actorPosition] || [];
       let legalMovesForBot: MoveWithEffects[] = [];
 
@@ -625,12 +625,16 @@ export default function Game() {
     };
 
     const timer = setTimeout(() => {
+      hasStartedExecution = true;
       void runBotTurn();
     }, 150);
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      if (!hasStartedExecution && botTurnExecutionRef.current === botTurnKey) {
+        botTurnExecutionRef.current = null;
+      }
     };
   }, [
     gameHook,
