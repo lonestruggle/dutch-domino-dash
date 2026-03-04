@@ -48,12 +48,9 @@ export const GameVisualControls: React.FC = () => {
     getSettingsForDevice, 
     updateDominoScale, 
     updateHandDominoScale, 
-    updateDurationAdjustment,
-    updateSpeedAdjustment,
     updateRotation,
     updateRotationSpeed,
     updateRotationAmplitude,
-    updateAnimationDuration,
     updateShakeIntensity,
     updateShakeDuration,
     updateDominoWidth,
@@ -98,7 +95,9 @@ export const GameVisualControls: React.FC = () => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).__dominoSettings = settings;
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   }, [settings]);
 
   // Drag functionality
@@ -480,21 +479,6 @@ export const GameVisualControls: React.FC = () => {
 
             {/* Animation Settings */}
             <div className="space-y-3">
-              <div>
-                <div className="text-xs font-medium mb-1">
-                  Animatie Duur: {deviceSettings.animationDuration.toFixed(1)}s
-                </div>
-                <Slider
-                  min={0.1}
-                  max={10}
-                  step={0.1}
-                  value={[deviceSettings.animationDuration]}
-                  onValueChange={([value]) => updateAnimationDuration(value, device)}
-                  disabled={isAnimating}
-                  className="w-full"
-                />
-              </div>
-
               <div>
                 <div className="text-xs font-medium mb-1">
                   Rotatie Snelheid: {deviceSettings.rotationSpeed.toFixed(1)}x

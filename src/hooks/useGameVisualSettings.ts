@@ -8,8 +8,6 @@ import type { ShakeAnimationProfile } from '@/types/domino';
 export interface PersonalSettings {
   dominoScale: number; // 0.5 to 2.0 multiplier for board dominoes
   handDominoScale: number; // 0.5 to 2.0 multiplier for hand dominoes
-  durationAdjustment: number; // -5 to +5, each step = 0.5s
-  speedAdjustment: number; // -300 to +300ms, each step = 10ms
 }
 
 // Truly global settings (SAME for ALL devices and users - stored once)
@@ -28,7 +26,6 @@ export interface GlobalSettings {
   rotateZ: number; // -90 to 90 degrees
   // Animation settings - GLOBAL FOR EVERYONE
   rotationSpeed: number; // 0.1 to 10x speed
-  animationDuration: number; // 0.1 to 10 seconds
   // Shake settings - GLOBAL FOR EVERYONE
   shakeIntensity: number; // 0.1 to 2.0 intensity multiplier
   shakeDuration: number; // 0.5 to 5.0 seconds
@@ -62,8 +59,6 @@ export interface DeviceSpecificSettings {
 const DEFAULT_PERSONAL_SETTINGS: PersonalSettings = {
   dominoScale: 1.0,
   handDominoScale: 1.0,
-  durationAdjustment: 0,
-  speedAdjustment: 0,
 };
 
 const DEFAULT_TRULY_GLOBAL_SETTINGS: TrulyGlobalSettings = {
@@ -77,7 +72,6 @@ const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   rotateY: 9.8,
   rotateZ: 65.5,
   rotationSpeed: 5,
-  animationDuration: 1.3,
   shakeIntensity: 0.6,
   shakeDuration: 0.6,
   dominoWidth: 64,
@@ -92,9 +86,9 @@ const DEFAULT_SETTINGS: GameVisualSettings = {
 };
 
 const DEFAULT_DEVICE_PERSONAL_SETTINGS: DeviceSpecificPersonalSettings = {
-  desktop: { dominoScale: 1.0, handDominoScale: 0.6, durationAdjustment: 0, speedAdjustment: 0 },
-  tablet: { dominoScale: 0.9, handDominoScale: 0.5, durationAdjustment: 0, speedAdjustment: 0 },
-  mobile: { dominoScale: 1.2, handDominoScale: 0.4, durationAdjustment: 0, speedAdjustment: 0 },
+  desktop: { dominoScale: 1.0, handDominoScale: 0.6 },
+  tablet: { dominoScale: 0.9, handDominoScale: 0.5 },
+  mobile: { dominoScale: 1.2, handDominoScale: 0.4 },
 };
 
 const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
@@ -103,7 +97,7 @@ const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
   mobile: { ...DEFAULT_GLOBAL_SETTINGS },
 };
 
-type GlobalAnimationPatch = Partial<Pick<GlobalSettings, 'rotateX' | 'rotateY' | 'rotateZ' | 'rotationSpeed' | 'animationDuration' | 'shakeIntensity' | 'shakeDuration'>>;
+type GlobalAnimationPatch = Partial<Pick<GlobalSettings, 'rotateX' | 'rotateY' | 'rotateZ' | 'rotationSpeed' | 'shakeIntensity' | 'shakeDuration'>>;
 type StartShakeOptions = boolean | {
   isOtherPlayerHardSlam?: boolean;
   profile?: ShakeAnimationProfile;
@@ -124,7 +118,6 @@ const normalizeGlobalAnimationSettings = (settings: DeviceSpecificGlobalSettings
     rotateY: source.rotateY,
     rotateZ: source.rotateZ,
     rotationSpeed: source.rotationSpeed,
-    animationDuration: source.animationDuration,
     shakeIntensity: source.shakeIntensity,
     shakeDuration: source.shakeDuration,
   };
@@ -381,27 +374,6 @@ const useGameVisualSettingsState = () => {
       setTrulyGlobalSettings(DEFAULT_TRULY_GLOBAL_SETTINGS);
     }
   };
-
-
-
-  const updateDurationAdjustment = (adjustment: number, targetDevice?: DeviceType) => {
-    const clampedAdjustment = Math.max(-5, Math.min(5, adjustment));
-    const device = targetDevice || deviceType;
-    setPersonalSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], durationAdjustment: clampedAdjustment }
-    }));
-  };
-
-  const updateSpeedAdjustment = (adjustment: number, targetDevice?: DeviceType) => {
-    const clampedAdjustment = Math.max(-30, Math.min(30, adjustment)); // -300ms to +300ms in 10ms steps
-    const device = targetDevice || deviceType;
-    setPersonalSettings(prev => ({
-      ...prev,
-      [device]: { ...prev[device], speedAdjustment: clampedAdjustment }
-    }));
-  };
-
   const applyLiveUpdate = () => {
     // Trigger a re-render event
     const currentSettings = allSettings[deviceType];
@@ -808,11 +780,6 @@ const useGameVisualSettingsState = () => {
     }));
   };
 
-  const updateAnimationDuration = (duration: number, _targetDevice?: DeviceType) => {
-    const clampedDuration = Math.max(0.1, Math.min(10, duration));
-    applyGlobalAnimationPatch({ animationDuration: clampedDuration });
-  };
-
   const updateShakeIntensity = (intensity: number, _targetDevice?: DeviceType) => {
     const clampedIntensity = Math.max(0.1, Math.min(2.0, intensity));
     applyGlobalAnimationPatch({ shakeIntensity: clampedIntensity });
@@ -878,12 +845,9 @@ const useGameVisualSettingsState = () => {
     currentDeviceType: deviceType,
     updateDominoScale,
     updateHandDominoScale,
-    updateDurationAdjustment,
-    updateSpeedAdjustment,
     updateRotation,
     updateRotationSpeed,
     updateRotationAmplitude,
-    updateAnimationDuration,
     updateShakeIntensity,
     updateShakeDuration,
     updateDominoWidth,
