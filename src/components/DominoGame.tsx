@@ -25,7 +25,7 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { startShakeAnimation } = useGameVisualSettings();
+  const { startShakeAnimation, isAnimating: isVisualAnimating } = useGameVisualSettings();
   const { canHardSlam } = useUserPermissions();
   const { isAdmin } = useUserRoles();
   
@@ -189,6 +189,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   }
 
   const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition;
+  const isMoveLockedByAnimation = isVisualAnimating;
   const currentPlayerName = syncState?.allPlayers?.find((p: any) => p.position === syncState?.currentPlayer)?.username || 'Unknown';
   
 
@@ -454,6 +455,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           gameState={gameState}
           legalMoves={legalMovesWithIndex}
           onMoveExecute={(move) => {
+            if (isMoveLockedByAnimation) return;
             // Pass local hard slam state to the move execution
             const moveWithHardSlam = { ...move, localHardSlamActive };
             gameHook.executeMove(moveWithHardSlam);
@@ -468,7 +470,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           backgroundChoice={gameData?.background_choice}
           tableBackgroundUrl={gameData?.table_background_url}
           onRotateDomino={rotateDomino}
-          isMyTurn={syncState?.currentPlayer === syncState?.playerPosition}
+          isMyTurn={syncState?.currentPlayer === syncState?.playerPosition && !isMoveLockedByAnimation}
           
         />
 

@@ -103,6 +103,7 @@ export default function Game() {
   const drawSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const passMoveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hardSlamResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const moveAnimationLockUntilRef = useRef<number>(0);
   const botTurnExecutionRef = useRef<string | null>(null);
   const botTurnObservedAtRef = useRef<Record<string, number>>({});
   const botAwaitingTurnAdvanceRef = useRef<{ player: number | null; until: number }>({ player: null, until: 0 });
@@ -120,7 +121,7 @@ export default function Game() {
   });
   
   // Hard slam functionality
-  const { disarmHardSlam, settings } = useGameVisualSettings();
+  const { disarmHardSlam, settings, isAnimating } = useGameVisualSettings();
   const { calculateBestMove } = useBotAI();
   
   // Use the existing synced game state hook
@@ -153,6 +154,12 @@ export default function Game() {
 
   // Wrap local actions and then sync - SINGLE CONSOLIDATED UPDATE
   const wrappedExecuteMove = useCallback((move: MoveWithEffects) => {
+    const now = Date.now();
+    if (isAnimating || now < moveAnimationLockUntilRef.current) {
+      console.log('⛔ Move blocked: animation lock active');
+      return;
+    }
+
     console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
     const actorPosition = typeof move.actorPosition === 'number' ? move.actorPosition : syncState.currentPlayer;
     console.log('🎯 Acting player position:', actorPosition);
@@ -219,6 +226,8 @@ export default function Game() {
 
     // Execute the move locally
     gameHook.executeMove({ ...move, actorPosition });
+    // Lock short follow-up placement while placement animation finishes.
+    moveAnimationLockUntilRef.current = Date.now() + 620;
     
     if (!syncState.allPlayers.length) return;
 
@@ -268,7 +277,7 @@ export default function Game() {
         return currentState; // Return current state to avoid double setting
       });
     }, 150); // Slightly longer delay for better state consistency
-  }, [gameHook, gameState, setGameState, settings.rotationAmplitudeX, settings.rotationAmplitudeY, settings.rotationAmplitudeZ, settings.rotationSpeed, settings.shakeDuration, settings.shakeIntensity, syncState.allPlayers, syncState.allPlayers.length, syncState.currentPlayer, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
+  }, [gameHook, gameState, isAnimating, setGameState, settings.rotationAmplitudeX, settings.rotationAmplitudeY, settings.rotationAmplitudeZ, settings.rotationSpeed, settings.shakeDuration, settings.shakeIntensity, syncState.allPlayers, syncState.allPlayers.length, syncState.currentPlayer, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
 
   const wrappedDrawFromBoneyard = useCallback(async (actorPosition?: number) => {
     console.log('🎲 Draw from boneyard - turn validation removed, database controls turns');
@@ -643,12 +652,16 @@ export default function Game() {
     const hardSlamFlagsActive = Boolean(gameState.triggerHardSlamAnimation) || Boolean(gameState.isHardSlamming);
     // Prevent stale DB flags from locking bots forever once the profile window has ended.
     const hardSlamAnimatingNow = hasUsableHardSlamProfile ? now < hardSlamEndMs : hardSlamFlagsActive;
+    const anyAnimationLockActive = hardSlamAnimatingNow || isAnimating || now < moveAnimationLockUntilRef.current;
 
-    if (hardSlamAnimatingNow) {
+    if (anyAnimationLockActive) {
+      const remainingLocalLock = Math.max(0, moveAnimationLockUntilRef.current - now);
+      const remainingHardSlam = Math.max(0, hardSlamEndMs - now);
+      const remainingMs = Math.max(remainingHardSlam, remainingLocalLock);
       setBotDebugInfo((prev) => ({
         ...prev,
         status: 'waiting-animation',
-        details: `Wachten op Hard Slam animatie (${Math.max(0, hardSlamEndMs - now)}ms)`,
+        details: `Wachten op animatie-lock (${remainingMs}ms)`,
         isBotTurn: true,
         currentPlayer: syncState.currentPlayer,
         controllerPosition: botControllerPosition,
@@ -845,6 +858,7 @@ export default function Game() {
   }, [
     gameHook,
     gameState,
+    isAnimating,
     calculateBestMove,
     getBotDifficulty,
     passMove,
