@@ -344,28 +344,32 @@
   @keyframes handPlaceMove {
     0% {
       opacity: 0;
-      transform: translate3d(72px, 120px, 0) scale(0.84) rotate(-18deg);
+      transform: translate3d(140px, 180px, 0) scale(0.6) rotate(-24deg);
     }
-    20% {
+    12% {
       opacity: 1;
     }
-    70% {
+    58% {
       opacity: 1;
       transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
     }
-    86% {
+    74% {
       opacity: 1;
-      transform: translate3d(0, 2px, 0) scale(0.94) rotate(-3deg);
+      transform: translate3d(0, 8px, 0) scale(0.92) rotate(-8deg);
+    }
+    84% {
+      opacity: 1;
+      transform: translate3d(0, -1px, 0) scale(0.98) rotate(2deg);
     }
     100% {
       opacity: 0;
-      transform: translate3d(8px, -20px, 0) scale(0.86) rotate(8deg);
+      transform: translate3d(20px, -36px, 0) scale(0.72) rotate(12deg);
     }
   }
 
   .domino-place-hand {
-    animation: handPlaceMove 560ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    filter: drop-shadow(0 8px 12px rgb(0 0 0 / 0.35));
+    animation: handPlaceMove 900ms cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
+    filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.45));
   }
 
   /* Mobile-specific styles */

@@ -282,7 +282,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (dominoCount < previousCount) {
       lastAnimatedDominoIdRef.current = null;
       setPlaceHandAnimation(null);
-    } else if (dominoCount === previousCount + 1) {
+    } else if (dominoCount > previousCount) {
       let newestId: string | null = null;
       let newestDomino: (typeof gameState.dominoes)[string] | null = null;
       let newestNumericId = -1;
@@ -311,7 +311,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         hideTimer = setTimeout(() => {
           setPlaceHandAnimation((current) => (current?.dominoId === newestId ? null : current));
-        }, 560);
+        }, 900);
       }
     }
 
@@ -475,13 +475,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {placeHandAnimation && (
             <div
-              className="absolute pointer-events-none z-[70] -translate-x-1/2 -translate-y-full"
+              className="absolute pointer-events-none z-[90] -translate-x-1/2 -translate-y-1/2"
               style={{
                 left: placeHandAnimation.left,
                 top: placeHandAnimation.top,
               }}
             >
-              <Hand className="domino-place-hand h-8 w-8 text-amber-100" strokeWidth={2.5} />
+              <div className="domino-place-hand flex h-12 w-12 items-center justify-center rounded-full bg-amber-300/95 text-amber-950 shadow-2xl">
+                <Hand className="h-7 w-7" strokeWidth={2.75} />
+              </div>
             </div>
           )}
 
