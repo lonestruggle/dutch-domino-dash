@@ -16,7 +16,7 @@ import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
-import type { DominoData, ShakeAnimationProfile } from '@/types/domino';
+import type { DominoData, LegalMove, ShakeAnimationProfile } from '@/types/domino';
 
 interface DominoGameProps {
   gameHook: any;
@@ -53,6 +53,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: DominoData; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [directionGroupIndex, setDirectionGroupIndex] = useState(0);
   const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [startingNewGame, setStartingNewGame] = useState(false);
@@ -229,6 +230,55 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
 
+  const getMoveAnchorKey = (move: LegalMove) => {
+    if (typeof move.end.anchorX === 'number' && typeof move.end.anchorY === 'number') {
+      return `${move.end.anchorX},${move.end.anchorY}`;
+    }
+    switch (move.end.fromDir) {
+      case 'N':
+        return `${move.end.x},${move.end.y + 1}`;
+      case 'S':
+        return `${move.end.x},${move.end.y - 1}`;
+      case 'W':
+        return `${move.end.x + 1},${move.end.y}`;
+      case 'E':
+        return `${move.end.x - 1},${move.end.y}`;
+      default:
+        return `${move.end.x},${move.end.y}`;
+    }
+  };
+
+  const legalMoveGroups = (() => {
+    const groups = new Map<string, LegalMove[]>();
+    legalMoves.forEach((move) => {
+      const key = getMoveAnchorKey(move);
+      const current = groups.get(key) || [];
+      current.push(move);
+      groups.set(key, current);
+    });
+    return Array.from(groups.entries()).map(([key, moves]) => ({ key, moves }));
+  })();
+
+  useEffect(() => {
+    setDirectionGroupIndex(0);
+  }, [gameState?.selectedHandIndex, selectedDomino?.value1, selectedDomino?.value2]);
+
+  useEffect(() => {
+    if (directionGroupIndex >= legalMoveGroups.length && legalMoveGroups.length > 0) {
+      setDirectionGroupIndex(0);
+    }
+  }, [directionGroupIndex, legalMoveGroups.length]);
+
+  const activeGroup = legalMoveGroups.length > 0
+    ? legalMoveGroups[directionGroupIndex % legalMoveGroups.length]
+    : null;
+  const visibleLegalMoves = activeGroup ? activeGroup.moves : legalMoves;
+
+  const cycleDirectionGroup = () => {
+    if (legalMoveGroups.length <= 1) return;
+    setDirectionGroupIndex((prev) => (prev + 1) % legalMoveGroups.length);
+  };
+
   // Enhanced pass logic - knop altijd zichtbaar, enabled wanneer speler kan passen
   let canPass = false;
   let hasAnyLegalMoves = false;
@@ -262,7 +312,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const shouldEnablePassButton = canPass && isMyTurn && !gameState?.isGameOver;
 
   // Add index to legal moves for executeMove
-  const legalMovesWithIndex = legalMoves.map(move => ({
+  const legalMovesWithIndex = visibleLegalMoves.map(move => ({
     ...move,
     index: gameState?.selectedHandIndex
   }));
@@ -508,6 +558,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-2">
+                <Button
+                  onClick={cycleDirectionGroup}
+                  disabled={!isMyTurn || legalMoveGroups.length <= 1 || gameState?.selectedHandIndex === null}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  Wissel richting {legalMoveGroups.length > 1 ? `(${directionGroupIndex + 1}/${legalMoveGroups.length})` : ''}
+                </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
                   disabled={!isMyTurn}
@@ -574,6 +633,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
                 >
                   Pas
+                </Button>
+                <Button
+                  onClick={cycleDirectionGroup}
+                  disabled={!isMyTurn || legalMoveGroups.length <= 1 || gameState?.selectedHandIndex === null}
+                  variant="outline"
+                >
+                  Wissel richting {legalMoveGroups.length > 1 ? `(${directionGroupIndex + 1}/${legalMoveGroups.length})` : ''}
                 </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
