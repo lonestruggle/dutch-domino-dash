@@ -94,21 +94,23 @@ const getOpenEndAnchorKey = (end: OpenEnd): string | null => {
   }
 };
 
-type FixTableLayoutShape = 'half-bar' | 'square' | 'l';
+type FixTableLayoutRotation = 'l-0' | 'l-90' | 'l-180' | 'l-270';
 type LayoutDirection = 'N' | 'S' | 'E' | 'W';
 
-const FIX_TABLE_LAYOUT_SEQUENCE: FixTableLayoutShape[] = ['half-bar', 'square', 'l'];
+const FIX_TABLE_LAYOUT_SEQUENCE: FixTableLayoutRotation[] = ['l-0', 'l-90', 'l-180', 'l-270'];
 
-const getFixLayoutLabel = (shape: FixTableLayoutShape): string => {
-  switch (shape) {
-    case 'half-bar':
-      return 'Halve balk';
-    case 'square':
-      return 'Vierkant';
-    case 'l':
-      return 'L-vorm';
+const getFixLayoutLabel = (rotation: FixTableLayoutRotation): string => {
+  switch (rotation) {
+    case 'l-0':
+      return 'L-rotatie 0°';
+    case 'l-90':
+      return 'L-rotatie 90°';
+    case 'l-180':
+      return 'L-rotatie 180°';
+    case 'l-270':
+      return 'L-rotatie 270°';
     default:
-      return 'Layout';
+      return 'L-rotatie';
   }
 };
 
@@ -117,48 +119,39 @@ const parseDominoIndex = (dominoId: string): number => {
   return Number.isFinite(numericPart) ? numericPart : 0;
 };
 
-const generateDirectionsForLayout = (shape: FixTableLayoutShape, dominoCount: number): LayoutDirection[] => {
+const generateDirectionsForLayout = (rotation: FixTableLayoutRotation, dominoCount: number): LayoutDirection[] => {
   const remaining = Math.max(0, dominoCount - 1);
   if (remaining === 0) return [];
 
+  const basePattern: [LayoutDirection, LayoutDirection] = (() => {
+    switch (rotation) {
+      case 'l-0':
+        return ['E', 'S'];
+      case 'l-90':
+        return ['S', 'W'];
+      case 'l-180':
+        return ['W', 'N'];
+      case 'l-270':
+        return ['N', 'E'];
+      default:
+        return ['E', 'S'];
+    }
+  })();
+
+  const [firstLegDirection, secondLegDirection] = basePattern;
+  const legSize = Math.max(2, Math.ceil(Math.sqrt(dominoCount)));
   const directions: LayoutDirection[] = [];
-  const pushSteps = (direction: LayoutDirection, steps: number) => {
+  const pushSteps = (direction: LayoutDirection, steps: number): void => {
     for (let i = 0; i < steps && directions.length < remaining; i += 1) {
       directions.push(direction);
     }
   };
 
-  if (shape === 'l') {
-    const firstLeg = Math.max(1, Math.ceil(remaining * 0.55));
-    pushSteps('E', firstLeg);
-    pushSteps('S', remaining - directions.length);
-    return directions;
-  }
-
-  if (shape === 'half-bar') {
-    const rowLength = Math.max(4, Math.ceil(Math.sqrt(dominoCount * 2)));
-    let going: LayoutDirection = 'E';
-    while (directions.length < remaining) {
-      pushSteps(going, rowLength - 1);
-      if (directions.length >= remaining) break;
-      pushSteps('S', 1);
-      going = going === 'E' ? 'W' : 'E';
-    }
-    return directions;
-  }
-
-  // "Square" uses a compact spiral route.
-  const cycle: LayoutDirection[] = ['E', 'S', 'W', 'N'];
-  let segmentLength = 1;
-  let cycleIndex = 0;
   while (directions.length < remaining) {
-    for (let segmentRepeat = 0; segmentRepeat < 2 && directions.length < remaining; segmentRepeat += 1) {
-      const direction = cycle[cycleIndex % cycle.length];
-      pushSteps(direction, segmentLength);
-      cycleIndex += 1;
-    }
-    segmentLength += 1;
+    pushSteps(firstLegDirection, legSize);
+    pushSteps(secondLegDirection, legSize);
   }
+
   return directions;
 };
 
@@ -166,14 +159,17 @@ interface ChainPlacement {
   x: number;
   y: number;
   orientation: 'horizontal' | 'vertical';
+  flipped: boolean;
+  values: [number, number];
   cells: Array<[number, number]>;
-  endpoint: { x: number; y: number };
+  endpointCell: [number, number];
+  endpointValue: number;
 }
 
 const createPlacementCandidate = (
   endpoint: { x: number; y: number },
   direction: LayoutDirection
-): ChainPlacement => {
+): Omit<ChainPlacement, 'flipped' | 'values' | 'endpointValue'> & { innerIndex: 0 | 1; outerIndex: 0 | 1 } => {
   if (direction === 'E') {
     const cells: Array<[number, number]> = [
       [endpoint.x + 1, endpoint.y],
@@ -184,7 +180,9 @@ const createPlacementCandidate = (
       y: endpoint.y,
       orientation: 'horizontal',
       cells,
-      endpoint: { x: endpoint.x + 2, y: endpoint.y },
+      endpointCell: [endpoint.x + 2, endpoint.y],
+      innerIndex: 0,
+      outerIndex: 1,
     };
   }
   if (direction === 'W') {
@@ -197,7 +195,9 @@ const createPlacementCandidate = (
       y: endpoint.y,
       orientation: 'horizontal',
       cells,
-      endpoint: { x: endpoint.x - 2, y: endpoint.y },
+      endpointCell: [endpoint.x - 2, endpoint.y],
+      innerIndex: 1,
+      outerIndex: 0,
     };
   }
   if (direction === 'S') {
@@ -210,7 +210,9 @@ const createPlacementCandidate = (
       y: endpoint.y + 1,
       orientation: 'vertical',
       cells,
-      endpoint: { x: endpoint.x, y: endpoint.y + 2 },
+      endpointCell: [endpoint.x, endpoint.y + 2],
+      innerIndex: 0,
+      outerIndex: 1,
     };
   }
 
@@ -223,7 +225,9 @@ const createPlacementCandidate = (
     y: endpoint.y - 2,
     orientation: 'vertical',
     cells,
-    endpoint: { x: endpoint.x, y: endpoint.y - 2 },
+    endpointCell: [endpoint.x, endpoint.y - 2],
+    innerIndex: 1,
+    outerIndex: 0,
   };
 };
 
@@ -234,62 +238,136 @@ const fallbackDirections: Record<LayoutDirection, LayoutDirection[]> = {
   N: ['N', 'E', 'W', 'S'],
 };
 
-const buildChainPlacements = (
-  dominoCount: number,
-  directions: LayoutDirection[]
-): Array<{ x: number; y: number; orientation: 'horizontal' | 'vertical' }> | null => {
-  if (dominoCount <= 0) return [];
-
-  const placements: Array<{ x: number; y: number; orientation: 'horizontal' | 'vertical' }> = [
-    { x: 0, y: 0, orientation: 'horizontal' },
-  ];
-  const occupied = new Set<string>(['0,0', '1,0']);
-  let endpoint = { x: 1, y: 0 };
-
-  for (let dominoIndex = 1; dominoIndex < dominoCount; dominoIndex += 1) {
-    const preferredDirection = directions[dominoIndex - 1] ?? 'E';
-    const attempts = fallbackDirections[preferredDirection];
-    let selected: ChainPlacement | null = null;
-
-    for (const direction of attempts) {
-      const candidate = createPlacementCandidate(endpoint, direction);
-      const overlaps = candidate.cells.some(([x, y]) => occupied.has(`${x},${y}`));
-      if (!overlaps) {
-        selected = candidate;
-        break;
-      }
-    }
-
-    if (!selected) {
-      return null;
-    }
-
-    selected.cells.forEach(([x, y]) => occupied.add(`${x},${y}`));
-    placements.push({
-      x: selected.x,
-      y: selected.y,
-      orientation: selected.orientation,
-    });
-    endpoint = selected.endpoint;
+const resolveValuesByInnerMatch = (
+  value1: number,
+  value2: number,
+  targetValue: number,
+  innerIndex: 0 | 1
+): { flipped: boolean; values: [number, number] } | null => {
+  if (innerIndex === 0) {
+    if (value1 === targetValue) return { flipped: false, values: [value1, value2] };
+    if (value2 === targetValue) return { flipped: true, values: [value2, value1] };
+    return null;
   }
 
-  return placements;
+  if (value2 === targetValue) return { flipped: false, values: [value1, value2] };
+  if (value1 === targetValue) return { flipped: true, values: [value2, value1] };
+  return null;
+};
+
+const hasIllegalSideContact = (
+  candidateCells: Array<[number, number]>,
+  previousCells: Array<[number, number]>,
+  occupiedByCell: Map<string, string>
+): boolean => {
+  const placementCellSet = new Set(candidateCells.map(([x, y]) => `${x},${y}`));
+  const allowedContactSet = new Set<string>([
+    ...placementCellSet,
+    ...previousCells.map(([x, y]) => `${x},${y}`),
+  ]);
+
+  return candidateCells.some(([cx, cy]) => {
+    const neighbors = [
+      [cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy],
+      [cx - 1, cy - 1], [cx + 1, cy - 1], [cx - 1, cy + 1], [cx + 1, cy + 1],
+    ] as const;
+
+    return neighbors.some(([nx, ny]) => {
+      const key = `${nx},${ny}`;
+      if (allowedContactSet.has(key)) return false;
+      return occupiedByCell.has(key);
+    });
+  });
 };
 
 const relayoutTableState = (
   state: GameState,
-  shape: FixTableLayoutShape,
+  rotation: FixTableLayoutRotation,
   regenerateOpenEnds: (state: GameState) => OpenEnd[]
 ): GameState | null => {
   const orderedDominoEntries = Object.entries(state.dominoes).sort(
-    ([dominoA], [dominoB]) => parseDominoIndex(dominoA) - parseDominoIndex(dominoB)
+    ([dominoA], [dominoB]) => {
+      const indexA = parseDominoIndex(dominoA);
+      const indexB = parseDominoIndex(dominoB);
+      if (indexA !== indexB) return indexA - indexB;
+      return dominoA.localeCompare(dominoB);
+    }
   );
   if (orderedDominoEntries.length < 2) return null;
 
-  const directions = generateDirectionsForLayout(shape, orderedDominoEntries.length);
-  const placements = buildChainPlacements(orderedDominoEntries.length, directions);
-  if (!placements || placements.length !== orderedDominoEntries.length) {
-    return null;
+  const directions = generateDirectionsForLayout(rotation, orderedDominoEntries.length);
+  const occupiedByCell = new Map<string, string>();
+  const placements: ChainPlacement[] = [];
+
+  const [firstDominoId, firstDomino] = orderedDominoEntries[0];
+  const secondDominoData = orderedDominoEntries[1]?.[1]?.data;
+
+  let firstFlipped = false;
+  if (secondDominoData) {
+    const secondMatchesValue2 = secondDominoData.value1 === firstDomino.data.value2 || secondDominoData.value2 === firstDomino.data.value2;
+    const secondMatchesValue1 = secondDominoData.value1 === firstDomino.data.value1 || secondDominoData.value2 === firstDomino.data.value1;
+    firstFlipped = !secondMatchesValue2 && secondMatchesValue1;
+  }
+
+  const firstValues: [number, number] = firstFlipped
+    ? [firstDomino.data.value2, firstDomino.data.value1]
+    : [firstDomino.data.value1, firstDomino.data.value2];
+  const firstCells: Array<[number, number]> = [[0, 0], [1, 0]];
+  firstCells.forEach(([x, y]) => occupiedByCell.set(`${x},${y}`, firstDominoId));
+  placements.push({
+    x: 0,
+    y: 0,
+    orientation: 'horizontal',
+    flipped: firstFlipped,
+    values: firstValues,
+    cells: firstCells,
+    endpointCell: [1, 0],
+    endpointValue: firstValues[1],
+  });
+
+  for (let dominoIndex = 1; dominoIndex < orderedDominoEntries.length; dominoIndex += 1) {
+    const [dominoId, domino] = orderedDominoEntries[dominoIndex];
+    const previousPlacement = placements[placements.length - 1];
+    const preferredDirection = directions[dominoIndex - 1] ?? directions[directions.length - 1] ?? 'E';
+    const directionAttempts = fallbackDirections[preferredDirection];
+    let selectedPlacement: ChainPlacement | null = null;
+
+    for (const direction of directionAttempts) {
+      const candidate = createPlacementCandidate(
+        { x: previousPlacement.endpointCell[0], y: previousPlacement.endpointCell[1] },
+        direction
+      );
+      const overlapsExisting = candidate.cells.some(([x, y]) => occupiedByCell.has(`${x},${y}`));
+      if (overlapsExisting) continue;
+
+      const valueResolution = resolveValuesByInnerMatch(
+        domino.data.value1,
+        domino.data.value2,
+        previousPlacement.endpointValue,
+        candidate.innerIndex
+      );
+      if (!valueResolution) continue;
+
+      if (hasIllegalSideContact(candidate.cells, previousPlacement.cells, occupiedByCell)) continue;
+
+      const endpointValue = valueResolution.values[candidate.outerIndex];
+      selectedPlacement = {
+        x: candidate.x,
+        y: candidate.y,
+        orientation: candidate.orientation,
+        flipped: valueResolution.flipped,
+        values: valueResolution.values,
+        cells: candidate.cells,
+        endpointCell: candidate.endpointCell,
+        endpointValue,
+      };
+      break;
+    }
+
+    if (!selectedPlacement) return null;
+
+    selectedPlacement.cells.forEach(([x, y]) => occupiedByCell.set(`${x},${y}`, dominoId));
+    placements.push(selectedPlacement);
   }
 
   const newDominoes = { ...state.dominoes };
@@ -302,18 +380,12 @@ const relayoutTableState = (
       x: placement.x,
       y: placement.y,
       orientation: placement.orientation,
+      flipped: placement.flipped,
     };
     newDominoes[dominoId] = relaidDomino;
 
-    const pips = relaidDomino.flipped
-      ? [relaidDomino.data.value2, relaidDomino.data.value1]
-      : [relaidDomino.data.value1, relaidDomino.data.value2];
-    const cells = placement.orientation === 'horizontal'
-      ? [[placement.x, placement.y], [placement.x + 1, placement.y]]
-      : [[placement.x, placement.y], [placement.x, placement.y + 1]];
-
-    cells.forEach(([x, y], cellIndex) => {
-      newBoard[`${x},${y}`] = { dominoId, value: pips[cellIndex] };
+    placement.cells.forEach(([x, y], cellIndex) => {
+      newBoard[`${x},${y}`] = { dominoId, value: placement.values[cellIndex] };
     });
   });
 
@@ -580,7 +652,7 @@ export default function Game() {
     }
   }, [disarmHardSlam, setGameState, syncedStartNewGame]);
 
-  const wrappedFixTableStones = useCallback((shape?: FixTableLayoutShape) => {
+  const wrappedFixTableStones = useCallback((rotation?: FixTableLayoutRotation) => {
     if (!gameState || gameState.isGameOver) return null;
 
     const dominoCount = Object.keys(gameState.dominoes || {}).length;
@@ -603,18 +675,18 @@ export default function Game() {
       return null;
     }
 
-    const chosenShape =
-      shape ?? FIX_TABLE_LAYOUT_SEQUENCE[nextFixLayoutIndexRef.current % FIX_TABLE_LAYOUT_SEQUENCE.length];
-    if (!shape) {
+    const chosenRotation =
+      rotation ?? FIX_TABLE_LAYOUT_SEQUENCE[nextFixLayoutIndexRef.current % FIX_TABLE_LAYOUT_SEQUENCE.length];
+    if (!rotation) {
       nextFixLayoutIndexRef.current =
         (nextFixLayoutIndexRef.current + 1) % FIX_TABLE_LAYOUT_SEQUENCE.length;
     }
 
-    const relaidState = relayoutTableState(gameState, chosenShape, gameHook.regenerateOpenEnds);
+    const relaidState = relayoutTableState(gameState, chosenRotation, gameHook.regenerateOpenEnds);
     if (!relaidState) {
       toast({
         title: 'Fix mislukt',
-        description: 'Kon geen stabiele layout maken. Probeer een andere vorm.',
+        description: 'Kon geen geldige L-layout maken met deze rotatie.',
         variant: 'destructive',
       });
       return null;
@@ -628,9 +700,9 @@ export default function Game() {
 
     toast({
       title: 'Stenen gefixt',
-      description: `Vorm: ${getFixLayoutLabel(chosenShape)}`,
+      description: `Vorm: ${getFixLayoutLabel(chosenRotation)}`,
     });
-    return chosenShape;
+    return chosenRotation;
   }, [
     gameHook.regenerateOpenEnds,
     gameState,

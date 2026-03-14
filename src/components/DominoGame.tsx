@@ -227,10 +227,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     playerHands: (gameState as any)?.playerHands?.map((hand: any, i: number) => ({ player: i, handSize: hand?.length || 0 }))
   });
   
-  const fixLayoutOptions: Array<{ key: 'half-bar' | 'square' | 'l'; label: string }> = [
-    { key: 'half-bar', label: 'Halve balk' },
-    { key: 'square', label: 'Vierkant' },
-    { key: 'l', label: 'L-vorm' },
+  const fixLayoutOptions: Array<{ key: 'l-0' | 'l-90' | 'l-180' | 'l-270'; label: string }> = [
+    { key: 'l-0', label: 'L 0°' },
+    { key: 'l-90', label: 'L 90°' },
+    { key: 'l-180', label: 'L 180°' },
+    { key: 'l-270', label: 'L 270°' },
   ];
   const activeFixLayout = fixLayoutOptions[fixShapeIndex % fixLayoutOptions.length];
 
