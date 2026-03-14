@@ -171,7 +171,10 @@ interface FixOpenEnd {
   endpointCell: [number, number];
   requiredValue: number;
   anchorCells: Array<[number, number]>;
+  side: 'left' | 'right';
 }
+
+type FixPlacementSide = 'left' | 'right' | 'any';
 
 const createPlacementCandidate = (
   endpoint: { x: number; y: number },
@@ -287,6 +290,74 @@ const hasIllegalSideContact = (
   });
 };
 
+const areAdjacentCells = (a: [number, number], b: [number, number]): boolean =>
+  Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) === 1;
+
+const inferPlacementSides = (
+  state: GameState,
+  orderedDominoEntries: Array<[string, GameState['dominoes'][string]]>
+): FixPlacementSide[] => {
+  const sides: FixPlacementSide[] = new Array(orderedDominoEntries.length).fill('any');
+  if (orderedDominoEntries.length <= 1) return sides;
+
+  const boardCellsByDomino = new Map<string, Array<[number, number]>>();
+  Object.entries(state.board).forEach(([coord, cell]) => {
+    const [x, y] = coord.split(',').map(Number);
+    const current = boardCellsByDomino.get(cell.dominoId) || [];
+    current.push([x, y]);
+    boardCellsByDomino.set(cell.dominoId, current);
+  });
+
+  const getCells = (dominoId: string): Array<[number, number]> => {
+    const fromBoard = boardCellsByDomino.get(dominoId);
+    if (fromBoard && fromBoard.length >= 2) return fromBoard;
+
+    const domino = state.dominoes[dominoId];
+    if (!domino) return [];
+    return domino.orientation === 'horizontal'
+      ? [[domino.x, domino.y], [domino.x + 1, domino.y]]
+      : [[domino.x, domino.y], [domino.x, domino.y + 1]];
+  };
+
+  const touches = (idA: string, idB: string): boolean => {
+    const cellsA = getCells(idA);
+    const cellsB = getCells(idB);
+    return cellsA.some((a) => cellsB.some((b) => areAdjacentCells(a, b)));
+  };
+
+  const chainOrder: string[] = [orderedDominoEntries[0][0]];
+  for (let index = 1; index < orderedDominoEntries.length; index += 1) {
+    const currentId = orderedDominoEntries[index][0];
+    const leftId = chainOrder[0];
+    const rightId = chainOrder[chainOrder.length - 1];
+    const touchesLeft = touches(currentId, leftId);
+    const touchesRight = touches(currentId, rightId);
+
+    if (touchesLeft && !touchesRight) {
+      sides[index] = 'left';
+      chainOrder.unshift(currentId);
+      continue;
+    }
+    if (touchesRight && !touchesLeft) {
+      sides[index] = 'right';
+      chainOrder.push(currentId);
+      continue;
+    }
+
+    // Ambiguous or not reliably inferable from current board shape.
+    sides[index] = 'any';
+    if (touchesRight) {
+      chainOrder.push(currentId);
+    } else if (touchesLeft) {
+      chainOrder.unshift(currentId);
+    } else {
+      chainOrder.push(currentId);
+    }
+  }
+
+  return sides;
+};
+
 const applyForbiddenRulesForPlacement = (
   forbiddens: Record<string, boolean>,
   placement: ChainPlacement,
@@ -392,7 +463,8 @@ const rebuildForbiddensFromPlacements = (
 const buildPlacementWithTwoEnds = (
   orderedDominoEntries: Array<[string, GameState['dominoes'][string]]>,
   directions: LayoutDirection[],
-  firstFlipped: boolean
+  firstFlipped: boolean,
+  placementSides: FixPlacementSide[]
 ): ChainPlacement[] | null => {
   if (orderedDominoEntries.length === 0) return [];
 
@@ -444,11 +516,16 @@ const buildPlacementWithTwoEnds = (
     const [, domino] = orderedDominoEntries[dominoIndex];
     const preferredDirection = directions[dominoIndex - 1] ?? directions[directions.length - 1] ?? 'E';
     const directionAttempts = fallbackDirections[preferredDirection];
+    const preferredSide = placementSides[dominoIndex] ?? 'any';
     const sortedOpenEnds = [...openEnds].sort(
       (a, b) => scoreOpenEnd(b, preferredDirection) - scoreOpenEnd(a, preferredDirection)
     );
+    const candidateOpenEnds = preferredSide === 'any'
+      ? sortedOpenEnds
+      : sortedOpenEnds.filter((end) => end.side === preferredSide);
+    const openEndsToTry = candidateOpenEnds.length > 0 ? candidateOpenEnds : sortedOpenEnds;
 
-    for (const openEnd of sortedOpenEnds) {
+    for (const openEnd of openEndsToTry) {
       for (const direction of directionAttempts) {
         const candidate = createPlacementCandidate(
           { x: openEnd.endpointCell[0], y: openEnd.endpointCell[1] },
@@ -483,15 +560,16 @@ const buildPlacementWithTwoEnds = (
         const [dominoId] = orderedDominoEntries[dominoIndex];
         placement.cells.forEach(([x, y]) => occupiedByCell.set(`${x},${y}`, dominoId));
 
-        const nextOpenEnds = openEnds
-          .filter((end) => end !== openEnd)
-          .concat([
-            {
-              endpointCell: placement.endpointCell,
-              requiredValue: placement.endpointValue,
-              anchorCells: placement.cells,
-            } satisfies FixOpenEnd,
-          ]);
+        const nextOpenEnds = openEnds.map((end) =>
+          end === openEnd
+            ? ({
+                endpointCell: placement.endpointCell,
+                requiredValue: placement.endpointValue,
+                anchorCells: placement.cells,
+                side: end.side,
+              } satisfies FixOpenEnd)
+            : end
+        );
         const nextPlacements = [...placements, placement];
         const solved = tryPlaceRecursive(dominoIndex + 1, nextPlacements, nextOpenEnds);
         if (solved) return solved;
@@ -508,11 +586,13 @@ const buildPlacementWithTwoEnds = (
       endpointCell: [0, 0],
       requiredValue: firstValues[0],
       anchorCells: firstCells,
+      side: 'left',
     },
     {
       endpointCell: [1, 0],
       requiredValue: firstValues[1],
       anchorCells: firstCells,
+      side: 'right',
     },
   ];
 
@@ -535,8 +615,9 @@ const relayoutTableState = (
   if (orderedDominoEntries.length < 2) return null;
 
   const directions = generateDirectionsForLayout(rotation, orderedDominoEntries.length);
-  const firstTry = buildPlacementWithTwoEnds(orderedDominoEntries, directions, false);
-  const placements = firstTry ?? buildPlacementWithTwoEnds(orderedDominoEntries, directions, true);
+  const placementSides = inferPlacementSides(state, orderedDominoEntries);
+  const firstTry = buildPlacementWithTwoEnds(orderedDominoEntries, directions, false, placementSides);
+  const placements = firstTry ?? buildPlacementWithTwoEnds(orderedDominoEntries, directions, true, placementSides);
   if (!placements || placements.length !== orderedDominoEntries.length) return null;
 
   const newDominoes = { ...state.dominoes };
