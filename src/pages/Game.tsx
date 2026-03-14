@@ -166,6 +166,12 @@ interface ChainPlacement {
   endpointValue: number;
 }
 
+interface FixOpenEnd {
+  endpointCell: [number, number];
+  requiredValue: number;
+  anchorCells: Array<[number, number]>;
+}
+
 const createPlacementCandidate = (
   endpoint: { x: number; y: number },
   direction: LayoutDirection
@@ -257,13 +263,13 @@ const resolveValuesByInnerMatch = (
 
 const hasIllegalSideContact = (
   candidateCells: Array<[number, number]>,
-  previousCells: Array<[number, number]>,
+  anchorCells: Array<[number, number]>,
   occupiedByCell: Map<string, string>
 ): boolean => {
   const placementCellSet = new Set(candidateCells.map(([x, y]) => `${x},${y}`));
   const allowedContactSet = new Set<string>([
     ...placementCellSet,
-    ...previousCells.map(([x, y]) => `${x},${y}`),
+    ...anchorCells.map(([x, y]) => `${x},${y}`),
   ]);
 
   return candidateCells.some(([cx, cy]) => {
@@ -278,6 +284,134 @@ const hasIllegalSideContact = (
       return occupiedByCell.has(key);
     });
   });
+};
+
+const buildPlacementWithTwoEnds = (
+  orderedDominoEntries: Array<[string, GameState['dominoes'][string]]>,
+  directions: LayoutDirection[],
+  firstFlipped: boolean
+): ChainPlacement[] | null => {
+  if (orderedDominoEntries.length === 0) return [];
+
+  const [firstDominoId, firstDomino] = orderedDominoEntries[0];
+  const firstValues: [number, number] = firstFlipped
+    ? [firstDomino.data.value2, firstDomino.data.value1]
+    : [firstDomino.data.value1, firstDomino.data.value2];
+  const firstCells: Array<[number, number]> = [[0, 0], [1, 0]];
+  const firstPlacement: ChainPlacement = {
+    x: 0,
+    y: 0,
+    orientation: 'horizontal',
+    flipped: firstFlipped,
+    values: firstValues,
+    cells: firstCells,
+    endpointCell: [1, 0],
+    endpointValue: firstValues[1],
+  };
+
+  const occupiedByCell = new Map<string, string>();
+  firstCells.forEach(([x, y]) => occupiedByCell.set(`${x},${y}`, firstDominoId));
+
+  const scoreOpenEnd = (openEnd: FixOpenEnd, preferred: LayoutDirection): number => {
+    const [x, y] = openEnd.endpointCell;
+    switch (preferred) {
+      case 'E':
+        return x;
+      case 'W':
+        return -x;
+      case 'S':
+        return y;
+      case 'N':
+        return -y;
+      default:
+        return 0;
+    }
+  };
+
+  const tryPlaceRecursive = (
+    dominoIndex: number,
+    placements: ChainPlacement[],
+    openEnds: FixOpenEnd[]
+  ): ChainPlacement[] | null => {
+    if (dominoIndex >= orderedDominoEntries.length) {
+      return placements;
+    }
+
+    const [, domino] = orderedDominoEntries[dominoIndex];
+    const preferredDirection = directions[dominoIndex - 1] ?? directions[directions.length - 1] ?? 'E';
+    const directionAttempts = fallbackDirections[preferredDirection];
+    const sortedOpenEnds = [...openEnds].sort(
+      (a, b) => scoreOpenEnd(b, preferredDirection) - scoreOpenEnd(a, preferredDirection)
+    );
+
+    for (const openEnd of sortedOpenEnds) {
+      for (const direction of directionAttempts) {
+        const candidate = createPlacementCandidate(
+          { x: openEnd.endpointCell[0], y: openEnd.endpointCell[1] },
+          direction
+        );
+        const overlapsExisting = candidate.cells.some(([x, y]) => occupiedByCell.has(`${x},${y}`));
+        if (overlapsExisting) continue;
+
+        const valueResolution = resolveValuesByInnerMatch(
+          domino.data.value1,
+          domino.data.value2,
+          openEnd.requiredValue,
+          candidate.innerIndex
+        );
+        if (!valueResolution) continue;
+
+        if (hasIllegalSideContact(candidate.cells, openEnd.anchorCells, occupiedByCell)) continue;
+
+        const endpointValue = valueResolution.values[candidate.outerIndex];
+        const placement: ChainPlacement = {
+          x: candidate.x,
+          y: candidate.y,
+          orientation: candidate.orientation,
+          flipped: valueResolution.flipped,
+          values: valueResolution.values,
+          cells: candidate.cells,
+          endpointCell: candidate.endpointCell,
+          endpointValue,
+        };
+
+        const [dominoId] = orderedDominoEntries[dominoIndex];
+        placement.cells.forEach(([x, y]) => occupiedByCell.set(`${x},${y}`, dominoId));
+
+        const nextOpenEnds = openEnds
+          .filter((end) => end !== openEnd)
+          .concat([
+            {
+              endpointCell: placement.endpointCell,
+              requiredValue: placement.endpointValue,
+              anchorCells: placement.cells,
+            } satisfies FixOpenEnd,
+          ]);
+        const nextPlacements = [...placements, placement];
+        const solved = tryPlaceRecursive(dominoIndex + 1, nextPlacements, nextOpenEnds);
+        if (solved) return solved;
+
+        placement.cells.forEach(([x, y]) => occupiedByCell.delete(`${x},${y}`));
+      }
+    }
+
+    return null;
+  };
+
+  const initialOpenEnds: FixOpenEnd[] = [
+    {
+      endpointCell: [0, 0],
+      requiredValue: firstValues[0],
+      anchorCells: firstCells,
+    },
+    {
+      endpointCell: [1, 0],
+      requiredValue: firstValues[1],
+      anchorCells: firstCells,
+    },
+  ];
+
+  return tryPlaceRecursive(1, [firstPlacement], initialOpenEnds);
 };
 
 const relayoutTableState = (
@@ -296,79 +430,9 @@ const relayoutTableState = (
   if (orderedDominoEntries.length < 2) return null;
 
   const directions = generateDirectionsForLayout(rotation, orderedDominoEntries.length);
-  const occupiedByCell = new Map<string, string>();
-  const placements: ChainPlacement[] = [];
-
-  const [firstDominoId, firstDomino] = orderedDominoEntries[0];
-  const secondDominoData = orderedDominoEntries[1]?.[1]?.data;
-
-  let firstFlipped = false;
-  if (secondDominoData) {
-    const secondMatchesValue2 = secondDominoData.value1 === firstDomino.data.value2 || secondDominoData.value2 === firstDomino.data.value2;
-    const secondMatchesValue1 = secondDominoData.value1 === firstDomino.data.value1 || secondDominoData.value2 === firstDomino.data.value1;
-    firstFlipped = !secondMatchesValue2 && secondMatchesValue1;
-  }
-
-  const firstValues: [number, number] = firstFlipped
-    ? [firstDomino.data.value2, firstDomino.data.value1]
-    : [firstDomino.data.value1, firstDomino.data.value2];
-  const firstCells: Array<[number, number]> = [[0, 0], [1, 0]];
-  firstCells.forEach(([x, y]) => occupiedByCell.set(`${x},${y}`, firstDominoId));
-  placements.push({
-    x: 0,
-    y: 0,
-    orientation: 'horizontal',
-    flipped: firstFlipped,
-    values: firstValues,
-    cells: firstCells,
-    endpointCell: [1, 0],
-    endpointValue: firstValues[1],
-  });
-
-  for (let dominoIndex = 1; dominoIndex < orderedDominoEntries.length; dominoIndex += 1) {
-    const [dominoId, domino] = orderedDominoEntries[dominoIndex];
-    const previousPlacement = placements[placements.length - 1];
-    const preferredDirection = directions[dominoIndex - 1] ?? directions[directions.length - 1] ?? 'E';
-    const directionAttempts = fallbackDirections[preferredDirection];
-    let selectedPlacement: ChainPlacement | null = null;
-
-    for (const direction of directionAttempts) {
-      const candidate = createPlacementCandidate(
-        { x: previousPlacement.endpointCell[0], y: previousPlacement.endpointCell[1] },
-        direction
-      );
-      const overlapsExisting = candidate.cells.some(([x, y]) => occupiedByCell.has(`${x},${y}`));
-      if (overlapsExisting) continue;
-
-      const valueResolution = resolveValuesByInnerMatch(
-        domino.data.value1,
-        domino.data.value2,
-        previousPlacement.endpointValue,
-        candidate.innerIndex
-      );
-      if (!valueResolution) continue;
-
-      if (hasIllegalSideContact(candidate.cells, previousPlacement.cells, occupiedByCell)) continue;
-
-      const endpointValue = valueResolution.values[candidate.outerIndex];
-      selectedPlacement = {
-        x: candidate.x,
-        y: candidate.y,
-        orientation: candidate.orientation,
-        flipped: valueResolution.flipped,
-        values: valueResolution.values,
-        cells: candidate.cells,
-        endpointCell: candidate.endpointCell,
-        endpointValue,
-      };
-      break;
-    }
-
-    if (!selectedPlacement) return null;
-
-    selectedPlacement.cells.forEach(([x, y]) => occupiedByCell.set(`${x},${y}`, dominoId));
-    placements.push(selectedPlacement);
-  }
+  const firstTry = buildPlacementWithTwoEnds(orderedDominoEntries, directions, false);
+  const placements = firstTry ?? buildPlacementWithTwoEnds(orderedDominoEntries, directions, true);
+  if (!placements || placements.length !== orderedDominoEntries.length) return null;
 
   const newDominoes = { ...state.dominoes };
   const newBoard: Record<string, { dominoId: string; value: number }> = {};
