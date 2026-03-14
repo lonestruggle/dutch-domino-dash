@@ -122,8 +122,8 @@ export const useDominoGame = (localPlayerPosition?: number) => {
   }, [resetGame]);
 
   // EXACT COPY FROM YOUR ORIGINAL CODE
-  const hasDifferentNeighbor = useCallback((x: number, y: number): boolean => {
-    const { board } = gameStateRef.current;
+  const hasDifferentNeighbor = useCallback((x: number, y: number, boardOverride?: GameState['board']): boolean => {
+    const board = boardOverride || gameStateRef.current.board;
     const neighbors = {
       N: [x, y - 1],
       S: [x, y + 1],
@@ -275,7 +275,7 @@ export const useDominoGame = (localPlayerPosition?: number) => {
         }
 
         // Check hasDifferentNeighbor (more than 3 neighbors blocks placement)
-        if (hasDifferentNeighbor(nx, ny)) {
+        if (hasDifferentNeighbor(nx, ny, state.board)) {
           continue;
         }
 

@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import type { GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
+import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
 
@@ -164,6 +164,7 @@ interface ChainPlacement {
   cells: Array<[number, number]>;
   endpointCell: [number, number];
   endpointValue: number;
+  fromDir: LayoutDirection | null;
 }
 
 interface FixOpenEnd {
@@ -175,7 +176,7 @@ interface FixOpenEnd {
 const createPlacementCandidate = (
   endpoint: { x: number; y: number },
   direction: LayoutDirection
-): Omit<ChainPlacement, 'flipped' | 'values' | 'endpointValue'> & { innerIndex: 0 | 1; outerIndex: 0 | 1 } => {
+): Omit<ChainPlacement, 'flipped' | 'values' | 'endpointValue' | 'fromDir'> & { innerIndex: 0 | 1; outerIndex: 0 | 1 } => {
   if (direction === 'E') {
     const cells: Array<[number, number]> = [
       [endpoint.x + 1, endpoint.y],
@@ -286,6 +287,108 @@ const hasIllegalSideContact = (
   });
 };
 
+const applyForbiddenRulesForPlacement = (
+  forbiddens: Record<string, boolean>,
+  placement: ChainPlacement,
+  dominoData: DominoData
+): void => {
+  const { x, y, orientation, fromDir } = placement;
+  if (!fromDir) return;
+
+  if (dominoData.value1 === dominoData.value2) {
+    forbiddens[`${x},${y}`] = true;
+    if (orientation === 'horizontal') {
+      forbiddens[`${x + 1},${y}`] = true;
+    } else {
+      forbiddens[`${x},${y + 1}`] = true;
+    }
+
+    if (fromDir === 'N') {
+      forbiddens[`${x - 1},${y + 2}`] = true;
+      forbiddens[`${x + 1},${y + 2}`] = true;
+      forbiddens[`${x - 1},${y + 1}`] = true;
+      forbiddens[`${x + 1},${y + 1}`] = true;
+      forbiddens[`${x - 1},${y}`] = true;
+      forbiddens[`${x + 1},${y}`] = true;
+      forbiddens[`${x},${y + 3}`] = true;
+      forbiddens[`${x},${y + 2}`] = true;
+    }
+    if (fromDir === 'S') {
+      forbiddens[`${x - 1},${y - 1}`] = true;
+      forbiddens[`${x + 1},${y - 1}`] = true;
+      forbiddens[`${x - 1},${y - 2}`] = true;
+      forbiddens[`${x + 1},${y - 2}`] = true;
+      forbiddens[`${x - 1},${y}`] = true;
+      forbiddens[`${x + 1},${y}`] = true;
+      forbiddens[`${x},${y - 2}`] = true;
+      forbiddens[`${x},${y - 3}`] = true;
+    }
+    if (fromDir === 'E') {
+      forbiddens[`${x - 1},${y + 1}`] = true;
+      forbiddens[`${x - 1},${y - 1}`] = true;
+      forbiddens[`${x - 2},${y + 1}`] = true;
+      forbiddens[`${x - 2},${y - 1}`] = true;
+      forbiddens[`${x},${y + 1}`] = true;
+      forbiddens[`${x},${y - 1}`] = true;
+      forbiddens[`${x - 2},${y}`] = true;
+      forbiddens[`${x - 3},${y}`] = true;
+    }
+    if (fromDir === 'W') {
+      forbiddens[`${x + 1},${y + 1}`] = true;
+      forbiddens[`${x + 1},${y - 1}`] = true;
+      forbiddens[`${x + 2},${y + 1}`] = true;
+      forbiddens[`${x + 2},${y - 1}`] = true;
+      forbiddens[`${x},${y + 1}`] = true;
+      forbiddens[`${x},${y - 1}`] = true;
+      forbiddens[`${x + 2},${y}`] = true;
+      forbiddens[`${x + 3},${y}`] = true;
+    }
+    return;
+  }
+
+  if (fromDir === 'N') {
+    forbiddens[`${x - 1},${y + 2}`] = true;
+    forbiddens[`${x + 1},${y + 2}`] = true;
+    forbiddens[`${x - 1},${y + 1}`] = true;
+    forbiddens[`${x + 1},${y + 1}`] = true;
+    forbiddens[`${x},${y + 3}`] = true;
+  }
+  if (fromDir === 'S') {
+    forbiddens[`${x - 1},${y - 1}`] = true;
+    forbiddens[`${x + 1},${y - 1}`] = true;
+    forbiddens[`${x - 1},${y}`] = true;
+    forbiddens[`${x + 1},${y}`] = true;
+    forbiddens[`${x},${y - 2}`] = true;
+  }
+  if (fromDir === 'W') {
+    forbiddens[`${x + 2},${y + 1}`] = true;
+    forbiddens[`${x + 2},${y - 1}`] = true;
+    forbiddens[`${x + 1},${y + 1}`] = true;
+    forbiddens[`${x + 1},${y - 1}`] = true;
+    if (`${x + 3},${y}` !== '1,0') forbiddens[`${x + 3},${y}`] = true;
+  }
+  if (fromDir === 'E') {
+    forbiddens[`${x - 1},${y - 1}`] = true;
+    forbiddens[`${x - 1},${y + 1}`] = true;
+    forbiddens[`${x},${y - 1}`] = true;
+    forbiddens[`${x},${y + 1}`] = true;
+    if (`${x - 2},${y}` !== '-1,0') forbiddens[`${x - 2},${y}`] = true;
+  }
+};
+
+const rebuildForbiddensFromPlacements = (
+  orderedDominoEntries: Array<[string, GameState['dominoes'][string]]>,
+  placements: ChainPlacement[]
+): Record<string, boolean> => {
+  const rebuilt: Record<string, boolean> = {};
+  for (let index = 1; index < placements.length; index += 1) {
+    const placement = placements[index];
+    const [, domino] = orderedDominoEntries[index];
+    applyForbiddenRulesForPlacement(rebuilt, placement, domino.data);
+  }
+  return rebuilt;
+};
+
 const buildPlacementWithTwoEnds = (
   orderedDominoEntries: Array<[string, GameState['dominoes'][string]]>,
   directions: LayoutDirection[],
@@ -307,6 +410,7 @@ const buildPlacementWithTwoEnds = (
     cells: firstCells,
     endpointCell: [1, 0],
     endpointValue: firstValues[1],
+    fromDir: null,
   };
 
   const occupiedByCell = new Map<string, string>();
@@ -373,6 +477,7 @@ const buildPlacementWithTwoEnds = (
           cells: candidate.cells,
           endpointCell: candidate.endpointCell,
           endpointValue,
+          fromDir: direction,
         };
 
         const [dominoId] = orderedDominoEntries[dominoIndex];
@@ -453,12 +558,13 @@ const relayoutTableState = (
     });
   });
 
+  const rebuiltForbiddens = rebuildForbiddensFromPlacements(orderedDominoEntries, placements);
+
   const tempState: GameState = {
     ...state,
     dominoes: newDominoes,
     board: newBoard,
-    // Old forbiddens are coordinate-based and become stale after relayout.
-    forbiddens: {},
+    forbiddens: rebuiltForbiddens,
   };
 
   return {
