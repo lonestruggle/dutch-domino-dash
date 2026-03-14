@@ -94,6 +94,243 @@ const getOpenEndAnchorKey = (end: OpenEnd): string | null => {
   }
 };
 
+type FixTableLayoutShape = 'half-bar' | 'square' | 'l';
+type LayoutDirection = 'N' | 'S' | 'E' | 'W';
+
+const FIX_TABLE_LAYOUT_SEQUENCE: FixTableLayoutShape[] = ['half-bar', 'square', 'l'];
+
+const getFixLayoutLabel = (shape: FixTableLayoutShape): string => {
+  switch (shape) {
+    case 'half-bar':
+      return 'Halve balk';
+    case 'square':
+      return 'Vierkant';
+    case 'l':
+      return 'L-vorm';
+    default:
+      return 'Layout';
+  }
+};
+
+const parseDominoIndex = (dominoId: string): number => {
+  const numericPart = Number.parseInt(dominoId.replace(/[^\d]/g, ''), 10);
+  return Number.isFinite(numericPart) ? numericPart : 0;
+};
+
+const generateDirectionsForLayout = (shape: FixTableLayoutShape, dominoCount: number): LayoutDirection[] => {
+  const remaining = Math.max(0, dominoCount - 1);
+  if (remaining === 0) return [];
+
+  const directions: LayoutDirection[] = [];
+  const pushSteps = (direction: LayoutDirection, steps: number) => {
+    for (let i = 0; i < steps && directions.length < remaining; i += 1) {
+      directions.push(direction);
+    }
+  };
+
+  if (shape === 'l') {
+    const firstLeg = Math.max(1, Math.ceil(remaining * 0.55));
+    pushSteps('E', firstLeg);
+    pushSteps('S', remaining - directions.length);
+    return directions;
+  }
+
+  if (shape === 'half-bar') {
+    const rowLength = Math.max(4, Math.ceil(Math.sqrt(dominoCount * 2)));
+    let going: LayoutDirection = 'E';
+    while (directions.length < remaining) {
+      pushSteps(going, rowLength - 1);
+      if (directions.length >= remaining) break;
+      pushSteps('S', 1);
+      going = going === 'E' ? 'W' : 'E';
+    }
+    return directions;
+  }
+
+  // "Square" uses a compact spiral route.
+  const cycle: LayoutDirection[] = ['E', 'S', 'W', 'N'];
+  let segmentLength = 1;
+  let cycleIndex = 0;
+  while (directions.length < remaining) {
+    for (let segmentRepeat = 0; segmentRepeat < 2 && directions.length < remaining; segmentRepeat += 1) {
+      const direction = cycle[cycleIndex % cycle.length];
+      pushSteps(direction, segmentLength);
+      cycleIndex += 1;
+    }
+    segmentLength += 1;
+  }
+  return directions;
+};
+
+interface ChainPlacement {
+  x: number;
+  y: number;
+  orientation: 'horizontal' | 'vertical';
+  cells: Array<[number, number]>;
+  endpoint: { x: number; y: number };
+}
+
+const createPlacementCandidate = (
+  endpoint: { x: number; y: number },
+  direction: LayoutDirection
+): ChainPlacement => {
+  if (direction === 'E') {
+    const cells: Array<[number, number]> = [
+      [endpoint.x + 1, endpoint.y],
+      [endpoint.x + 2, endpoint.y],
+    ];
+    return {
+      x: endpoint.x + 1,
+      y: endpoint.y,
+      orientation: 'horizontal',
+      cells,
+      endpoint: { x: endpoint.x + 2, y: endpoint.y },
+    };
+  }
+  if (direction === 'W') {
+    const cells: Array<[number, number]> = [
+      [endpoint.x - 1, endpoint.y],
+      [endpoint.x - 2, endpoint.y],
+    ];
+    return {
+      x: endpoint.x - 2,
+      y: endpoint.y,
+      orientation: 'horizontal',
+      cells,
+      endpoint: { x: endpoint.x - 2, y: endpoint.y },
+    };
+  }
+  if (direction === 'S') {
+    const cells: Array<[number, number]> = [
+      [endpoint.x, endpoint.y + 1],
+      [endpoint.x, endpoint.y + 2],
+    ];
+    return {
+      x: endpoint.x,
+      y: endpoint.y + 1,
+      orientation: 'vertical',
+      cells,
+      endpoint: { x: endpoint.x, y: endpoint.y + 2 },
+    };
+  }
+
+  const cells: Array<[number, number]> = [
+    [endpoint.x, endpoint.y - 1],
+    [endpoint.x, endpoint.y - 2],
+  ];
+  return {
+    x: endpoint.x,
+    y: endpoint.y - 2,
+    orientation: 'vertical',
+    cells,
+    endpoint: { x: endpoint.x, y: endpoint.y - 2 },
+  };
+};
+
+const fallbackDirections: Record<LayoutDirection, LayoutDirection[]> = {
+  E: ['E', 'S', 'N', 'W'],
+  W: ['W', 'N', 'S', 'E'],
+  S: ['S', 'W', 'E', 'N'],
+  N: ['N', 'E', 'W', 'S'],
+};
+
+const buildChainPlacements = (
+  dominoCount: number,
+  directions: LayoutDirection[]
+): Array<{ x: number; y: number; orientation: 'horizontal' | 'vertical' }> | null => {
+  if (dominoCount <= 0) return [];
+
+  const placements: Array<{ x: number; y: number; orientation: 'horizontal' | 'vertical' }> = [
+    { x: 0, y: 0, orientation: 'horizontal' },
+  ];
+  const occupied = new Set<string>(['0,0', '1,0']);
+  let endpoint = { x: 1, y: 0 };
+
+  for (let dominoIndex = 1; dominoIndex < dominoCount; dominoIndex += 1) {
+    const preferredDirection = directions[dominoIndex - 1] ?? 'E';
+    const attempts = fallbackDirections[preferredDirection];
+    let selected: ChainPlacement | null = null;
+
+    for (const direction of attempts) {
+      const candidate = createPlacementCandidate(endpoint, direction);
+      const overlaps = candidate.cells.some(([x, y]) => occupied.has(`${x},${y}`));
+      if (!overlaps) {
+        selected = candidate;
+        break;
+      }
+    }
+
+    if (!selected) {
+      return null;
+    }
+
+    selected.cells.forEach(([x, y]) => occupied.add(`${x},${y}`));
+    placements.push({
+      x: selected.x,
+      y: selected.y,
+      orientation: selected.orientation,
+    });
+    endpoint = selected.endpoint;
+  }
+
+  return placements;
+};
+
+const relayoutTableState = (
+  state: GameState,
+  shape: FixTableLayoutShape,
+  regenerateOpenEnds: (state: GameState) => OpenEnd[]
+): GameState | null => {
+  const orderedDominoEntries = Object.entries(state.dominoes).sort(
+    ([dominoA], [dominoB]) => parseDominoIndex(dominoA) - parseDominoIndex(dominoB)
+  );
+  if (orderedDominoEntries.length < 2) return null;
+
+  const directions = generateDirectionsForLayout(shape, orderedDominoEntries.length);
+  const placements = buildChainPlacements(orderedDominoEntries.length, directions);
+  if (!placements || placements.length !== orderedDominoEntries.length) {
+    return null;
+  }
+
+  const newDominoes = { ...state.dominoes };
+  const newBoard: Record<string, { dominoId: string; value: number }> = {};
+
+  orderedDominoEntries.forEach(([dominoId, domino], index) => {
+    const placement = placements[index];
+    const relaidDomino = {
+      ...domino,
+      x: placement.x,
+      y: placement.y,
+      orientation: placement.orientation,
+    };
+    newDominoes[dominoId] = relaidDomino;
+
+    const pips = relaidDomino.flipped
+      ? [relaidDomino.data.value2, relaidDomino.data.value1]
+      : [relaidDomino.data.value1, relaidDomino.data.value2];
+    const cells = placement.orientation === 'horizontal'
+      ? [[placement.x, placement.y], [placement.x + 1, placement.y]]
+      : [[placement.x, placement.y], [placement.x, placement.y + 1]];
+
+    cells.forEach(([x, y], cellIndex) => {
+      newBoard[`${x},${y}`] = { dominoId, value: pips[cellIndex] };
+    });
+  });
+
+  const tempState: GameState = {
+    ...state,
+    dominoes: newDominoes,
+    board: newBoard,
+    // Old forbiddens are coordinate-based and become stale after relayout.
+    forbiddens: {},
+  };
+
+  return {
+    ...tempState,
+    openEnds: regenerateOpenEnds(tempState),
+  };
+};
+
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
@@ -104,6 +341,7 @@ export default function Game() {
   const passMoveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hardSlamResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const moveAnimationLockUntilRef = useRef<number>(0);
+  const nextFixLayoutIndexRef = useRef(0);
   const botTurnExecutionRef = useRef<string | null>(null);
   const botTurnObservedAtRef = useRef<Record<string, number>>({});
   const botAwaitingTurnAdvanceRef = useRef<{ player: number | null; until: number }>({ player: null, until: 0 });
@@ -341,6 +579,69 @@ export default function Game() {
       setGameState(newState);
     }
   }, [disarmHardSlam, setGameState, syncedStartNewGame]);
+
+  const wrappedFixTableStones = useCallback((shape?: FixTableLayoutShape) => {
+    if (!gameState || gameState.isGameOver) return null;
+
+    const dominoCount = Object.keys(gameState.dominoes || {}).length;
+    if (dominoCount < 2) return null;
+
+    if (syncState.currentPlayer !== syncState.playerPosition) {
+      toast({
+        title: 'Niet jouw beurt',
+        description: 'Je kunt stenen alleen fixen in je eigen beurt.',
+      });
+      return null;
+    }
+
+    const now = Date.now();
+    if (isAnimating || now < moveAnimationLockUntilRef.current) {
+      toast({
+        title: 'Animatie actief',
+        description: 'Wacht tot de animatie klaar is en probeer opnieuw.',
+      });
+      return null;
+    }
+
+    const chosenShape =
+      shape ?? FIX_TABLE_LAYOUT_SEQUENCE[nextFixLayoutIndexRef.current % FIX_TABLE_LAYOUT_SEQUENCE.length];
+    if (!shape) {
+      nextFixLayoutIndexRef.current =
+        (nextFixLayoutIndexRef.current + 1) % FIX_TABLE_LAYOUT_SEQUENCE.length;
+    }
+
+    const relaidState = relayoutTableState(gameState, chosenShape, gameHook.regenerateOpenEnds);
+    if (!relaidState) {
+      toast({
+        title: 'Fix mislukt',
+        description: 'Kon geen stabiele layout maken. Probeer een andere vorm.',
+        variant: 'destructive',
+      });
+      return null;
+    }
+
+    setGameState(relaidState);
+    const myPos = syncState.playerPosition || 0;
+    const consolidatedState = buildConsolidatedState(syncState.gameState, relaidState, myPos);
+    updateGameState(consolidatedState, syncState.currentPlayer);
+    moveAnimationLockUntilRef.current = Date.now() + 320;
+
+    toast({
+      title: 'Stenen gefixt',
+      description: `Vorm: ${getFixLayoutLabel(chosenShape)}`,
+    });
+    return chosenShape;
+  }, [
+    gameHook.regenerateOpenEnds,
+    gameState,
+    isAnimating,
+    setGameState,
+    syncState.currentPlayer,
+    syncState.gameState,
+    syncState.playerPosition,
+    toast,
+    updateGameState,
+  ]);
 
   // Auto-check for blocked game after each move
   useEffect(() => {
@@ -1029,6 +1330,7 @@ export default function Game() {
           drawFromBoneyard: wrappedDrawFromBoneyard,
           passMove,
           manualBlockedCheck,
+          fixTableStones: wrappedFixTableStones,
           startNewGame: wrappedStartNewGame,
           hardSlam: wrappedHardSlam,
           botDebugInfo,

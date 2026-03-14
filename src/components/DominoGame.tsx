@@ -16,7 +16,7 @@ import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
-import type { DominoData, LegalMove, ShakeAnimationProfile } from '@/types/domino';
+import type { DominoData, ShakeAnimationProfile } from '@/types/domino';
 
 interface DominoGameProps {
   gameHook: any;
@@ -53,7 +53,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: DominoData; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [directionGroupIndex, setDirectionGroupIndex] = useState(0);
+  const [fixShapeIndex, setFixShapeIndex] = useState(0);
+  const [isFixingTable, setIsFixingTable] = useState(false);
   const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [startingNewGame, setStartingNewGame] = useState(false);
@@ -226,58 +227,16 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     playerHands: (gameState as any)?.playerHands?.map((hand: any, i: number) => ({ player: i, handSize: hand?.length || 0 }))
   });
   
+  const fixLayoutOptions: Array<{ key: 'half-bar' | 'square' | 'l'; label: string }> = [
+    { key: 'half-bar', label: 'Halve balk' },
+    { key: 'square', label: 'Vierkant' },
+    { key: 'l', label: 'L-vorm' },
+  ];
+  const activeFixLayout = fixLayoutOptions[fixShapeIndex % fixLayoutOptions.length];
+
   // Calculate legal moves for selected domino
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
-
-  const getMoveAnchorKey = (move: LegalMove) => {
-    if (typeof move.end.anchorX === 'number' && typeof move.end.anchorY === 'number') {
-      return `${move.end.anchorX},${move.end.anchorY}`;
-    }
-    switch (move.end.fromDir) {
-      case 'N':
-        return `${move.end.x},${move.end.y + 1}`;
-      case 'S':
-        return `${move.end.x},${move.end.y - 1}`;
-      case 'W':
-        return `${move.end.x + 1},${move.end.y}`;
-      case 'E':
-        return `${move.end.x - 1},${move.end.y}`;
-      default:
-        return `${move.end.x},${move.end.y}`;
-    }
-  };
-
-  const legalMoveGroups = (() => {
-    const groups = new Map<string, LegalMove[]>();
-    legalMoves.forEach((move) => {
-      const key = getMoveAnchorKey(move);
-      const current = groups.get(key) || [];
-      current.push(move);
-      groups.set(key, current);
-    });
-    return Array.from(groups.entries()).map(([key, moves]) => ({ key, moves }));
-  })();
-
-  useEffect(() => {
-    setDirectionGroupIndex(0);
-  }, [gameState?.selectedHandIndex, selectedDomino?.value1, selectedDomino?.value2]);
-
-  useEffect(() => {
-    if (directionGroupIndex >= legalMoveGroups.length && legalMoveGroups.length > 0) {
-      setDirectionGroupIndex(0);
-    }
-  }, [directionGroupIndex, legalMoveGroups.length]);
-
-  const activeGroup = legalMoveGroups.length > 0
-    ? legalMoveGroups[directionGroupIndex % legalMoveGroups.length]
-    : null;
-  const visibleLegalMoves = activeGroup ? activeGroup.moves : legalMoves;
-
-  const cycleDirectionGroup = () => {
-    if (legalMoveGroups.length <= 1) return;
-    setDirectionGroupIndex((prev) => (prev + 1) % legalMoveGroups.length);
-  };
 
   // Enhanced pass logic - knop altijd zichtbaar, enabled wanneer speler kan passen
   let canPass = false;
@@ -310,9 +269,34 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   // Pas knop is altijd zichtbaar maar alleen enabled wanneer speler kan passen
   const shouldEnablePassButton = canPass && isMyTurn && !gameState?.isGameOver;
+  const boardDominoCount = Object.keys(gameState?.dominoes || {}).length;
+  const canFixTable =
+    isMyTurn &&
+    !gameState?.isGameOver &&
+    !isMoveLockedByAnimation &&
+    boardDominoCount >= 2 &&
+    !isFixingTable;
+
+  const handleFixTable = async () => {
+    if (!gameHook.fixTableStones) {
+      toast({ title: 'Niet beschikbaar', description: 'Fix stenen is nog niet gekoppeld.', variant: 'destructive' });
+      return;
+    }
+
+    if (!canFixTable) return;
+    setIsFixingTable(true);
+    try {
+      const appliedShape = await gameHook.fixTableStones(activeFixLayout.key);
+      if (appliedShape) {
+        setFixShapeIndex((prev) => (prev + 1) % fixLayoutOptions.length);
+      }
+    } finally {
+      setIsFixingTable(false);
+    }
+  };
 
   // Add index to legal moves for executeMove
-  const legalMovesWithIndex = visibleLegalMoves.map(move => ({
+  const legalMovesWithIndex = legalMoves.map(move => ({
     ...move,
     index: gameState?.selectedHandIndex
   }));
@@ -559,13 +543,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Button
-                  onClick={cycleDirectionGroup}
-                  disabled={!isMyTurn || legalMoveGroups.length <= 1 || gameState?.selectedHandIndex === null}
+                  onClick={handleFixTable}
+                  disabled={!canFixTable}
                   variant="outline"
                   size="sm"
                   className="text-xs"
                 >
-                  Wissel richting {legalMoveGroups.length > 1 ? `(${directionGroupIndex + 1}/${legalMoveGroups.length})` : ''}
+                  {isFixingTable ? 'Fixen...' : `Fix stenen (${activeFixLayout.label})`}
                 </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
@@ -635,11 +619,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   Pas
                 </Button>
                 <Button
-                  onClick={cycleDirectionGroup}
-                  disabled={!isMyTurn || legalMoveGroups.length <= 1 || gameState?.selectedHandIndex === null}
+                  onClick={handleFixTable}
+                  disabled={!canFixTable}
                   variant="outline"
                 >
-                  Wissel richting {legalMoveGroups.length > 1 ? `(${directionGroupIndex + 1}/${legalMoveGroups.length})` : ''}
+                  {isFixingTable ? 'Fixen...' : `Fix stenen (${activeFixLayout.label})`}
                 </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
