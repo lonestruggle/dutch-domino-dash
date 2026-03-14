@@ -67,8 +67,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const isMobile = useIsMobile();
   const { settings, applyOriginalRotations, isAnimating, animationMode } = useGameVisualSettings();
   const [placeHandAnimation, setPlaceHandAnimation] = useState<PlaceHandAnimationState | null>(null);
+  const [showHardSlamHand, setShowHardSlamHand] = useState(false);
+  const [hardSlamHandAnimKey, setHardSlamHandAnimKey] = useState(0);
   const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
   const lastAnimatedDominoIdRef = useRef<string | null>(null);
+  const lastHardSlamEventRef = useRef<string | null>(null);
   
   // Dynamic grid cell size based on settings - each domino = 2 grid cells
   const GRID_CELL_SIZE = settings.dominoWidth / 2;
@@ -321,6 +324,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     };
   }, [gameState.dominoes, boardSize, GRID_CELL_SIZE]);
 
+  useEffect(() => {
+    const profile = gameState.hardSlamAnimationProfile;
+    const eventId = profile?.eventId || gameState.hardSlamDominoId || null;
+    const hardSlamEndMs = profile ? profile.startedAtMs + profile.duration * 1000 + 120 : 0;
+    const isHardSlamActive =
+      Boolean(gameState.triggerHardSlamAnimation) ||
+      Boolean(gameState.isHardSlamming) ||
+      (hardSlamEndMs > 0 && Date.now() < hardSlamEndMs);
+
+    if (!eventId || !isHardSlamActive) return;
+    if (lastHardSlamEventRef.current === eventId) return;
+
+    lastHardSlamEventRef.current = eventId;
+    setHardSlamHandAnimKey((prev) => prev + 1);
+    setShowHardSlamHand(true);
+
+    const timer = setTimeout(() => {
+      setShowHardSlamHand(false);
+    }, 760);
+
+    return () => clearTimeout(timer);
+  }, [
+    gameState.triggerHardSlamAnimation,
+    gameState.isHardSlamming,
+    gameState.hardSlamAnimationProfile,
+    gameState.hardSlamDominoId,
+  ]);
+
   const getBackgroundImage = (backgroundChoice?: string) => {
     const backgroundMap: { [key: string]: string } = {
       'domino-table-1': dominoTable1,
@@ -395,6 +426,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
+      {showHardSlamHand && (
+        <div className="pointer-events-none absolute inset-0 z-[100]">
+          <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2">
+            <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-20 w-20 items-center justify-center rounded-full bg-red-500/90 text-white shadow-2xl">
+              <Hand className="h-10 w-10" strokeWidth={2.8} />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div 
         ref={containerRef}
         className="w-full h-full game-board overflow-hidden rounded-2xl shadow-2xl"
