@@ -590,20 +590,35 @@ export const useDominoGame = (localPlayerPosition?: number) => {
             ? [[x, y], [x + 1, y]] as const
             : [[x, y], [x, y + 1]] as const;
           const placementCellSet = new Set(placementCells.map(([cx, cy]) => `${cx},${cy}`));
+          const fromDominoCells = fromDomino
+            ? (
+                fromDomino.orientation === 'horizontal'
+                  ? [[fromDomino.x, fromDomino.y], [fromDomino.x + 1, fromDomino.y]]
+                  : [[fromDomino.x, fromDomino.y], [fromDomino.x, fromDomino.y + 1]]
+              )
+            : [];
+          const allowedContactSet = new Set<string>([
+            ...placementCellSet,
+            ...fromDominoCells.map(([cx, cy]) => `${cx},${cy}`),
+          ]);
+
           const hasIllegalSideContact = placementCells.some(([cx, cy]) => {
             const neighborCells = [
               [cx, cy - 1],
               [cx, cy + 1],
               [cx - 1, cy],
               [cx + 1, cy],
+              [cx - 1, cy - 1],
+              [cx + 1, cy - 1],
+              [cx - 1, cy + 1],
+              [cx + 1, cy + 1],
             ] as const;
 
             return neighborCells.some(([nx, ny]) => {
               const neighborKey = `${nx},${ny}`;
-              if (placementCellSet.has(neighborKey)) return false;
+              if (allowedContactSet.has(neighborKey)) return false;
               if (!currentState.board[neighborKey]) return false;
-              // Toegestaan: exact de ankercel waar deze zet op aansluit.
-              return neighborKey !== fromCellKey;
+              return true;
             });
           });
 
