@@ -172,6 +172,7 @@ interface FixOpenEnd {
   requiredValue: number;
   anchorCells: Array<[number, number]>;
   side: 'left' | 'right';
+  outwardDir: LayoutDirection;
 }
 
 type FixPlacementSide = 'left' | 'right' | 'any';
@@ -292,6 +293,41 @@ const hasIllegalSideContact = (
 
 const areAdjacentCells = (a: [number, number], b: [number, number]): boolean =>
   Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) === 1;
+
+const directionDelta: Record<LayoutDirection, [number, number]> = {
+  N: [0, -1],
+  S: [0, 1],
+  E: [1, 0],
+  W: [-1, 0],
+};
+
+const countOccupiedNeighbors = (
+  cell: [number, number],
+  occupiedByCell: Map<string, string>
+): number => {
+  const [x, y] = cell;
+  const neighbors = [
+    [x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y],
+    [x - 1, y - 1], [x + 1, y - 1], [x - 1, y + 1], [x + 1, y + 1],
+  ] as const;
+  return neighbors.reduce((acc, [nx, ny]) => acc + (occupiedByCell.has(`${nx},${ny}`) ? 1 : 0), 0);
+};
+
+const isOpenEndPlayable = (openEnd: FixOpenEnd, occupiedByCell: Map<string, string>): boolean => {
+  const [dx, dy] = directionDelta[openEnd.outwardDir];
+  const openCell: [number, number] = [openEnd.endpointCell[0] + dx, openEnd.endpointCell[1] + dy];
+  const forwardCell: [number, number] = [openEnd.endpointCell[0] + (2 * dx), openEnd.endpointCell[1] + (2 * dy)];
+  const openCellKey = `${openCell[0]},${openCell[1]}`;
+  const forwardCellKey = `${forwardCell[0]},${forwardCell[1]}`;
+
+  if (occupiedByCell.has(openCellKey)) return false;
+  if (occupiedByCell.has(forwardCellKey)) return false;
+
+  // Keep consistency with hasDifferentNeighbor guard used in legal move generation.
+  if (countOccupiedNeighbors(openCell, occupiedByCell) > 3) return false;
+
+  return true;
+};
 
 const inferPlacementSides = (
   state: GameState,
@@ -567,9 +603,16 @@ const buildPlacementWithTwoEnds = (
                 requiredValue: placement.endpointValue,
                 anchorCells: placement.cells,
                 side: end.side,
+                outwardDir: direction,
               } satisfies FixOpenEnd)
             : end
         );
+        const allEndsPlayable = nextOpenEnds.every((end) => isOpenEndPlayable(end, occupiedByCell));
+        if (!allEndsPlayable) {
+          placement.cells.forEach(([x, y]) => occupiedByCell.delete(`${x},${y}`));
+          continue;
+        }
+
         const nextPlacements = [...placements, placement];
         const solved = tryPlaceRecursive(dominoIndex + 1, nextPlacements, nextOpenEnds);
         if (solved) return solved;
@@ -587,12 +630,14 @@ const buildPlacementWithTwoEnds = (
       requiredValue: firstValues[0],
       anchorCells: firstCells,
       side: 'left',
+      outwardDir: 'W',
     },
     {
       endpointCell: [1, 0],
       requiredValue: firstValues[1],
       anchorCells: firstCells,
       side: 'right',
+      outwardDir: 'E',
     },
   ];
 
