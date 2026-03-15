@@ -177,6 +177,13 @@ interface FixOpenEnd {
 
 type FixPlacementSide = 'left' | 'right' | 'any';
 
+const directionDelta: Record<LayoutDirection, [number, number]> = {
+  N: [0, -1],
+  S: [0, 1],
+  E: [1, 0],
+  W: [-1, 0],
+};
+
 const createPlacementCandidate = (
   endpoint: { x: number; y: number },
   direction: LayoutDirection
@@ -242,6 +249,59 @@ const createPlacementCandidate = (
   };
 };
 
+const createDoublePlacementCandidates = (
+  endpoint: { x: number; y: number },
+  direction: LayoutDirection
+): Array<Omit<ChainPlacement, 'flipped' | 'values' | 'endpointValue' | 'fromDir'> & { innerIndex: 0 | 1; outerIndex: 0 | 1 }> => {
+  const [dx, dy] = directionDelta[direction];
+  const entryX = endpoint.x + dx;
+  const entryY = endpoint.y + dy;
+
+  if (direction === 'E' || direction === 'W') {
+    return [
+      {
+        x: entryX,
+        y: entryY,
+        orientation: 'vertical',
+        cells: [[entryX, entryY], [entryX, entryY + 1]],
+        endpointCell: [entryX, entryY],
+        innerIndex: 0,
+        outerIndex: 0,
+      },
+      {
+        x: entryX,
+        y: entryY - 1,
+        orientation: 'vertical',
+        cells: [[entryX, entryY - 1], [entryX, entryY]],
+        endpointCell: [entryX, entryY],
+        innerIndex: 1,
+        outerIndex: 1,
+      },
+    ];
+  }
+
+  return [
+    {
+      x: entryX,
+      y: entryY,
+      orientation: 'horizontal',
+      cells: [[entryX, entryY], [entryX + 1, entryY]],
+      endpointCell: [entryX, entryY],
+      innerIndex: 0,
+      outerIndex: 0,
+    },
+    {
+      x: entryX - 1,
+      y: entryY,
+      orientation: 'horizontal',
+      cells: [[entryX - 1, entryY], [entryX, entryY]],
+      endpointCell: [entryX, entryY],
+      innerIndex: 1,
+      outerIndex: 1,
+    },
+  ];
+};
+
 const fallbackDirections: Record<LayoutDirection, LayoutDirection[]> = {
   E: ['E', 'S', 'N', 'W'],
   W: ['W', 'N', 'S', 'E'],
@@ -293,13 +353,6 @@ const hasIllegalSideContact = (
 
 const areAdjacentCells = (a: [number, number], b: [number, number]): boolean =>
   Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) === 1;
-
-const directionDelta: Record<LayoutDirection, [number, number]> = {
-  N: [0, -1],
-  S: [0, 1],
-  E: [1, 0],
-  W: [-1, 0],
-};
 
 const countOccupiedNeighbors = (
   cell: [number, number],
@@ -563,61 +616,71 @@ const buildPlacementWithTwoEnds = (
 
     for (const openEnd of openEndsToTry) {
       for (const direction of directionAttempts) {
-        const candidate = createPlacementCandidate(
-          { x: openEnd.endpointCell[0], y: openEnd.endpointCell[1] },
-          direction
-        );
-        const overlapsExisting = candidate.cells.some(([x, y]) => occupiedByCell.has(`${x},${y}`));
-        if (overlapsExisting) continue;
+        const candidates = (domino.data.value1 === domino.data.value2)
+          ? createDoublePlacementCandidates(
+              { x: openEnd.endpointCell[0], y: openEnd.endpointCell[1] },
+              direction
+            )
+          : [
+              createPlacementCandidate(
+                { x: openEnd.endpointCell[0], y: openEnd.endpointCell[1] },
+                direction
+              ),
+            ];
 
-        const valueResolution = resolveValuesByInnerMatch(
-          domino.data.value1,
-          domino.data.value2,
-          openEnd.requiredValue,
-          candidate.innerIndex
-        );
-        if (!valueResolution) continue;
+        for (const candidate of candidates) {
+          const overlapsExisting = candidate.cells.some(([x, y]) => occupiedByCell.has(`${x},${y}`));
+          if (overlapsExisting) continue;
 
-        if (hasIllegalSideContact(candidate.cells, openEnd.anchorCells, occupiedByCell)) continue;
+          const valueResolution = resolveValuesByInnerMatch(
+            domino.data.value1,
+            domino.data.value2,
+            openEnd.requiredValue,
+            candidate.innerIndex
+          );
+          if (!valueResolution) continue;
 
-        const endpointValue = valueResolution.values[candidate.outerIndex];
-        const placement: ChainPlacement = {
-          x: candidate.x,
-          y: candidate.y,
-          orientation: candidate.orientation,
-          flipped: valueResolution.flipped,
-          values: valueResolution.values,
-          cells: candidate.cells,
-          endpointCell: candidate.endpointCell,
-          endpointValue,
-          fromDir: direction,
-        };
+          if (hasIllegalSideContact(candidate.cells, openEnd.anchorCells, occupiedByCell)) continue;
 
-        const [dominoId] = orderedDominoEntries[dominoIndex];
-        placement.cells.forEach(([x, y]) => occupiedByCell.set(`${x},${y}`, dominoId));
+          const endpointValue = valueResolution.values[candidate.outerIndex];
+          const placement: ChainPlacement = {
+            x: candidate.x,
+            y: candidate.y,
+            orientation: candidate.orientation,
+            flipped: valueResolution.flipped,
+            values: valueResolution.values,
+            cells: candidate.cells,
+            endpointCell: candidate.endpointCell,
+            endpointValue,
+            fromDir: direction,
+          };
 
-        const nextOpenEnds = openEnds.map((end) =>
-          end === openEnd
-            ? ({
-                endpointCell: placement.endpointCell,
-                requiredValue: placement.endpointValue,
-                anchorCells: placement.cells,
-                side: end.side,
-                outwardDir: direction,
-              } satisfies FixOpenEnd)
-            : end
-        );
-        const allEndsPlayable = nextOpenEnds.every((end) => isOpenEndPlayable(end, occupiedByCell));
-        if (!allEndsPlayable) {
+          const [dominoId] = orderedDominoEntries[dominoIndex];
+          placement.cells.forEach(([x, y]) => occupiedByCell.set(`${x},${y}`, dominoId));
+
+          const nextOpenEnds = openEnds.map((end) =>
+            end === openEnd
+              ? ({
+                  endpointCell: placement.endpointCell,
+                  requiredValue: placement.endpointValue,
+                  anchorCells: placement.cells,
+                  side: end.side,
+                  outwardDir: direction,
+                } satisfies FixOpenEnd)
+              : end
+          );
+          const allEndsPlayable = nextOpenEnds.every((end) => isOpenEndPlayable(end, occupiedByCell));
+          if (!allEndsPlayable) {
+            placement.cells.forEach(([x, y]) => occupiedByCell.delete(`${x},${y}`));
+            continue;
+          }
+
+          const nextPlacements = [...placements, placement];
+          const solved = tryPlaceRecursive(dominoIndex + 1, nextPlacements, nextOpenEnds);
+          if (solved) return solved;
+
           placement.cells.forEach(([x, y]) => occupiedByCell.delete(`${x},${y}`));
-          continue;
         }
-
-        const nextPlacements = [...placements, placement];
-        const solved = tryPlaceRecursive(dominoIndex + 1, nextPlacements, nextOpenEnds);
-        if (solved) return solved;
-
-        placement.cells.forEach(([x, y]) => occupiedByCell.delete(`${x},${y}`));
       }
     }
 
