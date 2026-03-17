@@ -399,6 +399,14 @@
     filter: drop-shadow(0 14px 24px rgb(0 0 0 / 0.55));
   }
 
+  .domino-hand-image {
+    width: 86%;
+    height: 86%;
+    object-fit: contain;
+    user-select: none;
+    pointer-events: none;
+  }
+
   /* Mobile-specific styles */
   @media (max-width: 768px) {
     .placement-target:active {
