@@ -7,6 +7,7 @@ import { PersistedGameState, useSyncedDominoGameState } from '@/hooks/useSyncedD
 import { useBotAI } from '@/hooks/useBotAI';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
@@ -1116,7 +1117,7 @@ export default function Game() {
         };
         setGameState(blockedState);
         // Game over - no turn advancement needed, keep current turn
-        updateGameState(blockedState, syncState.currentPlayer);
+        updateGameState(blockedState as PersistedGameState, syncState.currentPlayer);
         return;
       }
       
@@ -1208,7 +1209,7 @@ export default function Game() {
           };
           setGameState(blockedState);
           // Game over - no turn advancement needed, keep current turn
-          updateGameState(blockedState, syncState.currentPlayer);
+          updateGameState(blockedState as PersistedGameState, syncState.currentPlayer);
           return;
         }
       }
@@ -1658,7 +1659,7 @@ export default function Game() {
           _lobby_id: syncState.gameData.lobby_id,
           _winner_user_id: winnerUserId,
           _is_blocked: gameState.gameEndReason === 'blocked',
-          _players: players,
+          _players: players as unknown as Json,
         });
 
         if (error) {
