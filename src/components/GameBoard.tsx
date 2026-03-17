@@ -9,7 +9,7 @@ import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
 const premiumWoodTable = '/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.png';
-const gloveHandImage = '/glove-hand.svg';
+const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
 
 interface GameBoardProps {
   gameState: GameState;
@@ -71,6 +71,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [showHardSlamHand, setShowHardSlamHand] = useState(false);
   const [hardSlamHandAnimKey, setHardSlamHandAnimKey] = useState(0);
   const [isGloveImageUnavailable, setIsGloveImageUnavailable] = useState(false);
+  const gloveImageSrc = (settings.gloveImageUrl || '').trim() || DEFAULT_GLOVE_IMAGE;
   const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
   const lastAnimatedDominoIdRef = useRef<string | null>(null);
   const lastHardSlamEventRef = useRef<string | null>(null);
@@ -426,17 +427,29 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [gameState.dominoes, dynamicScale, boardSize]);
 
-  const renderAnimatedHand = (fallbackIconClassName: string, strokeWidth: number) => {
+  useEffect(() => {
+    setIsGloveImageUnavailable(false);
+  }, [gloveImageSrc]);
+
+  const renderAnimatedHand = (fallbackIconClassName: string, strokeWidth: number, scale: number) => {
     if (isGloveImageUnavailable) {
-      return <Hand className={fallbackIconClassName} strokeWidth={strokeWidth} />;
+      return (
+        <Hand
+          className={fallbackIconClassName}
+          strokeWidth={strokeWidth}
+          style={{ transform: `scale(${scale})` }}
+        />
+      );
     }
 
     return (
       <img
-        src={gloveHandImage}
+        src={gloveImageSrc}
         alt="Glove hand"
         className="domino-hand-image"
+        style={{ transform: `scale(${scale})` }}
         draggable={false}
+        onLoad={() => setIsGloveImageUnavailable(false)}
         onError={() => setIsGloveImageUnavailable(true)}
       />
     );
@@ -448,7 +461,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         <div className="pointer-events-none absolute inset-0 z-[100]">
           <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2">
             <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-20 w-20 items-center justify-center rounded-full bg-red-500/90 text-white shadow-2xl">
-              {renderAnimatedHand('h-10 w-10', 2.8)}
+              {renderAnimatedHand('h-10 w-10', 2.8, settings.hardSlamGloveScale || 1)}
             </div>
           </div>
         </div>
@@ -541,7 +554,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               }}
             >
               <div className="domino-place-hand flex h-12 w-12 items-center justify-center rounded-full bg-amber-300/95 text-amber-950 shadow-2xl">
-                {renderAnimatedHand('h-7 w-7', 2.75)}
+                {renderAnimatedHand('h-7 w-7', 2.75, settings.gloveScale || 1)}
               </div>
             </div>
           )}

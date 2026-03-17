@@ -405,6 +405,7 @@
     object-fit: contain;
     user-select: none;
     pointer-events: none;
+    transform-origin: center center;
   }
 
   /* Mobile-specific styles */

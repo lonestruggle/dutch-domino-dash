@@ -3,6 +3,7 @@ import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshC
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -31,6 +32,8 @@ const deviceLabels = {
   mobile: 'Mobile',
 };
 
+const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
+
 export const GameVisualControls: React.FC = () => {
   const { isAdmin, loading } = useUserRoles();
   const isDevMode = import.meta.env.DEV;
@@ -56,6 +59,9 @@ export const GameVisualControls: React.FC = () => {
     updateDominoWidth,
     updateDominoHeight,
     updateDominoThickness,
+    updateGloveScale,
+    updateHardSlamGloveScale,
+    updateGloveImageUrl,
     applyLiveUpdate,
     resetToDefaults,
     // Animation controls from hook
@@ -209,6 +215,16 @@ export const GameVisualControls: React.FC = () => {
     updateHandDominoScale(currentSettings.handDominoScale + delta, device);
   };
 
+  const adjustGloveScale = (delta: number, device: DeviceType) => {
+    const currentSettings = getSettingsForDevice(device);
+    updateGloveScale(currentSettings.gloveScale + delta, device);
+  };
+
+  const adjustHardSlamGloveScale = (delta: number, device: DeviceType) => {
+    const currentSettings = getSettingsForDevice(device);
+    updateHardSlamGloveScale(currentSettings.hardSlamGloveScale + delta, device);
+  };
+
 
   const renderDeviceControls = (device: DeviceType) => {
     const deviceSettings = getSettingsForDevice(device);
@@ -359,6 +375,109 @@ export const GameVisualControls: React.FC = () => {
                 onValueChange={([value]) => updateDominoThickness(value, device)}
                 className="w-full"
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Handschoen Instellingen - admin/dev only via this panel */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              🧤 Handschoen Animatie
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Pas handschoen-grootte en afbeelding aan voor dit device-profiel.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="text-xs font-medium mb-1">
+                Plaats-handschoen grootte: {deviceSettings.gloveScale.toFixed(2)}x
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => adjustGloveScale(-0.1, device)}
+                  disabled={deviceSettings.gloveScale <= 0.4}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <div className="flex-1">
+                  <Slider
+                    value={[deviceSettings.gloveScale]}
+                    onValueChange={([value]) => updateGloveScale(value, device)}
+                    min={0.4}
+                    max={2.5}
+                    step={0.05}
+                    className="w-full"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => adjustGloveScale(0.1, device)}
+                  disabled={deviceSettings.gloveScale >= 2.5}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-medium mb-1">
+                Hard Slam handschoen grootte: {deviceSettings.hardSlamGloveScale.toFixed(2)}x
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => adjustHardSlamGloveScale(-0.1, device)}
+                  disabled={deviceSettings.hardSlamGloveScale <= 0.4}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <div className="flex-1">
+                  <Slider
+                    value={[deviceSettings.hardSlamGloveScale]}
+                    onValueChange={([value]) => updateHardSlamGloveScale(value, device)}
+                    min={0.4}
+                    max={2.5}
+                    step={0.05}
+                    className="w-full"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => adjustHardSlamGloveScale(0.1, device)}
+                  disabled={deviceSettings.hardSlamGloveScale >= 2.5}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs font-medium">Handschoen afbeelding URL/pad</div>
+              <Input
+                value={deviceSettings.gloveImageUrl}
+                onChange={(event) => updateGloveImageUrl(event.target.value, device)}
+                placeholder="/glove-hand.svg of https://..."
+              />
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateGloveImageUrl(DEFAULT_GLOVE_IMAGE, device)}
+                >
+                  Reset handschoen
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

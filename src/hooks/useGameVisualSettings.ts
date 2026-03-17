@@ -33,6 +33,9 @@ export interface GlobalSettings {
   dominoWidth: number; // 40 to 120 pixels
   dominoHeight: number; // 20 to 60 pixels  
   dominoThickness: number; // 4 to 16 pixels
+  gloveScale: number; // 0.4 to 2.5 multiplier for place-hand animation
+  hardSlamGloveScale: number; // 0.4 to 2.5 multiplier for hard-slam hand animation
+  gloveImageUrl: string; // URL/path for glove image used in board hand animations
 }
 
 // Combined interface for easy access
@@ -77,6 +80,9 @@ const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   dominoWidth: 64,
   dominoHeight: 32,
   dominoThickness: 8,
+  gloveScale: 1.0,
+  hardSlamGloveScale: 1.1,
+  gloveImageUrl: '/glove-hand.svg',
 };
 
 const DEFAULT_SETTINGS: GameVisualSettings = {
@@ -98,6 +104,7 @@ const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
 };
 
 type GlobalAnimationPatch = Partial<Pick<GlobalSettings, 'rotateX' | 'rotateY' | 'rotateZ' | 'rotationSpeed' | 'shakeIntensity' | 'shakeDuration'>>;
+type GloveVisualPatch = Partial<Pick<GlobalSettings, 'gloveScale' | 'hardSlamGloveScale' | 'gloveImageUrl'>>;
 type StartShakeOptions = boolean | {
   isOtherPlayerHardSlam?: boolean;
   profile?: ShakeAnimationProfile;
@@ -818,6 +825,29 @@ const useGameVisualSettingsState = () => {
     }));
   };
 
+  const applyGloveVisualPatch = (patch: GloveVisualPatch, targetDevice?: DeviceType) => {
+    const device = targetDevice || deviceType;
+    setGlobalSettings(prev => ({
+      ...prev,
+      [device]: { ...prev[device], ...patch },
+    }));
+  };
+
+  const updateGloveScale = (scale: number, targetDevice?: DeviceType) => {
+    const clampedScale = Math.max(0.4, Math.min(2.5, scale));
+    applyGloveVisualPatch({ gloveScale: clampedScale }, targetDevice);
+  };
+
+  const updateHardSlamGloveScale = (scale: number, targetDevice?: DeviceType) => {
+    const clampedScale = Math.max(0.4, Math.min(2.5, scale));
+    applyGloveVisualPatch({ hardSlamGloveScale: clampedScale }, targetDevice);
+  };
+
+  const updateGloveImageUrl = (url: string, targetDevice?: DeviceType) => {
+    const sanitized = (url || '').trim() || DEFAULT_GLOBAL_SETTINGS.gloveImageUrl;
+    applyGloveVisualPatch({ gloveImageUrl: sanitized }, targetDevice);
+  };
+
   // Hard slam mode state
   const [hardSlamMode, setHardSlamMode] = useState(false);
   const hardSlamRef = useRef(false);
@@ -853,6 +883,9 @@ const useGameVisualSettingsState = () => {
     updateDominoWidth,
     updateDominoHeight,
     updateDominoThickness,
+    updateGloveScale,
+    updateHardSlamGloveScale,
+    updateGloveImageUrl,
     applyLiveUpdate,
     resetToDefaults,
     getSettingsForDevice,
