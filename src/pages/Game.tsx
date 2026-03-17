@@ -1208,7 +1208,7 @@ export default function Game() {
           };
           setGameState(blockedState);
           // Game over - no turn advancement needed, keep current turn
-          updateGameState(blockedState, syncState.currentPlayer);
+          updateGameState(blockedState as PersistedGameState, syncState.currentPlayer);
           return;
         }
       }
