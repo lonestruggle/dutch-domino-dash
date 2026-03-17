@@ -1658,7 +1658,7 @@ export default function Game() {
           _lobby_id: syncState.gameData.lobby_id,
           _winner_user_id: winnerUserId,
           _is_blocked: gameState.gameEndReason === 'blocked',
-          _players: players,
+          _players: players as unknown as Json,
         });
 
         if (error) {
