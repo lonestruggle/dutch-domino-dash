@@ -7,6 +7,7 @@ import { PersistedGameState, useSyncedDominoGameState } from '@/hooks/useSyncedD
 import { useBotAI } from '@/hooks/useBotAI';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
