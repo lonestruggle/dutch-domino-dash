@@ -45,6 +45,7 @@ export const GameVisualControls: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const dialogRef = useRef<HTMLDivElement>(null);
+  const gloveUploadInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { 
     currentDeviceType, 
@@ -62,6 +63,8 @@ export const GameVisualControls: React.FC = () => {
     updateGloveScale,
     updateHardSlamGloveScale,
     updateGloveImageUrl,
+    updateGloveAlwaysVisible,
+    updateGlovePosition,
     applyLiveUpdate,
     resetToDefaults,
     // Animation controls from hook
@@ -223,6 +226,53 @@ export const GameVisualControls: React.FC = () => {
   const adjustHardSlamGloveScale = (delta: number, device: DeviceType) => {
     const currentSettings = getSettingsForDevice(device);
     updateHardSlamGloveScale(currentSettings.hardSlamGloveScale + delta, device);
+  };
+
+  const handleGloveUpload = (event: React.ChangeEvent<HTMLInputElement>, device: DeviceType) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Ongeldig bestand',
+        description: 'Upload een afbeeldingsbestand voor de handschoen.',
+        variant: 'destructive',
+      });
+      event.target.value = '';
+      return;
+    }
+
+    // Keep data URL small enough for localStorage reliability.
+    const maxBytes = 1_200_000;
+    if (file.size > maxBytes) {
+      toast({
+        title: 'Afbeelding te groot',
+        description: 'Gebruik een bestand kleiner dan ~1.2MB.',
+        variant: 'destructive',
+      });
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      if (!result) return;
+      updateGloveImageUrl(result, device);
+      toast({
+        title: 'Handschoen geupload',
+        description: 'Afbeelding opgeslagen in localStorage op dit device/browser.',
+      });
+    };
+    reader.onerror = () => {
+      toast({
+        title: 'Upload mislukt',
+        description: 'Kon de afbeelding niet lezen.',
+        variant: 'destructive',
+      });
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
   };
 
 
@@ -469,7 +519,21 @@ export const GameVisualControls: React.FC = () => {
                 onChange={(event) => updateGloveImageUrl(event.target.value, device)}
                 placeholder="/glove-hand.svg of https://..."
               />
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between gap-2">
+                <Input
+                  ref={gloveUploadInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => handleGloveUpload(event, device)}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => gloveUploadInputRef.current?.click()}
+                >
+                  Upload handschoen
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -477,6 +541,31 @@ export const GameVisualControls: React.FC = () => {
                 >
                   Reset handschoen
                 </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Uploads worden lokaal opgeslagen in je browser (localStorage), niet in Supabase.
+              </p>
+            </div>
+
+            <div className="space-y-2 rounded border border-border/60 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium">Handschoen altijd zichtbaar</span>
+                <Switch
+                  checked={Boolean(deviceSettings.gloveAlwaysVisible)}
+                  onCheckedChange={(checked) => updateGloveAlwaysVisible(checked, device)}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateGlovePosition(82, 76, device)}
+                >
+                  Reset positie
+                </Button>
+                <span className="text-[11px] text-muted-foreground">
+                  Sleep de handschoen op het bord om positie te wijzigen.
+                </span>
               </div>
             </div>
           </CardContent>

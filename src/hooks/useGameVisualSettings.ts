@@ -36,6 +36,9 @@ export interface GlobalSettings {
   gloveScale: number; // 0.4 to 2.5 multiplier for place-hand animation
   hardSlamGloveScale: number; // 0.4 to 2.5 multiplier for hard-slam hand animation
   gloveImageUrl: string; // URL/path for glove image used in board hand animations
+  gloveAlwaysVisible: boolean; // Keep glove visible on board
+  glovePosX: number; // Persistent glove X position in percentages
+  glovePosY: number; // Persistent glove Y position in percentages
 }
 
 // Combined interface for easy access
@@ -83,6 +86,9 @@ const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   gloveScale: 1.0,
   hardSlamGloveScale: 1.1,
   gloveImageUrl: '/glove-hand.svg',
+  gloveAlwaysVisible: false,
+  glovePosX: 82,
+  glovePosY: 76,
 };
 
 const DEFAULT_SETTINGS: GameVisualSettings = {
@@ -104,7 +110,7 @@ const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
 };
 
 type GlobalAnimationPatch = Partial<Pick<GlobalSettings, 'rotateX' | 'rotateY' | 'rotateZ' | 'rotationSpeed' | 'shakeIntensity' | 'shakeDuration'>>;
-type GloveVisualPatch = Partial<Pick<GlobalSettings, 'gloveScale' | 'hardSlamGloveScale' | 'gloveImageUrl'>>;
+type GloveVisualPatch = Partial<Pick<GlobalSettings, 'gloveScale' | 'hardSlamGloveScale' | 'gloveImageUrl' | 'gloveAlwaysVisible' | 'glovePosX' | 'glovePosY'>>;
 type StartShakeOptions = boolean | {
   isOtherPlayerHardSlam?: boolean;
   profile?: ShakeAnimationProfile;
@@ -848,6 +854,16 @@ const useGameVisualSettingsState = () => {
     applyGloveVisualPatch({ gloveImageUrl: sanitized }, targetDevice);
   };
 
+  const updateGloveAlwaysVisible = (alwaysVisible: boolean, targetDevice?: DeviceType) => {
+    applyGloveVisualPatch({ gloveAlwaysVisible: Boolean(alwaysVisible) }, targetDevice);
+  };
+
+  const updateGlovePosition = (xPercent: number, yPercent: number, targetDevice?: DeviceType) => {
+    const clampedX = Math.max(0, Math.min(100, Number.isFinite(xPercent) ? xPercent : DEFAULT_GLOBAL_SETTINGS.glovePosX));
+    const clampedY = Math.max(0, Math.min(100, Number.isFinite(yPercent) ? yPercent : DEFAULT_GLOBAL_SETTINGS.glovePosY));
+    applyGloveVisualPatch({ glovePosX: clampedX, glovePosY: clampedY }, targetDevice);
+  };
+
   // Hard slam mode state
   const [hardSlamMode, setHardSlamMode] = useState(false);
   const hardSlamRef = useRef(false);
@@ -886,6 +902,8 @@ const useGameVisualSettingsState = () => {
     updateGloveScale,
     updateHardSlamGloveScale,
     updateGloveImageUrl,
+    updateGloveAlwaysVisible,
+    updateGlovePosition,
     applyLiveUpdate,
     resetToDefaults,
     getSettingsForDevice,

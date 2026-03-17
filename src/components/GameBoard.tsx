@@ -66,11 +66,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const { settings, applyOriginalRotations, isAnimating, animationMode } = useGameVisualSettings();
+  const { settings, applyOriginalRotations, isAnimating, animationMode, updateGlovePosition } = useGameVisualSettings();
   const [placeHandAnimation, setPlaceHandAnimation] = useState<PlaceHandAnimationState | null>(null);
   const [showHardSlamHand, setShowHardSlamHand] = useState(false);
   const [hardSlamHandAnimKey, setHardSlamHandAnimKey] = useState(0);
   const [isGloveImageUnavailable, setIsGloveImageUnavailable] = useState(false);
+  const [isDraggingPersistentGlove, setIsDraggingPersistentGlove] = useState(false);
+  const [persistentGlovePreviewPos, setPersistentGlovePreviewPos] = useState<{ x: number; y: number } | null>(null);
+  const persistentGlovePosRef = useRef<{ x: number; y: number }>({
+    x: settings.glovePosX || 82,
+    y: settings.glovePosY || 76,
+  });
   const gloveImageSrc = (settings.gloveImageUrl || '').trim() || DEFAULT_GLOVE_IMAGE;
   const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
   const lastAnimatedDominoIdRef = useRef<string | null>(null);
@@ -431,6 +437,75 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setIsGloveImageUnavailable(false);
   }, [gloveImageSrc]);
 
+  useEffect(() => {
+    if (!settings.gloveAlwaysVisible) {
+      setIsDraggingPersistentGlove(false);
+      setPersistentGlovePreviewPos(null);
+    }
+  }, [settings.gloveAlwaysVisible]);
+
+  const clampPercent = (value: number) => Math.max(4, Math.min(96, value));
+  const currentPersistentGlovePos = persistentGlovePreviewPos || {
+    x: clampPercent(settings.glovePosX || 82),
+    y: clampPercent(settings.glovePosY || 76),
+  };
+
+  const getPercentPositionFromClientPoint = (clientX: number, clientY: number) => {
+    if (!containerRef.current) return currentPersistentGlovePos;
+    const rect = containerRef.current.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return currentPersistentGlovePos;
+    const xPercent = ((clientX - rect.left) / rect.width) * 100;
+    const yPercent = ((clientY - rect.top) / rect.height) * 100;
+    return {
+      x: clampPercent(xPercent),
+      y: clampPercent(yPercent),
+    };
+  };
+
+  const beginPersistentGloveDrag = (clientX: number, clientY: number) => {
+    const nextPos = getPercentPositionFromClientPoint(clientX, clientY);
+    persistentGlovePosRef.current = nextPos;
+    setPersistentGlovePreviewPos(nextPos);
+    setIsDraggingPersistentGlove(true);
+  };
+
+  useEffect(() => {
+    if (!isDraggingPersistentGlove) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const nextPos = getPercentPositionFromClientPoint(event.clientX, event.clientY);
+      persistentGlovePosRef.current = nextPos;
+      setPersistentGlovePreviewPos(nextPos);
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (!touch) return;
+      const nextPos = getPercentPositionFromClientPoint(touch.clientX, touch.clientY);
+      persistentGlovePosRef.current = nextPos;
+      setPersistentGlovePreviewPos(nextPos);
+    };
+
+    const finishDrag = () => {
+      const finalPos = persistentGlovePosRef.current;
+      updateGlovePosition(finalPos.x, finalPos.y);
+      setIsDraggingPersistentGlove(false);
+      setPersistentGlovePreviewPos(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', finishDrag);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', finishDrag);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', finishDrag);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', finishDrag);
+    };
+  }, [isDraggingPersistentGlove, updateGlovePosition]);
+
   const renderAnimatedHand = (fallbackIconClassName: string, strokeWidth: number, scale: number) => {
     if (isGloveImageUnavailable) {
       return (
@@ -462,6 +537,33 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2">
             <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-20 w-20 items-center justify-center rounded-full bg-red-500/90 text-white shadow-2xl">
               {renderAnimatedHand('h-10 w-10', 2.8, settings.hardSlamGloveScale || 1)}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {settings.gloveAlwaysVisible && (
+        <div className="pointer-events-none absolute inset-0 z-[95]">
+          <div
+            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing select-none"
+            style={{
+              left: `${currentPersistentGlovePos.x}%`,
+              top: `${currentPersistentGlovePos.y}%`,
+            }}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              beginPersistentGloveDrag(event.clientX, event.clientY);
+            }}
+            onTouchStart={(event) => {
+              const touch = event.touches[0];
+              if (!touch) return;
+              event.stopPropagation();
+              beginPersistentGloveDrag(touch.clientX, touch.clientY);
+            }}
+          >
+            <div className="domino-persistent-glove flex h-14 w-14 items-center justify-center rounded-full bg-black/45 text-white shadow-xl">
+              {renderAnimatedHand('h-8 w-8', 2.6, settings.gloveScale || 1)}
             </div>
           </div>
         </div>
