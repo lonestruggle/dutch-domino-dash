@@ -20,7 +20,7 @@ export type Database = {
           event_data: Json | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
           user_id: string | null
         }
@@ -29,7 +29,7 @@ export type Database = {
           event_data?: Json | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string | null
         }
@@ -38,7 +38,7 @@ export type Database = {
           event_data?: Json | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string | null
         }
@@ -433,7 +433,7 @@ export type Database = {
         Row: {
           action: string
           created_at: string | null
-          duration: unknown | null
+          duration: string | null
           expires_at: string | null
           id: string
           moderator_id: string
@@ -443,7 +443,7 @@ export type Database = {
         Insert: {
           action: string
           created_at?: string | null
-          duration?: unknown | null
+          duration?: string | null
           expires_at?: string | null
           id?: string
           moderator_id: string
@@ -453,7 +453,7 @@ export type Database = {
         Update: {
           action?: string
           created_at?: string | null
-          duration?: unknown | null
+          duration?: string | null
           expires_at?: string | null
           id?: string
           moderator_id?: string
@@ -719,28 +719,13 @@ export type Database = {
       }
     }
     Functions: {
-      can_moderate: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
-      cleanup_expired_invitations: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_expired_lobbies: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      get_active_season_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_email_by_username: {
-        Args: { _username: string }
-        Returns: string
-      }
+      can_moderate: { Args: { _user_id: string }; Returns: boolean }
+      cleanup_expired_invitations: { Args: never; Returns: number }
+      cleanup_expired_lobbies: { Args: never; Returns: number }
+      get_active_season_id: { Args: never; Returns: string }
+      get_email_by_username: { Args: { _username: string }; Returns: string }
       get_users_without_display_name: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           user_id: string
           username: string
@@ -753,14 +738,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
-      is_moderator: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_moderator: { Args: { _user_id: string }; Returns: boolean }
       recalc_lobby_player_count: {
         Args: { _lobby_id: string }
         Returns: undefined
@@ -775,18 +754,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      reset_season_stats: {
-        Args: { _season_id: string }
-        Returns: number
-      }
-      start_new_season: {
-        Args: { _name: string }
-        Returns: string
-      }
-      user_in_lobby: {
-        Args: { _lobby_id: string }
-        Returns: boolean
-      }
+      reset_season_stats: { Args: { _season_id: string }; Returns: number }
+      start_new_season: { Args: { _name: string }; Returns: string }
+      user_in_lobby: { Args: { _lobby_id: string }; Returns: boolean }
       validate_game_move: {
         Args: { _game_id: string; _move_data: Json; _player_position: number }
         Returns: boolean
