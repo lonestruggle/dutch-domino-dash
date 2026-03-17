@@ -109,6 +109,20 @@ const DEFAULT_DEVICE_GLOBAL_SETTINGS: DeviceSpecificGlobalSettings = {
   mobile: { ...DEFAULT_GLOBAL_SETTINGS },
 };
 
+const normalizeSharedGloveImageUrl = (settings: DeviceSpecificGlobalSettings): DeviceSpecificGlobalSettings => {
+  const desktopUrl = (settings.desktop?.gloveImageUrl || '').trim();
+  const tabletUrl = (settings.tablet?.gloveImageUrl || '').trim();
+  const mobileUrl = (settings.mobile?.gloveImageUrl || '').trim();
+  const sharedGloveImageUrl =
+    desktopUrl || tabletUrl || mobileUrl || DEFAULT_GLOBAL_SETTINGS.gloveImageUrl;
+
+  return {
+    desktop: { ...settings.desktop, gloveImageUrl: sharedGloveImageUrl },
+    tablet: { ...settings.tablet, gloveImageUrl: sharedGloveImageUrl },
+    mobile: { ...settings.mobile, gloveImageUrl: sharedGloveImageUrl },
+  };
+};
+
 type GlobalAnimationPatch = Partial<Pick<GlobalSettings, 'rotateX' | 'rotateY' | 'rotateZ' | 'rotationSpeed' | 'shakeIntensity' | 'shakeDuration'>>;
 type GloveVisualPatch = Partial<Pick<GlobalSettings, 'gloveScale' | 'hardSlamGloveScale' | 'gloveImageUrl' | 'gloveAlwaysVisible' | 'glovePosX' | 'glovePosY'>>;
 type StartShakeOptions = boolean | {
@@ -196,19 +210,19 @@ const useGameVisualSettingsState = () => {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
-        const merged = normalizeGlobalAnimationSettings({
+        const merged = normalizeSharedGloveImageUrl(normalizeGlobalAnimationSettings({
           desktop: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop, ...parsed.desktop },
           tablet: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet, ...parsed.tablet },
           mobile: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile, ...parsed.mobile },
-        });
+        }));
         console.log('🌍 Loaded GLOBAL settings:', merged);
         return merged;
       }
       console.log('🌍 No global settings found, using defaults');
-      return normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
+      return normalizeSharedGloveImageUrl(normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS));
     } catch {
       console.log('🌍 Error loading global settings, using defaults');
-      return normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
+      return normalizeSharedGloveImageUrl(normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS));
     }
   };
 
@@ -851,7 +865,12 @@ const useGameVisualSettingsState = () => {
 
   const updateGloveImageUrl = (url: string, targetDevice?: DeviceType) => {
     const sanitized = (url || '').trim() || DEFAULT_GLOBAL_SETTINGS.gloveImageUrl;
-    applyGloveVisualPatch({ gloveImageUrl: sanitized }, targetDevice);
+    void targetDevice;
+    setGlobalSettings(prev => normalizeSharedGloveImageUrl({
+      desktop: { ...prev.desktop, gloveImageUrl: sanitized },
+      tablet: { ...prev.tablet, gloveImageUrl: sanitized },
+      mobile: { ...prev.mobile, gloveImageUrl: sanitized },
+    }));
   };
 
   const updateGloveAlwaysVisible = (alwaysVisible: boolean, targetDevice?: DeviceType) => {
