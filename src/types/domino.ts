@@ -36,6 +36,19 @@ export interface LegalMove {
   y: number;
   fromDomino?: DominoState;
   index?: number;
+  actorPosition?: number; // Optional: which player is executing this move (for bot-hosted turns)
+}
+
+export interface ShakeAnimationProfile {
+  eventId: string;
+  seed: number;
+  startedAtMs: number;
+  intensity: number;
+  duration: number;
+  rotationAmplitudeX: number;
+  rotationAmplitudeY: number;
+  rotationAmplitudeZ: number;
+  rotationSpeed: number;
 }
 
 export interface GameState {
@@ -57,6 +70,7 @@ export interface GameState {
   isHardSlamming?: boolean;
   hardSlamDominoId?: string; // Track which specific domino triggered the hard slam
   triggerHardSlamAnimation?: boolean; // Separate flag for animation sync across all players
+  hardSlamAnimationProfile?: ShakeAnimationProfile; // Shared profile so all clients render the same hard slam motion
 
   // Nieuw voor spelafloop
   gameEndReason?: 'blocked' | 'changa' | 'normal';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
@@ -10,11 +10,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trophy, PartyPopper, Star, Zap, Eye, ArrowLeft, Grid3X3, Menu, X, Hand } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
+import type { DominoData, ShakeAnimationProfile } from '@/types/domino';
 
 interface DominoGameProps {
   gameHook: any;
@@ -23,8 +25,9 @@ interface DominoGameProps {
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { startShakeAnimation, pendingShake, settings: visualSettings, currentDeviceType: deviceType } = useGameVisualSettings();
+  const { startShakeAnimation, isAnimating: isVisualAnimating } = useGameVisualSettings();
   const { canHardSlam } = useUserPermissions();
+  const { isAdmin } = useUserRoles();
   
   const {
     gameState,
@@ -34,6 +37,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     startNewGame,
     hasDifferentNeighbor,
     rotateDomino,
+    botDebugInfo,
     syncState,
     gameData
   } = gameHook;
@@ -47,8 +51,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [hasShownDialog, setHasShownDialog] = useState(false);
   const [showBoneyardDialog, setShowBoneyardDialog] = useState(false);
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
-  const [previewDomino, setPreviewDomino] = useState<{ domino: any; index: number } | null>(null);
+  const [previewDomino, setPreviewDomino] = useState<{ domino: DominoData; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [fixShapeIndex, setFixShapeIndex] = useState(0);
+  const [isFixingTable, setIsFixingTable] = useState(false);
+  const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [startingNewGame, setStartingNewGame] = useState(false);
   const [confirmNewGameOpen, setConfirmNewGameOpen] = useState(false);
@@ -95,9 +102,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     }
   }, [gameState?.hardSlamNextMove, gameState?.isHardSlamming]);
 
-  // Track dominoes count to detect when new tiles are placed
-  const [previousDominoCount, setPreviousDominoCount] = useState(0);
-  
   // Track hard slam state for animation timing
   const [previousIsHardSlamming, setPreviousIsHardSlamming] = useState<boolean>(false);
   const [processedHardSlamEvents, setProcessedHardSlamEvents] = useState<Set<string>>(new Set());
@@ -106,30 +110,30 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   useEffect(() => {
     const shouldTriggerAnimation = gameState?.triggerHardSlamAnimation || false;
     const hardSlamDominoId = gameState?.hardSlamDominoId;
-    const dominoExists = hardSlamDominoId && gameState.dominoes[hardSlamDominoId];
+    const animationProfile = gameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
+    const animationEventId = animationProfile?.eventId || hardSlamDominoId || null;
+    const dominoExists = hardSlamDominoId && gameState?.dominoes?.[hardSlamDominoId];
     
     console.log('🔥 Hard slam animation check:', {
       triggerHardSlamAnimation: shouldTriggerAnimation,
       hardSlamDominoId,
-      dominoExists: !!dominoExists
+      dominoExists: !!dominoExists,
+      animationEventId
     });
-    
-    // Create unique event ID to prevent duplicate processing
-    const eventId = `${hardSlamDominoId}-${Date.now()}`;
-    
+
     // Trigger animation if BOTH conditions are met:
     // 1. triggerHardSlamAnimation flag is true (set for all players via database)
     // 2. AND the hard slam domino exists on the board
-    if (shouldTriggerAnimation && dominoExists && startShakeAnimation) {
-      // Check if this specific hard slam domino hasn't been animated yet
-      const alreadyProcessed = Array.from(processedHardSlamEvents).some(id => 
-        id.startsWith(`${hardSlamDominoId}-`)
-      );
+    if (shouldTriggerAnimation && dominoExists && animationEventId && startShakeAnimation) {
+      const alreadyProcessed = processedHardSlamEvents.has(animationEventId);
       
       if (!alreadyProcessed) {
         console.log('🔥 Triggering GLOBAL shake animation for ALL dominoes on board (hard slam trigger)');
-        startShakeAnimation(true); // This triggers isAnimating=true for ALL board dominoes
-        setProcessedHardSlamEvents(prev => new Set(prev).add(eventId));
+        startShakeAnimation({
+          isOtherPlayerHardSlam: true,
+          profile: animationProfile
+        });
+        setProcessedHardSlamEvents(prev => new Set(prev).add(animationEventId));
       }
     }
     
@@ -139,7 +143,23 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     }
     
     setPreviousIsHardSlamming(shouldTriggerAnimation);
-  }, [gameState?.triggerHardSlamAnimation, gameState?.hardSlamDominoId, gameState?.dominoes, startShakeAnimation]);
+  }, [
+    gameState?.triggerHardSlamAnimation,
+    gameState?.hardSlamDominoId,
+    gameState?.hardSlamAnimationProfile,
+    gameState?.dominoes,
+    processedHardSlamEvents,
+    previousIsHardSlamming,
+    startShakeAnimation
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Show dialog when game becomes over - but prevent multiple triggers
   useEffect(() => {
@@ -171,6 +191,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   }
 
   const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition;
+  const isMoveLockedByAnimation = isVisualAnimating;
   const currentPlayerName = syncState?.allPlayers?.find((p: any) => p.position === syncState?.currentPlayer)?.username || 'Unknown';
   
 
@@ -206,6 +227,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     playerHands: (gameState as any)?.playerHands?.map((hand: any, i: number) => ({ player: i, handSize: hand?.length || 0 }))
   });
   
+  const fixLayoutOptions: Array<{ key: 'l-0' | 'l-90' | 'l-180' | 'l-270'; label: string }> = [
+    { key: 'l-0', label: 'L 0°' },
+    { key: 'l-90', label: 'L 90°' },
+    { key: 'l-180', label: 'L 180°' },
+    { key: 'l-270', label: 'L 270°' },
+  ];
+  const activeFixLayout = fixLayoutOptions[fixShapeIndex % fixLayoutOptions.length];
+
   // Calculate legal moves for selected domino
   const selectedDomino = gameState?.selectedHandIndex !== null ? gameState?.playerHand[gameState.selectedHandIndex] : null;
   const legalMoves = selectedDomino ? findLegalMoves(selectedDomino) : [];
@@ -241,6 +270,31 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   // Pas knop is altijd zichtbaar maar alleen enabled wanneer speler kan passen
   const shouldEnablePassButton = canPass && isMyTurn && !gameState?.isGameOver;
+  const boardDominoCount = Object.keys(gameState?.dominoes || {}).length;
+  const canFixTable =
+    isMyTurn &&
+    !gameState?.isGameOver &&
+    !isMoveLockedByAnimation &&
+    boardDominoCount >= 2 &&
+    !isFixingTable;
+
+  const handleFixTable = async () => {
+    if (!gameHook.fixTableStones) {
+      toast({ title: 'Niet beschikbaar', description: 'Fix stenen is nog niet gekoppeld.', variant: 'destructive' });
+      return;
+    }
+
+    if (!canFixTable) return;
+    setIsFixingTable(true);
+    try {
+      const appliedShape = await gameHook.fixTableStones(activeFixLayout.key);
+      if (appliedShape) {
+        setFixShapeIndex((prev) => (prev + 1) % fixLayoutOptions.length);
+      }
+    } finally {
+      setIsFixingTable(false);
+    }
+  };
 
   // Add index to legal moves for executeMove
   const legalMovesWithIndex = legalMoves.map(move => ({
@@ -250,12 +304,17 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
 
   // Handle boneyard stone preview
-  const handleStonePreview = (domino: any, index: number) => {
+  const handleStonePreview = (domino: DominoData, index: number) => {
     setPreviewDomino({ domino, index });
     
+    if (previewTimeoutRef.current) {
+      clearTimeout(previewTimeoutRef.current);
+    }
+
     // Auto-hide preview after 3 seconds
-    setTimeout(() => {
+    previewTimeoutRef.current = setTimeout(() => {
       setPreviewDomino(null);
+      previewTimeoutRef.current = null;
     }, 3000);
   };
 
@@ -265,6 +324,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
       gameHook.drawSpecificFromBoneyard(index);
       setShowBoneyardDialog(false);
       setPreviewDomino(null);
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current);
+        previewTimeoutRef.current = null;
+      }
     }
   };
 
@@ -274,6 +337,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
       handleBoneyardPick(previewDomino.index);
     }
   };
+
+  const isDevMode = import.meta.env.DEV;
+  const showDevLockstepInfo = isDevMode || isAdmin;
+  const activeHardSlamProfile = gameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
+  const hardSlamPhaseMs = activeHardSlamProfile ? Math.max(0, Date.now() - activeHardSlamProfile.startedAtMs) : 0;
 
   return (
     <div className="min-h-screen bg-background p-2 md:p-4">
@@ -339,6 +407,40 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           </div>
         </Card>
 
+        {showDevLockstepInfo && (
+          <Card className="border-dashed border-amber-400 bg-amber-50/70 p-3">
+            <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-amber-900">
+              <span>DEV DEBUG CONSOLE</span>
+            </div>
+            <div className="mb-2 rounded border border-amber-300 bg-amber-100/70 p-2">
+              <div className="mb-1 text-[11px] font-semibold text-amber-900">Hard Slam lockstep</div>
+              {activeHardSlamProfile ? (
+                <div className="grid gap-1 text-[11px] text-amber-900/90 md:grid-cols-2">
+                  <div><strong>Event:</strong> {activeHardSlamProfile.eventId}</div>
+                  <div><strong>Seed:</strong> {activeHardSlamProfile.seed}</div>
+                  <div><strong>Server start:</strong> {new Date(activeHardSlamProfile.startedAtMs).toLocaleTimeString()}</div>
+                  <div><strong>Local phase:</strong> {hardSlamPhaseMs} ms</div>
+                </div>
+              ) : (
+                <div className="text-[11px] text-amber-900/80">Geen actief hard slam profiel.</div>
+              )}
+            </div>
+            <div className="rounded border border-amber-300 bg-amber-100/70 p-2">
+              <div className="mb-1 text-[11px] font-semibold text-amber-900">Bot engine</div>
+              <div className="grid gap-1 text-[11px] text-amber-900/90 md:grid-cols-2">
+                <div><strong>Status:</strong> {botDebugInfo?.status || 'n/a'}</div>
+                <div><strong>Details:</strong> {botDebugInfo?.details || 'n/a'}</div>
+                <div><strong>Turn:</strong> {botDebugInfo?.currentPlayer ?? syncState?.currentPlayer}</div>
+                <div><strong>Controller:</strong> {botDebugInfo?.controllerPosition ?? 'n/a'}</div>
+                <div><strong>Turn key:</strong> {botDebugInfo?.turnKey || '-'}</div>
+                <div><strong>Legal moves:</strong> {botDebugInfo?.legalMoves ?? 0}</div>
+                <div><strong>Boneyard:</strong> {botDebugInfo?.boneyardSize ?? gameState?.boneyard?.length ?? 0}</div>
+                <div><strong>Updated:</strong> {botDebugInfo?.updatedAt ? new Date(botDebugInfo.updatedAt).toLocaleTimeString() : '-'}</div>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Players List */}
         <Card className={isMobile ? "p-3" : "p-4"}>
           <h3 className={`font-semibold mb-3 ${isMobile ? "text-sm" : ""}`}>Players</h3>
@@ -388,6 +490,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           gameState={gameState}
           legalMoves={legalMovesWithIndex}
           onMoveExecute={(move) => {
+            if (isMoveLockedByAnimation) return;
             // Pass local hard slam state to the move execution
             const moveWithHardSlam = { ...move, localHardSlamActive };
             gameHook.executeMove(moveWithHardSlam);
@@ -402,7 +505,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           backgroundChoice={gameData?.background_choice}
           tableBackgroundUrl={gameData?.table_background_url}
           onRotateDomino={rotateDomino}
-          isMyTurn={syncState?.currentPlayer === syncState?.playerPosition}
+          isMyTurn={syncState?.currentPlayer === syncState?.playerPosition && !isMoveLockedByAnimation}
           
         />
 
@@ -440,6 +543,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-2">
+                <Button
+                  onClick={handleFixTable}
+                  disabled={!canFixTable}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  {isFixingTable ? 'Fixen...' : `Fix stenen (${activeFixLayout.label})`}
+                </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
                   disabled={!isMyTurn}
@@ -506,6 +618,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
                 >
                   Pas
+                </Button>
+                <Button
+                  onClick={handleFixTable}
+                  disabled={!canFixTable}
+                  variant="outline"
+                >
+                  {isFixingTable ? 'Fixen...' : `Fix stenen (${activeFixLayout.label})`}
                 </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}

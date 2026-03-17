@@ -218,7 +218,6 @@ const DominoTileDemo = () => {
     updateRotation,
     updateRotationSpeed,
     updateRotationAmplitude,
-    updateAnimationDuration,
     updateShakeIntensity,
     updateShakeDuration,
     updateDominoWidth,
@@ -477,21 +476,6 @@ const DominoTileDemo = () => {
         </div>
         
         <div className="flex flex-col gap-6 w-full max-w-md">
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium">Animatie Duur:</label>
-              <span className="text-sm text-gray-400">{settings.animationDuration.toFixed(1)}s</span>
-            </div>
-            <Slider
-              value={[settings.animationDuration]}
-              onValueChange={(value) => updateAnimationDuration(value[0])}
-              min={0.5}
-              max={5}
-              step={0.1}
-              className="w-full [&>div]:bg-blue-600 [&_[role=slider]]:border-blue-600 [&_[role=slider]]:bg-blue-600"
-            />
-          </div>
-          
           <div className="space-y-2">
             <div className="flex justify-between">
               <label className="text-sm font-medium">Rotatie Snelheid:</label>

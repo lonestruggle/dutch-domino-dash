@@ -1,15 +1,15 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { DominoTile } from './DominoTile';
 import { PlacementTarget } from './PlacementTarget';
-import { GameVisualControls } from './GameVisualControls';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import { cn } from '@/lib/utils';
+import { Hand } from 'lucide-react';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
 const premiumWoodTable = '/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.png';
+const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
 
 interface GameBoardProps {
   gameState: GameState;
@@ -30,7 +30,26 @@ const MIN_SCALE = 0.25;
 const MAX_SCALE = 1.0;
 const MIN_BOARD_SIZE = 1200;
 const PADDING = 400;
-const SCROLL_PADDING = 200;
+
+const getStableAngleFromId = (dominoId: string): number => {
+  // Stable pseudo-random angle so dominoes don't "jitter" between renders.
+  let hash = 0;
+  for (let i = 0; i < dominoId.length; i += 1) {
+    hash = (hash * 31 + dominoId.charCodeAt(i)) >>> 0;
+  }
+  return 5 + (hash % 1500) / 100; // 5.00 .. 19.99 degrees
+};
+
+const getDominoNumericId = (dominoId: string): number => {
+  const match = dominoId.match(/^d(\d+)$/);
+  return match ? Number(match[1]) : -1;
+};
+
+interface PlaceHandAnimationState {
+  dominoId: string;
+  left: number;
+  top: number;
+}
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameState, 
@@ -47,7 +66,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-  const { settings, applyOriginalRotations, isAnimating, animationMode } = useGameVisualSettings();
+  const { settings, applyOriginalRotations, isAnimating, animationMode, updateGlovePosition } = useGameVisualSettings();
+  const [placeHandAnimation, setPlaceHandAnimation] = useState<PlaceHandAnimationState | null>(null);
+  const [showHardSlamHand, setShowHardSlamHand] = useState(false);
+  const [hardSlamHandAnimKey, setHardSlamHandAnimKey] = useState(0);
+  const [isGloveImageUnavailable, setIsGloveImageUnavailable] = useState(false);
+  const [isDraggingPersistentGlove, setIsDraggingPersistentGlove] = useState(false);
+  const [persistentGlovePreviewPos, setPersistentGlovePreviewPos] = useState<{ x: number; y: number } | null>(null);
+  const persistentGlovePosRef = useRef<{ x: number; y: number }>({
+    x: settings.glovePosX || 82,
+    y: settings.glovePosY || 76,
+  });
+  const gloveImageSrc = (settings.gloveImageUrl || '').trim() || DEFAULT_GLOVE_IMAGE;
+  const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
+  const lastAnimatedDominoIdRef = useRef<string | null>(null);
+  const lastHardSlamEventRef = useRef<string | null>(null);
   
   // Dynamic grid cell size based on settings - each domino = 2 grid cells
   const GRID_CELL_SIZE = settings.dominoWidth / 2;
@@ -58,6 +91,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const handleAnyUpdate = () => {
       updateDominoScaling();
     };
+
+    window.addEventListener('vibrationSettingsUpdated', handleAnyUpdate);
+    window.addEventListener('visualSettingsUpdated', handleAnyUpdate);
 
     return () => {
       window.removeEventListener('vibrationSettingsUpdated', handleAnyUpdate);
@@ -106,7 +142,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     rootElement.style.setProperty('--double-offset', `-${doubleOffset}px`);
     
     if (boardRef.current) {
-      boardRef.current.offsetHeight;
+      boardRef.current.getBoundingClientRect();
     }
   };
 
@@ -249,6 +285,82 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardSize = calculateBoardSize();
   const dynamicScale = calculateOptimalScale();
 
+  useEffect(() => {
+    const dominoEntries = Object.entries(gameState.dominoes);
+    const dominoCount = dominoEntries.length;
+    const previousCount = prevDominoCountRef.current;
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+    if (dominoCount < previousCount) {
+      lastAnimatedDominoIdRef.current = null;
+      setPlaceHandAnimation(null);
+    } else if (dominoCount > previousCount) {
+      let newestId: string | null = null;
+      let newestDomino: (typeof gameState.dominoes)[string] | null = null;
+      let newestNumericId = -1;
+
+      dominoEntries.forEach(([id, domino]) => {
+        const numericId = getDominoNumericId(id);
+        if (numericId > newestNumericId) {
+          newestNumericId = numericId;
+          newestId = id;
+          newestDomino = domino;
+        }
+      });
+
+      if (newestId && newestDomino && newestId !== lastAnimatedDominoIdRef.current) {
+        const widthCells = newestDomino.orientation === 'horizontal' ? 2 : 1;
+        const heightCells = newestDomino.orientation === 'vertical' ? 2 : 1;
+        const centerX = newestDomino.x + widthCells / 2;
+        const centerY = newestDomino.y + heightCells / 2;
+
+        setPlaceHandAnimation({
+          dominoId: newestId,
+          left: boardSize / 2 + centerX * GRID_CELL_SIZE,
+          top: boardSize / 2 + centerY * GRID_CELL_SIZE,
+        });
+        lastAnimatedDominoIdRef.current = newestId;
+
+        hideTimer = setTimeout(() => {
+          setPlaceHandAnimation((current) => (current?.dominoId === newestId ? null : current));
+        }, 900);
+      }
+    }
+
+    prevDominoCountRef.current = dominoCount;
+    return () => {
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, [gameState.dominoes, boardSize, GRID_CELL_SIZE]);
+
+  useEffect(() => {
+    const profile = gameState.hardSlamAnimationProfile;
+    const eventId = profile?.eventId || gameState.hardSlamDominoId || null;
+    const hardSlamEndMs = profile ? profile.startedAtMs + profile.duration * 1000 + 120 : 0;
+    const isHardSlamActive =
+      Boolean(gameState.triggerHardSlamAnimation) ||
+      Boolean(gameState.isHardSlamming) ||
+      (hardSlamEndMs > 0 && Date.now() < hardSlamEndMs);
+
+    if (!eventId || !isHardSlamActive) return;
+    if (lastHardSlamEventRef.current === eventId) return;
+
+    lastHardSlamEventRef.current = eventId;
+    setHardSlamHandAnimKey((prev) => prev + 1);
+    setShowHardSlamHand(true);
+
+    const timer = setTimeout(() => {
+      setShowHardSlamHand(false);
+    }, 760);
+
+    return () => clearTimeout(timer);
+  }, [
+    gameState.triggerHardSlamAnimation,
+    gameState.isHardSlamming,
+    gameState.hardSlamAnimationProfile,
+    gameState.hardSlamDominoId,
+  ]);
+
   const getBackgroundImage = (backgroundChoice?: string) => {
     const backgroundMap: { [key: string]: string } = {
       'domino-table-1': dominoTable1,
@@ -284,13 +396,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         maxY = Math.max(maxY, domino.y + dominoHeight - 1);
       });
       
-      legalMoves.forEach(move => {
-        minX = Math.min(minX, move.x);
-        maxX = Math.max(maxX, move.x + 1);
-        minY = Math.min(minY, move.y);
-        maxY = Math.max(maxY, move.y + 1);
-      });
-      
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
       
@@ -309,7 +414,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     
     const timer = setTimeout(checkIfRecenterNeeded, 100);
     return () => clearTimeout(timer);
-  }, [gameState.dominoes, legalMoves, dynamicScale]);
+  }, [gameState.dominoes, dynamicScale]);
 
   // Original PC initial center logic
   useEffect(() => {
@@ -328,10 +433,142 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [gameState.dominoes, dynamicScale, boardSize]);
 
+  useEffect(() => {
+    setIsGloveImageUnavailable(false);
+  }, [gloveImageSrc]);
+
+  useEffect(() => {
+    if (!settings.gloveAlwaysVisible) {
+      setIsDraggingPersistentGlove(false);
+      setPersistentGlovePreviewPos(null);
+    }
+  }, [settings.gloveAlwaysVisible]);
+
+  const clampPercent = (value: number) => Math.max(4, Math.min(96, value));
+  const currentPersistentGlovePos = persistentGlovePreviewPos || {
+    x: clampPercent(settings.glovePosX || 82),
+    y: clampPercent(settings.glovePosY || 76),
+  };
+
+  const getPercentPositionFromClientPoint = (clientX: number, clientY: number) => {
+    if (!containerRef.current) return currentPersistentGlovePos;
+    const rect = containerRef.current.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return currentPersistentGlovePos;
+    const xPercent = ((clientX - rect.left) / rect.width) * 100;
+    const yPercent = ((clientY - rect.top) / rect.height) * 100;
+    return {
+      x: clampPercent(xPercent),
+      y: clampPercent(yPercent),
+    };
+  };
+
+  const beginPersistentGloveDrag = (clientX: number, clientY: number) => {
+    const nextPos = getPercentPositionFromClientPoint(clientX, clientY);
+    persistentGlovePosRef.current = nextPos;
+    setPersistentGlovePreviewPos(nextPos);
+    setIsDraggingPersistentGlove(true);
+  };
+
+  useEffect(() => {
+    if (!isDraggingPersistentGlove) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const nextPos = getPercentPositionFromClientPoint(event.clientX, event.clientY);
+      persistentGlovePosRef.current = nextPos;
+      setPersistentGlovePreviewPos(nextPos);
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (!touch) return;
+      const nextPos = getPercentPositionFromClientPoint(touch.clientX, touch.clientY);
+      persistentGlovePosRef.current = nextPos;
+      setPersistentGlovePreviewPos(nextPos);
+    };
+
+    const finishDrag = () => {
+      const finalPos = persistentGlovePosRef.current;
+      updateGlovePosition(finalPos.x, finalPos.y);
+      setIsDraggingPersistentGlove(false);
+      setPersistentGlovePreviewPos(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', finishDrag);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', finishDrag);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', finishDrag);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', finishDrag);
+    };
+  }, [isDraggingPersistentGlove, updateGlovePosition]);
+
+  const renderAnimatedHand = (fallbackIconClassName: string, strokeWidth: number, scale: number) => {
+    if (isGloveImageUnavailable) {
+      return (
+        <Hand
+          className={fallbackIconClassName}
+          strokeWidth={strokeWidth}
+          style={{ transform: `scale(${scale})` }}
+        />
+      );
+    }
+
+    return (
+      <img
+        src={gloveImageSrc}
+        alt="Glove hand"
+        className="domino-hand-image remove-black-bg"
+        style={{ transform: `scale(${scale})` }}
+        draggable={false}
+        onLoad={() => setIsGloveImageUnavailable(false)}
+        onError={() => setIsGloveImageUnavailable(true)}
+      />
+    );
+  };
+
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
-      <GameVisualControls />
-      
+      {showHardSlamHand && (
+        <div className="pointer-events-none absolute inset-0 z-[100]">
+          <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2">
+            <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-20 w-20 items-center justify-center rounded-full bg-red-500/90 text-white shadow-2xl">
+              {renderAnimatedHand('h-10 w-10', 2.8, settings.hardSlamGloveScale || 1)}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {settings.gloveAlwaysVisible && (
+        <div className="pointer-events-none absolute inset-0 z-[95]">
+          <div
+            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing select-none"
+            style={{
+              left: `${currentPersistentGlovePos.x}%`,
+              top: `${currentPersistentGlovePos.y}%`,
+            }}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              beginPersistentGloveDrag(event.clientX, event.clientY);
+            }}
+            onTouchStart={(event) => {
+              const touch = event.touches[0];
+              if (!touch) return;
+              event.stopPropagation();
+              beginPersistentGloveDrag(touch.clientX, touch.clientY);
+            }}
+          >
+            <div className="domino-persistent-glove flex h-14 w-14 items-center justify-center rounded-full bg-black/45 text-white shadow-xl">
+              {renderAnimatedHand('h-8 w-8', 2.6, settings.gloveScale || 1)}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div 
         ref={containerRef}
         className="w-full h-full game-board overflow-hidden rounded-2xl shadow-2xl"
@@ -376,12 +613,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         >
           {/* Original PC domino rendering */}
           {Object.entries(gameState.dominoes).map(([id, domino]) => {
-            // Elke dominosteen krijgt zijn eigen willekeurige rotatie hoek (tussen 5 en 20 graden)
-            const individualAngle = 5 + Math.random() * 15; // 5-20 graden
+            const individualAngle = getStableAngleFromId(id);
             
             // Connect to actual animation state from useGameVisualSettings
             const shouldAnimate = isAnimating && animationMode === 'shake';
-            const selectedAnimation = shouldAnimate ? 'shake' : 'none';
             
             return (
               <div
@@ -394,15 +629,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               >
                 <DominoTile
                   data={domino.data}
+                  dominoId={id}
                   orientation={domino.orientation}
                   flipped={domino.flipped}
                   rotation={domino.rotation || 0}
-                  rotateX={(domino.rotationX !== undefined ? domino.rotationX : settings.rotateX)}
-                  rotateY={(domino.rotationY !== undefined ? domino.rotationY : settings.rotateY)}
-                  rotateZ={(domino.rotationZ !== undefined ? domino.rotationZ : settings.rotateZ)}
+                  rotateX={(domino.rotationX !== undefined ? domino.rotationX : 0)}
+                  rotateY={(domino.rotationY !== undefined ? domino.rotationY : 0)}
+                  rotateZ={(domino.rotationZ !== undefined ? domino.rotationZ : 0)}
                   isShaking={shouldAnimate}
                   onClick={undefined}
-                  className="domino-tile-board board-domino"
+                  className={`domino-tile-board board-domino${shouldAnimate ? ' is-animating' : ''}`}
                   style={{
                     '--individual-angle': `${individualAngle}deg`,
                   } as React.CSSProperties}
@@ -410,6 +646,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               </div>
             );
           })}
+
+          {placeHandAnimation && (
+            <div
+              className="absolute pointer-events-none z-[90] -translate-x-1/2 -translate-y-1/2"
+              style={{
+                left: placeHandAnimation.left,
+                top: placeHandAnimation.top,
+              }}
+            >
+              <div className="domino-place-hand flex h-12 w-12 items-center justify-center rounded-full bg-amber-300/95 text-amber-950 shadow-2xl">
+                {renderAnimatedHand('h-7 w-7', 2.75, settings.gloveScale || 1)}
+              </div>
+            </div>
+          )}
 
           {/* Original PC placement target rendering */}
           {legalMoves.map((move, index) => {

@@ -15,7 +15,7 @@ const shuffleArray = <T>(array: T[]): void => {
   }
 };
 
-export const useDominoGame = (startShakeAnimation?: () => void) => {
+export const useDominoGame = (localPlayerPosition?: number) => {
   const { settings } = useGameVisualSettings();
   const { toast } = useToast();
   const [gameState, setGameState] = useState<GameState>({
@@ -122,8 +122,8 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
   }, [resetGame]);
 
   // EXACT COPY FROM YOUR ORIGINAL CODE
-  const hasDifferentNeighbor = useCallback((x: number, y: number): boolean => {
-    const { board } = gameStateRef.current;
+  const hasDifferentNeighbor = useCallback((x: number, y: number, boardOverride?: GameState['board']): boolean => {
+    const board = boardOverride || gameStateRef.current.board;
     const neighbors = {
       N: [x, y - 1],
       S: [x, y + 1],
@@ -275,7 +275,7 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
         }
 
         // Check hasDifferentNeighbor (more than 3 neighbors blocks placement)
-        if (hasDifferentNeighbor(nx, ny)) {
+        if (hasDifferentNeighbor(nx, ny, state.board)) {
           continue;
         }
 
@@ -584,6 +584,48 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
             }
           }
 
+          // Extra anti-clutter regel: een nieuwe steen mag alleen aan de verbindingskant contact maken.
+          // Zo voorkomen we "te dicht op elkaar" leggingen die latere zetten blokkeren.
+          const placementCells = finalOrientation === 'horizontal'
+            ? [[x, y], [x + 1, y]] as const
+            : [[x, y], [x, y + 1]] as const;
+          const placementCellSet = new Set(placementCells.map(([cx, cy]) => `${cx},${cy}`));
+          const fromDominoCells = fromDomino
+            ? (
+                fromDomino.orientation === 'horizontal'
+                  ? [[fromDomino.x, fromDomino.y], [fromDomino.x + 1, fromDomino.y]]
+                  : [[fromDomino.x, fromDomino.y], [fromDomino.x, fromDomino.y + 1]]
+              )
+            : [];
+          const allowedContactSet = new Set<string>([
+            ...placementCellSet,
+            ...fromDominoCells.map(([cx, cy]) => `${cx},${cy}`),
+          ]);
+
+          const hasIllegalSideContact = placementCells.some(([cx, cy]) => {
+            const neighborCells = [
+              [cx, cy - 1],
+              [cx, cy + 1],
+              [cx - 1, cy],
+              [cx + 1, cy],
+              [cx - 1, cy - 1],
+              [cx + 1, cy - 1],
+              [cx - 1, cy + 1],
+              [cx + 1, cy + 1],
+            ] as const;
+
+            return neighborCells.some(([nx, ny]) => {
+              const neighborKey = `${nx},${ny}`;
+              if (allowedContactSet.has(neighborKey)) return false;
+              if (!currentState.board[neighborKey]) return false;
+              return true;
+            });
+          });
+
+          if (hasIllegalSideContact) {
+            return;
+          }
+
           // Store the valid move but don't add it yet
           validMove = { 
             end, 
@@ -612,7 +654,7 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
   // BLOCKED GAME CHECK: Game is only blocked if NO moves possible AND boneyard is empty
-  const checkBlockedGame = useCallback((openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
+  const checkBlockedGame = useCallback((_openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
     console.log('🔍 CHECKING BLOCKED GAME - Using findLegalMoves for each tile');
     console.log('🔍 All player hands:', allPlayerHands.map((hand, i) => `Player ${i}: ${hand.length} tiles`));
     console.log('🔍 Boneyard:', boneyard.length, 'tiles');
@@ -652,43 +694,11 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
     
     console.log('❌ NO LEGAL MOVES FOUND AND BONEYARD EMPTY - Game is BLOCKED');
     return true; // Game is blocked
-
-    // Check if ANY player has a matching domino using findLegalMoves logic
-    for (let playerIndex = 0; playerIndex < allPlayerHands.length; playerIndex++) {
-      const playerHand = allPlayerHands[playerIndex];
-      
-      for (const domino of playerHand) {
-        // Use the same logic as findLegalMoves to check if this domino can be placed
-        const foundValidMove = openEnds.some(end => {
-          // Check if domino matches this open end (same logic as findLegalMoves)
-          return (end.value === domino.value1) || (end.value === domino.value2);
-        });
-        
-        if (foundValidMove) {
-          console.log(`✅ Game NOT blocked - Player ${playerIndex} has matching domino ${domino.value1}|${domino.value2}`);
-          return false;
-        }
-      }
-    }
-
-    // Check if boneyard has any matching dominoes using same logic
-    for (const domino of boneyard) {
-      const foundValidMove = openEnds.some(end => {
-        return (end.value === domino.value1) || (end.value === domino.value2);
-      });
-      
-      if (foundValidMove) {
-        console.log(`✅ Game NOT blocked - Boneyard has matching domino ${domino.value1}|${domino.value2}`);
-        return false;
-      }
-    }
-
-    console.log('❌ Game is BLOCKED - No player hands or boneyard have matching dominoes');
-    return true;
-  }, []);
+  }, [findLegalMoves]);
 
   const executeMove = useCallback((move: LegalMove) => {
     const { index, end, dominoData, flipped, orientation } = move;
+    const actorPosition = move.actorPosition;
     if (index === undefined) {
       return;
     }
@@ -799,8 +809,31 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
 
       const newSpinnerId = (!prev.spinnerId && isDouble(dominoData)) ? id : prev.spinnerId;
 
-      const newPlayerHand = [...prev.playerHand];
-      newPlayerHand.splice(index, 1);
+      const usePlayerHands = Array.isArray(prev.playerHands);
+      const hasActorPosition = usePlayerHands && typeof actorPosition === 'number';
+      const activeHand = hasActorPosition
+        ? [...(prev.playerHands?.[actorPosition] || [])]
+        : [...prev.playerHand];
+
+      if (index < 0 || index >= activeHand.length) {
+        console.warn('❌ executeMove aborted: invalid hand index for active player', {
+          index,
+          actorPosition,
+          handLength: activeHand.length
+        });
+        return prev;
+      }
+
+      activeHand.splice(index, 1);
+
+      const nextPlayerHands = usePlayerHands ? [...(prev.playerHands || [])] : undefined;
+      if (nextPlayerHands && hasActorPosition) {
+        nextPlayerHands[actorPosition] = activeHand;
+      }
+
+      const newPlayerHand = nextPlayerHands && typeof localPlayerPosition === 'number'
+        ? [...(nextPlayerHands[localPlayerPosition] || prev.playerHand)]
+        : (hasActorPosition ? [...prev.playerHand] : activeHand);
 
       // COLLISION DETECTION - Genereer rotatie die geen overlaps veroorzaakt
       const getRotationWithoutOverlap = () => {
@@ -898,23 +931,7 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
       });
 
       // Check for win condition - if player has no more dominoes
-      const isGameWon = newPlayerHand.length === 0;
-      
-      // Apply Hard Slam effect if activated
-      if (prev.hardSlamNextMove) {
-        console.log('🔥 HARD SLAM ACTIVATED - Starting shake animation!');
-        
-        // Call the shake animation directly, just like the Schudden button does
-        // The shake animation will handle generating and applying new rotations
-        setTimeout(() => {
-          if (startShakeAnimation) {
-            console.log('🎬 Calling startShakeAnimation directly from Hard Slam - same as Schudden');
-            startShakeAnimation();
-          } else {
-            console.warn('⚠️ startShakeAnimation not available in Hard Slam');
-          }
-        }, 100);
-      }
+      const isGameWon = activeHand.length === 0;
       
       // Create normal state
       const newState = {
@@ -923,6 +940,7 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
         board: newBoard,
         forbiddens: newForbiddens,
         spinnerId: newSpinnerId,
+        playerHands: nextPlayerHands || prev.playerHands,
         playerHand: newPlayerHand,
         selectedHandIndex: null,
         nextDominoId: prev.nextDominoId + 1,
@@ -946,9 +964,9 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
       
       return newState;
     });
-  }, [regenerateOpenEnds, checkBlockedGame]);
+  }, [checkBlockedGame, localPlayerPosition, regenerateOpenEnds]);
 
-  const drawFromBoneyard = useCallback(() => {
+  const drawFromBoneyard = useCallback((actorPosition?: number) => {
     console.log('🎯 LOCAL DRAW START - boneyard size:', gameStateRef.current.boneyard.length);
     console.log('🎯 LOCAL DRAW START - hand size:', gameStateRef.current.playerHand.length);
     
@@ -964,11 +982,16 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
       
       // Draw a domino from the boneyard
       const drawnDomino = prev.boneyard[prev.boneyard.length - 1];
-      const newPlayerHand = [...prev.playerHand, drawnDomino];
+      const usePlayerHands = Array.isArray(prev.playerHands);
+      const hasActorPosition = usePlayerHands && typeof actorPosition === 'number';
+      const activeHand = hasActorPosition
+        ? [...(prev.playerHands?.[actorPosition] || [])]
+        : [...prev.playerHand];
+      const newActiveHand = [...activeHand, drawnDomino];
       const newBoneyard = prev.boneyard.slice(0, -1);
       
       console.log('🎯 Drawn domino:', drawnDomino);
-      console.log('🔥 After draw - hand size:', newPlayerHand.length);
+      console.log('🔥 After draw - hand size:', newActiveHand.length);
       console.log('🔥 After draw - boneyard size:', newBoneyard.length);
       
       // Check if the newly drawn domino can be played
@@ -976,13 +999,24 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
       const canPlay = openEnds.some(end => 
         drawnDomino.value1 === end.value || drawnDomino.value2 === end.value
       );
-      
-      // If the drawn domino can be played, auto-select it
-      const selectedIndex = canPlay ? newPlayerHand.length - 1 : prev.selectedHandIndex;
+
+      const nextPlayerHands = usePlayerHands ? [...(prev.playerHands || [])] : undefined;
+      if (nextPlayerHands && hasActorPosition) {
+        nextPlayerHands[actorPosition] = newActiveHand;
+      }
+
+      const newPlayerHand = nextPlayerHands && typeof localPlayerPosition === 'number'
+        ? [...(nextPlayerHands[localPlayerPosition] || prev.playerHand)]
+        : (hasActorPosition ? [...prev.playerHand] : newActiveHand);
+
+      // If the drawn domino can be played, auto-select it for local player only
+      const actorIsLocal = !hasActorPosition || actorPosition === localPlayerPosition;
+      const selectedIndex = canPlay && actorIsLocal ? newActiveHand.length - 1 : prev.selectedHandIndex;
       
       const newState = {
         ...prev,
         playerHand: newPlayerHand,
+        playerHands: nextPlayerHands || prev.playerHands,
         boneyard: newBoneyard,
         selectedHandIndex: selectedIndex,
         // Don't change current player - only change when a domino is actually played
@@ -991,14 +1025,14 @@ export const useDominoGame = (startShakeAnimation?: () => void) => {
       // After drawing, check if the game is blocked (no boneyard left and no valid moves)
       // BUT ONLY if there are actually dominoes on the board (game has started)
       const boardHasDominoes = Object.keys(prev.board).length > 0;
-      const allHands = prev.playerHands || [newPlayerHand];
+      const allHands = (nextPlayerHands && nextPlayerHands.length > 0) ? nextPlayerHands : [newPlayerHand];
       const isBlocked = boardHasDominoes && checkBlockedGame(openEnds, prev.board, allHands, newBoneyard);
       newState.isGameOver = isBlocked;
       
       console.log('✅ LOCAL DRAW COMPLETE - returning new state');
       return newState;
     });
-  }, [regenerateOpenEnds, checkBlockedGame]);
+  }, [checkBlockedGame, localPlayerPosition, regenerateOpenEnds]);
 
   const selectHandDomino = useCallback((index: number) => {
     setGameState(prev => ({
