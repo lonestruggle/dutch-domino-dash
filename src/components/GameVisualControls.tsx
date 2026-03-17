@@ -18,6 +18,8 @@ import { DeviceType } from '@/hooks/useDeviceType';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 
 const deviceIcons = {
@@ -35,6 +37,7 @@ const deviceLabels = {
 const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
 
 export const GameVisualControls: React.FC = () => {
+  const { user } = useAuth();
   const { isAdmin, loading } = useUserRoles();
   const isDevMode = import.meta.env.DEV;
   const canAccessVisualControls = isAdmin || isDevMode;
@@ -254,24 +257,53 @@ export const GameVisualControls: React.FC = () => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : '';
-      if (!result) return;
-      updateGloveImageUrl(result, device);
-      toast({
-        title: 'Handschoen geupload',
-        description: 'Afbeelding opgeslagen in localStorage op dit device/browser.',
-      });
+    const uploadToSupabaseOrLocal = async () => {
+      try {
+        const fileExt = file.name.split('.').pop() || 'png';
+        const owner = user?.id || 'anonymous';
+        const fileName = `gloves/${owner}/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('table-backgrounds')
+          .upload(fileName, file, { upsert: false });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('table-backgrounds')
+          .getPublicUrl(fileName);
+
+        updateGloveImageUrl(publicUrl, device);
+        toast({
+          title: 'Handschoen geupload',
+          description: 'Opgeslagen in Supabase Storage (table-backgrounds).',
+        });
+        return;
+      } catch (storageError) {
+        console.warn('Glove upload to Supabase failed, falling back to localStorage:', storageError);
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = typeof reader.result === 'string' ? reader.result : '';
+        if (!result) return;
+        updateGloveImageUrl(result, device);
+        toast({
+          title: 'Handschoen lokaal opgeslagen',
+          description: 'Supabase upload lukte niet; opgeslagen in localStorage op dit device/browser.',
+        });
+      };
+      reader.onerror = () => {
+        toast({
+          title: 'Upload mislukt',
+          description: 'Kon de afbeelding niet lezen.',
+          variant: 'destructive',
+        });
+      };
+      reader.readAsDataURL(file);
     };
-    reader.onerror = () => {
-      toast({
-        title: 'Upload mislukt',
-        description: 'Kon de afbeelding niet lezen.',
-        variant: 'destructive',
-      });
-    };
-    reader.readAsDataURL(file);
+
+    void uploadToSupabaseOrLocal();
     event.target.value = '';
   };
 
