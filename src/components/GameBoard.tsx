@@ -521,7 +521,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       <img
         src={gloveImageSrc}
         alt="Glove hand"
-        className="domino-hand-image"
+        className="domino-hand-image remove-black-bg"
         style={{ transform: `scale(${scale})` }}
         draggable={false}
         onLoad={() => setIsGloveImageUnavailable(false)}

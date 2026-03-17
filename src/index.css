@@ -408,6 +408,11 @@
     transform-origin: center center;
   }
 
+  .domino-hand-image.remove-black-bg {
+    mix-blend-mode: screen;
+    filter: contrast(1.08) brightness(1.05);
+  }
+
   /* Mobile-specific styles */
   @media (max-width: 768px) {
     .placement-target:active {
