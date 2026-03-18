@@ -200,8 +200,8 @@ const Auth = () => {
       return;
     }
 
-    // Uitnodigingscode is verplicht
-    if (!inviteCode) {
+    // Uitnodigingscode is verplicht tenzij open registratie aan staat
+    if (!openRegistration && !inviteCode) {
       toast({
         title: "Error",
         description: "Uitnodigingscode is verplicht om te registreren",
@@ -210,8 +210,8 @@ const Auth = () => {
       return;
     }
 
-    // Valideer dat er geldige uitnodigingsinfo is
-    if (!inviteInfo) {
+    // Valideer dat er geldige uitnodigingsinfo is (alleen als invite code is opgegeven)
+    if (!openRegistration && inviteCode && !inviteInfo) {
       toast({
         title: "Error",
         description: "Ongeldige uitnodigingscode",
