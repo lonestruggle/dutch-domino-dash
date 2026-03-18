@@ -221,7 +221,7 @@ const Auth = () => {
     }
 
     // Email moet overeenkomen met uitnodiging (alleen als uitnodiging een email heeft)
-    if (inviteInfo.email && email !== inviteInfo.email) {
+    if (!openRegistration && inviteInfo && inviteInfo.email && email !== inviteInfo.email) {
       toast({
         title: "Error",
         description: "Email moet overeenkomen met uitnodiging",
