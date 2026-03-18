@@ -873,8 +873,8 @@ export const GameVisualControls: React.FC = () => {
     );
   };
 
-  // In production these controls are admin-only; in local dev we expose them for iteration/debugging.
-  if (loading && !isDevMode) return null;
+  // Only admins can access visual controls
+  if (loading) return null;
   if (!canAccessVisualControls) return null;
 
   return (
