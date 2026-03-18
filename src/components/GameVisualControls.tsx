@@ -39,8 +39,7 @@ const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
 export const GameVisualControls: React.FC = () => {
   const { user } = useAuth();
   const { isAdmin, loading } = useUserRoles();
-  const isDevMode = import.meta.env.DEV;
-  const canAccessVisualControls = isAdmin || isDevMode;
+  const canAccessVisualControls = isAdmin;
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
