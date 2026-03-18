@@ -20,10 +20,26 @@ const Auth = () => {
   const [inviteCode, setInviteCode] = useState('');
   const [inviteInfo, setInviteInfo] = useState<{ email: string; inviter: string } | null>(null);
   const [inviteError, setInviteError] = useState('');
+  const [openRegistration, setOpenRegistration] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  // Check if open registration is enabled
+  useEffect(() => {
+    const checkOpenRegistration = async () => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('setting_value')
+        .eq('setting_key', 'open_registration')
+        .maybeSingle();
+      if (data) {
+        setOpenRegistration(data.setting_value === true);
+      }
+    };
+    checkOpenRegistration();
+  }, []);
 
   // Check for invite code in URL and validate it
   useEffect(() => {
@@ -184,8 +200,8 @@ const Auth = () => {
       return;
     }
 
-    // Uitnodigingscode is verplicht
-    if (!inviteCode) {
+    // Uitnodigingscode is verplicht tenzij open registratie aan staat
+    if (!openRegistration && !inviteCode) {
       toast({
         title: "Error",
         description: "Uitnodigingscode is verplicht om te registreren",
@@ -194,8 +210,8 @@ const Auth = () => {
       return;
     }
 
-    // Valideer dat er geldige uitnodigingsinfo is
-    if (!inviteInfo) {
+    // Valideer dat er geldige uitnodigingsinfo is (alleen als invite code is opgegeven)
+    if (!openRegistration && inviteCode && !inviteInfo) {
       toast({
         title: "Error",
         description: "Ongeldige uitnodigingscode",
@@ -205,7 +221,7 @@ const Auth = () => {
     }
 
     // Email moet overeenkomen met uitnodiging (alleen als uitnodiging een email heeft)
-    if (inviteInfo.email && email !== inviteInfo.email) {
+    if (!openRegistration && inviteInfo && inviteInfo.email && email !== inviteInfo.email) {
       toast({
         title: "Error",
         description: "Email moet overeenkomen met uitnodiging",
@@ -389,8 +405,8 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
-                {/* Uitnodigingscode is altijd verplicht */}
-                {!inviteInfo && (
+                {/* Uitnodigingscode - niet nodig bij open registratie */}
+                {!openRegistration && !inviteInfo && (
                   <div className="space-y-2">
                     <Label htmlFor="invite-code">Uitnodigingscode *</Label>
                     <Input
@@ -414,6 +430,13 @@ const Auth = () => {
                       Je hebt een uitnodigingscode nodig om te registreren
                     </p>
                   </div>
+                )}
+                {openRegistration && (
+                  <Alert className="border-blue-200 bg-blue-50">
+                    <AlertDescription className="text-blue-800">
+                      Open registratie is actief — geen uitnodigingscode nodig!
+                    </AlertDescription>
+                  </Alert>
                 )}
                 
                 <div className="space-y-2">

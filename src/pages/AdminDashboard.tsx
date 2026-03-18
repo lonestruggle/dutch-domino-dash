@@ -1549,6 +1549,35 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
 
           <TabsContent value="invitations">
             <div className="space-y-6">
+              {/* Open Registration Toggle */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Open Registratie</CardTitle>
+                  <CardDescription>Sta toe dat gebruikers zich registreren zonder uitnodigingscode (handig voor testen)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant={getSetting('open_registration', false) ? 'destructive' : 'default'}
+                      onClick={async () => {
+                        const newValue = !getSetting('open_registration', false);
+                        const result = await updateSetting('open_registration', newValue);
+                        if (result.success) {
+                          toast({ title: 'Instelling bijgewerkt', description: newValue ? 'Open registratie is AAN — iedereen kan zich registreren' : 'Open registratie is UIT — uitnodigingscode verplicht' });
+                        } else {
+                          toast({ title: 'Fout', description: 'Kon instelling niet bijwerken', variant: 'destructive' });
+                        }
+                      }}
+                    >
+                      {getSetting('open_registration', false) ? 'AAN — Klik om uit te zetten' : 'UIT — Klik om aan te zetten'}
+                    </Button>
+                    <Badge variant={getSetting('open_registration', false) ? 'destructive' : 'secondary'}>
+                      {getSetting('open_registration', false) ? 'Open' : 'Alleen op uitnodiging'}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Invitation Stats */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>

@@ -1,0 +1,1 @@
+INSERT INTO public.app_settings (setting_key, setting_value, description) VALUES ('open_registration', 'false'::jsonb, 'Sta registratie toe zonder uitnodigingscode') ON CONFLICT DO NOTHING
