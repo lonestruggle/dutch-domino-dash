@@ -4,7 +4,6 @@ import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
-import { Hand } from 'lucide-react';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -79,6 +78,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     y: settings.glovePosY || 76,
   });
   const gloveImageSrc = (settings.gloveImageUrl || '').trim() || DEFAULT_GLOVE_IMAGE;
+  const [defaultGloveUnavailable, setDefaultGloveUnavailable] = useState(false);
   const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
   const lastAnimatedDominoIdRef = useRef<string | null>(null);
   const lastHardSlamEventRef = useRef<string | null>(null);
@@ -437,6 +437,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     let cancelled = false;
     setIsGloveImageUnavailable(false);
+    setDefaultGloveUnavailable(false);
     setProcessedGloveImageSrc(null);
 
     const image = new Image();
@@ -540,6 +541,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     };
   }, [gloveImageSrc]);
 
+  const effectiveGloveSrc = processedGloveImageSrc || gloveImageSrc;
+  const finalGloveSrc =
+    !isGloveImageUnavailable
+      ? effectiveGloveSrc
+      : (!defaultGloveUnavailable ? DEFAULT_GLOVE_IMAGE : null);
+
   useEffect(() => {
     if (!settings.gloveAlwaysVisible) {
       setIsDraggingPersistentGlove(false);
@@ -609,26 +616,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     };
   }, [isDraggingPersistentGlove, updateGlovePosition]);
 
-  const renderAnimatedHand = (fallbackIconClassName: string, strokeWidth: number, scale: number) => {
-    if (isGloveImageUnavailable) {
-      return (
-        <Hand
-          className={fallbackIconClassName}
-          strokeWidth={strokeWidth}
-          style={{ transform: `scale(${scale})` }}
-        />
-      );
-    }
-
+  const renderAnimatedHand = (scale: number) => {
+    if (!finalGloveSrc) return null;
     return (
       <img
-        src={processedGloveImageSrc || gloveImageSrc}
+        src={finalGloveSrc}
         alt="Glove hand"
-        className={`domino-hand-image ${processedGloveImageSrc ? '' : 'remove-black-bg'}`}
+        className={`domino-hand-image ${processedGloveImageSrc ? '' : 'remove-black-bg'} fixed-glove-image`}
         style={{ transform: `scale(${scale})` }}
         draggable={false}
-        onLoad={() => setIsGloveImageUnavailable(false)}
-        onError={() => setIsGloveImageUnavailable(true)}
+        onLoad={() => {
+          setIsGloveImageUnavailable(false);
+        }}
+        onError={() => {
+          if (finalGloveSrc === DEFAULT_GLOVE_IMAGE) {
+            setDefaultGloveUnavailable(true);
+          } else {
+            setIsGloveImageUnavailable(true);
+          }
+        }}
       />
     );
   };
@@ -637,15 +643,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
       {showHardSlamHand && (
         <div className="pointer-events-none absolute inset-0 z-[100]">
-          <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2">
+          <div
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+            style={
+              settings.gloveAlwaysVisible
+                ? { left: `${currentPersistentGlovePos.x}%`, top: `${currentPersistentGlovePos.y}%` }
+                : { left: '50%', top: '45%' }
+            }
+          >
             <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-20 w-20 items-center justify-center rounded-full bg-red-500/90 text-white shadow-2xl">
-              {renderAnimatedHand('h-10 w-10', 2.8, settings.hardSlamGloveScale || 1)}
+              {renderAnimatedHand(settings.hardSlamGloveScale || 1)}
             </div>
           </div>
         </div>
       )}
 
-      {settings.gloveAlwaysVisible && (
+      {settings.gloveAlwaysVisible && !showHardSlamHand && (
         <div className="pointer-events-none absolute inset-0 z-[95]">
           <div
             className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing select-none"
@@ -666,7 +679,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             }}
           >
             <div className="domino-persistent-glove flex h-14 w-14 items-center justify-center rounded-full bg-black/45 text-white shadow-xl">
-              {renderAnimatedHand('h-8 w-8', 2.6, settings.gloveScale || 1)}
+              {renderAnimatedHand(settings.gloveScale || 1)}
             </div>
           </div>
         </div>
@@ -759,7 +772,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               }}
             >
               <div className="domino-place-hand flex h-12 w-12 items-center justify-center rounded-full bg-amber-300/95 text-amber-950 shadow-2xl">
-                {renderAnimatedHand('h-7 w-7', 2.75, settings.gloveScale || 1)}
+                {renderAnimatedHand(settings.gloveScale || 1)}
               </div>
             </div>
           )}

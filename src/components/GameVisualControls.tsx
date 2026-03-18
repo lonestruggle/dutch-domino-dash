@@ -3,7 +3,6 @@ import { Settings, Minus, Plus, RotateCcw, Monitor, Tablet, Smartphone, RefreshC
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -18,8 +17,6 @@ import { DeviceType } from '@/hooks/useDeviceType';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 
 
 const deviceIcons = {
@@ -34,10 +31,7 @@ const deviceLabels = {
   mobile: 'Mobile',
 };
 
-const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
-
 export const GameVisualControls: React.FC = () => {
-  const { user } = useAuth();
   const { isAdmin, loading } = useUserRoles();
   const canAccessVisualControls = isAdmin;
   const [isOpen, setIsOpen] = useState(false);
@@ -47,7 +41,6 @@ export const GameVisualControls: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const dialogRef = useRef<HTMLDivElement>(null);
-  const gloveUploadInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { 
     currentDeviceType, 
@@ -64,7 +57,6 @@ export const GameVisualControls: React.FC = () => {
     updateDominoThickness,
     updateGloveScale,
     updateHardSlamGloveScale,
-    updateGloveImageUrl,
     updateGloveAlwaysVisible,
     updateGlovePosition,
     applyLiveUpdate,
@@ -229,83 +221,6 @@ export const GameVisualControls: React.FC = () => {
     const currentSettings = getSettingsForDevice(device);
     updateHardSlamGloveScale(currentSettings.hardSlamGloveScale + delta, device);
   };
-
-  const handleGloveUpload = (event: React.ChangeEvent<HTMLInputElement>, device: DeviceType) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Ongeldig bestand',
-        description: 'Upload een afbeeldingsbestand voor de handschoen.',
-        variant: 'destructive',
-      });
-      event.target.value = '';
-      return;
-    }
-
-    // Keep data URL small enough for localStorage reliability.
-    const maxBytes = 1_200_000;
-    if (file.size > maxBytes) {
-      toast({
-        title: 'Afbeelding te groot',
-        description: 'Gebruik een bestand kleiner dan ~1.2MB.',
-        variant: 'destructive',
-      });
-      event.target.value = '';
-      return;
-    }
-
-    const uploadToSupabaseOrLocal = async () => {
-      try {
-        const fileExt = file.name.split('.').pop() || 'png';
-        const owner = user?.id || 'anonymous';
-        const fileName = `gloves/${owner}/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('table-backgrounds')
-          .upload(fileName, file, { upsert: false });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('table-backgrounds')
-          .getPublicUrl(fileName);
-
-        updateGloveImageUrl(publicUrl, device);
-        toast({
-          title: 'Handschoen geupload',
-          description: 'Opgeslagen in Supabase Storage (table-backgrounds).',
-        });
-        return;
-      } catch (storageError) {
-        console.warn('Glove upload to Supabase failed, falling back to localStorage:', storageError);
-      }
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = typeof reader.result === 'string' ? reader.result : '';
-        if (!result) return;
-        updateGloveImageUrl(result, device);
-        toast({
-          title: 'Handschoen lokaal opgeslagen',
-          description: 'Supabase upload lukte niet; opgeslagen in localStorage op dit device/browser.',
-        });
-      };
-      reader.onerror = () => {
-        toast({
-          title: 'Upload mislukt',
-          description: 'Kon de afbeelding niet lezen.',
-          variant: 'destructive',
-        });
-      };
-      reader.readAsDataURL(file);
-    };
-
-    void uploadToSupabaseOrLocal();
-    event.target.value = '';
-  };
-
 
   const renderDeviceControls = (device: DeviceType) => {
     const deviceSettings = getSettingsForDevice(device);
@@ -543,40 +458,9 @@ export const GameVisualControls: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="text-xs font-medium">Handschoen afbeelding URL/pad</div>
-              <Input
-                value={deviceSettings.gloveImageUrl}
-                onChange={(event) => updateGloveImageUrl(event.target.value, device)}
-                placeholder="/glove-hand.svg of https://..."
-              />
-              <div className="flex items-center justify-between gap-2">
-                <Input
-                  ref={gloveUploadInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(event) => handleGloveUpload(event, device)}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => gloveUploadInputRef.current?.click()}
-                >
-                  Upload handschoen
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => updateGloveImageUrl(DEFAULT_GLOVE_IMAGE, device)}
-                >
-                  Reset handschoen
-                </Button>
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                Uploads worden lokaal opgeslagen in je browser (localStorage), niet in Supabase.
-              </p>
-            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Handschoen afbeelding is vastgezet op de laatste geselecteerde variant.
+            </p>
 
             <div className="space-y-2 rounded border border-border/60 p-3">
               <div className="flex items-center justify-between">
