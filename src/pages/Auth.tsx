@@ -405,8 +405,8 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
-                {/* Uitnodigingscode is altijd verplicht */}
-                {!inviteInfo && (
+                {/* Uitnodigingscode - niet nodig bij open registratie */}
+                {!openRegistration && !inviteInfo && (
                   <div className="space-y-2">
                     <Label htmlFor="invite-code">Uitnodigingscode *</Label>
                     <Input
@@ -430,6 +430,13 @@ const Auth = () => {
                       Je hebt een uitnodigingscode nodig om te registreren
                     </p>
                   </div>
+                )}
+                {openRegistration && (
+                  <Alert className="border-blue-200 bg-blue-50">
+                    <AlertDescription className="text-blue-800">
+                      Open registratie is actief — geen uitnodigingscode nodig!
+                    </AlertDescription>
+                  </Alert>
                 )}
                 
                 <div className="space-y-2">
