@@ -338,8 +338,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     }
   };
 
-  const isDevMode = import.meta.env.DEV;
-  const showDevLockstepInfo = isDevMode || isAdmin;
+  const showDevLockstepInfo = isAdmin;
   const activeHardSlamProfile = gameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
   const hardSlamPhaseMs = activeHardSlamProfile ? Math.max(0, Date.now() - activeHardSlamProfile.startedAtMs) : 0;
 
