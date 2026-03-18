@@ -216,12 +216,61 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
           .from('user_roles')
           .select('user_id, role');
 
+        // Load all-time game stats from game_player_stats
+        const userIds = usersData.map((profile) => profile.user_id).filter(Boolean);
+        let statsByUser = new Map<string, { games_played: number; games_won: number }>();
+        let hasAggregatedStats = false;
+
+        if (userIds.length > 0) {
+          const { data: statsRows, error: statsError } = await supabase
+            .from('game_player_stats')
+            .select('user_id, won')
+            .in('user_id', userIds);
+
+          if (!statsError && statsRows) {
+            hasAggregatedStats = true;
+            statsByUser = statsRows.reduce((acc, row) => {
+              const userId = row.user_id;
+              const current = acc.get(userId) || { games_played: 0, games_won: 0 };
+              current.games_played += 1;
+              if (row.won) current.games_won += 1;
+              acc.set(userId, current);
+              return acc;
+            }, new Map<string, { games_played: number; games_won: number }>());
+          }
+        }
+
+        // Load user emails via security-definer RPC.
+        const emailEntries = await Promise.all(
+          usersData.map(async (profile) => {
+            try {
+              const { data: email, error: emailError } = await supabase.rpc('get_email_by_username', {
+                _username: profile.username,
+              });
+              if (emailError || !email) return [profile.user_id, 'E-mail niet beschikbaar'] as const;
+              return [profile.user_id, email] as const;
+            } catch (error) {
+              void error;
+              return [profile.user_id, 'E-mail niet beschikbaar'] as const;
+            }
+          })
+        );
+        const emailByUser = new Map<string, string>(emailEntries);
+
         // Combine users with their roles
         const usersWithRoles = usersData.map(profile => {
           const userRoles = rolesData?.filter(role => role.user_id === profile.user_id) || [];
+          const profileGamesPlayed = typeof profile.games_played === 'number' ? profile.games_played : 0;
+          const profileGamesWon = typeof profile.games_won === 'number' ? profile.games_won : 0;
+          const aggregatedStats = statsByUser.get(profile.user_id);
+          const gamesPlayed = hasAggregatedStats ? (aggregatedStats?.games_played || 0) : profileGamesPlayed;
+          const gamesWon = hasAggregatedStats ? (aggregatedStats?.games_won || 0) : profileGamesWon;
+
           return {
             ...profile,
-            email: 'Email laden...', // Placeholder
+            games_played: gamesPlayed,
+            games_won: gamesWon,
+            email: emailByUser.get(profile.user_id) || 'E-mail niet beschikbaar',
             user_roles: userRoles.map(r => ({ role: r.role }))
           };
         });
@@ -803,16 +852,23 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
 
   const handleResetGameStats = async (userId: string) => {
     try {
-      const { error } = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ games_played: 0, games_won: 0 })
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      const { error: statsError } = await supabase
+        .from('game_player_stats')
+        .delete()
+        .eq('user_id', userId);
+
+      if (statsError) throw statsError;
 
       toast({
         title: "Succes",
-        description: "Game statistieken gereset",
+        description: "Game statistieken volledig gereset",
       });
 
       // Refresh users data

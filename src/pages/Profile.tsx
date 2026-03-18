@@ -9,10 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Settings, Trophy, GamepadIcon, LogOut, Home, UserPlus } from 'lucide-react';
+import { User, Settings, Trophy, GamepadIcon, LogOut, Home, UserPlus, Shield } from 'lucide-react';
 import { InviteUsers } from '@/components/InviteUsers';
 import { InvitationHistory } from '@/components/InvitationHistory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import {
   Select,
   SelectContent,
@@ -36,6 +37,7 @@ interface UserProfile {
 
 const Profile = () => {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { isAdmin, loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -76,11 +78,29 @@ const Profile = () => {
         return;
       }
 
-      setProfile(data);
+      let gamesPlayed = typeof data.games_played === 'number' ? data.games_played : 0;
+      let gamesWon = typeof data.games_won === 'number' ? data.games_won : 0;
+
+      const { data: statsRows, error: statsError } = await supabase
+        .from('game_player_stats')
+        .select('won')
+        .eq('user_id', user.id);
+
+      if (!statsError && statsRows) {
+        gamesPlayed = statsRows.length;
+        gamesWon = statsRows.reduce((count, row) => count + (row.won ? 1 : 0), 0);
+      }
+
       setFormData({
         username: data.username || '',
         status: data.status || 'Beschikbaar',
         bio: data.bio || '',
+      });
+
+      setProfile({
+        ...data,
+        games_played: gamesPlayed,
+        games_won: gamesWon,
       });
     } catch (error) {
       console.error('Error:', error);
@@ -206,6 +226,12 @@ const Profile = () => {
               <p className="text-muted-foreground">Beheer je account en statistieken</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              {!rolesLoading && isAdmin && (
+                <Button variant="default" size="sm" onClick={() => navigate('/admin')} className="w-full sm:w-auto">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Admin Page
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => navigate('/')} className="w-full sm:w-auto">
                 <Home className="mr-2 h-4 w-4" />
                 Home
