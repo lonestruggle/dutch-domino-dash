@@ -911,7 +911,7 @@ export const GameVisualControls: React.FC = () => {
           <DialogTitle className="flex items-center gap-2 flex-1">
             <Settings className="h-5 w-5" />
             Visuele Instellingen
-            {isDevMode && (
+            {import.meta.env.DEV && (
               <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
                 DEV MODE
               </span>
