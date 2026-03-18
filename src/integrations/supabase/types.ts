@@ -744,6 +744,10 @@ export type Database = {
         Args: { _lobby_id: string }
         Returns: undefined
       }
+      recalculate_profile_game_stats: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       record_game_outcome: {
         Args: {
           _game_id: string
