@@ -18,6 +18,20 @@ export const useUserRoles = () => {
       }
 
       try {
+        // Prefer server-side role functions so UI keeps working when direct table
+        // visibility differs across environments (e.g. Lovable vs local).
+        const [{ data: adminByRpc, error: adminRpcError }, { data: modByRpc, error: modRpcError }] = await Promise.all([
+          supabase.rpc('is_admin', { _user_id: user.id }),
+          supabase.rpc('is_moderator', { _user_id: user.id }),
+        ]);
+
+        if (!adminRpcError && !modRpcError) {
+          setIsAdmin(Boolean(adminByRpc));
+          setIsModerator(Boolean(modByRpc));
+          return;
+        }
+
+        // Fallback: direct roles query.
         const { data, error } = await supabase
           .from('user_roles')
           .select('role')
@@ -25,7 +39,7 @@ export const useUserRoles = () => {
 
         if (error) throw error;
 
-        const roles = data.map(r => r.role);
+        const roles = (data || []).map(r => r.role);
         setIsAdmin(roles.includes('admin'));
         setIsModerator(roles.includes('moderator'));
       } catch (error) {
