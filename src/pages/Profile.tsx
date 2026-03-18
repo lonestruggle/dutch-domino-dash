@@ -78,11 +78,29 @@ const Profile = () => {
         return;
       }
 
-      setProfile(data);
+      let gamesPlayed = typeof data.games_played === 'number' ? data.games_played : 0;
+      let gamesWon = typeof data.games_won === 'number' ? data.games_won : 0;
+
+      const { data: statsRows, error: statsError } = await supabase
+        .from('game_player_stats')
+        .select('won')
+        .eq('user_id', user.id);
+
+      if (!statsError && statsRows) {
+        gamesPlayed = statsRows.length;
+        gamesWon = statsRows.reduce((count, row) => count + (row.won ? 1 : 0), 0);
+      }
+
       setFormData({
         username: data.username || '',
         status: data.status || 'Beschikbaar',
         bio: data.bio || '',
+      });
+
+      setProfile({
+        ...data,
+        games_played: gamesPlayed,
+        games_won: gamesWon,
       });
     } catch (error) {
       console.error('Error:', error);
