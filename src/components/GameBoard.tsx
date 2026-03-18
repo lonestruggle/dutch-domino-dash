@@ -71,6 +71,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [showHardSlamHand, setShowHardSlamHand] = useState(false);
   const [hardSlamHandAnimKey, setHardSlamHandAnimKey] = useState(0);
   const [isGloveImageUnavailable, setIsGloveImageUnavailable] = useState(false);
+  const [processedGloveImageSrc, setProcessedGloveImageSrc] = useState<string | null>(null);
   const [isDraggingPersistentGlove, setIsDraggingPersistentGlove] = useState(false);
   const [persistentGlovePreviewPos, setPersistentGlovePreviewPos] = useState<{ x: number; y: number } | null>(null);
   const persistentGlovePosRef = useRef<{ x: number; y: number }>({
@@ -434,7 +435,109 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [gameState.dominoes, dynamicScale, boardSize]);
 
   useEffect(() => {
+    let cancelled = false;
     setIsGloveImageUnavailable(false);
+    setProcessedGloveImageSrc(null);
+
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.referrerPolicy = 'no-referrer';
+    image.decoding = 'async';
+    image.src = gloveImageSrc;
+
+    image.onload = () => {
+      if (cancelled) return;
+      try {
+        const width = image.naturalWidth || image.width;
+        const height = image.naturalHeight || image.height;
+        if (!width || !height) {
+          setProcessedGloveImageSrc(null);
+          return;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) {
+          setProcessedGloveImageSrc(null);
+          return;
+        }
+
+        ctx.drawImage(image, 0, 0, width, height);
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const { data } = imageData;
+
+        const maxDarkThreshold = 78;
+        const visited = new Uint8Array(width * height);
+        const queue: number[] = [];
+        const isDarkPixel = (x: number, y: number): boolean => {
+          const idx = (y * width + x) * 4;
+          const alpha = data[idx + 3];
+          if (alpha < 10) return true;
+          const maxChannel = Math.max(data[idx], data[idx + 1], data[idx + 2]);
+          return maxChannel <= maxDarkThreshold;
+        };
+
+        const enqueueIfDark = (x: number, y: number) => {
+          const linear = y * width + x;
+          if (visited[linear]) return;
+          if (!isDarkPixel(x, y)) return;
+          visited[linear] = 1;
+          queue.push(linear);
+        };
+
+        for (let x = 0; x < width; x += 1) {
+          enqueueIfDark(x, 0);
+          enqueueIfDark(x, height - 1);
+        }
+        for (let y = 0; y < height; y += 1) {
+          enqueueIfDark(0, y);
+          enqueueIfDark(width - 1, y);
+        }
+
+        while (queue.length > 0) {
+          const linear = queue.pop();
+          if (linear === undefined) break;
+          const x = linear % width;
+          const y = Math.floor(linear / width);
+          const neighbors = [
+            [x + 1, y],
+            [x - 1, y],
+            [x, y + 1],
+            [x, y - 1],
+          ] as const;
+
+          neighbors.forEach(([nx, ny]) => {
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) return;
+            enqueueIfDark(nx, ny);
+          });
+        }
+
+        for (let linear = 0; linear < visited.length; linear += 1) {
+          if (!visited[linear]) continue;
+          const idx = linear * 4;
+          data[idx + 3] = 0;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        setProcessedGloveImageSrc(canvas.toDataURL('image/png'));
+      } catch (error) {
+        // Cross-origin images can block pixel reads; fallback handled in render.
+        void error;
+        setProcessedGloveImageSrc(null);
+      }
+    };
+
+    image.onerror = () => {
+      if (cancelled) return;
+      setIsGloveImageUnavailable(true);
+      setProcessedGloveImageSrc(null);
+    };
+
+    return () => {
+      cancelled = true;
+    };
   }, [gloveImageSrc]);
 
   useEffect(() => {
@@ -519,9 +622,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     return (
       <img
-        src={gloveImageSrc}
+        src={processedGloveImageSrc || gloveImageSrc}
         alt="Glove hand"
-        className="domino-hand-image remove-black-bg"
+        className={`domino-hand-image ${processedGloveImageSrc ? '' : 'remove-black-bg'}`}
         style={{ transform: `scale(${scale})` }}
         draggable={false}
         onLoad={() => setIsGloveImageUnavailable(false)}
