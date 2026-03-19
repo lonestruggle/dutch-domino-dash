@@ -1014,6 +1014,31 @@ export default function Game() {
     }, 150);
   }, [gameHook, setGameState, syncState.currentPlayer, syncState.gameState, syncState.playerPosition, updateGameState]);
 
+  const wrappedDrawSpecificFromBoneyard = useCallback(async (index: number, actorPosition?: number) => {
+    console.log('🎲 Draw specific from boneyard - turn validation removed, database controls turns');
+    const actingPosition = typeof actorPosition === 'number' ? actorPosition : syncState.currentPlayer;
+
+    // Execute draw locally - database will validate turn
+    gameHook.drawSpecificFromBoneyard(index, actingPosition);
+
+    // Keep current turn after drawing from boneyard
+    if (drawSyncTimeoutRef.current) {
+      clearTimeout(drawSyncTimeoutRef.current);
+    }
+
+    drawSyncTimeoutRef.current = setTimeout(() => {
+      drawSyncTimeoutRef.current = null;
+      setGameState(currentState => {
+        const myPos = syncState.playerPosition || 0;
+        const finalState = buildConsolidatedState(syncState.gameState, currentState, myPos, actingPosition);
+
+        // NO turn advancement for boneyard draw - player stays on turn
+        updateGameState(finalState, syncState.currentPlayer);
+        return currentState;
+      });
+    }, 150);
+  }, [gameHook, setGameState, syncState.currentPlayer, syncState.gameState, syncState.playerPosition, updateGameState]);
+
   const wrappedStartNewGame = useCallback(async () => {
     // Reset opslagvlag voor scorebord zodat nieuwe uitslag later kan worden opgeslagen
     savedRef.current = false;
@@ -1808,6 +1833,7 @@ export default function Game() {
           ...gameHook, 
           executeMove: wrappedExecuteMove,
           drawFromBoneyard: wrappedDrawFromBoneyard,
+          drawSpecificFromBoneyard: wrappedDrawSpecificFromBoneyard,
           passMove,
           manualBlockedCheck,
           fixTableStones: wrappedFixTableStones,

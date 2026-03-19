@@ -696,7 +696,7 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
                         style={
                           {
                             pointerEvents: 'auto',
-                            '--glove-mask-image': `url("${versionedBaseGloveImageUrl}")`,
+                            '--glove-mask-image': `url("${configuredBaseGloveImageUrl}")`,
                           } as CSSProperties
                         }
                       >

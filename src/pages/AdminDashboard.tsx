@@ -1794,6 +1794,39 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
                       {getSetting('single_player_enabled') === true ? 'Ingeschakeld' : 'Uitgeschakeld'}
                     </Button>
                   </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t pt-3">
+                    <div className="space-y-0.5">
+                      <Label className="text-base">Admin boneyard open tonen</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Alleen voor admins: boneyard stenen worden open (niet omgekeerd) weergegeven in boneyard view.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={getSetting('admin_boneyard_face_up') === true ? 'default' : 'outline'}
+                      onClick={async () => {
+                        const currentValue = getSetting('admin_boneyard_face_up');
+                        const newValue = !currentValue;
+                        const result = await updateSetting('admin_boneyard_face_up', newValue);
+                        if (result.success) {
+                          toast({
+                            title: 'Instelling bijgewerkt',
+                            description: `Admin boneyard open tonen is nu ${newValue ? 'ingeschakeld' : 'uitgeschakeld'}`,
+                          });
+                        } else {
+                          toast({
+                            title: 'Fout',
+                            description: 'Kon instelling niet bijwerken',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                      disabled={settingsLoading}
+                    >
+                      {getSetting('admin_boneyard_face_up') === true ? 'Ingeschakeld' : 'Uitgeschakeld'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 

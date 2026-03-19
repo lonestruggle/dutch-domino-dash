@@ -69,6 +69,11 @@ interface PlaceHandAnimationState {
   top: number;
 }
 
+interface HardSlamHandPlacementState {
+  left: number;
+  top: number;
+}
+
 const HARD_SLAM_HAND_ANIMATION_MS = 980;
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
@@ -92,6 +97,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const { getSetting } = useAppSettings();
   const [playerGloveSkinByUserId, setPlayerGloveSkinByUserId] = useState<Record<string, PlayerGloveSkinConfig>>({});
   const [placeHandAnimation, setPlaceHandAnimation] = useState<PlaceHandAnimationState | null>(null);
+  const [hardSlamHandPlacement, setHardSlamHandPlacement] = useState<HardSlamHandPlacementState | null>(null);
   const [showHardSlamHand, setShowHardSlamHand] = useState(false);
   const [hardSlamHandAnimKey, setHardSlamHandAnimKey] = useState(0);
   const [isGloveImageUnavailable, setIsGloveImageUnavailable] = useState(false);
@@ -119,7 +125,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const lastAnimatedDominoIdRef = useRef<string | null>(null);
   const lastHardSlamEventRef = useRef<string | null>(null);
   useEffect(() => {
-    const uniqueUserIds = Array.from(new Set((playerUserIds || []).filter((value): value is string => typeof value === 'string' && value.length > 0)));
+    const uniqueUserIds = Array.from(new Set(
+      [...(playerUserIds || []), user?.id]
+        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    ));
     if (uniqueUserIds.length === 0) {
       setPlayerGloveSkinByUserId({});
       return;
@@ -205,7 +214,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [playerUserIds]);
+  }, [playerUserIds, user?.id]);
 
   
   // Dynamic grid cell size based on settings - each domino = 2 grid cells
@@ -472,11 +481,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (lastHardSlamEventRef.current === eventId) return;
 
     lastHardSlamEventRef.current = eventId;
+    const slammedDomino = gameState.hardSlamDominoId ? gameState.dominoes[gameState.hardSlamDominoId] : undefined;
+    if (slammedDomino) {
+      const widthCells = slammedDomino.orientation === 'horizontal' ? 2 : 1;
+      const heightCells = slammedDomino.orientation === 'vertical' ? 2 : 1;
+      setHardSlamHandPlacement({
+        left: boardSize / 2 + (slammedDomino.x + widthCells / 2) * GRID_CELL_SIZE,
+        top: boardSize / 2 + (slammedDomino.y + heightCells / 2) * GRID_CELL_SIZE,
+      });
+    } else {
+      // Fallback so animation is still visible if domino lookup is temporarily unavailable.
+      setHardSlamHandPlacement({
+        left: boardSize / 2,
+        top: boardSize / 2,
+      });
+    }
     setHardSlamHandAnimKey((prev) => prev + 1);
     setShowHardSlamHand(true);
 
     const timer = setTimeout(() => {
       setShowHardSlamHand(false);
+      setHardSlamHandPlacement(null);
     }, HARD_SLAM_HAND_ANIMATION_MS);
 
     return () => clearTimeout(timer);
@@ -485,6 +510,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     gameState.isHardSlamming,
     gameState.hardSlamAnimationProfile,
     gameState.hardSlamDominoId,
+    gameState.dominoes,
+    boardSize,
+    GRID_CELL_SIZE,
   ]);
 
   const getBackgroundImage = (backgroundChoice?: string) => {
@@ -744,7 +772,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         <img
           src={finalBaseGloveSrc}
           alt="Glove hand"
-          className={`domino-hand-image ${processedGloveImageSrc ? '' : 'remove-black-bg'} fixed-glove-image`}
+          className="domino-hand-image fixed-glove-image"
           draggable={false}
           onLoad={() => {
             setIsGloveImageUnavailable(false);
@@ -758,7 +786,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             className="domino-hand-skin-mask"
             style={
               {
-                '--glove-mask-image': `url("${versionedBaseGloveImageUrl}")`,
+                '--glove-mask-image': `url("${configuredBaseGloveImageUrl}")`,
               } as React.CSSProperties
             }
           >
@@ -784,23 +812,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
-      {showHardSlamHand && (
-        <div className="pointer-events-none absolute inset-0 z-[100]">
-          <div
-            className="absolute -translate-x-1/2 -translate-y-1/2"
-            style={
-              globalGloveAlwaysVisible
-                ? { left: `${currentPersistentGlovePos.x}%`, top: `${currentPersistentGlovePos.y}%` }
-                : { left: '50%', top: '45%' }
-            }
-          >
-            <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-14 w-14 items-center justify-center">
-              {renderAnimatedHand(settings.gloveScale || 1, hardSlamGloveSkinConfig)}
-            </div>
-          </div>
-        </div>
-      )}
-
       {globalGloveAlwaysVisible && !showHardSlamHand && !placeHandAnimation && (
         <div className="pointer-events-none absolute inset-0 z-[95]">
           <div
@@ -905,6 +916,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               </div>
             );
           })}
+
+          {showHardSlamHand && hardSlamHandPlacement && (
+            <div
+              className="absolute pointer-events-none z-[95] -translate-x-1/2 -translate-y-1/2"
+              style={{
+                left: hardSlamHandPlacement.left,
+                top: hardSlamHandPlacement.top,
+              }}
+            >
+              <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-14 w-14 items-center justify-center">
+                {renderAnimatedHand(settings.gloveScale || 1, hardSlamGloveSkinConfig)}
+              </div>
+            </div>
+          )}
 
           {placeHandAnimation && !showHardSlamHand && (
             <div

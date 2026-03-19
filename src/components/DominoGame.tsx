@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { cn } from '@/lib/utils';
 import type { DominoData, ShakeAnimationProfile } from '@/types/domino';
 
@@ -28,6 +29,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const { startShakeAnimation, isAnimating: isVisualAnimating } = useGameVisualSettings();
   const { canHardSlam } = useUserPermissions();
   const { isAdmin } = useUserRoles();
+  const { getSetting } = useAppSettings();
   
   const {
     gameState,
@@ -342,7 +344,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   // Handle boneyard stone pick
   const handleBoneyardPick = (index: number) => {
     if (gameState?.boneyard && gameState.boneyard[index]) {
-      gameHook.drawSpecificFromBoneyard(index);
+      gameHook.drawSpecificFromBoneyard(index, syncState?.currentPlayer);
       setShowBoneyardDialog(false);
       setPreviewDomino(null);
       if (previewTimeoutRef.current) {
@@ -360,6 +362,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   };
 
   const showDevLockstepInfo = isAdmin;
+  const adminBoneyardFaceUp = isAdmin && Boolean(getSetting('admin_boneyard_face_up', false));
   const activeHardSlamProfile = gameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
   const hardSlamPhaseMs = activeHardSlamProfile ? Math.max(0, Date.now() - activeHardSlamProfile.startedAtMs) : 0;
 
@@ -728,7 +731,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                      onClick={() => handleStonePreview(domino, index)}
                    >
                      <DominoTile
-                       data={{ value1: 0, value2: 0 }} // Face down - show blank
+                       data={adminBoneyardFaceUp ? domino : { value1: 0, value2: 0 }} // Admin debug option: show real stones face-up
                        orientation="horizontal"
                        flipped={false}
                        className="w-12 h-6 bg-gray-800 border-2 border-gray-600"

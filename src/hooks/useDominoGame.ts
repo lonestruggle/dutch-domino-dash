@@ -1042,7 +1042,7 @@ export const useDominoGame = (localPlayerPosition?: number) => {
   }, []);
 
   // New function to draw a specific domino from boneyard by index
-  const drawSpecificFromBoneyard = useCallback((index: number) => {
+  const drawSpecificFromBoneyard = useCallback((index: number, actorPosition?: number) => {
     console.log('🎯 DRAW SPECIFIC START - index:', index, 'boneyard size:', gameStateRef.current.boneyard.length);
     
     if (gameStateRef.current.isGameOver || gameStateRef.current.boneyard.length === 0 || index >= gameStateRef.current.boneyard.length) {
@@ -1053,7 +1053,15 @@ export const useDominoGame = (localPlayerPosition?: number) => {
     setGameState(prev => {
       // Draw the specific domino from the boneyard
       const drawnDomino = prev.boneyard[index];
-      const newPlayerHand = [...prev.playerHand, drawnDomino];
+      const usePlayerHands = Array.isArray(prev.playerHands);
+      const resolvedActorPosition = usePlayerHands
+        ? (typeof actorPosition === 'number' ? actorPosition : localPlayerPosition)
+        : undefined;
+      const hasActorPosition = usePlayerHands && typeof resolvedActorPosition === 'number';
+      const activeHand = hasActorPosition
+        ? [...(prev.playerHands?.[resolvedActorPosition as number] || [])]
+        : [...prev.playerHand];
+      const newActiveHand = [...activeHand, drawnDomino];
       const newBoneyard = prev.boneyard.filter((_, i) => i !== index);
       
       console.log('🎯 Drawn specific domino:', drawnDomino);
@@ -1064,19 +1072,30 @@ export const useDominoGame = (localPlayerPosition?: number) => {
         drawnDomino.value1 === end.value || drawnDomino.value2 === end.value
       );
       
-      // If the drawn domino can be played, auto-select it
-      const selectedIndex = canPlay ? newPlayerHand.length - 1 : prev.selectedHandIndex;
+      const nextPlayerHands = usePlayerHands ? [...(prev.playerHands || [])] : undefined;
+      if (nextPlayerHands && hasActorPosition) {
+        nextPlayerHands[resolvedActorPosition as number] = newActiveHand;
+      }
+
+      const newPlayerHand = nextPlayerHands && typeof localPlayerPosition === 'number'
+        ? [...(nextPlayerHands[localPlayerPosition] || prev.playerHand)]
+        : (hasActorPosition ? [...prev.playerHand] : newActiveHand);
+
+      const actorIsLocal = !hasActorPosition || resolvedActorPosition === localPlayerPosition;
+      // If the drawn domino can be played, auto-select it for local player only
+      const selectedIndex = canPlay && actorIsLocal ? newActiveHand.length - 1 : prev.selectedHandIndex;
       
       const newState = {
         ...prev,
         playerHand: newPlayerHand,
+        playerHands: nextPlayerHands || prev.playerHands,
         boneyard: newBoneyard,
         selectedHandIndex: selectedIndex,
       };
       
       // Check if the game is blocked
       const boardHasDominoes = Object.keys(prev.board).length > 0;
-      const allHands = prev.playerHands || [newPlayerHand];
+      const allHands = (nextPlayerHands && nextPlayerHands.length > 0) ? nextPlayerHands : [newPlayerHand];
       const isBlocked = boardHasDominoes && checkBlockedGame(openEnds, prev.board, allHands, newBoneyard);
       if (isBlocked) {
         console.log('🔄 Game is blocked after drawing from boneyard');
@@ -1085,7 +1104,7 @@ export const useDominoGame = (localPlayerPosition?: number) => {
       
       return newState;
     });
-  }, [regenerateOpenEnds, checkBlockedGame]);
+  }, [regenerateOpenEnds, checkBlockedGame, localPlayerPosition]);
 
   // Function to rotate a domino on the board
   const rotateDomino = useCallback((dominoId: string) => {
