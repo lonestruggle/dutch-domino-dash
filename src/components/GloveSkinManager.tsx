@@ -66,11 +66,19 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
   const [skinTransformDrafts, setSkinTransformDrafts] = useState<
     Record<string, { x: string; y: string; scale: string; rotation: string }>
   >({});
+  const [dragState, setDragState] = useState<{
+    skinId: string;
+    startX: number;
+    startY: number;
+    startOffsetX: number;
+    startOffsetY: number;
+  } | null>(null);
 
   const availableSkinOptions = useMemo(
     () => skins.filter((skin) => skin.is_active),
     [skins]
   );
+  const PREVIEW_MASK_PX = 68;
 
   const loadSkins = async () => {
     const { data, error } = await supabase
@@ -237,6 +245,80 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
       },
     }));
   };
+
+  const getDraftNumber = (skin: GloveSkin, field: 'x' | 'y' | 'scale' | 'rotation'): number => {
+    const fallbackValue = field === 'x'
+      ? skin.overlay_offset_x
+      : field === 'y'
+        ? skin.overlay_offset_y
+        : field === 'scale'
+          ? skin.overlay_scale
+          : skin.overlay_rotation;
+    const raw = Number(skinTransformDrafts[skin.id]?.[field] ?? String(fallbackValue));
+    return Number.isFinite(raw) ? raw : fallbackValue;
+  };
+
+  const handleScaleNudge = (skin: GloveSkin, delta: number) => {
+    const nextValue = Math.max(0, Math.min(4, Number((getDraftNumber(skin, 'scale') + delta).toFixed(2))));
+    handleSkinTransformDraftChange(skin.id, 'scale', String(nextValue));
+  };
+
+  const beginOverlayDrag = (skin: GloveSkin, clientX: number, clientY: number) => {
+    setDragState({
+      skinId: skin.id,
+      startX: clientX,
+      startY: clientY,
+      startOffsetX: getDraftNumber(skin, 'x'),
+      startOffsetY: getDraftNumber(skin, 'y'),
+    });
+  };
+
+  useEffect(() => {
+    if (!dragState) return;
+
+    const updateByPointer = (clientX: number, clientY: number) => {
+      const dx = clientX - dragState.startX;
+      const dy = clientY - dragState.startY;
+      const deltaXPercent = (dx / PREVIEW_MASK_PX) * 100;
+      const deltaYPercent = (dy / PREVIEW_MASK_PX) * 100;
+      const nextX = Math.max(-100, Math.min(100, Number((dragState.startOffsetX + deltaXPercent).toFixed(2))));
+      const nextY = Math.max(-100, Math.min(100, Number((dragState.startOffsetY + deltaYPercent).toFixed(2))));
+
+      setSkinTransformDrafts((prev) => ({
+        ...prev,
+        [dragState.skinId]: {
+          x: String(nextX),
+          y: String(nextY),
+          scale: prev[dragState.skinId]?.scale ?? '1',
+          rotation: prev[dragState.skinId]?.rotation ?? '0',
+        },
+      }));
+    };
+
+    const onMouseMove = (event: MouseEvent) => {
+      updateByPointer(event.clientX, event.clientY);
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (!touch) return;
+      updateByPointer(touch.clientX, touch.clientY);
+    };
+
+    const stopDrag = () => setDragState(null);
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', stopDrag);
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', stopDrag);
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', stopDrag);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', stopDrag);
+    };
+  }, [dragState, PREVIEW_MASK_PX]);
 
   const handleSaveSkinTransform = async (skin: GloveSkin) => {
     const draft = skinTransformDrafts[skin.id];
@@ -484,12 +566,20 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Scale</Label>
-                    <Input
-                      type="number"
-                      step="0.05"
-                      value={skinTransformDrafts[skin.id]?.scale ?? String(skin.overlay_scale)}
-                      onChange={(e) => handleSkinTransformDraftChange(skin.id, 'scale', e.target.value)}
-                    />
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="sm" onClick={() => handleScaleNudge(skin, -0.05)}>
+                        -
+                      </Button>
+                      <Input
+                        type="number"
+                        step="0.05"
+                        value={skinTransformDrafts[skin.id]?.scale ?? String(skin.overlay_scale)}
+                        onChange={(e) => handleSkinTransformDraftChange(skin.id, 'scale', e.target.value)}
+                      />
+                      <Button variant="outline" size="sm" onClick={() => handleScaleNudge(skin, 0.05)}>
+                        +
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Rotatie (°)</Label>
@@ -514,7 +604,7 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
                   <div className="relative h-20 w-20 rounded-full bg-black/35 flex items-center justify-center overflow-hidden">
                     <img src={BASE_GLOVE_IMAGE} alt="Base glove" className="domino-hand-image fixed-glove-image" />
                     {skin.image_url !== BASE_GLOVE_IMAGE && (
-                      <span className="domino-hand-skin-mask">
+                      <span className="domino-hand-skin-mask" style={{ pointerEvents: 'auto' }}>
                         <img
                           src={skin.image_url}
                           alt={`${skin.name} overlay`}
@@ -524,11 +614,25 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
                             '--skin-overlay-y': `${Number(skinTransformDrafts[skin.id]?.y ?? skin.overlay_offset_y)}%`,
                             '--skin-overlay-scale': Number(skinTransformDrafts[skin.id]?.scale ?? skin.overlay_scale).toString(),
                             '--skin-overlay-rotation': `${Number(skinTransformDrafts[skin.id]?.rotation ?? skin.overlay_rotation)}deg`,
+                            cursor: 'grab',
+                            pointerEvents: 'auto',
                           } as CSSProperties}
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            beginOverlayDrag(skin, event.clientX, event.clientY);
+                          }}
+                          onTouchStart={(event) => {
+                            const touch = event.touches[0];
+                            if (!touch) return;
+                            beginOverlayDrag(skin, touch.clientX, touch.clientY);
+                          }}
                         />
                       </span>
                     )}
                   </div>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Tip: sleep de overlay om te centreren op de handschoen.
+                  </p>
                 </div>
               </div>
             ))
