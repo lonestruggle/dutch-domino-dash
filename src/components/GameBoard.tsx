@@ -4,6 +4,7 @@ import { PlacementTarget } from './PlacementTarget';
 import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -66,6 +67,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { settings, applyOriginalRotations, isAnimating, animationMode, updateGlovePosition } = useGameVisualSettings();
+  const { getSetting } = useAppSettings();
   const [placeHandAnimation, setPlaceHandAnimation] = useState<PlaceHandAnimationState | null>(null);
   const [showHardSlamHand, setShowHardSlamHand] = useState(false);
   const [hardSlamHandAnimKey, setHardSlamHandAnimKey] = useState(0);
@@ -77,7 +79,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     x: settings.glovePosX || 82,
     y: settings.glovePosY || 76,
   });
-  const gloveImageSrc = (settings.gloveImageUrl || '').trim() || DEFAULT_GLOVE_IMAGE;
+  const globalGloveSkinUrl = String(getSetting('global_glove_skin_url', DEFAULT_GLOVE_IMAGE) || DEFAULT_GLOVE_IMAGE).trim();
+  const gloveImageSrc = globalGloveSkinUrl || DEFAULT_GLOVE_IMAGE;
+  const globalGloveAlwaysVisible = Boolean(getSetting('global_glove_always_visible', true));
   const [defaultGloveUnavailable, setDefaultGloveUnavailable] = useState(false);
   const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
   const lastAnimatedDominoIdRef = useRef<string | null>(null);
@@ -548,11 +552,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       : (!defaultGloveUnavailable ? DEFAULT_GLOVE_IMAGE : null);
 
   useEffect(() => {
-    if (!settings.gloveAlwaysVisible) {
+    if (!globalGloveAlwaysVisible) {
       setIsDraggingPersistentGlove(false);
       setPersistentGlovePreviewPos(null);
     }
-  }, [settings.gloveAlwaysVisible]);
+  }, [globalGloveAlwaysVisible]);
 
   const clampPercent = (value: number) => Math.max(4, Math.min(96, value));
   const currentPersistentGlovePos = persistentGlovePreviewPos || {
@@ -646,7 +650,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div
             className="absolute -translate-x-1/2 -translate-y-1/2"
             style={
-              settings.gloveAlwaysVisible
+              globalGloveAlwaysVisible
                 ? { left: `${currentPersistentGlovePos.x}%`, top: `${currentPersistentGlovePos.y}%` }
                 : { left: '50%', top: '45%' }
             }
@@ -658,7 +662,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {settings.gloveAlwaysVisible && !showHardSlamHand && (
+      {globalGloveAlwaysVisible && !showHardSlamHand && (
         <div className="pointer-events-none absolute inset-0 z-[95]">
           <div
             className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing select-none"

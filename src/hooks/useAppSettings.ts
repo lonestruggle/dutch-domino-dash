@@ -41,8 +41,13 @@ export const useAppSettings = () => {
     try {
       const { error } = await supabase
         .from('app_settings')
-        .update({ setting_value: value })
-        .eq('setting_key', key);
+        .upsert(
+          {
+            setting_key: key,
+            setting_value: value,
+          },
+          { onConflict: 'setting_key' }
+        );
 
       if (error) throw error;
 
