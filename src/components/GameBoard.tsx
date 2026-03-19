@@ -94,17 +94,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     x: settings.glovePosX || 82,
     y: settings.glovePosY || 76,
   });
-  const globalGloveSkinUrl = String(getSetting('global_glove_skin_url', DEFAULT_GLOVE_IMAGE) || DEFAULT_GLOVE_IMAGE).trim();
-  const fallbackSkinConfig: PlayerGloveSkinConfig | null =
-    globalGloveSkinUrl && globalGloveSkinUrl !== BASE_GLOVE_IMAGE
-      ? {
-          imageUrl: globalGloveSkinUrl,
-          overlayOffsetX: 0,
-          overlayOffsetY: 0,
-          overlayScale: 1,
-          overlayRotation: 0,
-        }
-      : null;
+  // We intentionally do not fallback to the legacy global glove image URL here,
+  // so the base glove stays consistent unless a player-selected skin is available.
+  const fallbackSkinConfig: PlayerGloveSkinConfig | null = null;
   const resolveUserSkinConfig = (userId?: string | null): PlayerGloveSkinConfig | null =>
     (userId ? playerGloveSkinByUserId[userId] : undefined) || fallbackSkinConfig;
   const persistentGloveSkinConfig = resolveUserSkinConfig(user?.id || null);
