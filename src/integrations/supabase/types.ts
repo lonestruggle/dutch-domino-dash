@@ -260,36 +260,6 @@ export type Database = {
           },
         ]
       }
-      glove_skins: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          image_url: string
-          is_active: boolean
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          image_url: string
-          is_active?: boolean
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          image_url?: string
-          is_active?: boolean
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       games: {
         Row: {
           background_choice: string | null
@@ -336,6 +306,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      glove_skins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       invitations: {
         Row: {
@@ -683,42 +683,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_permissions: {
-        Row: {
-          can_chat: boolean
-          can_create_lobby: boolean
-          can_hard_slam: boolean
-          can_invite: boolean
-          can_use_custom_backgrounds: boolean
-          created_at: string
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          can_chat?: boolean
-          can_create_lobby?: boolean
-          can_hard_slam?: boolean
-          can_invite?: boolean
-          can_use_custom_backgrounds?: boolean
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          can_chat?: boolean
-          can_create_lobby?: boolean
-          can_hard_slam?: boolean
-          can_invite?: boolean
-          can_use_custom_backgrounds?: boolean
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_glove_skins: {
         Row: {
           created_at: string
@@ -756,6 +720,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_permissions: {
+        Row: {
+          can_chat: boolean
+          can_create_lobby: boolean
+          can_hard_slam: boolean
+          can_invite: boolean
+          can_use_custom_backgrounds: boolean
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_chat?: boolean
+          can_create_lobby?: boolean
+          can_hard_slam?: boolean
+          can_invite?: boolean
+          can_use_custom_backgrounds?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_chat?: boolean
+          can_create_lobby?: boolean
+          can_hard_slam?: boolean
+          can_invite?: boolean
+          can_use_custom_backgrounds?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
