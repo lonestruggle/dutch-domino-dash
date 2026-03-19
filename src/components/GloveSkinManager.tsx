@@ -51,6 +51,11 @@ const fallbackSkinName = (fileName: string) => {
 };
 
 const BASE_GLOVE_IMAGE = '/glove-hand.svg';
+const withCacheBuster = (url: string, version: string) => {
+  if (!url) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${encodeURIComponent(version)}`;
+};
 
 export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) {
   const { toast } = useToast();
@@ -85,6 +90,8 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
   const configuredBaseGloveImageUrl = String(
     getSetting('global_base_glove_image_url', BASE_GLOVE_IMAGE) || BASE_GLOVE_IMAGE
   ).trim() || BASE_GLOVE_IMAGE;
+  const gloveAssetVersion = String(getSetting('global_glove_asset_version', '1') || '1');
+  const versionedBaseGloveImageUrl = withCacheBuster(configuredBaseGloveImageUrl, gloveAssetVersion);
   const PREVIEW_MASK_PX = 68;
 
   const loadSkins = async () => {
@@ -215,6 +222,8 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
         overlay_rotation: 0,
       });
       if (insertError) throw insertError;
+      const versionResult = await updateSetting('global_glove_asset_version', String(Date.now()));
+      if (!versionResult.success) throw versionResult.error;
 
       toast({
         title: 'Skin geupload',
@@ -265,6 +274,8 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
 
       const result = await updateSetting('global_base_glove_image_url', publicUrl);
       if (!result.success) throw result.error;
+      const versionResult = await updateSetting('global_glove_asset_version', String(Date.now()));
+      if (!versionResult.success) throw versionResult.error;
 
       toast({
         title: 'Basis-handschoen bijgewerkt',
@@ -546,7 +557,7 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
           <div className="rounded border p-3 space-y-3">
             <div className="text-sm font-medium">Basis-handschoen (hardcoded basisvorm)</div>
             <div className="flex items-center gap-3">
-              <img src={configuredBaseGloveImageUrl} alt="Current base glove" className="h-12 w-12 rounded object-contain border bg-muted/30" />
+              <img src={versionedBaseGloveImageUrl} alt="Current base glove" className="h-12 w-12 rounded object-contain border bg-muted/30" />
               <div className="text-xs text-muted-foreground break-all">{configuredBaseGloveImageUrl}</div>
             </div>
             <Input
@@ -610,7 +621,7 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
               <div key={skin.id} className="rounded border p-3 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <img src={skin.image_url} alt={skin.name} className="h-10 w-10 rounded object-cover border" />
+                    <img src={withCacheBuster(skin.image_url, gloveAssetVersion)} alt={skin.name} className="h-10 w-10 rounded object-cover border" />
                     <div>
                       <div className="font-medium">{skin.name}</div>
                       <Badge variant={skin.is_active ? 'default' : 'secondary'}>
@@ -678,19 +689,19 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
                     Preview (basis-handschoen + skin overlay)
                   </p>
                   <div className="relative h-20 w-20 rounded-full bg-black/35 flex items-center justify-center overflow-hidden">
-                    <img src={configuredBaseGloveImageUrl} alt="Base glove" className="domino-hand-image fixed-glove-image" />
+                    <img src={versionedBaseGloveImageUrl} alt="Base glove" className="domino-hand-image fixed-glove-image" />
                     {skin.name.trim().toLowerCase() !== 'standaard' && Number(skinTransformDrafts[skin.id]?.scale ?? skin.overlay_scale) > 0.001 && (
                       <span
                         className="domino-hand-skin-mask"
                         style={
                           {
                             pointerEvents: 'auto',
-                            '--glove-mask-image': `url("${configuredBaseGloveImageUrl}")`,
+                            '--glove-mask-image': `url("${versionedBaseGloveImageUrl}")`,
                           } as CSSProperties
                         }
                       >
                         <img
-                          src={skin.image_url}
+                          src={withCacheBuster(skin.image_url, gloveAssetVersion)}
                           alt={`${skin.name} overlay`}
                           className="domino-hand-skin-overlay"
                           style={{
@@ -780,7 +791,7 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
                 return (
                   <div key={assignment.id} className="flex items-center justify-between gap-3 rounded border p-3">
                     <div className="flex items-center gap-3">
-                      <img src={skin.image_url} alt={skin.name} className="h-9 w-9 rounded object-cover border" />
+                      <img src={withCacheBuster(skin.image_url, gloveAssetVersion)} alt={skin.name} className="h-9 w-9 rounded object-cover border" />
                       <div>
                         <div className="font-medium">{skin.name}</div>
                         <div className="flex items-center gap-2">

@@ -14,6 +14,36 @@ export const useAppSettings = () => {
 
   useEffect(() => {
     loadSettings();
+    const channel = supabase
+      .channel(`app-settings-${Math.random().toString(36).slice(2)}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings' },
+        (payload) => {
+          const nextRow = (payload.new || payload.old) as { setting_key?: string; setting_value?: any } | null;
+          const key = nextRow?.setting_key;
+          if (!key) return;
+
+          if (payload.eventType === 'DELETE') {
+            setSettings((prev) => {
+              const next = { ...prev };
+              delete next[key];
+              return next;
+            });
+            return;
+          }
+
+          setSettings((prev) => ({
+            ...prev,
+            [key]: nextRow?.setting_value ?? null,
+          }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadSettings = async () => {

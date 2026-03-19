@@ -14,6 +14,12 @@ const premiumWoodTable = '/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.
 const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
 const BASE_GLOVE_IMAGE = '/glove-hand.svg';
 
+const withCacheBuster = (url: string, version: string) => {
+  if (!url) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${encodeURIComponent(version)}`;
+};
+
 interface PlayerGloveSkinConfig {
   imageUrl: string;
   overlayOffsetX: number;
@@ -98,6 +104,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const configuredBaseGloveImageUrl = String(
     getSetting('global_base_glove_image_url', BASE_GLOVE_IMAGE) || BASE_GLOVE_IMAGE
   ).trim() || BASE_GLOVE_IMAGE;
+  const gloveAssetVersion = String(getSetting('global_glove_asset_version', '1') || '1');
+  const versionedBaseGloveImageUrl = withCacheBuster(configuredBaseGloveImageUrl, gloveAssetVersion);
+  const versionedDefaultGloveImageUrl = withCacheBuster(DEFAULT_GLOVE_IMAGE, gloveAssetVersion);
 
   const fallbackSkinConfig: PlayerGloveSkinConfig | null = null;
   const resolveUserSkinConfig = (userId?: string | null): PlayerGloveSkinConfig | null =>
@@ -561,7 +570,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     image.crossOrigin = 'anonymous';
     image.referrerPolicy = 'no-referrer';
     image.decoding = 'async';
-    image.src = configuredBaseGloveImageUrl;
+    image.src = versionedBaseGloveImageUrl;
 
     image.onload = () => {
       if (cancelled) return;
@@ -656,13 +665,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [configuredBaseGloveImageUrl]);
+  }, [versionedBaseGloveImageUrl]);
 
-  const effectiveBaseGloveSrc = processedGloveImageSrc || configuredBaseGloveImageUrl;
+  const effectiveBaseGloveSrc = processedGloveImageSrc || versionedBaseGloveImageUrl;
   const finalBaseGloveSrc =
     !isGloveImageUnavailable
       ? effectiveBaseGloveSrc
-      : (!defaultGloveUnavailable ? DEFAULT_GLOVE_IMAGE : null);
+      : (!defaultGloveUnavailable ? versionedDefaultGloveImageUrl : null);
 
   useEffect(() => {
     if (!globalGloveAlwaysVisible) {
@@ -746,7 +755,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             setIsGloveImageUnavailable(false);
           }}
           onError={() => {
-            if (finalBaseGloveSrc === DEFAULT_GLOVE_IMAGE) {
+            if (finalBaseGloveSrc === versionedDefaultGloveImageUrl) {
               setDefaultGloveUnavailable(true);
             } else {
               setIsGloveImageUnavailable(true);
@@ -758,12 +767,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             className="domino-hand-skin-mask"
             style={
               {
-                '--glove-mask-image': `url("${configuredBaseGloveImageUrl}")`,
+                '--glove-mask-image': `url("${versionedBaseGloveImageUrl}")`,
               } as React.CSSProperties
             }
           >
             <img
-              src={skinConfig.imageUrl}
+              src={withCacheBuster(skinConfig.imageUrl, gloveAssetVersion)}
               alt="Glove skin overlay"
               className="domino-hand-skin-overlay"
               draggable={false}
