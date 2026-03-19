@@ -18,8 +18,6 @@ import { DeviceType } from '@/hooks/useDeviceType';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { useAppSettings } from '@/hooks/useAppSettings';
 
 
@@ -37,7 +35,6 @@ const deviceLabels = {
 const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
 
 export const GameVisualControls: React.FC = () => {
-  const { user } = useAuth();
   const { isAdmin, loading } = useUserRoles();
   const { getSetting, updateSetting } = useAppSettings();
   const canAccessVisualControls = isAdmin;
@@ -48,7 +45,6 @@ export const GameVisualControls: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const dialogRef = useRef<HTMLDivElement>(null);
-  const gloveUploadInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { 
     currentDeviceType, 
@@ -232,54 +228,6 @@ export const GameVisualControls: React.FC = () => {
   const globalGloveSkinUrl = String(getSetting('global_glove_skin_url', DEFAULT_GLOVE_IMAGE) || DEFAULT_GLOVE_IMAGE);
   const globalGloveAlwaysVisible = Boolean(getSetting('global_glove_always_visible', true));
 
-  const handleGlobalGloveUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Ongeldig bestand',
-        description: 'Upload een afbeeldingsbestand voor de handschoen-skin.',
-        variant: 'destructive',
-      });
-      event.target.value = '';
-      return;
-    }
-
-    const owner = user?.id || 'admin';
-    const fileExt = file.name.split('.').pop() || 'png';
-    const filePath = `glove-skins/${owner}/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-
-    try {
-      const { error: uploadError } = await supabase.storage
-        .from('table-backgrounds')
-        .upload(filePath, file, { upsert: false });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('table-backgrounds')
-        .getPublicUrl(filePath);
-
-      const result = await updateSetting('global_glove_skin_url', publicUrl);
-      if (!result.success) throw result.error;
-
-      toast({
-        title: 'Handschoen skin geupload',
-        description: 'Deze skin is nu actief voor iedereen.',
-      });
-    } catch (error) {
-      console.error('Failed to upload global glove skin:', error);
-      toast({
-        title: 'Upload mislukt',
-        description: 'Kon handschoen skin niet opslaan in Supabase.',
-        variant: 'destructive',
-      });
-    } finally {
-      event.target.value = '';
-    }
-  };
-
   const handleGlobalGloveVisibilityChange = async (checked: boolean) => {
     const result = await updateSetting('global_glove_always_visible', checked);
     if (!result.success) {
@@ -289,22 +237,6 @@ export const GameVisualControls: React.FC = () => {
         variant: 'destructive',
       });
     }
-  };
-
-  const handleResetGlobalGloveSkin = async () => {
-    const result = await updateSetting('global_glove_skin_url', DEFAULT_GLOVE_IMAGE);
-    if (!result.success) {
-      toast({
-        title: 'Reset mislukt',
-        description: 'Kon handschoen skin niet resetten.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    toast({
-      title: 'Skin gereset',
-      description: 'Standaard handschoen is nu actief voor iedereen.',
-    });
   };
 
   const renderDeviceControls = (device: DeviceType) => {
@@ -546,31 +478,8 @@ export const GameVisualControls: React.FC = () => {
             <div className="space-y-2">
               <div className="text-xs font-medium">Globale handschoen skin (voor iedereen)</div>
               <Input value={globalGloveSkinUrl} readOnly />
-              <Input
-                ref={gloveUploadInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleGlobalGloveUpload}
-              />
-              <div className="flex items-center justify-between gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => gloveUploadInputRef.current?.click()}
-                >
-                  Upload skin
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResetGlobalGloveSkin}
-                >
-                  Reset naar standaard
-                </Button>
-              </div>
               <p className="text-[11px] text-muted-foreground">
-                Deze skin komt uit Supabase en is zichtbaar voor alle spelers.
+                Skin upload en toewijzing beheer je nu via de Admin Page.
               </p>
             </div>
 

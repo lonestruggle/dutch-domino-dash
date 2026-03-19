@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
@@ -37,7 +38,7 @@ interface BotDebugInfo {
   updatedAt: number;
 }
 
-const MIN_PLACEMENT_DELAY_MS = 950;
+const DEFAULT_MIN_PLACEMENT_DELAY_MS = 950;
 
 const buildConsolidatedState = (
   remoteState: PersistedGameState | null,
@@ -75,6 +76,8 @@ const buildConsolidatedState = (
     hardSlamDominoId: currentState.hardSlamDominoId,
     triggerHardSlamAnimation: currentState.triggerHardSlamAnimation,
     hardSlamAnimationProfile: currentState.hardSlamAnimationProfile,
+    hardSlamActorUserId: currentState.hardSlamActorUserId,
+    lastMoveActorUserId: currentState.lastMoveActorUserId,
     moveCooldownUntilMs: currentState.moveCooldownUntilMs,
   };
 };
@@ -795,7 +798,13 @@ export default function Game() {
   
   // Hard slam functionality
   const { disarmHardSlam, settings, isAnimating } = useGameVisualSettings();
+  const { settings: appSettings } = useAppSettings();
   const { calculateBestMove } = useBotAI();
+  const minPlacementDelayMs = useMemo(() => {
+    const raw = Number(appSettings?.global_min_placement_delay_ms ?? DEFAULT_MIN_PLACEMENT_DELAY_MS);
+    if (!Number.isFinite(raw)) return DEFAULT_MIN_PLACEMENT_DELAY_MS;
+    return Math.max(200, Math.min(5000, Math.round(raw)));
+  }, [appSettings]);
   
   // Use the existing synced game state hook
   const { syncState, updateGameState, startNewGame: syncedStartNewGame } = useSyncedDominoGameState(gameId || '', user?.id || '');
@@ -836,6 +845,7 @@ export default function Game() {
 
     console.log('🎬 🎯 WRAPPED EXECUTE MOVE CALLED!', move);
     const actorPosition = typeof move.actorPosition === 'number' ? move.actorPosition : syncState.currentPlayer;
+    const actorUserId = syncState.allPlayers.find((player) => player.position === actorPosition)?.user_id || null;
     console.log('🎯 Acting player position:', actorPosition);
     console.log('🔥 localHardSlamActive:', move?.localHardSlamActive);
     
@@ -895,11 +905,16 @@ export default function Game() {
         hardSlamDominoId,
         triggerHardSlamAnimation: true,
         hardSlamAnimationProfile,
+        hardSlamActorUserId: actorUserId,
       }));
     }
 
     // Execute the move locally
-    const nextPlacementAllowedAt = Date.now() + MIN_PLACEMENT_DELAY_MS;
+    const nextPlacementAllowedAt = Date.now() + minPlacementDelayMs;
+    setGameState((currentState) => ({
+      ...currentState,
+      lastMoveActorUserId: actorUserId,
+    }));
     gameHook.executeMove({ ...move, actorPosition });
     // Enforce a minimum spacing between placements so hand animations can complete.
     moveAnimationLockUntilRef.current = nextPlacementAllowedAt;
@@ -929,6 +944,8 @@ export default function Game() {
           triggerHardSlamAnimation: Boolean(move?.localHardSlamActive),
           hardSlamDominoId: move?.localHardSlamActive ? hardSlamDominoId : currentState.hardSlamDominoId,
           hardSlamAnimationProfile: move?.localHardSlamActive ? hardSlamAnimationProfile : currentState.hardSlamAnimationProfile,
+          hardSlamActorUserId: move?.localHardSlamActive ? actorUserId : currentState.hardSlamActorUserId,
+          lastMoveActorUserId: actorUserId,
           moveCooldownUntilMs: nextPlacementAllowedAt,
         };
 
@@ -953,7 +970,7 @@ export default function Game() {
         return currentState; // Return current state to avoid double setting
       });
     }, 150); // Slightly longer delay for better state consistency
-  }, [gameHook, gameState, isAnimating, setGameState, settings.rotationAmplitudeX, settings.rotationAmplitudeY, settings.rotationAmplitudeZ, settings.rotationSpeed, settings.shakeDuration, settings.shakeIntensity, syncState.allPlayers, syncState.allPlayers.length, syncState.currentPlayer, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
+  }, [gameHook, gameState, isAnimating, minPlacementDelayMs, setGameState, settings.rotationAmplitudeX, settings.rotationAmplitudeY, settings.rotationAmplitudeZ, settings.rotationSpeed, settings.shakeDuration, settings.shakeIntensity, syncState.allPlayers, syncState.allPlayers.length, syncState.currentPlayer, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
 
   const wrappedDrawFromBoneyard = useCallback(async (actorPosition?: number) => {
     console.log('🎲 Draw from boneyard - turn validation removed, database controls turns');
@@ -1008,6 +1025,9 @@ export default function Game() {
       spinnerId: null,
       isGameOver: false,
       selectedHandIndex: null,
+      hardSlamActorUserId: null,
+      lastMoveActorUserId: null,
+      moveCooldownUntilMs: 0,
     };
     // Optimistische reset van UI
     setGameState(blank);
@@ -1702,6 +1722,7 @@ export default function Game() {
   // Wrapper for hardSlam that immediately syncs to database
   const wrappedHardSlam = useCallback(async () => {
     console.log('🔥 HARD SLAM ACTIVATED - SYNCING TO DATABASE!');
+    const actorUserId = syncState.allPlayers.find((player) => player.position === syncState.currentPlayer)?.user_id || null;
     const hardSlamAnimationProfile: ShakeAnimationProfile = {
       eventId: `queued-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`,
       seed: Math.floor(Math.random() * 0x7fffffff),
@@ -1721,6 +1742,7 @@ export default function Game() {
       isHardSlamming: true,
       triggerHardSlamAnimation: true, // New animation flag for all players
       hardSlamAnimationProfile,
+      hardSlamActorUserId: actorUserId,
     };
     
     // Update local state first
@@ -1762,7 +1784,8 @@ export default function Game() {
     settings.shakeIntensity,
     updateGameState,
     setGameState,
-    syncState.currentPlayer
+    syncState.currentPlayer,
+    syncState.allPlayers,
   ]);
 
   return (

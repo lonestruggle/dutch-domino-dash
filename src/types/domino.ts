@@ -71,6 +71,8 @@ export interface GameState {
   hardSlamDominoId?: string; // Track which specific domino triggered the hard slam
   triggerHardSlamAnimation?: boolean; // Separate flag for animation sync across all players
   hardSlamAnimationProfile?: ShakeAnimationProfile; // Shared profile so all clients render the same hard slam motion
+  hardSlamActorUserId?: string | null; // User skin source for hard slam hand animation
+  lastMoveActorUserId?: string | null; // User skin source for place-hand animation
   moveCooldownUntilMs?: number; // Global minimum delay between placements so hand animations can finish
 
   // Nieuw voor spelafloop

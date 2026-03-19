@@ -14,6 +14,7 @@ import { BackgroundManager } from '@/components/BackgroundManager';
 import { TableBackgroundManager } from '@/components/TableBackgroundManager';
 import { UserPermissionsDialog } from '@/components/UserPermissionsDialog';
 import { ManageUserDialog } from '@/components/ManageUserDialog';
+import { GloveSkinManager } from '@/components/GloveSkinManager';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { 
   Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
@@ -94,7 +95,7 @@ const AdminDashboard = () => {
   const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getSetting, updateSetting, loading: settingsLoading } = useAppSettings();
+  const { settings, getSetting, updateSetting, loading: settingsLoading } = useAppSettings();
   const [isAdmin, setIsAdmin] = useState(false);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -116,6 +117,7 @@ const AdminDashboard = () => {
   const [activeSeason, setActiveSeason] = useState<any | null>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [newSeasonName, setNewSeasonName] = useState<string>('');
+  const [placementDelayMsInput, setPlacementDelayMsInput] = useState<string>('950');
 const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
 const [permissionsUser, setPermissionsUser] = useState<UserProfile | null>(null);
 const [manageDialogOpen, setManageDialogOpen] = useState(false);
@@ -179,6 +181,13 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
     console.log('User found, checking admin status');
     checkAdminStatus();
   }, [user, navigate, authLoading, checkAdminStatus]);
+
+  useEffect(() => {
+    if (settingsLoading) return;
+    const rawValue = Number(settings?.global_min_placement_delay_ms ?? 950);
+    const normalized = Number.isFinite(rawValue) ? Math.round(rawValue) : 950;
+    setPlacementDelayMsInput(String(normalized));
+  }, [settings, settingsLoading]);
 
 
   const loadDashboardData = useCallback(async () => {
@@ -1785,6 +1794,61 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
                   </div>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5" />
+                    Zet-vertraging tussen stenen
+                  </CardTitle>
+                  <CardDescription>
+                    Minimale vertraging (ms) tussen steen-plaatsingen zodat handschoen-animaties zichtbaar blijven.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Input
+                      type="number"
+                      min={200}
+                      max={5000}
+                      step={10}
+                      value={placementDelayMsInput}
+                      onChange={(e) => setPlacementDelayMsInput(e.target.value)}
+                      className="max-w-[220px]"
+                    />
+                    <Button
+                      onClick={async () => {
+                        const parsed = Number(placementDelayMsInput);
+                        const normalized = Number.isFinite(parsed) ? Math.max(200, Math.min(5000, Math.round(parsed))) : 950;
+                        const result = await updateSetting('global_min_placement_delay_ms', normalized);
+                        if (result.success) {
+                          setPlacementDelayMsInput(String(normalized));
+                          toast({
+                            title: 'Vertraging opgeslagen',
+                            description: `Nieuwe minimale zet-vertraging: ${normalized}ms`,
+                          });
+                        } else {
+                          toast({
+                            title: 'Opslaan mislukt',
+                            description: 'Kon zet-vertraging niet bijwerken.',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                    >
+                      Opslaan
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Advies: 850–1200ms voor stabiele handschoen-animaties.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <GloveSkinManager
+                users={users.map((profile) => ({ user_id: profile.user_id, username: profile.username }))}
+                adminUserId={user?.id}
+              />
             </div>
           </TabsContent>
         </Tabs>

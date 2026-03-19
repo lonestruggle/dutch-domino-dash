@@ -120,6 +120,8 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
       hardSlamDominoId: persistedGameState.hardSlamDominoId,
       triggerHardSlamAnimation: persistedGameState.triggerHardSlamAnimation || false,
       hardSlamAnimationProfile: persistedGameState.hardSlamAnimationProfile,
+      hardSlamActorUserId: typeof persistedGameState.hardSlamActorUserId === 'string' ? persistedGameState.hardSlamActorUserId : null,
+      lastMoveActorUserId: typeof persistedGameState.lastMoveActorUserId === 'string' ? persistedGameState.lastMoveActorUserId : null,
       moveCooldownUntilMs:
         typeof persistedGameState.moveCooldownUntilMs === 'number'
           ? persistedGameState.moveCooldownUntilMs

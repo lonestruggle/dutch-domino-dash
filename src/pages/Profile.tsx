@@ -31,8 +31,15 @@ interface UserProfile {
   bio: string | null;
   games_played: number;
   games_won: number;
+  selected_glove_skin_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface ProfileGloveSkin {
+  id: string;
+  name: string;
+  image_url: string;
 }
 
 const Profile = () => {
@@ -43,6 +50,9 @@ const Profile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [availableGloveSkins, setAvailableGloveSkins] = useState<ProfileGloveSkin[]>([]);
+  const [selectedGloveSkinId, setSelectedGloveSkinId] = useState<string>('');
+  const [savingGloveSkin, setSavingGloveSkin] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     status: '',
@@ -102,10 +112,84 @@ const Profile = () => {
         games_played: gamesPlayed,
         games_won: gamesWon,
       });
+
+      await loadAvailableGloveSkins(user.id, data.selected_glove_skin_id || null);
     } catch (error) {
       console.error('Error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAvailableGloveSkins = async (userId: string, currentSelectedSkinId: string | null) => {
+    try {
+      const { data: assignedRows, error: assignedError } = await supabase
+        .from('user_glove_skins')
+        .select('skin_id')
+        .eq('user_id', userId)
+        .eq('is_enabled', true);
+
+      if (assignedError) throw assignedError;
+
+      const skinIds = Array.from(new Set((assignedRows || []).map((row) => row.skin_id).filter(Boolean)));
+      if (skinIds.length === 0) {
+        setAvailableGloveSkins([]);
+        setSelectedGloveSkinId('');
+        return;
+      }
+
+      const { data: skinRows, error: skinError } = await supabase
+        .from('glove_skins')
+        .select('id, name, image_url, is_active')
+        .in('id', skinIds)
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+
+      if (skinError) throw skinError;
+
+      const skins = (skinRows || []).map((row) => ({
+        id: row.id,
+        name: row.name,
+        image_url: row.image_url,
+      }));
+      setAvailableGloveSkins(skins);
+
+      const hasCurrentSelected = Boolean(currentSelectedSkinId && skins.some((skin) => skin.id === currentSelectedSkinId));
+      const nextSelected = hasCurrentSelected ? currentSelectedSkinId! : (skins[0]?.id || '');
+      setSelectedGloveSkinId(nextSelected);
+    } catch (error) {
+      console.error('Error loading available glove skins:', error);
+      setAvailableGloveSkins([]);
+      setSelectedGloveSkinId('');
+    }
+  };
+
+  const handleSelectGloveSkin = async (skinId: string) => {
+    if (!user || !profile || !skinId) return;
+    setSavingGloveSkin(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ selected_glove_skin_id: skinId })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setSelectedGloveSkinId(skinId);
+      setProfile((prev) => (prev ? { ...prev, selected_glove_skin_id: skinId } : prev));
+      toast({
+        title: 'Skin opgeslagen',
+        description: 'Je handschoen skin is bijgewerkt.',
+      });
+    } catch (error) {
+      console.error('Error updating selected glove skin:', error);
+      toast({
+        title: 'Fout',
+        description: 'Kon handschoen skin niet opslaan.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingGloveSkin(false);
     }
   };
 
@@ -264,105 +348,160 @@ const Profile = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Profile Info */}
               <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="h-5 w-5" />
-                      Profiel Informatie
-                    </CardTitle>
-                    <CardDescription>
-                      {editing ? 'Bewerk je profielgegevens' : 'Je account informatie'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {editing ? (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor="username">Gebruikersnaam</Label>
-                          <Input
-                            id="username"
-                            value={formData.username}
-                            onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                            placeholder="Je gebruikersnaam"
-                          />
-                        </div>
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Settings className="h-5 w-5" />
+                        Profiel Informatie
+                      </CardTitle>
+                      <CardDescription>
+                        {editing ? 'Bewerk je profielgegevens' : 'Je account informatie'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {editing ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="username">Gebruikersnaam</Label>
+                            <Input
+                              id="username"
+                              value={formData.username}
+                              onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                              placeholder="Je gebruikersnaam"
+                            />
+                          </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="status">Status</Label>
+                          <div className="space-y-2">
+                            <Label htmlFor="status">Status</Label>
+                            <Select
+                              value={formData.status}
+                              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecteer status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Beschikbaar">🟢 Beschikbaar</SelectItem>
+                                <SelectItem value="Aan het spelen">🎮 Aan het spelen</SelectItem>
+                                <SelectItem value="Afwezig">🟡 Afwezig</SelectItem>
+                                <SelectItem value="Niet storen">🔴 Niet storen</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="bio">Bio</Label>
+                            <Textarea
+                              id="bio"
+                              value={formData.bio}
+                              onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                              placeholder="Vertel iets over jezelf..."
+                              rows={4}
+                            />
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button onClick={handleSave}>
+                              Opslaan
+                            </Button>
+                            <Button variant="outline" onClick={() => setEditing(false)}>
+                              Annuleren
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center space-x-4">
+                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                              <span className="text-2xl font-bold text-primary">
+                                {profile.username[0].toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-semibold">{profile.username}</h3>
+                              <Badge variant="outline" className="mt-1">
+                                {profile.status}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {profile.bio && (
+                            <div>
+                              <Label>Bio</Label>
+                              <p className="mt-1 text-muted-foreground">{profile.bio}</p>
+                            </div>
+                          )}
+
+                          <div>
+                            <Label>Account aangemaakt</Label>
+                            <p className="mt-1 text-muted-foreground">
+                              {new Date(profile.created_at).toLocaleDateString('nl-NL')}
+                            </p>
+                          </div>
+
+                          <Button onClick={() => setEditing(true)}>
+                            <Settings className="mr-2 h-4 w-4" />
+                            Bewerk Profiel
+                          </Button>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Handschoen Skin</CardTitle>
+                      <CardDescription>
+                        Kies je actieve handschoen uit skins die aan jouw account zijn toegewezen.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {availableGloveSkins.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Je hebt nog geen beschikbare skins. Vraag een admin om skins toe te wijzen.
+                        </p>
+                      ) : (
+                        <>
                           <Select
-                            value={formData.status}
-                            onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                            value={selectedGloveSkinId}
+                            onValueChange={(value) => {
+                              setSelectedGloveSkinId(value);
+                              void handleSelectGloveSkin(value);
+                            }}
+                            disabled={savingGloveSkin}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecteer status" />
+                              <SelectValue placeholder="Kies een handschoen skin" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Beschikbaar">🟢 Beschikbaar</SelectItem>
-                              <SelectItem value="Aan het spelen">🎮 Aan het spelen</SelectItem>
-                              <SelectItem value="Afwezig">🟡 Afwezig</SelectItem>
-                              <SelectItem value="Niet storen">🔴 Niet storen</SelectItem>
+                              {availableGloveSkins.map((skin) => (
+                                <SelectItem key={skin.id} value={skin.id}>
+                                  {skin.name}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
-                        </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="bio">Bio</Label>
-                          <Textarea
-                            id="bio"
-                            value={formData.bio}
-                            onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                            placeholder="Vertel iets over jezelf..."
-                            rows={4}
-                          />
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button onClick={handleSave}>
-                            Opslaan
-                          </Button>
-                          <Button variant="outline" onClick={() => setEditing(false)}>
-                            Annuleren
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center space-x-4">
-                          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                            <span className="text-2xl font-bold text-primary">
-                              {profile.username[0].toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-semibold">{profile.username}</h3>
-                            <Badge variant="outline" className="mt-1">
-                              {profile.status}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        {profile.bio && (
-                          <div>
-                            <Label>Bio</Label>
-                            <p className="mt-1 text-muted-foreground">{profile.bio}</p>
-                          </div>
-                        )}
-
-                        <div>
-                          <Label>Account aangemaakt</Label>
-                          <p className="mt-1 text-muted-foreground">
-                            {new Date(profile.created_at).toLocaleDateString('nl-NL')}
-                          </p>
-                        </div>
-
-                        <Button onClick={() => setEditing(true)}>
-                          <Settings className="mr-2 h-4 w-4" />
-                          Bewerk Profiel
-                        </Button>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
+                          {selectedGloveSkinId && (
+                            <div className="flex items-center gap-3 rounded border p-3">
+                              <img
+                                src={availableGloveSkins.find((skin) => skin.id === selectedGloveSkinId)?.image_url}
+                                alt="Selected glove skin"
+                                className="h-12 w-12 rounded object-cover border"
+                              />
+                              <div className="text-sm text-muted-foreground">
+                                Actieve skin: <span className="font-medium text-foreground">
+                                  {availableGloveSkins.find((skin) => skin.id === selectedGloveSkinId)?.name}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
 
               {/* Quick Stats in Profile Tab */}

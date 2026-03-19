@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
@@ -41,6 +41,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     syncState,
     gameData
   } = gameHook;
+  const playerUserIds = useMemo(
+    () => (syncState?.allPlayers || []).map((player: any) => player.user_id).filter(Boolean),
+    [syncState?.allPlayers]
+  );
 
   // Hard Slam logic - separate local button state from global effect
   const canUseHardSlam = canHardSlam && !gameState?.isGameOver;
@@ -505,6 +509,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <GameBoard 
           gameState={gameState}
           legalMoves={legalMovesWithIndex}
+          playerUserIds={playerUserIds}
           onMoveExecute={(move) => {
             if (isMoveLockedByAnimation) return;
             // Pass local hard slam state to the move execution

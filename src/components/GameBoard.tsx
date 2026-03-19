@@ -5,6 +5,8 @@ import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -14,6 +16,7 @@ const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
 interface GameBoardProps {
   gameState: GameState;
   legalMoves: LegalMove[];
+  playerUserIds?: string[];
   onMoveExecute: (move: LegalMove) => void;
   onCenterView: () => void;
   hasDifferentNeighbor: (x: number, y: number) => boolean;
@@ -54,6 +57,7 @@ interface PlaceHandAnimationState {
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameState, 
   legalMoves, 
+  playerUserIds = [],
   onMoveExecute, 
   onCenterView, 
   hasDifferentNeighbor, 
@@ -66,8 +70,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const { settings, applyOriginalRotations, isAnimating, animationMode, updateGlovePosition } = useGameVisualSettings();
   const { getSetting } = useAppSettings();
+  const [playerGloveSkinByUserId, setPlayerGloveSkinByUserId] = useState<Record<string, string>>({});
   const [placeHandAnimation, setPlaceHandAnimation] = useState<PlaceHandAnimationState | null>(null);
   const [showHardSlamHand, setShowHardSlamHand] = useState(false);
   const [hardSlamHandAnimKey, setHardSlamHandAnimKey] = useState(0);
@@ -80,12 +86,100 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     y: settings.glovePosY || 76,
   });
   const globalGloveSkinUrl = String(getSetting('global_glove_skin_url', DEFAULT_GLOVE_IMAGE) || DEFAULT_GLOVE_IMAGE).trim();
-  const gloveImageSrc = globalGloveSkinUrl || DEFAULT_GLOVE_IMAGE;
+  const fallbackGloveSkinUrl = globalGloveSkinUrl || DEFAULT_GLOVE_IMAGE;
+  const resolveUserSkin = (userId?: string | null): string =>
+    (userId ? playerGloveSkinByUserId[userId] : undefined) || fallbackGloveSkinUrl;
+  const persistentGloveSkinSrc = resolveUserSkin(user?.id || null);
+  const placeAnimationGloveSkinSrc = resolveUserSkin(gameState.lastMoveActorUserId || null);
+  const hardSlamGloveSkinSrc = resolveUserSkin(gameState.hardSlamActorUserId || null);
+  const gloveImageSrc = showHardSlamHand
+    ? hardSlamGloveSkinSrc
+    : (placeHandAnimation ? placeAnimationGloveSkinSrc : persistentGloveSkinSrc);
   const globalGloveAlwaysVisible = Boolean(getSetting('global_glove_always_visible', true));
   const [defaultGloveUnavailable, setDefaultGloveUnavailable] = useState(false);
   const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
   const lastAnimatedDominoIdRef = useRef<string | null>(null);
   const lastHardSlamEventRef = useRef<string | null>(null);
+  useEffect(() => {
+    const uniqueUserIds = Array.from(new Set((playerUserIds || []).filter((value): value is string => typeof value === 'string' && value.length > 0)));
+    if (uniqueUserIds.length === 0) {
+      setPlayerGloveSkinByUserId({});
+      return;
+    }
+
+    let cancelled = false;
+    const loadPlayerGloveSkins = async () => {
+      try {
+        const { data: profileRows, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id, selected_glove_skin_id')
+          .in('user_id', uniqueUserIds);
+
+        if (profileError) throw profileError;
+        if (cancelled) return;
+
+        const selectedByUser = new Map<string, string>();
+        (profileRows || []).forEach((row) => {
+          if (row.selected_glove_skin_id) {
+            selectedByUser.set(row.user_id, row.selected_glove_skin_id);
+          }
+        });
+
+        const selectedSkinIds = Array.from(new Set(Array.from(selectedByUser.values())));
+        if (selectedSkinIds.length === 0) {
+          setPlayerGloveSkinByUserId({});
+          return;
+        }
+
+        const [{ data: userSkinRows, error: userSkinError }, { data: skinRows, error: skinError }] = await Promise.all([
+          supabase
+            .from('user_glove_skins')
+            .select('user_id, skin_id')
+            .in('user_id', uniqueUserIds)
+            .in('skin_id', selectedSkinIds)
+            .eq('is_enabled', true),
+          supabase
+            .from('glove_skins')
+            .select('id, image_url')
+            .in('id', selectedSkinIds)
+            .eq('is_active', true),
+        ]);
+
+        if (userSkinError) throw userSkinError;
+        if (skinError) throw skinError;
+        if (cancelled) return;
+
+        const validSkinById = new Map<string, string>();
+        (skinRows || []).forEach((skin) => {
+          validSkinById.set(skin.id, skin.image_url);
+        });
+
+        const ownedSkinSet = new Set<string>();
+        (userSkinRows || []).forEach((row) => {
+          ownedSkinSet.add(`${row.user_id}::${row.skin_id}`);
+        });
+
+        const resolvedMap: Record<string, string> = {};
+        selectedByUser.forEach((skinId, selectedUserId) => {
+          if (!ownedSkinSet.has(`${selectedUserId}::${skinId}`)) return;
+          const skinUrl = validSkinById.get(skinId);
+          if (!skinUrl) return;
+          resolvedMap[selectedUserId] = skinUrl;
+        });
+
+        setPlayerGloveSkinByUserId(resolvedMap);
+      } catch (error) {
+        console.error('Failed to load player glove skins:', error);
+        if (!cancelled) setPlayerGloveSkinByUserId({});
+      }
+    };
+
+    void loadPlayerGloveSkins();
+    return () => {
+      cancelled = true;
+    };
+  }, [playerUserIds]);
+
   
   // Dynamic grid cell size based on settings - each domino = 2 grid cells
   const GRID_CELL_SIZE = settings.dominoWidth / 2;

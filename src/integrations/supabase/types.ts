@@ -260,6 +260,36 @@ export type Database = {
           },
         ]
       }
+      glove_skins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           background_choice: string | null
@@ -472,6 +502,7 @@ export type Database = {
           id: string
           invitation_code: string | null
           invited_by: string | null
+          selected_glove_skin_id: string | null
           status: string | null
           updated_at: string | null
           user_id: string
@@ -486,6 +517,7 @@ export type Database = {
           id?: string
           invitation_code?: string | null
           invited_by?: string | null
+          selected_glove_skin_id?: string | null
           status?: string | null
           updated_at?: string | null
           user_id: string
@@ -500,12 +532,21 @@ export type Database = {
           id?: string
           invitation_code?: string | null
           invited_by?: string | null
+          selected_glove_skin_id?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_selected_glove_skin_id_fkey"
+            columns: ["selected_glove_skin_id"]
+            isOneToOne: false
+            referencedRelation: "glove_skins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       seasons: {
         Row: {
@@ -677,6 +718,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_glove_skins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_enabled: boolean
+          skin_id: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          skin_id: string
+          source?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          skin_id?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_glove_skins_skin_id_fkey"
+            columns: ["skin_id"]
+            isOneToOne: false
+            referencedRelation: "glove_skins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
