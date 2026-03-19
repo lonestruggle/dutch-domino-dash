@@ -413,6 +413,24 @@
     filter: contrast(1.08) brightness(1.05);
   }
 
+  .domino-hand-skin-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 68%;
+    height: 68%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    transform: translate(
+        calc(-50% + var(--skin-overlay-x, 0%)),
+        calc(-50% + var(--skin-overlay-y, 0%))
+      )
+      rotate(var(--skin-overlay-rotation, 0deg))
+      scale(var(--skin-overlay-scale, 1));
+    transform-origin: center center;
+  }
+
   /* Mobile-specific styles */
   @media (max-width: 768px) {
     .placement-target:active {

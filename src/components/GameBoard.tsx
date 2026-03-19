@@ -12,6 +12,15 @@ import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
 const premiumWoodTable = '/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.png';
 const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
+const BASE_GLOVE_IMAGE = '/glove-hand.svg';
+
+interface PlayerGloveSkinConfig {
+  imageUrl: string;
+  overlayOffsetX: number;
+  overlayOffsetY: number;
+  overlayScale: number;
+  overlayRotation: number;
+}
 
 interface GameBoardProps {
   gameState: GameState;
@@ -73,7 +82,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const { user } = useAuth();
   const { settings, applyOriginalRotations, isAnimating, animationMode, updateGlovePosition } = useGameVisualSettings();
   const { getSetting } = useAppSettings();
-  const [playerGloveSkinByUserId, setPlayerGloveSkinByUserId] = useState<Record<string, string>>({});
+  const [playerGloveSkinByUserId, setPlayerGloveSkinByUserId] = useState<Record<string, PlayerGloveSkinConfig>>({});
   const [placeHandAnimation, setPlaceHandAnimation] = useState<PlaceHandAnimationState | null>(null);
   const [showHardSlamHand, setShowHardSlamHand] = useState(false);
   const [hardSlamHandAnimKey, setHardSlamHandAnimKey] = useState(0);
@@ -86,15 +95,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     y: settings.glovePosY || 76,
   });
   const globalGloveSkinUrl = String(getSetting('global_glove_skin_url', DEFAULT_GLOVE_IMAGE) || DEFAULT_GLOVE_IMAGE).trim();
-  const fallbackGloveSkinUrl = globalGloveSkinUrl || DEFAULT_GLOVE_IMAGE;
-  const resolveUserSkin = (userId?: string | null): string =>
-    (userId ? playerGloveSkinByUserId[userId] : undefined) || fallbackGloveSkinUrl;
-  const persistentGloveSkinSrc = resolveUserSkin(user?.id || null);
-  const placeAnimationGloveSkinSrc = resolveUserSkin(gameState.lastMoveActorUserId || null);
-  const hardSlamGloveSkinSrc = resolveUserSkin(gameState.hardSlamActorUserId || null);
-  const gloveImageSrc = showHardSlamHand
-    ? hardSlamGloveSkinSrc
-    : (placeHandAnimation ? placeAnimationGloveSkinSrc : persistentGloveSkinSrc);
+  const fallbackSkinConfig: PlayerGloveSkinConfig | null =
+    globalGloveSkinUrl && globalGloveSkinUrl !== BASE_GLOVE_IMAGE
+      ? {
+          imageUrl: globalGloveSkinUrl,
+          overlayOffsetX: 0,
+          overlayOffsetY: 0,
+          overlayScale: 1,
+          overlayRotation: 0,
+        }
+      : null;
+  const resolveUserSkinConfig = (userId?: string | null): PlayerGloveSkinConfig | null =>
+    (userId ? playerGloveSkinByUserId[userId] : undefined) || fallbackSkinConfig;
+  const persistentGloveSkinConfig = resolveUserSkinConfig(user?.id || null);
+  const placeAnimationGloveSkinConfig = resolveUserSkinConfig(gameState.lastMoveActorUserId || null);
+  const hardSlamGloveSkinConfig = resolveUserSkinConfig(gameState.hardSlamActorUserId || null);
   const globalGloveAlwaysVisible = Boolean(getSetting('global_glove_always_visible', true));
   const [defaultGloveUnavailable, setDefaultGloveUnavailable] = useState(false);
   const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
@@ -140,7 +155,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             .eq('is_enabled', true),
           supabase
             .from('glove_skins')
-            .select('id, image_url')
+            .select('id, image_url, overlay_offset_x, overlay_offset_y, overlay_scale, overlay_rotation')
             .in('id', selectedSkinIds)
             .eq('is_active', true),
         ]);
@@ -149,9 +164,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         if (skinError) throw skinError;
         if (cancelled) return;
 
-        const validSkinById = new Map<string, string>();
+        const validSkinById = new Map<string, PlayerGloveSkinConfig>();
         (skinRows || []).forEach((skin) => {
-          validSkinById.set(skin.id, skin.image_url);
+          validSkinById.set(skin.id, {
+            imageUrl: skin.image_url,
+            overlayOffsetX: Number.isFinite(skin.overlay_offset_x) ? skin.overlay_offset_x : 0,
+            overlayOffsetY: Number.isFinite(skin.overlay_offset_y) ? skin.overlay_offset_y : 0,
+            overlayScale: Number.isFinite(skin.overlay_scale) ? skin.overlay_scale : 1,
+            overlayRotation: Number.isFinite(skin.overlay_rotation) ? skin.overlay_rotation : 0,
+          });
         });
 
         const ownedSkinSet = new Set<string>();
@@ -159,12 +180,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           ownedSkinSet.add(`${row.user_id}::${row.skin_id}`);
         });
 
-        const resolvedMap: Record<string, string> = {};
+        const resolvedMap: Record<string, PlayerGloveSkinConfig> = {};
         selectedByUser.forEach((skinId, selectedUserId) => {
           if (!ownedSkinSet.has(`${selectedUserId}::${skinId}`)) return;
-          const skinUrl = validSkinById.get(skinId);
-          if (!skinUrl) return;
-          resolvedMap[selectedUserId] = skinUrl;
+          const skinConfig = validSkinById.get(skinId);
+          if (!skinConfig) return;
+          if (skinConfig.imageUrl === BASE_GLOVE_IMAGE) return;
+          resolvedMap[selectedUserId] = skinConfig;
         });
 
         setPlayerGloveSkinByUserId(resolvedMap);
@@ -542,7 +564,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     image.crossOrigin = 'anonymous';
     image.referrerPolicy = 'no-referrer';
     image.decoding = 'async';
-    image.src = gloveImageSrc;
+    image.src = BASE_GLOVE_IMAGE;
 
     image.onload = () => {
       if (cancelled) return;
@@ -637,12 +659,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [gloveImageSrc]);
+  }, []);
 
-  const effectiveGloveSrc = processedGloveImageSrc || gloveImageSrc;
-  const finalGloveSrc =
+  const effectiveBaseGloveSrc = processedGloveImageSrc || BASE_GLOVE_IMAGE;
+  const finalBaseGloveSrc =
     !isGloveImageUnavailable
-      ? effectiveGloveSrc
+      ? effectiveBaseGloveSrc
       : (!defaultGloveUnavailable ? DEFAULT_GLOVE_IMAGE : null);
 
   useEffect(() => {
@@ -714,26 +736,43 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     };
   }, [isDraggingPersistentGlove, updateGlovePosition]);
 
-  const renderAnimatedHand = (scale: number) => {
-    if (!finalGloveSrc) return null;
+  const renderAnimatedHand = (scale: number, skinConfig?: PlayerGloveSkinConfig | null) => {
+    if (!finalBaseGloveSrc) return null;
     return (
-      <img
-        src={finalGloveSrc}
-        alt="Glove hand"
-        className={`domino-hand-image ${processedGloveImageSrc ? '' : 'remove-black-bg'} fixed-glove-image`}
-        style={{ transform: `scale(${scale})` }}
-        draggable={false}
-        onLoad={() => {
-          setIsGloveImageUnavailable(false);
-        }}
-        onError={() => {
-          if (finalGloveSrc === DEFAULT_GLOVE_IMAGE) {
-            setDefaultGloveUnavailable(true);
-          } else {
-            setIsGloveImageUnavailable(true);
-          }
-        }}
-      />
+      <div className="relative" style={{ transform: `scale(${scale})` }}>
+        <img
+          src={finalBaseGloveSrc}
+          alt="Glove hand"
+          className={`domino-hand-image ${processedGloveImageSrc ? '' : 'remove-black-bg'} fixed-glove-image`}
+          draggable={false}
+          onLoad={() => {
+            setIsGloveImageUnavailable(false);
+          }}
+          onError={() => {
+            if (finalBaseGloveSrc === DEFAULT_GLOVE_IMAGE) {
+              setDefaultGloveUnavailable(true);
+            } else {
+              setIsGloveImageUnavailable(true);
+            }
+          }}
+        />
+        {skinConfig?.imageUrl && (
+          <img
+            src={skinConfig.imageUrl}
+            alt="Glove skin overlay"
+            className="domino-hand-skin-overlay"
+            draggable={false}
+            style={
+              {
+                '--skin-overlay-x': `${skinConfig.overlayOffsetX}%`,
+                '--skin-overlay-y': `${skinConfig.overlayOffsetY}%`,
+                '--skin-overlay-scale': String(skinConfig.overlayScale),
+                '--skin-overlay-rotation': `${skinConfig.overlayRotation}deg`,
+              } as React.CSSProperties
+            }
+          />
+        )}
+      </div>
     );
   };
 
@@ -750,7 +789,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             }
           >
             <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-20 w-20 items-center justify-center rounded-full bg-red-500/90 text-white shadow-2xl">
-              {renderAnimatedHand(settings.hardSlamGloveScale || 1)}
+              {renderAnimatedHand(settings.hardSlamGloveScale || 1, hardSlamGloveSkinConfig)}
             </div>
           </div>
         </div>
@@ -777,7 +816,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             }}
           >
             <div className="domino-persistent-glove flex h-14 w-14 items-center justify-center rounded-full bg-black/45 text-white shadow-xl">
-              {renderAnimatedHand(settings.gloveScale || 1)}
+              {renderAnimatedHand(settings.gloveScale || 1, persistentGloveSkinConfig)}
             </div>
           </div>
         </div>
@@ -870,7 +909,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               }}
             >
               <div className="domino-place-hand flex h-12 w-12 items-center justify-center rounded-full bg-amber-300/95 text-amber-950 shadow-2xl">
-                {renderAnimatedHand(settings.gloveScale || 1)}
+                {renderAnimatedHand(settings.gloveScale || 1, placeAnimationGloveSkinConfig)}
               </div>
             </div>
           )}

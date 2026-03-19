@@ -315,6 +315,10 @@ export type Database = {
           image_url: string
           is_active: boolean
           name: string
+          overlay_offset_x: number
+          overlay_offset_y: number
+          overlay_rotation: number
+          overlay_scale: number
           updated_at: string
         }
         Insert: {
@@ -324,6 +328,10 @@ export type Database = {
           image_url: string
           is_active?: boolean
           name: string
+          overlay_offset_x?: number
+          overlay_offset_y?: number
+          overlay_rotation?: number
+          overlay_scale?: number
           updated_at?: string
         }
         Update: {
@@ -333,6 +341,10 @@ export type Database = {
           image_url?: string
           is_active?: boolean
           name?: string
+          overlay_offset_x?: number
+          overlay_offset_y?: number
+          overlay_rotation?: number
+          overlay_scale?: number
           updated_at?: string
         }
         Relationships: []

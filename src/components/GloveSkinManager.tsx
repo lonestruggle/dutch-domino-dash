@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,10 @@ interface GloveSkin {
   name: string;
   image_url: string;
   is_active: boolean;
+  overlay_offset_x: number;
+  overlay_offset_y: number;
+  overlay_scale: number;
+  overlay_rotation: number;
 }
 
 interface UserGloveAssignment {
@@ -45,6 +49,8 @@ const fallbackSkinName = (fileName: string) => {
   return base.length > 0 ? base : `Skin ${Date.now()}`;
 };
 
+const BASE_GLOVE_IMAGE = '/glove-hand.svg';
+
 export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) {
   const { toast } = useToast();
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -57,6 +63,9 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
   const [selectedSkinId, setSelectedSkinId] = useState<string>('');
   const [userAssignments, setUserAssignments] = useState<UserGloveAssignment[]>([]);
   const [selectedUserCurrentSkinId, setSelectedUserCurrentSkinId] = useState<string | null>(null);
+  const [skinTransformDrafts, setSkinTransformDrafts] = useState<
+    Record<string, { x: string; y: string; scale: string; rotation: string }>
+  >({});
 
   const availableSkinOptions = useMemo(
     () => skins.filter((skin) => skin.is_active),
@@ -66,11 +75,26 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
   const loadSkins = async () => {
     const { data, error } = await supabase
       .from('glove_skins')
-      .select('id, name, image_url, is_active')
+      .select('id, name, image_url, is_active, overlay_offset_x, overlay_offset_y, overlay_scale, overlay_rotation')
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    setSkins((data || []) as GloveSkin[]);
+    const nextSkins = (data || []) as GloveSkin[];
+    setSkins(nextSkins);
+    setSkinTransformDrafts((prev) => {
+      const next = { ...prev };
+      nextSkins.forEach((skin) => {
+        if (!next[skin.id]) {
+          next[skin.id] = {
+            x: String(skin.overlay_offset_x ?? 0),
+            y: String(skin.overlay_offset_y ?? 0),
+            scale: String(skin.overlay_scale ?? 1),
+            rotation: String(skin.overlay_rotation ?? 0),
+          };
+        }
+      });
+      return next;
+    });
   };
 
   const loadAssignmentsForUser = async (userId: string) => {
@@ -170,6 +194,10 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
         image_url: publicUrl,
         is_active: true,
         created_by: adminUserId || null,
+        overlay_offset_x: 0,
+        overlay_offset_y: 0,
+        overlay_scale: 1,
+        overlay_rotation: 0,
       });
       if (insertError) throw insertError;
 
@@ -190,6 +218,65 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
     } finally {
       setUploading(false);
       event.target.value = '';
+    }
+  };
+
+  const handleSkinTransformDraftChange = (
+    skinId: string,
+    field: 'x' | 'y' | 'scale' | 'rotation',
+    value: string
+  ) => {
+    setSkinTransformDrafts((prev) => ({
+      ...prev,
+      [skinId]: {
+        x: prev[skinId]?.x ?? '0',
+        y: prev[skinId]?.y ?? '0',
+        scale: prev[skinId]?.scale ?? '1',
+        rotation: prev[skinId]?.rotation ?? '0',
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSaveSkinTransform = async (skin: GloveSkin) => {
+    const draft = skinTransformDrafts[skin.id];
+    if (!draft) return;
+
+    const parsedX = Number(draft.x);
+    const parsedY = Number(draft.y);
+    const parsedScale = Number(draft.scale);
+    const parsedRotation = Number(draft.rotation);
+
+    const overlay_offset_x = Number.isFinite(parsedX) ? Math.max(-100, Math.min(100, parsedX)) : 0;
+    const overlay_offset_y = Number.isFinite(parsedY) ? Math.max(-100, Math.min(100, parsedY)) : 0;
+    const overlay_scale = Number.isFinite(parsedScale) ? Math.max(0, Math.min(4, parsedScale)) : 1;
+    const overlay_rotation = Number.isFinite(parsedRotation) ? Math.max(-180, Math.min(180, parsedRotation)) : 0;
+
+    try {
+      const { error } = await supabase
+        .from('glove_skins')
+        .update({
+          overlay_offset_x,
+          overlay_offset_y,
+          overlay_scale,
+          overlay_rotation,
+        })
+        .eq('id', skin.id);
+      if (error) throw error;
+
+      toast({
+        title: 'Skin uitlijning opgeslagen',
+        description: `${skin.name} overlay is bijgewerkt.`,
+      });
+
+      await loadSkins();
+    } catch (error) {
+      console.error('Failed to save skin overlay transform:', error);
+      toast({
+        title: 'Opslaan mislukt',
+        description: 'Kon skin uitlijning niet opslaan.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -362,19 +449,85 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
             <p className="text-sm text-muted-foreground">Nog geen skins toegevoegd.</p>
           ) : (
             skins.map((skin) => (
-              <div key={skin.id} className="flex items-center justify-between gap-3 rounded border p-3">
-                <div className="flex items-center gap-3">
-                  <img src={skin.image_url} alt={skin.name} className="h-10 w-10 rounded object-cover border" />
-                  <div>
-                    <div className="font-medium">{skin.name}</div>
-                    <Badge variant={skin.is_active ? 'default' : 'secondary'}>
-                      {skin.is_active ? 'Actief' : 'Inactief'}
-                    </Badge>
+              <div key={skin.id} className="rounded border p-3 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <img src={skin.image_url} alt={skin.name} className="h-10 w-10 rounded object-cover border" />
+                    <div>
+                      <div className="font-medium">{skin.name}</div>
+                      <Badge variant={skin.is_active ? 'default' : 'secondary'}>
+                        {skin.is_active ? 'Actief' : 'Inactief'}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => handleToggleSkinActive(skin)}>
+                    {skin.is_active ? 'Deactiveren' : 'Activeren'}
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">X offset (%)</Label>
+                    <Input
+                      type="number"
+                      value={skinTransformDrafts[skin.id]?.x ?? String(skin.overlay_offset_x)}
+                      onChange={(e) => handleSkinTransformDraftChange(skin.id, 'x', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Y offset (%)</Label>
+                    <Input
+                      type="number"
+                      value={skinTransformDrafts[skin.id]?.y ?? String(skin.overlay_offset_y)}
+                      onChange={(e) => handleSkinTransformDraftChange(skin.id, 'y', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Scale</Label>
+                    <Input
+                      type="number"
+                      step="0.05"
+                      value={skinTransformDrafts[skin.id]?.scale ?? String(skin.overlay_scale)}
+                      onChange={(e) => handleSkinTransformDraftChange(skin.id, 'scale', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Rotatie (°)</Label>
+                    <Input
+                      type="number"
+                      step="1"
+                      value={skinTransformDrafts[skin.id]?.rotation ?? String(skin.overlay_rotation)}
+                      onChange={(e) => handleSkinTransformDraftChange(skin.id, 'rotation', e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button variant="outline" size="sm" onClick={() => handleSaveSkinTransform(skin)}>
+                      Positie opslaan
+                    </Button>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => handleToggleSkinActive(skin)}>
-                  {skin.is_active ? 'Deactiveren' : 'Activeren'}
-                </Button>
+
+                <div className="rounded border bg-muted/20 p-2">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Preview (basis-handschoen + skin overlay)
+                  </p>
+                  <div className="relative h-20 w-20 rounded-full bg-black/35 flex items-center justify-center overflow-hidden">
+                    <img src={BASE_GLOVE_IMAGE} alt="Base glove" className="domino-hand-image fixed-glove-image" />
+                    {skin.image_url !== BASE_GLOVE_IMAGE && (
+                      <img
+                        src={skin.image_url}
+                        alt={`${skin.name} overlay`}
+                        className="domino-hand-skin-overlay"
+                        style={{
+                          '--skin-overlay-x': `${Number(skinTransformDrafts[skin.id]?.x ?? skin.overlay_offset_x)}%`,
+                          '--skin-overlay-y': `${Number(skinTransformDrafts[skin.id]?.y ?? skin.overlay_offset_y)}%`,
+                          '--skin-overlay-scale': Number(skinTransformDrafts[skin.id]?.scale ?? skin.overlay_scale).toString(),
+                          '--skin-overlay-rotation': `${Number(skinTransformDrafts[skin.id]?.rotation ?? skin.overlay_rotation)}deg`,
+                        } as CSSProperties}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
             ))
           )}
