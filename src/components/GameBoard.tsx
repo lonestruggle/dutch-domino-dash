@@ -121,7 +121,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const placeAnimationGloveSkinConfig = resolveUserSkinConfig(gameState.lastMoveActorUserId || null);
   const hardSlamGloveSkinConfig = resolveUserSkinConfig(gameState.hardSlamActorUserId || null);
   const globalGloveAlwaysVisible = Boolean(getSetting('global_glove_always_visible', true));
-  const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
+  const previousDominoIdsRef = useRef<Set<string>>(new Set(Object.keys(gameState.dominoes)));
   const lastAnimatedDominoIdRef = useRef<string | null>(null);
   const lastHardSlamEventRef = useRef<string | null>(null);
   useEffect(() => {
@@ -422,28 +422,29 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   useEffect(() => {
     const dominoEntries = Object.entries(gameState.dominoes);
-    const dominoCount = dominoEntries.length;
-    const previousCount = prevDominoCountRef.current;
+    const currentIds = new Set(dominoEntries.map(([id]) => id));
+    const previousIds = previousDominoIdsRef.current;
     let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
-    if (dominoCount < previousCount) {
+    if (dominoEntries.length < previousIds.size) {
       lastAnimatedDominoIdRef.current = null;
       setPlaceHandAnimation(null);
-    } else if (dominoCount > previousCount) {
-      let newestId: string | null = null;
-      let newestDomino: (typeof gameState.dominoes)[string] | null = null;
-      let newestNumericId = -1;
+    }
 
-      dominoEntries.forEach(([id, domino]) => {
-        const numericId = getDominoNumericId(id);
-        if (numericId > newestNumericId) {
-          newestNumericId = numericId;
-          newestId = id;
-          newestDomino = domino;
-        }
-      });
+    const addedEntries = dominoEntries.filter(([id]) => !previousIds.has(id));
+    if (addedEntries.length > 0) {
+      const newestAdded = addedEntries.reduce<(typeof addedEntries)[number] | null>((selected, candidate) => {
+        if (!selected) return candidate;
+        const selectedNumeric = getDominoNumericId(selected[0]);
+        const candidateNumeric = getDominoNumericId(candidate[0]);
+        if (candidateNumeric > selectedNumeric) return candidate;
+        // Fallback for non-dN ids: stable lexical compare so we still pick one deterministically.
+        if (candidateNumeric === selectedNumeric && candidate[0] > selected[0]) return candidate;
+        return selected;
+      }, null);
 
-      if (newestId && newestDomino && newestId !== lastAnimatedDominoIdRef.current) {
+      if (newestAdded && newestAdded[0] !== lastAnimatedDominoIdRef.current) {
+        const [newestId, newestDomino] = newestAdded;
         const widthCells = newestDomino.orientation === 'horizontal' ? 2 : 1;
         const heightCells = newestDomino.orientation === 'vertical' ? 2 : 1;
         const centerX = newestDomino.x + widthCells / 2;
@@ -462,7 +463,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
     }
 
-    prevDominoCountRef.current = dominoCount;
+    previousDominoIdsRef.current = currentIds;
     return () => {
       if (hideTimer) clearTimeout(hideTimer);
     };
