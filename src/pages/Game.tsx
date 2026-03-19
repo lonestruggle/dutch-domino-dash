@@ -815,6 +815,19 @@ export default function Game() {
 
   // Ref om Changa-detectie te markeren tussen pre- en post-move
   const changaRef = useRef(false);
+  const resolvePlayerCount = useCallback(() => {
+    const fromSync = syncState.allPlayers.length;
+    if (fromSync > 0) return fromSync;
+
+    const fromLocalHands = Array.isArray(gameState.playerHands) ? gameState.playerHands.length : 0;
+    if (fromLocalHands > 0) return fromLocalHands;
+
+    const remoteHands = syncState.gameState?.playerHands;
+    const fromRemoteHands = Array.isArray(remoteHands) ? remoteHands.length : 0;
+    if (fromRemoteHands > 0) return fromRemoteHands;
+
+    return 0;
+  }, [gameState.playerHands, syncState.allPlayers.length, syncState.gameState]);
 
   useEffect(() => {
     return () => {
@@ -911,18 +924,15 @@ export default function Game() {
 
     // Execute the move locally
     const nextPlacementAllowedAt = Date.now() + minPlacementDelayMs;
-    setGameState((currentState) => ({
-      ...currentState,
-      lastMoveActorUserId: actorUserId,
-    }));
     gameHook.executeMove({ ...move, actorPosition });
     // Enforce a minimum spacing between placements so hand animations can complete.
     moveAnimationLockUntilRef.current = nextPlacementAllowedAt;
-    
-    if (!syncState.allPlayers.length) return;
 
     // Calculate next player turn using the actual acting player (human or bot).
-    const nextPlayerTurn = (actorPosition + 1) % syncState.allPlayers.length;
+    const playerCount = resolvePlayerCount();
+    const nextPlayerTurn = playerCount > 0
+      ? (actorPosition + 1) % playerCount
+      : syncState.currentPlayer;
     console.log('🎯 Advancing turn from', actorPosition, 'to', nextPlayerTurn);
 
     // SINGLE CONSOLIDATED DATABASE UPDATE - capture fresh state
@@ -970,7 +980,7 @@ export default function Game() {
         return currentState; // Return current state to avoid double setting
       });
     }, 150); // Slightly longer delay for better state consistency
-  }, [gameHook, gameState, isAnimating, minPlacementDelayMs, setGameState, settings.rotationAmplitudeX, settings.rotationAmplitudeY, settings.rotationAmplitudeZ, settings.rotationSpeed, settings.shakeDuration, settings.shakeIntensity, syncState.allPlayers, syncState.allPlayers.length, syncState.currentPlayer, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
+  }, [gameHook, gameState, isAnimating, minPlacementDelayMs, resolvePlayerCount, setGameState, settings.rotationAmplitudeX, settings.rotationAmplitudeY, settings.rotationAmplitudeZ, settings.rotationSpeed, settings.shakeDuration, settings.shakeIntensity, syncState.allPlayers, syncState.allPlayers.length, syncState.currentPlayer, syncState.gameState, syncState.playerPosition, toast, updateGameState]);
 
   const wrappedDrawFromBoneyard = useCallback(async (actorPosition?: number) => {
     console.log('🎲 Draw from boneyard - turn validation removed, database controls turns');
@@ -1312,9 +1322,12 @@ export default function Game() {
   // Pass move function
   const passMove = useCallback((actorPosition?: number) => {
     const actingPosition = typeof actorPosition === 'number' ? actorPosition : syncState.currentPlayer;
+    const playerCount = resolvePlayerCount();
 
     // Advance to next player turn after pass based on the acting player (human or bot).
-    const nextPlayerTurn = (actingPosition + 1) % syncState.allPlayers.length;
+    const nextPlayerTurn = playerCount > 0
+      ? (actingPosition + 1) % playerCount
+      : syncState.currentPlayer;
     console.log('🎯 Pass move - advancing turn from', actingPosition, 'to', nextPlayerTurn);
     
     // Pass doesn't change game state, just advances turn
@@ -1338,7 +1351,7 @@ export default function Game() {
         updateGameState(syncState.gameState, nextPlayerTurn);
       }
     }, 150);
-  }, [syncState.currentPlayer, syncState.allPlayers.length, syncState.gameData, syncState.gameState, updateGameState]);
+  }, [resolvePlayerCount, syncState.currentPlayer, syncState.gameData, syncState.gameState, updateGameState]);
 
   const getBotDifficulty = useCallback((botName: string): 'easy' | 'medium' | 'hard' => {
     if (botName.includes('Dave') || botName.includes('Betty')) return 'easy';
