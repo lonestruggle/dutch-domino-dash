@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { Image as ImageIcon, Upload, UserPlus } from 'lucide-react';
 
 interface UserOption {
@@ -53,10 +54,13 @@ const BASE_GLOVE_IMAGE = '/glove-hand.svg';
 
 export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) {
   const { toast } = useToast();
+  const { getSetting, updateSetting } = useAppSettings();
   const uploadInputRef = useRef<HTMLInputElement>(null);
+  const baseGloveUploadInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadingBaseGlove, setUploadingBaseGlove] = useState(false);
   const [skinName, setSkinName] = useState('');
   const [skins, setSkins] = useState<GloveSkin[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
@@ -78,6 +82,9 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
     () => skins.filter((skin) => skin.is_active),
     [skins]
   );
+  const configuredBaseGloveImageUrl = String(
+    getSetting('global_base_glove_image_url', BASE_GLOVE_IMAGE) || BASE_GLOVE_IMAGE
+  ).trim() || BASE_GLOVE_IMAGE;
   const PREVIEW_MASK_PX = 68;
 
   const loadSkins = async () => {
@@ -225,6 +232,53 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
       });
     } finally {
       setUploading(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleUploadBaseGlove = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Ongeldig bestand',
+        description: 'Upload een afbeeldingsbestand voor de basis-handschoen.',
+        variant: 'destructive',
+      });
+      event.target.value = '';
+      return;
+    }
+
+    setUploadingBaseGlove(true);
+    try {
+      const ext = file.name.split('.').pop() || 'png';
+      const filePath = `base-gloves/${adminUserId || 'admin'}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('table-backgrounds')
+        .upload(filePath, file, { upsert: false });
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('table-backgrounds').getPublicUrl(filePath);
+
+      const result = await updateSetting('global_base_glove_image_url', publicUrl);
+      if (!result.success) throw result.error;
+
+      toast({
+        title: 'Basis-handschoen bijgewerkt',
+        description: 'Nieuwe basis-handschoen is opgeslagen.',
+      });
+    } catch (error) {
+      console.error('Failed to upload base glove image:', error);
+      toast({
+        title: 'Upload mislukt',
+        description: 'Kon basis-handschoen niet opslaan.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingBaseGlove(false);
       event.target.value = '';
     }
   };
@@ -489,6 +543,28 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="rounded border p-3 space-y-3">
+            <div className="text-sm font-medium">Basis-handschoen (hardcoded basisvorm)</div>
+            <div className="flex items-center gap-3">
+              <img src={configuredBaseGloveImageUrl} alt="Current base glove" className="h-12 w-12 rounded object-contain border bg-muted/30" />
+              <div className="text-xs text-muted-foreground break-all">{configuredBaseGloveImageUrl}</div>
+            </div>
+            <Input
+              ref={baseGloveUploadInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleUploadBaseGlove}
+            />
+            <Button
+              variant="outline"
+              onClick={() => baseGloveUploadInputRef.current?.click()}
+              disabled={uploadingBaseGlove}
+            >
+              {uploadingBaseGlove ? 'Uploaden...' : 'Upload basis-handschoen'}
+            </Button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
             <div className="space-y-2">
               <Label>Skin naam (optioneel)</Label>
@@ -602,9 +678,17 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
                     Preview (basis-handschoen + skin overlay)
                   </p>
                   <div className="relative h-20 w-20 rounded-full bg-black/35 flex items-center justify-center overflow-hidden">
-                    <img src={BASE_GLOVE_IMAGE} alt="Base glove" className="domino-hand-image fixed-glove-image" />
-                    {skin.image_url !== BASE_GLOVE_IMAGE && (
-                      <span className="domino-hand-skin-mask" style={{ pointerEvents: 'auto' }}>
+                    <img src={configuredBaseGloveImageUrl} alt="Base glove" className="domino-hand-image fixed-glove-image" />
+                    {skin.name.trim().toLowerCase() !== 'standaard' && Number(skinTransformDrafts[skin.id]?.scale ?? skin.overlay_scale) > 0.001 && (
+                      <span
+                        className="domino-hand-skin-mask"
+                        style={
+                          {
+                            pointerEvents: 'auto',
+                            '--glove-mask-image': `url("${configuredBaseGloveImageUrl}")`,
+                          } as CSSProperties
+                        }
+                      >
                         <img
                           src={skin.image_url}
                           alt={`${skin.name} overlay`}

@@ -20,6 +20,7 @@ interface PlayerGloveSkinConfig {
   overlayOffsetY: number;
   overlayScale: number;
   overlayRotation: number;
+  showOverlay: boolean;
 }
 
 interface GameBoardProps {
@@ -94,8 +95,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     x: settings.glovePosX || 82,
     y: settings.glovePosY || 76,
   });
-  // We intentionally do not fallback to the legacy global glove image URL here,
-  // so the base glove stays consistent unless a player-selected skin is available.
+  const configuredBaseGloveImageUrl = String(
+    getSetting('global_base_glove_image_url', BASE_GLOVE_IMAGE) || BASE_GLOVE_IMAGE
+  ).trim() || BASE_GLOVE_IMAGE;
+
   const fallbackSkinConfig: PlayerGloveSkinConfig | null = null;
   const resolveUserSkinConfig = (userId?: string | null): PlayerGloveSkinConfig | null =>
     (userId ? playerGloveSkinByUserId[userId] : undefined) || fallbackSkinConfig;
@@ -147,7 +150,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             .eq('is_enabled', true),
           supabase
             .from('glove_skins')
-            .select('id, image_url, overlay_offset_x, overlay_offset_y, overlay_scale, overlay_rotation')
+            .select('id, name, image_url, overlay_offset_x, overlay_offset_y, overlay_scale, overlay_rotation')
             .in('id', selectedSkinIds)
             .eq('is_active', true),
         ]);
@@ -158,12 +161,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         const validSkinById = new Map<string, PlayerGloveSkinConfig>();
         (skinRows || []).forEach((skin) => {
+          const isStandardSkin = (skin.name || '').trim().toLowerCase() === 'standaard';
+          const hasVisibleOverlay = Number.isFinite(skin.overlay_scale) ? skin.overlay_scale > 0.001 : true;
           validSkinById.set(skin.id, {
             imageUrl: skin.image_url,
             overlayOffsetX: Number.isFinite(skin.overlay_offset_x) ? skin.overlay_offset_x : 0,
             overlayOffsetY: Number.isFinite(skin.overlay_offset_y) ? skin.overlay_offset_y : 0,
             overlayScale: Number.isFinite(skin.overlay_scale) ? skin.overlay_scale : 1,
             overlayRotation: Number.isFinite(skin.overlay_rotation) ? skin.overlay_rotation : 0,
+            showOverlay: !isStandardSkin && hasVisibleOverlay,
           });
         });
 
@@ -177,7 +183,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           if (!ownedSkinSet.has(`${selectedUserId}::${skinId}`)) return;
           const skinConfig = validSkinById.get(skinId);
           if (!skinConfig) return;
-          if (skinConfig.imageUrl === BASE_GLOVE_IMAGE) return;
           resolvedMap[selectedUserId] = skinConfig;
         });
 
@@ -556,7 +561,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     image.crossOrigin = 'anonymous';
     image.referrerPolicy = 'no-referrer';
     image.decoding = 'async';
-    image.src = BASE_GLOVE_IMAGE;
+    image.src = configuredBaseGloveImageUrl;
 
     image.onload = () => {
       if (cancelled) return;
@@ -651,9 +656,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [configuredBaseGloveImageUrl]);
 
-  const effectiveBaseGloveSrc = processedGloveImageSrc || BASE_GLOVE_IMAGE;
+  const effectiveBaseGloveSrc = processedGloveImageSrc || configuredBaseGloveImageUrl;
   const finalBaseGloveSrc =
     !isGloveImageUnavailable
       ? effectiveBaseGloveSrc
@@ -748,8 +753,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             }
           }}
         />
-        {skinConfig?.imageUrl && (
-          <span className="domino-hand-skin-mask">
+        {skinConfig?.imageUrl && skinConfig.showOverlay && (
+          <span
+            className="domino-hand-skin-mask"
+            style={
+              {
+                '--glove-mask-image': `url("${configuredBaseGloveImageUrl}")`,
+              } as React.CSSProperties
+            }
+          >
             <img
               src={skinConfig.imageUrl}
               alt="Glove skin overlay"

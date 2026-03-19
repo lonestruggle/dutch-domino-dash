@@ -423,8 +423,8 @@
     pointer-events: none;
     user-select: none;
     overflow: hidden;
-    -webkit-mask-image: url('/glove-hand.svg');
-    mask-image: url('/glove-hand.svg');
+    -webkit-mask-image: var(--glove-mask-image, url('/glove-hand.svg'));
+    mask-image: var(--glove-mask-image, url('/glove-hand.svg'));
     -webkit-mask-size: contain;
     mask-size: contain;
     -webkit-mask-repeat: no-repeat;
