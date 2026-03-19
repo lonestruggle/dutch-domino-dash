@@ -69,6 +69,8 @@ interface PlaceHandAnimationState {
   top: number;
 }
 
+const HARD_SLAM_HAND_ANIMATION_MS = 980;
+
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameState, 
   legalMoves, 
@@ -475,7 +477,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     const timer = setTimeout(() => {
       setShowHardSlamHand(false);
-    }, 760);
+    }, HARD_SLAM_HAND_ANIMATION_MS);
 
     return () => clearTimeout(timer);
   }, [
@@ -793,8 +795,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 : { left: '50%', top: '45%' }
             }
           >
-            <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-16 w-16 items-center justify-center">
-              {renderAnimatedHand(settings.hardSlamGloveScale || 1, hardSlamGloveSkinConfig)}
+            <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-14 w-14 items-center justify-center">
+              {renderAnimatedHand(settings.gloveScale || 1, hardSlamGloveSkinConfig)}
             </div>
           </div>
         </div>
