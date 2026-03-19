@@ -514,17 +514,19 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
                   <div className="relative h-20 w-20 rounded-full bg-black/35 flex items-center justify-center overflow-hidden">
                     <img src={BASE_GLOVE_IMAGE} alt="Base glove" className="domino-hand-image fixed-glove-image" />
                     {skin.image_url !== BASE_GLOVE_IMAGE && (
-                      <img
-                        src={skin.image_url}
-                        alt={`${skin.name} overlay`}
-                        className="domino-hand-skin-overlay"
-                        style={{
-                          '--skin-overlay-x': `${Number(skinTransformDrafts[skin.id]?.x ?? skin.overlay_offset_x)}%`,
-                          '--skin-overlay-y': `${Number(skinTransformDrafts[skin.id]?.y ?? skin.overlay_offset_y)}%`,
-                          '--skin-overlay-scale': Number(skinTransformDrafts[skin.id]?.scale ?? skin.overlay_scale).toString(),
-                          '--skin-overlay-rotation': `${Number(skinTransformDrafts[skin.id]?.rotation ?? skin.overlay_rotation)}deg`,
-                        } as CSSProperties}
-                      />
+                      <span className="domino-hand-skin-mask">
+                        <img
+                          src={skin.image_url}
+                          alt={`${skin.name} overlay`}
+                          className="domino-hand-skin-overlay"
+                          style={{
+                            '--skin-overlay-x': `${Number(skinTransformDrafts[skin.id]?.x ?? skin.overlay_offset_x)}%`,
+                            '--skin-overlay-y': `${Number(skinTransformDrafts[skin.id]?.y ?? skin.overlay_offset_y)}%`,
+                            '--skin-overlay-scale': Number(skinTransformDrafts[skin.id]?.scale ?? skin.overlay_scale).toString(),
+                            '--skin-overlay-rotation': `${Number(skinTransformDrafts[skin.id]?.rotation ?? skin.overlay_rotation)}deg`,
+                          } as CSSProperties}
+                        />
+                      </span>
                     )}
                   </div>
                 </div>

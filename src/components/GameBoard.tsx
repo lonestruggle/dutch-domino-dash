@@ -749,20 +749,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           }}
         />
         {skinConfig?.imageUrl && (
-          <img
-            src={skinConfig.imageUrl}
-            alt="Glove skin overlay"
-            className="domino-hand-skin-overlay"
-            draggable={false}
-            style={
-              {
-                '--skin-overlay-x': `${skinConfig.overlayOffsetX}%`,
-                '--skin-overlay-y': `${skinConfig.overlayOffsetY}%`,
-                '--skin-overlay-scale': String(skinConfig.overlayScale),
-                '--skin-overlay-rotation': `${skinConfig.overlayRotation}deg`,
-              } as React.CSSProperties
-            }
-          />
+          <span className="domino-hand-skin-mask">
+            <img
+              src={skinConfig.imageUrl}
+              alt="Glove skin overlay"
+              className="domino-hand-skin-overlay"
+              draggable={false}
+              style={
+                {
+                  '--skin-overlay-x': `${skinConfig.overlayOffsetX}%`,
+                  '--skin-overlay-y': `${skinConfig.overlayOffsetY}%`,
+                  '--skin-overlay-scale': String(skinConfig.overlayScale),
+                  '--skin-overlay-rotation': `${skinConfig.overlayRotation}deg`,
+                } as React.CSSProperties
+              }
+            />
+          </span>
         )}
       </div>
     );

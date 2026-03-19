@@ -941,48 +941,50 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
+          <div className="overflow-x-auto">
+            <TabsList className="inline-flex h-auto w-max min-w-full gap-1 md:grid md:w-full md:grid-cols-5 lg:grid-cols-10">
+            <TabsTrigger value="overview" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <BarChart3 className="h-4 w-4" />
               Overzicht
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
+            <TabsTrigger value="users" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <Users className="h-4 w-4" />
               Gebruikers
             </TabsTrigger>
-            <TabsTrigger value="lobbies" className="flex items-center gap-2">
+            <TabsTrigger value="lobbies" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <Users className="h-4 w-4" />
               Lobbies
             </TabsTrigger>
-            <TabsTrigger value="backgrounds" className="flex items-center gap-2">
+            <TabsTrigger value="backgrounds" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <ImageIcon className="h-4 w-4" />
-              Frame Achtergronden
+              Frame BG
             </TabsTrigger>
-            <TabsTrigger value="table-backgrounds" className="flex items-center gap-2">
+            <TabsTrigger value="table-backgrounds" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <ImageIcon className="h-4 w-4" />
-              Tafel Achtergronden
+              Tafel BG
             </TabsTrigger>
-            <TabsTrigger value="moderation" className="flex items-center gap-2">
+            <TabsTrigger value="moderation" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <Shield className="h-4 w-4" />
               Moderatie
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <TabsTrigger value="analytics" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <Activity className="h-4 w-4" />
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="scoreboard" className="flex items-center gap-2">
+            <TabsTrigger value="scoreboard" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <Crown className="h-4 w-4" />
               Scoreboard
             </TabsTrigger>
-            <TabsTrigger value="invitations" className="flex items-center gap-2">
+            <TabsTrigger value="invitations" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <Mail className="h-4 w-4" />
               Uitnodigingen
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsTrigger value="settings" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <Settings className="h-4 w-4" />
               Instellingen
             </TabsTrigger>
           </TabsList>
+          </div>
 
           <TabsContent value="overview">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
