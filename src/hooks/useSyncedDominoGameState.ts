@@ -120,6 +120,10 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
       hardSlamDominoId: persistedGameState.hardSlamDominoId,
       triggerHardSlamAnimation: persistedGameState.triggerHardSlamAnimation || false,
       hardSlamAnimationProfile: persistedGameState.hardSlamAnimationProfile,
+      moveCooldownUntilMs:
+        typeof persistedGameState.moveCooldownUntilMs === 'number'
+          ? persistedGameState.moveCooldownUntilMs
+          : 0,
     };
 
     // Defensive fix: remove any tiles from hands/boneyard that already appear on the table

@@ -55,6 +55,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [fixShapeIndex, setFixShapeIndex] = useState(0);
   const [isFixingTable, setIsFixingTable] = useState(false);
+  const [moveCooldownNowMs, setMoveCooldownNowMs] = useState(() => Date.now());
   const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [startingNewGame, setStartingNewGame] = useState(false);
@@ -161,6 +162,21 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     };
   }, []);
 
+  useEffect(() => {
+    const lockUntil = Number(gameState?.moveCooldownUntilMs || 0);
+    const now = Date.now();
+    if (lockUntil <= now) {
+      setMoveCooldownNowMs(now);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setMoveCooldownNowMs(Date.now());
+    }, Math.max(10, lockUntil - now + 15));
+
+    return () => clearTimeout(timeout);
+  }, [gameState?.moveCooldownUntilMs]);
+
   // Show dialog when game becomes over - but prevent multiple triggers
   useEffect(() => {
     if (gameState?.isGameOver && !hasShownDialog) {
@@ -191,7 +207,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   }
 
   const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition;
-  const isMoveLockedByAnimation = isVisualAnimating;
+  const isMoveLockedByAnimation =
+    isVisualAnimating || moveCooldownNowMs < Number(gameState?.moveCooldownUntilMs || 0);
   const currentPlayerName = syncState?.allPlayers?.find((p: any) => p.position === syncState?.currentPlayer)?.username || 'Unknown';
   
 

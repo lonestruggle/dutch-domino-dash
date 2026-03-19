@@ -37,6 +37,8 @@ interface BotDebugInfo {
   updatedAt: number;
 }
 
+const MIN_PLACEMENT_DELAY_MS = 950;
+
 const buildConsolidatedState = (
   remoteState: PersistedGameState | null,
   currentState: GameState,
@@ -73,6 +75,7 @@ const buildConsolidatedState = (
     hardSlamDominoId: currentState.hardSlamDominoId,
     triggerHardSlamAnimation: currentState.triggerHardSlamAnimation,
     hardSlamAnimationProfile: currentState.hardSlamAnimationProfile,
+    moveCooldownUntilMs: currentState.moveCooldownUntilMs,
   };
 };
 
@@ -825,7 +828,8 @@ export default function Game() {
   // Wrap local actions and then sync - SINGLE CONSOLIDATED UPDATE
   const wrappedExecuteMove = useCallback((move: MoveWithEffects) => {
     const now = Date.now();
-    if (isAnimating || now < moveAnimationLockUntilRef.current) {
+    const sharedMoveCooldownUntil = Number(gameState.moveCooldownUntilMs || 0);
+    if (isAnimating || now < moveAnimationLockUntilRef.current || now < sharedMoveCooldownUntil) {
       console.log('⛔ Move blocked: animation lock active');
       return;
     }
@@ -895,9 +899,10 @@ export default function Game() {
     }
 
     // Execute the move locally
+    const nextPlacementAllowedAt = Date.now() + MIN_PLACEMENT_DELAY_MS;
     gameHook.executeMove({ ...move, actorPosition });
-    // Lock short follow-up placement while placement animation finishes.
-    moveAnimationLockUntilRef.current = Date.now() + 620;
+    // Enforce a minimum spacing between placements so hand animations can complete.
+    moveAnimationLockUntilRef.current = nextPlacementAllowedAt;
     
     if (!syncState.allPlayers.length) return;
 
@@ -924,6 +929,7 @@ export default function Game() {
           triggerHardSlamAnimation: Boolean(move?.localHardSlamActive),
           hardSlamDominoId: move?.localHardSlamActive ? hardSlamDominoId : currentState.hardSlamDominoId,
           hardSlamAnimationProfile: move?.localHardSlamActive ? hardSlamAnimationProfile : currentState.hardSlamAnimationProfile,
+          moveCooldownUntilMs: nextPlacementAllowedAt,
         };
 
         // Check for CHANGA and update state accordingly
@@ -1383,14 +1389,20 @@ export default function Game() {
     const hardSlamDurationMs = hasUsableHardSlamProfile ? Math.max(0, hardSlamProfile!.duration * 1000) : 0;
     const hardSlamEndMs = hasUsableHardSlamProfile ? hardSlamProfile!.startedAtMs + hardSlamDurationMs + 120 : 0;
     const hardSlamFlagsActive = Boolean(gameState.triggerHardSlamAnimation) || Boolean(gameState.isHardSlamming);
+    const sharedMoveCooldownUntil = Number(gameState.moveCooldownUntilMs || 0);
     // Prevent stale DB flags from locking bots forever once the profile window has ended.
     const hardSlamAnimatingNow = hasUsableHardSlamProfile ? now < hardSlamEndMs : hardSlamFlagsActive;
-    const anyAnimationLockActive = hardSlamAnimatingNow || isAnimating || now < moveAnimationLockUntilRef.current;
+    const anyAnimationLockActive =
+      hardSlamAnimatingNow ||
+      isAnimating ||
+      now < moveAnimationLockUntilRef.current ||
+      now < sharedMoveCooldownUntil;
 
     if (anyAnimationLockActive) {
       const remainingLocalLock = Math.max(0, moveAnimationLockUntilRef.current - now);
       const remainingHardSlam = Math.max(0, hardSlamEndMs - now);
-      const remainingMs = Math.max(remainingHardSlam, remainingLocalLock);
+      const remainingSharedLock = Math.max(0, sharedMoveCooldownUntil - now);
+      const remainingMs = Math.max(remainingHardSlam, remainingLocalLock, remainingSharedLock);
       setBotDebugInfo((prev) => ({
         ...prev,
         status: 'waiting-animation',

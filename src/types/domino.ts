@@ -71,6 +71,7 @@ export interface GameState {
   hardSlamDominoId?: string; // Track which specific domino triggered the hard slam
   triggerHardSlamAnimation?: boolean; // Separate flag for animation sync across all players
   hardSlamAnimationProfile?: ShakeAnimationProfile; // Shared profile so all clients render the same hard slam motion
+  moveCooldownUntilMs?: number; // Global minimum delay between placements so hand animations can finish
 
   // Nieuw voor spelafloop
   gameEndReason?: 'blocked' | 'changa' | 'normal';
