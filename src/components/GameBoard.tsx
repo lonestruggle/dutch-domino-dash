@@ -562,7 +562,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     let cancelled = false;
     setIsGloveImageUnavailable(false);
-    setDefaultGloveUnavailable(false);
     setProcessedGloveImageSrc(null);
 
     const image = new Image();
