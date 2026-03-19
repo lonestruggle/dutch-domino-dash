@@ -662,7 +662,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {globalGloveAlwaysVisible && !showHardSlamHand && (
+      {globalGloveAlwaysVisible && !showHardSlamHand && !placeHandAnimation && (
         <div className="pointer-events-none absolute inset-0 z-[95]">
           <div
             className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing select-none"
@@ -767,7 +767,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             );
           })}
 
-          {placeHandAnimation && (
+          {placeHandAnimation && !showHardSlamHand && (
             <div
               className="absolute pointer-events-none z-[90] -translate-x-1/2 -translate-y-1/2"
               style={{
