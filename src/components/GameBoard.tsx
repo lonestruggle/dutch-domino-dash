@@ -11,7 +11,6 @@ import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
 const premiumWoodTable = '/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.png';
-const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
 const BASE_GLOVE_IMAGE = '/glove-hand.svg';
 
 const withCacheBuster = (url: string, version: string) => {
@@ -106,7 +105,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   ).trim() || BASE_GLOVE_IMAGE;
   const gloveAssetVersion = String(getSetting('global_glove_asset_version', '1') || '1');
   const versionedBaseGloveImageUrl = withCacheBuster(configuredBaseGloveImageUrl, gloveAssetVersion);
-  const versionedDefaultGloveImageUrl = withCacheBuster(DEFAULT_GLOVE_IMAGE, gloveAssetVersion);
 
   const fallbackSkinConfig: PlayerGloveSkinConfig | null = null;
   const resolveUserSkinConfig = (userId?: string | null): PlayerGloveSkinConfig | null =>
@@ -115,7 +113,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const placeAnimationGloveSkinConfig = resolveUserSkinConfig(gameState.lastMoveActorUserId || null);
   const hardSlamGloveSkinConfig = resolveUserSkinConfig(gameState.hardSlamActorUserId || null);
   const globalGloveAlwaysVisible = Boolean(getSetting('global_glove_always_visible', true));
-  const [defaultGloveUnavailable, setDefaultGloveUnavailable] = useState(false);
   const prevDominoCountRef = useRef(Object.keys(gameState.dominoes).length);
   const lastAnimatedDominoIdRef = useRef<string | null>(null);
   const lastHardSlamEventRef = useRef<string | null>(null);
@@ -668,10 +665,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [versionedBaseGloveImageUrl]);
 
   const effectiveBaseGloveSrc = processedGloveImageSrc || versionedBaseGloveImageUrl;
-  const finalBaseGloveSrc =
-    !isGloveImageUnavailable
-      ? effectiveBaseGloveSrc
-      : (!defaultGloveUnavailable ? versionedDefaultGloveImageUrl : null);
+  const finalBaseGloveSrc = !isGloveImageUnavailable ? effectiveBaseGloveSrc : null;
 
   useEffect(() => {
     if (!globalGloveAlwaysVisible) {
@@ -755,11 +749,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             setIsGloveImageUnavailable(false);
           }}
           onError={() => {
-            if (finalBaseGloveSrc === versionedDefaultGloveImageUrl) {
-              setDefaultGloveUnavailable(true);
-            } else {
-              setIsGloveImageUnavailable(true);
-            }
+            setIsGloveImageUnavailable(true);
           }}
         />
         {skinConfig?.imageUrl && skinConfig.showOverlay && (
@@ -803,7 +793,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 : { left: '50%', top: '45%' }
             }
           >
-            <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-20 w-20 items-center justify-center rounded-full bg-red-500/90 text-white shadow-2xl">
+            <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-16 w-16 items-center justify-center">
               {renderAnimatedHand(settings.hardSlamGloveScale || 1, hardSlamGloveSkinConfig)}
             </div>
           </div>
@@ -830,7 +820,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               beginPersistentGloveDrag(touch.clientX, touch.clientY);
             }}
           >
-            <div className="domino-persistent-glove flex h-14 w-14 items-center justify-center rounded-full bg-black/45 text-white shadow-xl">
+            <div className="domino-persistent-glove flex h-14 w-14 items-center justify-center">
               {renderAnimatedHand(settings.gloveScale || 1, persistentGloveSkinConfig)}
             </div>
           </div>
@@ -923,7 +913,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 top: placeHandAnimation.top,
               }}
             >
-              <div className="domino-place-hand flex h-12 w-12 items-center justify-center rounded-full bg-amber-300/95 text-amber-950 shadow-2xl">
+              <div className="domino-place-hand flex h-14 w-14 items-center justify-center">
                 {renderAnimatedHand(settings.gloveScale || 1, placeAnimationGloveSkinConfig)}
               </div>
             </div>
