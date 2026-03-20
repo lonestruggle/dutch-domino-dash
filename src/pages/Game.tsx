@@ -1139,7 +1139,6 @@ export default function Game() {
   const tryFinalizeBlockedGame = useCallback((state: GameState | null): boolean => {
     if (!state || state.isGameOver || state.gameEndReason === 'changa') return false;
     if (!state.board || Object.keys(state.board).length === 0) return false;
-    if ((state.boneyard?.length || 0) > 0) return false;
 
     const playerCount = resolvePlayerCount();
     const allHands: DominoData[][] =
@@ -1162,6 +1161,13 @@ export default function Game() {
       return false;
     }
 
+    // Ook als de boneyard nog stenen heeft, kan het spel al effectief geblokkeerd zijn
+    // wanneer GEEN enkele boneyard-steen een legale zet oplevert op dit bord.
+    const someBoneyardTilePlayable = (state.boneyard || []).some((domino) => gameHook.findLegalMoves(domino).length > 0);
+    if (someBoneyardTilePlayable) {
+      return false;
+    }
+
     const playerPoints = allHands.map((hand) =>
       hand.reduce((sum, domino) => sum + domino.value1 + domino.value2, 0)
     );
@@ -1178,7 +1184,7 @@ export default function Game() {
 
     setGameState(blockedState);
     updateGameState(blockedState as PersistedGameState, syncState.currentPlayer);
-    console.log('🧱 GAME BLOCKED auto-triggered. Winner:', resolvedWinner, 'points:', playerPoints);
+    console.log('🧱 GAME BLOCKED auto-triggered. Winner:', resolvedWinner, 'points:', playerPoints, 'boneyardSize:', state.boneyard?.length || 0);
     return true;
   }, [gameHook, resolvePlayerCount, setGameState, syncState.currentPlayer, syncState.playerPosition, updateGameState]);
 
@@ -1197,8 +1203,12 @@ export default function Game() {
     const wasBlocked = tryFinalizeBlockedGame(gameState);
     if (!wasBlocked) {
       console.log('✅ Manual blocked check: game is NOT blocked');
+      toast({
+        title: 'Niet geblokkeerd',
+        description: 'Er is nog minimaal 1 legale zet mogelijk (in hand of boneyard).',
+      });
     }
-  }, [gameState, tryFinalizeBlockedGame]);
+  }, [gameState, toast, tryFinalizeBlockedGame]);
 
   // Pass move function
   const passMove = useCallback((actorPosition?: number) => {
