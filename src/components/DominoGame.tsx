@@ -200,6 +200,56 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     console.warn('passMove function not available');
   });
 
+  const blockedDebug = useMemo(() => {
+    if (!gameState) return null;
+
+    const boardDominoes = Object.values(gameState.dominoes || {});
+    const openEnds = gameState.openEnds || [];
+    const openValues = openEnds.map((end) => end.value);
+    const requiredValues = Array.from(new Set(openValues));
+    const singleRequiredValue = requiredValues.length === 1 ? requiredValues[0] : null;
+    const boardTilesWithSingleValue = singleRequiredValue === null
+      ? 0
+      : boardDominoes.filter(
+          (domino) => domino.data.value1 === singleRequiredValue || domino.data.value2 === singleRequiredValue
+        ).length;
+
+    const resolvedPlayerCount = syncState?.allPlayers?.length || gameState.playerHands?.length || 1;
+    const allHands = Array.from({ length: resolvedPlayerCount }, (_, index) => {
+      const remoteHand = gameState.playerHands?.[index];
+      if (Array.isArray(remoteHand)) return remoteHand;
+      if (index === syncState?.playerPosition) return gameState.playerHand || [];
+      return [];
+    });
+    const handPlayableTileCounts = allHands.map((hand) =>
+      hand.reduce((count, domino) => count + (findLegalMoves(domino).length > 0 ? 1 : 0), 0)
+    );
+    const anyHandPlayable = handPlayableTileCounts.some((count) => count > 0);
+    const boneyardPlayableTileCount = (gameState.boneyard || []).reduce(
+      (count, domino) => count + (findLegalMoves(domino).length > 0 ? 1 : 0),
+      0
+    );
+    const allHandsNonEmpty = allHands.every((hand) => hand.length > 0);
+    const sevenXRuleTriggered = singleRequiredValue !== null && openEnds.length >= 2 && boardTilesWithSingleValue >= 7;
+    const blockedWouldTriggerNow =
+      Object.keys(gameState.board || {}).length > 0 &&
+      allHandsNonEmpty &&
+      (sevenXRuleTriggered || (!anyHandPlayable && boneyardPlayableTileCount === 0));
+
+    return {
+      openEndsCount: openEnds.length,
+      openValues,
+      requiredValues,
+      singleRequiredValue,
+      boardTilesWithSingleValue,
+      handPlayableTileCounts,
+      boneyardPlayableTileCount,
+      boneyardSize: gameState.boneyard?.length || 0,
+      sevenXRuleTriggered,
+      blockedWouldTriggerNow,
+    };
+  }, [findLegalMoves, gameState, syncState?.allPlayers?.length, syncState?.playerPosition]);
+
 
   if (syncState?.isLoading) {
     return (
@@ -365,55 +415,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const adminBoneyardFaceUp = isAdmin && Boolean(getSetting('admin_boneyard_face_up', false));
   const activeHardSlamProfile = gameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
   const hardSlamPhaseMs = activeHardSlamProfile ? Math.max(0, Date.now() - activeHardSlamProfile.startedAtMs) : 0;
-  const blockedDebug = useMemo(() => {
-    if (!gameState) return null;
-
-    const boardDominoes = Object.values(gameState.dominoes || {});
-    const openEnds = gameState.openEnds || [];
-    const openValues = openEnds.map((end) => end.value);
-    const requiredValues = Array.from(new Set(openValues));
-    const singleRequiredValue = requiredValues.length === 1 ? requiredValues[0] : null;
-    const boardTilesWithSingleValue = singleRequiredValue === null
-      ? 0
-      : boardDominoes.filter(
-          (domino) => domino.data.value1 === singleRequiredValue || domino.data.value2 === singleRequiredValue
-        ).length;
-
-    const resolvedPlayerCount = syncState?.allPlayers?.length || gameState.playerHands?.length || 1;
-    const allHands = Array.from({ length: resolvedPlayerCount }, (_, index) => {
-      const remoteHand = gameState.playerHands?.[index];
-      if (Array.isArray(remoteHand)) return remoteHand;
-      if (index === syncState?.playerPosition) return gameState.playerHand || [];
-      return [];
-    });
-    const handPlayableTileCounts = allHands.map((hand) =>
-      hand.reduce((count, domino) => count + (findLegalMoves(domino).length > 0 ? 1 : 0), 0)
-    );
-    const anyHandPlayable = handPlayableTileCounts.some((count) => count > 0);
-    const boneyardPlayableTileCount = (gameState.boneyard || []).reduce(
-      (count, domino) => count + (findLegalMoves(domino).length > 0 ? 1 : 0),
-      0
-    );
-    const allHandsNonEmpty = allHands.every((hand) => hand.length > 0);
-    const sevenXRuleTriggered = singleRequiredValue !== null && openEnds.length >= 2 && boardTilesWithSingleValue >= 7;
-    const blockedWouldTriggerNow =
-      Object.keys(gameState.board || {}).length > 0 &&
-      allHandsNonEmpty &&
-      (sevenXRuleTriggered || (!anyHandPlayable && boneyardPlayableTileCount === 0));
-
-    return {
-      openEndsCount: openEnds.length,
-      openValues,
-      requiredValues,
-      singleRequiredValue,
-      boardTilesWithSingleValue,
-      handPlayableTileCounts,
-      boneyardPlayableTileCount,
-      boneyardSize: gameState.boneyard?.length || 0,
-      sevenXRuleTriggered,
-      blockedWouldTriggerNow,
-    };
-  }, [findLegalMoves, gameState, syncState?.allPlayers?.length, syncState?.playerPosition]);
 
   return (
     <div className="min-h-screen bg-background p-2 md:p-4">
