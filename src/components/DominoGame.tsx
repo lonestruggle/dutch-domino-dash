@@ -365,6 +365,55 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const adminBoneyardFaceUp = isAdmin && Boolean(getSetting('admin_boneyard_face_up', false));
   const activeHardSlamProfile = gameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
   const hardSlamPhaseMs = activeHardSlamProfile ? Math.max(0, Date.now() - activeHardSlamProfile.startedAtMs) : 0;
+  const blockedDebug = useMemo(() => {
+    if (!gameState) return null;
+
+    const boardDominoes = Object.values(gameState.dominoes || {});
+    const openEnds = gameState.openEnds || [];
+    const openValues = openEnds.map((end) => end.value);
+    const requiredValues = Array.from(new Set(openValues));
+    const singleRequiredValue = requiredValues.length === 1 ? requiredValues[0] : null;
+    const boardTilesWithSingleValue = singleRequiredValue === null
+      ? 0
+      : boardDominoes.filter(
+          (domino) => domino.data.value1 === singleRequiredValue || domino.data.value2 === singleRequiredValue
+        ).length;
+
+    const resolvedPlayerCount = syncState?.allPlayers?.length || gameState.playerHands?.length || 1;
+    const allHands = Array.from({ length: resolvedPlayerCount }, (_, index) => {
+      const remoteHand = gameState.playerHands?.[index];
+      if (Array.isArray(remoteHand)) return remoteHand;
+      if (index === syncState?.playerPosition) return gameState.playerHand || [];
+      return [];
+    });
+    const handPlayableTileCounts = allHands.map((hand) =>
+      hand.reduce((count, domino) => count + (findLegalMoves(domino).length > 0 ? 1 : 0), 0)
+    );
+    const anyHandPlayable = handPlayableTileCounts.some((count) => count > 0);
+    const boneyardPlayableTileCount = (gameState.boneyard || []).reduce(
+      (count, domino) => count + (findLegalMoves(domino).length > 0 ? 1 : 0),
+      0
+    );
+    const allHandsNonEmpty = allHands.every((hand) => hand.length > 0);
+    const sevenXRuleTriggered = singleRequiredValue !== null && openEnds.length >= 2 && boardTilesWithSingleValue >= 7;
+    const blockedWouldTriggerNow =
+      Object.keys(gameState.board || {}).length > 0 &&
+      allHandsNonEmpty &&
+      (sevenXRuleTriggered || (!anyHandPlayable && boneyardPlayableTileCount === 0));
+
+    return {
+      openEndsCount: openEnds.length,
+      openValues,
+      requiredValues,
+      singleRequiredValue,
+      boardTilesWithSingleValue,
+      handPlayableTileCounts,
+      boneyardPlayableTileCount,
+      boneyardSize: gameState.boneyard?.length || 0,
+      sevenXRuleTriggered,
+      blockedWouldTriggerNow,
+    };
+  }, [findLegalMoves, gameState, syncState?.allPlayers?.length, syncState?.playerPosition]);
 
   return (
     <div className="min-h-screen bg-background p-2 md:p-4">
@@ -460,6 +509,24 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 <div><strong>Boneyard:</strong> {botDebugInfo?.boneyardSize ?? gameState?.boneyard?.length ?? 0}</div>
                 <div><strong>Updated:</strong> {botDebugInfo?.updatedAt ? new Date(botDebugInfo.updatedAt).toLocaleTimeString() : '-'}</div>
               </div>
+            </div>
+            <div className="mt-2 rounded border border-amber-300 bg-amber-100/70 p-2">
+              <div className="mb-1 text-[11px] font-semibold text-amber-900">Blocked debug</div>
+              {blockedDebug ? (
+                <div className="grid gap-1 text-[11px] text-amber-900/90 md:grid-cols-2">
+                  <div><strong>Open ends:</strong> {blockedDebug.openEndsCount}</div>
+                  <div><strong>Open values:</strong> {blockedDebug.openValues.length ? blockedDebug.openValues.join(', ') : '-'}</div>
+                  <div><strong>Unique open values:</strong> {blockedDebug.requiredValues.length ? blockedDebug.requiredValues.join(', ') : '-'}</div>
+                  <div><strong>Single X value:</strong> {blockedDebug.singleRequiredValue ?? '-'}</div>
+                  <div><strong>X-tiles on board:</strong> {blockedDebug.singleRequiredValue !== null ? `${blockedDebug.boardTilesWithSingleValue}/7` : '-'}</div>
+                  <div><strong>Playable in boneyard:</strong> {blockedDebug.boneyardPlayableTileCount}/{blockedDebug.boneyardSize}</div>
+                  <div><strong>Playable tiles per hand:</strong> {blockedDebug.handPlayableTileCounts.map((count, index) => `P${index}:${count}`).join(' | ') || '-'}</div>
+                  <div><strong>7x-X rule:</strong> {blockedDebug.sevenXRuleTriggered ? 'YES' : 'NO'}</div>
+                  <div><strong>Would block now:</strong> {blockedDebug.blockedWouldTriggerNow ? 'YES' : 'NO'}</div>
+                </div>
+              ) : (
+                <div className="text-[11px] text-amber-900/80">Geen blocked debug data.</div>
+              )}
             </div>
           </Card>
         )}

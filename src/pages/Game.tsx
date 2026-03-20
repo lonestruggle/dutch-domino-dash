@@ -1140,6 +1140,32 @@ export default function Game() {
     if (!state || state.isGameOver || state.gameEndReason === 'changa') return false;
     if (!state.board || Object.keys(state.board).length === 0) return false;
 
+    const finalizeBlockedGame = (reason: string, allHandsForScoring: DominoData[][]): boolean => {
+      const playerPoints = allHandsForScoring.map((hand) =>
+        hand.reduce((sum, domino) => sum + domino.value1 + domino.value2, 0)
+      );
+      const minPoints = playerPoints.length > 0 ? Math.min(...playerPoints) : 0;
+      const winnerPosition = playerPoints.findIndex((points) => points === minPoints);
+      const resolvedWinner = winnerPosition >= 0 ? winnerPosition : 0;
+
+      const blockedState: GameState = {
+        ...state,
+        isGameOver: true,
+        winner_position: resolvedWinner,
+        gameEndReason: 'blocked',
+      };
+
+      setGameState(blockedState);
+      updateGameState(blockedState as PersistedGameState, syncState.currentPlayer);
+      console.log('🧱 GAME BLOCKED auto-triggered.', {
+        reason,
+        winner: resolvedWinner,
+        points: playerPoints,
+        boneyardSize: state.boneyard?.length || 0,
+      });
+      return true;
+    };
+
     const playerCount = resolvePlayerCount();
     const allHands: DominoData[][] =
       playerCount > 0
@@ -1152,6 +1178,21 @@ export default function Game() {
 
     // If anyone has already emptied their hand, this is not a blocked endgame.
     if (allHands.some((hand) => hand.length === 0)) return false;
+
+    const currentOpenEnds = gameHook.regenerateOpenEnds(state);
+    const uniqueRequiredValues = new Set(currentOpenEnds.map((end) => end.value));
+    const singleRequiredValue = uniqueRequiredValues.size === 1 ? Array.from(uniqueRequiredValues)[0] : null;
+
+    // Explicit fast-path for your rule:
+    // if open ends are effectively both X and all 7 X-tiles are already on table -> blocked.
+    if (singleRequiredValue !== null && currentOpenEnds.length >= 2) {
+      const boardTilesWithValueX = Object.values(state.dominoes || {}).filter(
+        (domino) => domino.data.value1 === singleRequiredValue || domino.data.value2 === singleRequiredValue
+      ).length;
+      if (boardTilesWithValueX >= 7) {
+        return finalizeBlockedGame(`seven-x-rule:${singleRequiredValue}`, allHands);
+      }
+    }
 
     const somePlayerCanPlay = allHands.some((hand) =>
       hand.some((domino) => gameHook.findLegalMoves(domino).length > 0)
@@ -1167,25 +1208,7 @@ export default function Game() {
     if (someBoneyardTilePlayable) {
       return false;
     }
-
-    const playerPoints = allHands.map((hand) =>
-      hand.reduce((sum, domino) => sum + domino.value1 + domino.value2, 0)
-    );
-    const minPoints = playerPoints.length > 0 ? Math.min(...playerPoints) : 0;
-    const winnerPosition = playerPoints.findIndex((points) => points === minPoints);
-    const resolvedWinner = winnerPosition >= 0 ? winnerPosition : 0;
-
-    const blockedState: GameState = {
-      ...state,
-      isGameOver: true,
-      winner_position: resolvedWinner,
-      gameEndReason: 'blocked',
-    };
-
-    setGameState(blockedState);
-    updateGameState(blockedState as PersistedGameState, syncState.currentPlayer);
-    console.log('🧱 GAME BLOCKED auto-triggered. Winner:', resolvedWinner, 'points:', playerPoints, 'boneyardSize:', state.boneyard?.length || 0);
-    return true;
+    return finalizeBlockedGame('no-legal-moves', allHands);
   }, [gameHook, resolvePlayerCount, setGameState, syncState.currentPlayer, syncState.playerPosition, updateGameState]);
 
   // Auto-check for blocked game after each move
