@@ -1166,10 +1166,13 @@ export default function Game() {
       return true;
     };
 
-    const playerCount = resolvePlayerCount();
+    const resolvedPlayerCount =
+      (syncState.allPlayers?.length && syncState.allPlayers.length > 0)
+        ? syncState.allPlayers.length
+        : (Array.isArray(state.playerHands) && state.playerHands.length > 0 ? state.playerHands.length : resolvePlayerCount());
     const allHands: DominoData[][] =
-      playerCount > 0
-        ? Array.from({ length: playerCount }, (_, index) => {
+      resolvedPlayerCount > 0
+        ? Array.from({ length: resolvedPlayerCount }, (_, index) => {
             if (Array.isArray(state.playerHands?.[index])) return state.playerHands[index];
             if (index === syncState.playerPosition) return state.playerHand || [];
             return [];
@@ -1179,7 +1182,12 @@ export default function Game() {
     // If anyone has already emptied their hand, this is not a blocked endgame.
     if (allHands.some((hand) => hand.length === 0)) return false;
 
-    const currentOpenEnds = gameHook.regenerateOpenEnds(state);
+    // Use stored openEnds when present so blocked debug and blocked engine are consistent.
+    // Fallback to regenerated open ends only when state has none.
+    const currentOpenEnds =
+      Array.isArray(state.openEnds) && state.openEnds.length > 0
+        ? state.openEnds
+        : gameHook.regenerateOpenEnds(state);
     const uniqueRequiredValues = new Set(currentOpenEnds.map((end) => end.value));
     const singleRequiredValue = uniqueRequiredValues.size === 1 ? Array.from(uniqueRequiredValues)[0] : null;
 
@@ -1194,20 +1202,29 @@ export default function Game() {
       }
     }
 
-    const somePlayerCanPlay = allHands.some((hand) =>
-      hand.some((domino) => gameHook.findLegalMoves(domino).length > 0)
+    const handPlayableTileCounts = allHands.map((hand) =>
+      hand.reduce((count, domino) => count + (gameHook.findLegalMoves(domino).length > 0 ? 1 : 0), 0)
     );
-
-    if (somePlayerCanPlay) {
-      return false;
-    }
+    const somePlayerCanPlay = handPlayableTileCounts.some((count) => count > 0);
 
     // Ook als de boneyard nog stenen heeft, kan het spel al effectief geblokkeerd zijn
     // wanneer GEEN enkele boneyard-steen een legale zet oplevert op dit bord.
-    const someBoneyardTilePlayable = (state.boneyard || []).some((domino) => gameHook.findLegalMoves(domino).length > 0);
-    if (someBoneyardTilePlayable) {
+    const boneyardPlayableTileCount = (state.boneyard || []).reduce(
+      (count, domino) => count + (gameHook.findLegalMoves(domino).length > 0 ? 1 : 0),
+      0
+    );
+    const blockedByNoMoves = !somePlayerCanPlay && boneyardPlayableTileCount === 0;
+
+    if (!blockedByNoMoves) {
+      console.log('🧪 Not blocked yet:', {
+        handPlayableTileCounts,
+        boneyardPlayableTileCount,
+        singleRequiredValue,
+        openEndsCount: currentOpenEnds.length,
+      });
       return false;
     }
+
     return finalizeBlockedGame('no-legal-moves', allHands);
   }, [gameHook, resolvePlayerCount, setGameState, syncState.currentPlayer, syncState.playerPosition, updateGameState]);
 
