@@ -118,6 +118,7 @@ const AdminDashboard = () => {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [newSeasonName, setNewSeasonName] = useState<string>('');
   const [placementDelayMsInput, setPlacementDelayMsInput] = useState<string>('950');
+  const [botBlockAggressionInput, setBotBlockAggressionInput] = useState<string>('65');
 const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
 const [permissionsUser, setPermissionsUser] = useState<UserProfile | null>(null);
 const [manageDialogOpen, setManageDialogOpen] = useState(false);
@@ -187,6 +188,12 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
     const rawValue = Number(settings?.global_min_placement_delay_ms ?? 950);
     const normalized = Number.isFinite(rawValue) ? Math.round(rawValue) : 950;
     setPlacementDelayMsInput(String(normalized));
+
+    const rawAggression = Number(settings?.bot_block_aggression ?? 65);
+    const normalizedAggression = Number.isFinite(rawAggression)
+      ? Math.max(0, Math.min(100, Math.round(rawAggression)))
+      : 65;
+    setBotBlockAggressionInput(String(normalizedAggression));
   }, [settings, settingsLoading]);
 
 
@@ -1877,6 +1884,48 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
                   <p className="text-xs text-muted-foreground">
                     Advies: 850–1200ms voor stabiele handschoen-animaties.
                   </p>
+
+                  <div className="border-t pt-3 space-y-2">
+                    <Label className="text-sm font-medium">Bot blokkering-agressie (admin/dev)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      0 = bot speelt neutraal, 100 = bot forceert vaker blokkeringen en value-control.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={botBlockAggressionInput}
+                        onChange={(e) => setBotBlockAggressionInput(e.target.value)}
+                        className="max-w-[220px]"
+                      />
+                      <Button
+                        onClick={async () => {
+                          const parsed = Number(botBlockAggressionInput);
+                          const normalized = Number.isFinite(parsed)
+                            ? Math.max(0, Math.min(100, Math.round(parsed)))
+                            : 65;
+                          const result = await updateSetting('bot_block_aggression', normalized);
+                          if (result.success) {
+                            setBotBlockAggressionInput(String(normalized));
+                            toast({
+                              title: 'Bot agressie opgeslagen',
+                              description: `Nieuwe bot blokkering-agressie: ${normalized}`,
+                            });
+                          } else {
+                            toast({
+                              title: 'Opslaan mislukt',
+                              description: 'Kon bot blokkering-agressie niet bijwerken.',
+                              variant: 'destructive',
+                            });
+                          }
+                        }}
+                      >
+                        Opslaan
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 

@@ -800,6 +800,11 @@ export default function Game() {
   const { disarmHardSlam, settings, isAnimating } = useGameVisualSettings();
   const { settings: appSettings } = useAppSettings();
   const { calculateBestMove } = useBotAI();
+  const botBlockAggression = useMemo(() => {
+    const raw = Number(appSettings?.bot_block_aggression ?? 65);
+    if (!Number.isFinite(raw)) return 65;
+    return Math.max(0, Math.min(100, Math.round(raw)));
+  }, [appSettings]);
   const minPlacementDelayMs = useMemo(() => {
     const raw = Number(appSettings?.global_min_placement_delay_ms ?? DEFAULT_MIN_PLACEMENT_DELAY_MS);
     if (!Number.isFinite(raw)) return DEFAULT_MIN_PLACEMENT_DELAY_MS;
@@ -1521,6 +1526,11 @@ export default function Game() {
         const currentOpenValues = Array.from(
           new Set((gameState.openEnds || []).map((end) => end.value).filter((value) => Number.isFinite(value)))
         );
+        const botBlockAggression = (() => {
+          const raw = Number(appSettings?.bot_block_aggression ?? 65);
+          if (!Number.isFinite(raw)) return 65;
+          return Math.max(0, Math.min(100, Math.round(raw)));
+        })();
 
         const selectedMove = calculateBestMove(
           latestBotHand,
@@ -1529,6 +1539,7 @@ export default function Game() {
           {
             currentOpenValues,
             boardValueTileCounts,
+            blockAggression: botBlockAggression,
           }
         );
 
@@ -1584,6 +1595,7 @@ export default function Game() {
 
     void runBotTurn();
   }, [
+    appSettings?.bot_block_aggression,
     gameHook,
     gameState,
     isAnimating,

@@ -13,6 +13,10 @@ interface BotDecisionContext {
    * (double tile counts once, because the set has 7 tiles per value)
    */
   boardValueTileCounts?: number[];
+  /**
+   * 0..100: how strongly bot prefers blocking/control play over neutral play.
+   */
+  blockAggression?: number;
 }
 
 const VALUE_DOMAIN = 7;
@@ -76,7 +80,8 @@ const scoreStrategicMove = (
   move: LegalMove,
   handValueCounts: number[],
   boardValueTileCounts: number[],
-  currentOpenValues: number[]
+  currentOpenValues: number[],
+  aggressionFactor: number
 ): number => {
   const pipValue = domino.value1 + domino.value2;
   const isDouble = domino.value1 === domino.value2;
@@ -89,22 +94,25 @@ const scoreStrategicMove = (
 
   let score = 0;
   // Win condition helper: shedding high pip tiles reduces potential blocked-game penalty.
-  score += pipValue * 0.35;
+  score += pipValue * (0.2 + (1 - aggressionFactor) * 0.25);
   if (isDouble) score += 2.0;
 
   // Prefer exposing values we control and opponents likely don't.
-  score += handValueCounts[exposedValue] * 2.0;
-  score -= outsideForExposed * 1.8;
+  score += handValueCounts[exposedValue] * (1.2 + aggressionFactor * 2.2);
+  score -= outsideForExposed * (1.0 + aggressionFactor * 2.0);
 
   // Prefer keeping table pressure on a dominant value.
-  if (exposedValue === dominantValue) score += 6.5;
-  if (matchedValue === dominantValue && exposedValue !== dominantValue) score -= 3.0;
+  if (exposedValue === dominantValue) score += 4.0 + aggressionFactor * 6.0;
+  if (matchedValue === dominantValue && exposedValue !== dominantValue) score -= 2.0 + aggressionFactor * 3.0;
 
   // Strong trap pattern: all open ends collapse to one value.
   if (nextOpenUnique.size === 1) {
     const forcedValue = nextOpenValues[0];
     const outsideForForced = Math.max(0, 7 - handValueCounts[forcedValue] - boardValueTileCounts[forcedValue]);
-    score += 9.0 + handValueCounts[forcedValue] * 1.5 - outsideForForced * 2.0;
+    score +=
+      (4.0 + aggressionFactor * 10.0) +
+      handValueCounts[forcedValue] * (0.8 + aggressionFactor * 1.6) -
+      outsideForForced * (1.2 + aggressionFactor * 1.8);
   }
 
   return score;
@@ -130,6 +138,10 @@ export const useBotAI = () => {
     const currentOpenValues = (context?.currentOpenValues || []).filter(
       (value): value is number => Number.isFinite(value)
     );
+    const aggressionFactor = Math.max(
+      0,
+      Math.min(1, Number.isFinite(context?.blockAggression) ? Number(context?.blockAggression) / 100 : 0.65)
+    );
 
     switch (config.difficulty) {
       case 'easy':
@@ -147,7 +159,8 @@ export const useBotAI = () => {
               move,
               handValueCounts,
               boardValueTileCounts,
-              currentOpenValues
+              currentOpenValues,
+              aggressionFactor
             );
             const score = strategic * 0.55 + (domino.value1 + domino.value2) * 0.45;
             return { move, score };
@@ -165,7 +178,8 @@ export const useBotAI = () => {
               move,
               handValueCounts,
               boardValueTileCounts,
-              currentOpenValues
+              currentOpenValues,
+              aggressionFactor
             );
             return { move, score };
           });
