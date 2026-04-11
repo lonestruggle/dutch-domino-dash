@@ -162,6 +162,29 @@ const DEFAULT_DEVICE_SETTINGS: DeviceSpecificSettings = {
   mobile: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile, ...DEFAULT_TRULY_GLOBAL_SETTINGS },
 };
 
+const clampNumber = (value: unknown, min: number, max: number, fallback: number): number => {
+  const raw = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(raw)) return fallback;
+  return Math.max(min, Math.min(max, raw));
+};
+
+const normalizePersonalSettings = (input?: Partial<DeviceSpecificPersonalSettings> | null): DeviceSpecificPersonalSettings => {
+  const normalizeDevice = (device: DeviceType): PersonalSettings => {
+    const fallback = DEFAULT_DEVICE_PERSONAL_SETTINGS[device];
+    const source = input?.[device] || {};
+    return {
+      dominoScale: clampNumber(source.dominoScale, 0.5, 2.0, fallback.dominoScale),
+      handDominoScale: clampNumber(source.handDominoScale, 0.35, 1.2, fallback.handDominoScale),
+    };
+  };
+
+  return {
+    desktop: normalizeDevice('desktop'),
+    tablet: normalizeDevice('tablet'),
+    mobile: normalizeDevice('mobile'),
+  };
+};
+
 const useGameVisualSettingsState = () => {
   const deviceType = useDeviceType();
   const { user } = useAuth();
@@ -187,19 +210,19 @@ const useGameVisualSettingsState = () => {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
-        const merged = {
+        const merged = normalizePersonalSettings({
           desktop: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.desktop, ...parsed.desktop },
           tablet: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.tablet, ...parsed.tablet },
           mobile: { ...DEFAULT_DEVICE_PERSONAL_SETTINGS.mobile, ...parsed.mobile },
-        };
+        });
         console.log('🔧 Loaded personal settings:', merged);
         return merged;
       }
       console.log('🔧 No personal settings found, using defaults');
-      return DEFAULT_DEVICE_PERSONAL_SETTINGS;
+      return normalizePersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS);
     } catch {
       console.log('🔧 Error loading personal settings, using defaults');
-      return DEFAULT_DEVICE_PERSONAL_SETTINGS;
+      return normalizePersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS);
     }
   };
   
@@ -210,19 +233,19 @@ const useGameVisualSettingsState = () => {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
-        const merged = normalizeSharedGloveImageUrl(normalizeGlobalAnimationSettings({
+        const merged = normalizeGlobalSettings({
           desktop: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop, ...parsed.desktop },
           tablet: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet, ...parsed.tablet },
           mobile: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile, ...parsed.mobile },
-        }));
+        });
         console.log('🌍 Loaded GLOBAL settings:', merged);
         return merged;
       }
       console.log('🌍 No global settings found, using defaults');
-      return normalizeSharedGloveImageUrl(normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS));
+      return normalizeGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
     } catch {
       console.log('🌍 Error loading global settings, using defaults');
-      return normalizeSharedGloveImageUrl(normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS));
+      return normalizeGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS);
     }
   };
 
@@ -377,7 +400,7 @@ const useGameVisualSettingsState = () => {
   };
 
   const updateHandDominoScale = (scale: number, targetDevice?: DeviceType) => {
-    const clampedScale = Math.max(0.5, Math.min(2.0, scale));
+    const clampedScale = Math.max(0.35, Math.min(1.2, scale));
     const device = targetDevice || deviceType;
     setPersonalSettings(prev => ({
       ...prev,
@@ -389,15 +412,18 @@ const useGameVisualSettingsState = () => {
     if (targetDevice) {
       setPersonalSettings(prev => ({
         ...prev,
-        [targetDevice]: DEFAULT_DEVICE_PERSONAL_SETTINGS[targetDevice]
+        [targetDevice]: normalizePersonalSettings({
+          ...prev,
+          [targetDevice]: DEFAULT_DEVICE_PERSONAL_SETTINGS[targetDevice],
+        })[targetDevice]
       }));
       setGlobalSettings(prev => normalizeGlobalAnimationSettings({
         ...prev,
         [targetDevice]: DEFAULT_DEVICE_GLOBAL_SETTINGS[targetDevice]
-      }));
+      }) as DeviceSpecificGlobalSettings);
     } else {
-      setPersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS);
-      setGlobalSettings(normalizeGlobalAnimationSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS));
+      setPersonalSettings(normalizePersonalSettings(DEFAULT_DEVICE_PERSONAL_SETTINGS));
+      setGlobalSettings(normalizeGlobalSettings(DEFAULT_DEVICE_GLOBAL_SETTINGS));
       setTrulyGlobalSettings(DEFAULT_TRULY_GLOBAL_SETTINGS);
     }
   };
@@ -410,7 +436,17 @@ const useGameVisualSettingsState = () => {
   };
 
   const getSettingsForDevice = (device: DeviceType) => {
-    return allSettings[device] || DEFAULT_DEVICE_SETTINGS[device];
+    const raw = allSettings[device] || DEFAULT_DEVICE_SETTINGS[device];
+    const normalizedPersonal = normalizePersonalSettings({
+      [device]: {
+        dominoScale: raw.dominoScale,
+        handDominoScale: raw.handDominoScale,
+      },
+    } as Partial<DeviceSpecificPersonalSettings>)[device];
+    const normalizedGlobal = normalizeGlobalSettings({
+      [device]: raw as GlobalSettings,
+    } as Partial<DeviceSpecificGlobalSettings>)[device];
+    return { ...raw, ...normalizedPersonal, ...normalizedGlobal };
   };
 
   // Animation functions met exacte logica uit DominoTileDemo
