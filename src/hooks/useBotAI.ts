@@ -6,16 +6,130 @@ interface BotAIConfig {
   thinkingTime: number; // milliseconds
 }
 
+interface BotDecisionContext {
+  currentOpenValues?: number[];
+  /**
+   * For each value 0..6, how many already placed tiles contain that value.
+   * (double tile counts once, because the set has 7 tiles per value)
+   */
+  boardValueTileCounts?: number[];
+}
+
+const VALUE_DOMAIN = 7;
+
+const clampValue = (value: number) => Math.max(0, Math.min(VALUE_DOMAIN - 1, value));
+
+const countHandValueTiles = (hand: DominoData[]): number[] => {
+  const counts = Array.from({ length: VALUE_DOMAIN }, () => 0);
+  hand.forEach((domino) => {
+    const v1 = clampValue(domino.value1);
+    const v2 = clampValue(domino.value2);
+    if (v1 === v2) {
+      counts[v1] += 1;
+      return;
+    }
+    counts[v1] += 1;
+    counts[v2] += 1;
+  });
+  return counts;
+};
+
+const getExposedValueAfterMove = (domino: DominoData, matchedOpenValue: number): number => {
+  if (domino.value1 === matchedOpenValue && domino.value2 === matchedOpenValue) {
+    return matchedOpenValue; // double stays same value open
+  }
+  if (domino.value1 === matchedOpenValue) return domino.value2;
+  if (domino.value2 === matchedOpenValue) return domino.value1;
+  // Defensive fallback (should not happen for legal move)
+  return domino.value1;
+};
+
+const simulateOpenValuesAfterMove = (
+  currentOpenValues: number[],
+  matchedOpenValue: number,
+  exposedValue: number
+): number[] => {
+  if (!currentOpenValues.length) return [exposedValue];
+  const next = [...currentOpenValues];
+  const idx = next.findIndex((value) => value === matchedOpenValue);
+  if (idx >= 0) next.splice(idx, 1);
+  next.push(exposedValue);
+  return next;
+};
+
+const getDominantValue = (handValueCounts: number[], boardValueTileCounts: number[]): number => {
+  let bestValue = 0;
+  let bestScore = -Infinity;
+  for (let value = 0; value < VALUE_DOMAIN; value += 1) {
+    const outsideTiles = Math.max(0, 7 - handValueCounts[value] - boardValueTileCounts[value]);
+    const score = handValueCounts[value] * 2 - outsideTiles;
+    if (score > bestScore) {
+      bestScore = score;
+      bestValue = value;
+    }
+  }
+  return bestValue;
+};
+
+const scoreStrategicMove = (
+  domino: DominoData,
+  move: LegalMove,
+  handValueCounts: number[],
+  boardValueTileCounts: number[],
+  currentOpenValues: number[]
+): number => {
+  const pipValue = domino.value1 + domino.value2;
+  const isDouble = domino.value1 === domino.value2;
+  const matchedValue = move.end.value;
+  const exposedValue = getExposedValueAfterMove(domino, matchedValue);
+  const outsideForExposed = Math.max(0, 7 - handValueCounts[exposedValue] - boardValueTileCounts[exposedValue]);
+  const dominantValue = getDominantValue(handValueCounts, boardValueTileCounts);
+  const nextOpenValues = simulateOpenValuesAfterMove(currentOpenValues, matchedValue, exposedValue);
+  const nextOpenUnique = new Set(nextOpenValues);
+
+  let score = 0;
+  // Win condition helper: shedding high pip tiles reduces potential blocked-game penalty.
+  score += pipValue * 0.35;
+  if (isDouble) score += 2.0;
+
+  // Prefer exposing values we control and opponents likely don't.
+  score += handValueCounts[exposedValue] * 2.0;
+  score -= outsideForExposed * 1.8;
+
+  // Prefer keeping table pressure on a dominant value.
+  if (exposedValue === dominantValue) score += 6.5;
+  if (matchedValue === dominantValue && exposedValue !== dominantValue) score -= 3.0;
+
+  // Strong trap pattern: all open ends collapse to one value.
+  if (nextOpenUnique.size === 1) {
+    const forcedValue = nextOpenValues[0];
+    const outsideForForced = Math.max(0, 7 - handValueCounts[forcedValue] - boardValueTileCounts[forcedValue]);
+    score += 9.0 + handValueCounts[forcedValue] * 1.5 - outsideForForced * 2.0;
+  }
+
+  return score;
+};
+
 export const useBotAI = () => {
   
   const calculateBestMove = useCallback((
     hand: DominoData[],
     legalMoves: LegalMove[],
-    config: BotAIConfig = { difficulty: 'medium', thinkingTime: 1000 }
+    config: BotAIConfig = { difficulty: 'medium', thinkingTime: 1000 },
+    context?: BotDecisionContext
   ): LegalMove | null => {
     if (!legalMoves || legalMoves.length === 0) {
       return null;
     }
+
+    const handValueCounts = countHandValueTiles(hand);
+    const boardValueTileCounts = Array.from(
+      { length: VALUE_DOMAIN },
+      (_, index) => Number(context?.boardValueTileCounts?.[index] || 0)
+    );
+    const currentOpenValues = (context?.currentOpenValues || []).filter(
+      (value): value is number => Number.isFinite(value)
+    );
 
     switch (config.difficulty) {
       case 'easy':
@@ -23,49 +137,36 @@ export const useBotAI = () => {
         return legalMoves[Math.floor(Math.random() * legalMoves.length)];
       
       case 'medium':
-        // Medium bot: prefers doubles and high-value dominoes
-        const preferredMoves = legalMoves.filter(move => {
-          if (move.index === undefined) return false;
-          const domino = hand[move.index];
-          return domino.value1 === domino.value2; // doubles
-        });
-        
-        if (preferredMoves.length > 0) {
-          return preferredMoves[Math.floor(Math.random() * preferredMoves.length)];
-        }
-        
-        // If no doubles, pick highest value domino
-        const sortedMoves = legalMoves
-          .filter(move => move.index !== undefined)
-          .sort((a, b) => {
-            const dominoA = hand[a.index!];
-            const dominoB = hand[b.index!];
-            const sumA = dominoA.value1 + dominoA.value2;
-            const sumB = dominoB.value1 + dominoB.value2;
-            return sumB - sumA;
-          });
-        
-        return sortedMoves[0] || legalMoves[0];
+        // Medium bot: balanced between simple value and light strategic blocking.
+        return legalMoves
+          .filter((move) => move.index !== undefined)
+          .map((move) => {
+            const domino = hand[move.index!];
+            const strategic = scoreStrategicMove(
+              domino,
+              move,
+              handValueCounts,
+              boardValueTileCounts,
+              currentOpenValues
+            );
+            const score = strategic * 0.55 + (domino.value1 + domino.value2) * 0.45;
+            return { move, score };
+          })
+          .sort((a, b) => b.score - a.score)[0]?.move || legalMoves[0];
       
       case 'hard':
-        // Hard bot: strategic play
-        // Prefers moves that block opponents or set up future plays
+        // Hard bot: strategic control + blocking behavior.
         const strategicMoves = legalMoves
           .filter(move => move.index !== undefined)
           .map(move => {
             const domino = hand[move.index!];
-            const value = domino.value1 + domino.value2;
-            const isDouble = domino.value1 === domino.value2;
-            
-            let score = value;
-            if (isDouble) score += 5; // bonus for doubles
-            
-            // Prefer moves that leave common numbers
-            const commonNumbers = [6, 5, 4]; // most common in set
-            if (commonNumbers.includes(domino.value1) || commonNumbers.includes(domino.value2)) {
-              score += 3;
-            }
-            
+            const score = scoreStrategicMove(
+              domino,
+              move,
+              handValueCounts,
+              boardValueTileCounts,
+              currentOpenValues
+            );
             return { move, score };
           });
         

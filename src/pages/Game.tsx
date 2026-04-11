@@ -1507,10 +1507,29 @@ export default function Game() {
 
         const boneyardSize = gameState.boneyard.length;
         const difficulty = getBotDifficulty(currentPlayerData.username);
+        const boardValueTileCounts = Array.from({ length: 7 }, () => 0);
+        Object.values(gameState.dominoes || {}).forEach((domino) => {
+          const v1 = Math.max(0, Math.min(6, domino.data.value1));
+          const v2 = Math.max(0, Math.min(6, domino.data.value2));
+          if (v1 === v2) {
+            boardValueTileCounts[v1] += 1;
+          } else {
+            boardValueTileCounts[v1] += 1;
+            boardValueTileCounts[v2] += 1;
+          }
+        });
+        const currentOpenValues = Array.from(
+          new Set((gameState.openEnds || []).map((end) => end.value).filter((value) => Number.isFinite(value)))
+        );
+
         const selectedMove = calculateBestMove(
           latestBotHand,
           legalMovesForBot,
-          { difficulty, thinkingTime: 0 }
+          { difficulty, thinkingTime: 0 },
+          {
+            currentOpenValues,
+            boardValueTileCounts,
+          }
         );
 
         setBotDebugInfo((prev) => ({
