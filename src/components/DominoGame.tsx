@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
 import { BoneyardTile } from '@/components/BoneyardTile';
+import { BoneyardScatter } from '@/components/BoneyardScatter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Trophy, PartyPopper, Star, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -783,43 +784,39 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 Kies een steen uit de boneyard
               </DialogTitle>
             </DialogHeader>
-            <div
-              className={`grid ${isMobile ? "grid-cols-5" : "grid-cols-7"} gap-4 p-6 rounded-xl ${isMobile ? "min-h-[260px]" : "min-h-[320px]"} relative overflow-auto`}
-              style={{
-                background:
-                  "radial-gradient(ellipse at center, hsl(155 45% 28%) 0%, hsl(155 55% 18%) 100%)",
-                boxShadow:
-                  "inset 0 2px 12px rgba(0,0,0,0.45), inset 0 -2px 6px rgba(255,255,255,0.05)",
-                border: "1px solid hsl(40 35% 35% / 0.5)",
-              }}
-            >
-              {gameState?.boneyard?.map((domino, index) => {
-                if (adminBoneyardFaceUp) {
-                  return (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => handleBoneyardPick(index)}
-                      className="relative cursor-pointer hover:scale-110 transition-all"
-                      aria-label="Trek deze steen"
-                    >
-                      <DominoTile data={domino} orientation="horizontal" flipped={false} />
-                    </button>
-                  );
-                }
-                return (
-                  <BoneyardTile
+            {adminBoneyardFaceUp ? (
+              <div
+                className={`grid ${isMobile ? "grid-cols-5" : "grid-cols-7"} gap-4 p-6 rounded-xl ${isMobile ? "min-h-[260px]" : "min-h-[320px]"} relative overflow-auto`}
+                style={{
+                  background:
+                    "radial-gradient(ellipse at center, hsl(155 45% 28%) 0%, hsl(155 55% 18%) 100%)",
+                  boxShadow:
+                    "inset 0 2px 12px rgba(0,0,0,0.45), inset 0 -2px 6px rgba(255,255,255,0.05)",
+                  border: "1px solid hsl(40 35% 35% / 0.5)",
+                }}
+              >
+                {gameState?.boneyard?.map((domino: any, index: number) => (
+                  <button
                     key={index}
-                    index={index}
-                    skin={{
-                      image_url: gameData?.domino_skin_url ?? null,
-                      css_background: gameData?.domino_skin_css ?? null,
-                    }}
+                    type="button"
                     onClick={() => handleBoneyardPick(index)}
-                  />
-                );
-              })}
-            </div>
+                    className="relative cursor-pointer hover:scale-110 transition-all"
+                    aria-label="Trek deze steen"
+                  >
+                    <DominoTile data={domino} orientation="horizontal" flipped={false} />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <BoneyardScatter
+                count={gameState?.boneyard?.length || 0}
+                skin={{
+                  image_url: gameData?.domino_skin_url ?? null,
+                  css_background: gameData?.domino_skin_css ?? null,
+                }}
+                onPick={handleBoneyardPick}
+              />
+            )}
           </DialogContent>
         </Dialog>
 

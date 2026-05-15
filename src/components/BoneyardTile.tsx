@@ -7,6 +7,8 @@ interface BoneyardTileProps {
   skin?: Pick<DominoSkin, 'image_url' | 'css_background'> | null;
   onClick: () => void;
   className?: string;
+  /** When provided, overrides internal random placement (used by scatter layout). */
+  placement?: { x: number; y: number; rotation: number };
 }
 
 /**
@@ -15,12 +17,17 @@ interface BoneyardTileProps {
  * - Stable pseudo-random rotation/offset per index
  * - Renders the host-chosen skin on the back
  */
-export const BoneyardTile: React.FC<BoneyardTileProps> = ({ index, skin, onClick, className }) => {
+export const BoneyardTile: React.FC<BoneyardTileProps> = ({ index, skin, onClick, className, placement }) => {
   const seed = (index * 9301 + 49297) % 233280;
   const rand = (n: number) => ((seed * (n + 1)) % 100) / 100;
-  const randomX = rand(1) * 14 - 7;
-  const randomY = rand(2) * 10 - 5;
-  const randomRotation = rand(3) * 80 - 40; // -40..+40 deg
+  const fallbackX = rand(1) * 14 - 7;
+  const fallbackY = rand(2) * 10 - 5;
+  const fallbackRot = rand(3) * 80 - 40;
+
+  const positioned = !!placement;
+  const x = placement?.x ?? fallbackX;
+  const y = placement?.y ?? fallbackY;
+  const rot = placement?.rotation ?? fallbackRot;
 
   return (
     <button
@@ -28,13 +35,17 @@ export const BoneyardTile: React.FC<BoneyardTileProps> = ({ index, skin, onClick
       onClick={onClick}
       aria-label="Trek deze steen"
       className={cn(
-        'relative group cursor-pointer transition-all duration-200',
+        positioned
+          ? 'absolute group cursor-pointer transition-all duration-200'
+          : 'relative group cursor-pointer transition-all duration-200',
         'hover:scale-110 hover:-translate-y-1 focus:outline-none',
         'focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-md',
         className,
       )}
       style={{
-        transform: `translate(${randomX}px, ${randomY}px) rotate(${randomRotation}deg)`,
+        ...(positioned
+          ? { left: x - 28, top: y - 14, transform: `rotate(${rot}deg)` }
+          : { transform: `translate(${x}px, ${y}px) rotate(${rot}deg)` }),
         filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))',
       }}
     >
