@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { CSSProperties, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { InviteUsers } from '@/components/InviteUsers';
 import { InvitationHistory } from '@/components/InvitationHistory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import {
   Select,
   SelectContent,
@@ -40,13 +41,25 @@ interface ProfileGloveSkin {
   id: string;
   name: string;
   image_url: string;
+  overlay_offset_x: number;
+  overlay_offset_y: number;
+  overlay_scale: number;
+  overlay_rotation: number;
 }
+
+const BASE_GLOVE_IMAGE = '/glove-hand.svg';
+const withCacheBuster = (url: string, version: string) => {
+  if (!url) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${encodeURIComponent(version)}`;
+};
 
 const Profile = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { getSetting } = useAppSettings();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -140,7 +153,7 @@ const Profile = () => {
 
       const { data: skinRows, error: skinError } = await supabase
         .from('glove_skins')
-        .select('id, name, image_url, is_active')
+        .select('id, name, image_url, is_active, overlay_offset_x, overlay_offset_y, overlay_scale, overlay_rotation')
         .in('id', skinIds)
         .eq('is_active', true)
         .order('name', { ascending: true });
@@ -151,6 +164,10 @@ const Profile = () => {
         id: row.id,
         name: row.name,
         image_url: row.image_url,
+        overlay_offset_x: row.overlay_offset_x ?? 0,
+        overlay_offset_y: row.overlay_offset_y ?? 0,
+        overlay_scale: row.overlay_scale ?? 1,
+        overlay_rotation: row.overlay_rotation ?? 0,
       }));
       setAvailableGloveSkins(skins);
 
