@@ -313,6 +313,13 @@ const Profile = () => {
   }
 
   const winRate = profile.games_played > 0 ? Math.round((profile.games_won / profile.games_played) * 100) : 0;
+  const selectedGloveSkin = availableGloveSkins.find((skin) => skin.id === selectedGloveSkinId) || null;
+  const configuredBaseGloveImageUrl = String(getSetting('global_base_glove_image_url', BASE_GLOVE_IMAGE) || BASE_GLOVE_IMAGE).trim() || BASE_GLOVE_IMAGE;
+  const gloveAssetVersion = String(getSetting('global_glove_asset_version', '1') || '1');
+  const isStandardGloveSkin = selectedGloveSkin?.name.trim().toLowerCase() === 'standaard';
+  const showSelectedGloveOverlay = Boolean(
+    selectedGloveSkin && !isStandardGloveSkin && Number(selectedGloveSkin.overlay_scale) > 0.001
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-4">
@@ -500,16 +507,32 @@ const Profile = () => {
                             </SelectContent>
                           </Select>
 
-                          {selectedGloveSkinId && (
+                          {selectedGloveSkin && (
                             <div className="flex items-center gap-3 rounded border p-3">
-                              <img
-                                src={availableGloveSkins.find((skin) => skin.id === selectedGloveSkinId)?.image_url}
-                                alt="Selected glove skin"
-                                className="h-12 w-12 rounded object-cover border"
-                              />
+                              <div className="relative h-14 w-14 shrink-0 rounded-full bg-muted/60 flex items-center justify-center overflow-hidden border">
+                                <img src={withCacheBuster(configuredBaseGloveImageUrl, gloveAssetVersion)} alt="Basis handschoen" className="domino-hand-image fixed-glove-image" />
+                                {showSelectedGloveOverlay && (
+                                  <span
+                                    className="domino-hand-skin-mask"
+                                    style={{ '--glove-mask-image': `url("${configuredBaseGloveImageUrl}")` } as CSSProperties}
+                                  >
+                                    <img
+                                      src={withCacheBuster(selectedGloveSkin.image_url, gloveAssetVersion)}
+                                      alt={`${selectedGloveSkin.name} overlay`}
+                                      className="domino-hand-skin-overlay"
+                                      style={{
+                                        '--skin-overlay-x': `${selectedGloveSkin.overlay_offset_x}%`,
+                                        '--skin-overlay-y': `${selectedGloveSkin.overlay_offset_y}%`,
+                                        '--skin-overlay-scale': String(selectedGloveSkin.overlay_scale),
+                                        '--skin-overlay-rotation': `${selectedGloveSkin.overlay_rotation}deg`,
+                                      } as CSSProperties}
+                                    />
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-sm text-muted-foreground">
                                 Actieve skin: <span className="font-medium text-foreground">
-                                  {availableGloveSkins.find((skin) => skin.id === selectedGloveSkinId)?.name}
+                                  {selectedGloveSkin.name}
                                 </span>
                               </div>
                             </div>
