@@ -904,6 +904,14 @@ export type Database = {
       }
       reset_season_stats: { Args: { _season_id: string }; Returns: number }
       start_new_season: { Args: { _name: string }; Returns: string }
+      update_game_state_for_lobby: {
+        Args: {
+          _current_player_turn: number
+          _game_state: Json
+          _lobby_id: string
+        }
+        Returns: undefined
+      }
       user_in_lobby: { Args: { _lobby_id: string }; Returns: boolean }
       validate_game_move: {
         Args: { _game_id: string; _move_data: Json; _player_position: number }

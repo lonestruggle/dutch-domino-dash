@@ -288,14 +288,11 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         timestamp: new Date().toISOString()
       });
 
-      const { error } = await supabase
-        .from('games')
-        .update({
-          game_state: newGameState as Json,
-          current_player_turn: nextPlayerTurn, // ALWAYS advance turn
-          updated_at: new Date().toISOString()
-        })
-        .eq('lobby_id', gameId);
+      const { error } = await supabase.rpc('update_game_state_for_lobby', {
+        _lobby_id: gameId,
+        _game_state: newGameState as unknown as Json,
+        _current_player_turn: nextPlayerTurn,
+      });
 
       if (error) {
         console.error('Error updating game state:', error);
