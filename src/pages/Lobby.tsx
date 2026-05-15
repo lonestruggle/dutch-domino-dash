@@ -539,6 +539,18 @@ export default function Lobby() {
                   selectedTableBackground={selectedTableBackground}
                   onTableBackgroundChange={setSelectedTableBackground}
                 />
+                <DominoSkinSelector
+                  selectedSkinId={selectedDominoSkinId}
+                  onSelect={async (skinId) => {
+                    setSelectedDominoSkinId(skinId);
+                    if (lobbyId) {
+                      await supabase
+                        .from('lobbies')
+                        .update({ domino_skin_id: skinId } as any)
+                        .eq('id', lobbyId);
+                    }
+                  }}
+                />
               </div>
             )}
 
