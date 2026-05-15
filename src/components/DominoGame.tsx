@@ -782,51 +782,45 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 Kies een steen uit de boneyard
               </DialogTitle>
             </DialogHeader>
-            <div className={`grid ${isMobile ? "grid-cols-4" : "grid-cols-6"} gap-3 p-4 bg-green-100 rounded-lg ${isMobile ? "min-h-[250px]" : "min-h-[300px]"} relative overflow-auto`}>
+            <div
+              className={`grid ${isMobile ? "grid-cols-5" : "grid-cols-7"} gap-4 p-6 rounded-xl ${isMobile ? "min-h-[260px]" : "min-h-[320px]"} relative overflow-auto`}
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, hsl(155 45% 28%) 0%, hsl(155 55% 18%) 100%)",
+                boxShadow:
+                  "inset 0 2px 12px rgba(0,0,0,0.45), inset 0 -2px 6px rgba(255,255,255,0.05)",
+                border: "1px solid hsl(40 35% 35% / 0.5)",
+              }}
+            >
               {gameState?.boneyard?.map((domino, index) => {
-                // Random positioning within grid cell
-                const randomX = Math.random() * 20 - 10; // -10 to 10
-                const randomY = Math.random() * 20 - 10; // -10 to 10
-                const randomRotation = Math.random() * 30 - 15; // -15 to 15 degrees
-                
+                // Stable pseudo-random offset per index so tiles don't jump on re-render
+                const seed = (index * 9301 + 49297) % 233280;
+                const rand = (n: number) => ((seed * (n + 1)) % 100) / 100;
+                const randomX = rand(1) * 8 - 4;
+                const randomY = rand(2) * 8 - 4;
+                const randomRotation = rand(3) * 10 - 5;
+
                 return (
-                  <div
+                  <button
                     key={index}
-                    className="relative cursor-pointer hover:scale-105 transition-transform"
+                    type="button"
+                    onClick={() => handleBoneyardPick(index)}
+                    className="relative group cursor-pointer transition-all duration-200 hover:scale-110 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-md"
                     style={{
                       transform: `translate(${randomX}px, ${randomY}px) rotate(${randomRotation}deg)`,
+                      filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.5))",
                     }}
-                     onClick={() => handleStonePreview(domino, index)}
-                   >
-                     <DominoTile
-                       data={adminBoneyardFaceUp ? domino : { value1: 0, value2: 0 }} // Admin debug option: show real stones face-up
-                       orientation="horizontal"
-                       flipped={false}
-                       className="w-12 h-6 bg-gray-800 border-2 border-gray-600"
-                     />
-                   </div>
+                    aria-label="Trek deze steen"
+                  >
+                    <DominoTile
+                      data={adminBoneyardFaceUp ? domino : { value1: 0, value2: 0 }}
+                      orientation="horizontal"
+                      flipped={false}
+                      className="w-14 h-7 bg-gradient-to-br from-slate-700 to-slate-900 border-2 border-slate-500 group-hover:border-yellow-400 transition-colors"
+                    />
+                  </button>
                 );
               })}
-              
-              {/* Preview domino in center */}
-              {previewDomino && (
-                <div 
-                  className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg cursor-pointer z-10"
-                  onClick={handlePreviewClick}
-                >
-                    <div className="bg-white rounded-lg p-4 shadow-2xl border-4 border-gray-300">
-                      <DominoTile
-                        data={previewDomino.domino}
-                        orientation="horizontal"
-                        flipped={false}
-                        className={isMobile ? "w-24 h-12" : "w-48 h-24"} // Smaller on mobile
-                       />
-                      <div className="text-center mt-2 text-sm text-gray-600">
-                        Klik om deze steen te nemen
-                      </div>
-                    </div>
-                </div>
-              )}
             </div>
           </DialogContent>
         </Dialog>
