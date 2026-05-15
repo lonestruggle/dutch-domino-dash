@@ -185,6 +185,15 @@ const normalizePersonalSettings = (input?: Partial<DeviceSpecificPersonalSetting
   };
 };
 
+const normalizeGlobalSettings = (input?: Partial<DeviceSpecificGlobalSettings> | null): DeviceSpecificGlobalSettings => {
+  const merged: DeviceSpecificGlobalSettings = {
+    desktop: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.desktop, ...(input?.desktop || {}) },
+    tablet: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.tablet, ...(input?.tablet || {}) },
+    mobile: { ...DEFAULT_DEVICE_GLOBAL_SETTINGS.mobile, ...(input?.mobile || {}) },
+  };
+  return normalizeGlobalAnimationSettings(normalizeSharedGloveImageUrl(merged));
+};
+
 const useGameVisualSettingsState = () => {
   const deviceType = useDeviceType();
   const { user } = useAuth();
