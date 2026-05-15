@@ -1,0 +1,1 @@
+ALTER VIEW public.leaderboard_current_season SET (security_invoker = true);
