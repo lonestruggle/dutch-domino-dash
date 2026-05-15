@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { DominoTile } from '@/components/DominoTile';
+import { BoneyardTile } from '@/components/BoneyardTile';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Trophy, PartyPopper, Star, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -793,32 +794,29 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               }}
             >
               {gameState?.boneyard?.map((domino, index) => {
-                // Stable pseudo-random offset per index so tiles don't jump on re-render
-                const seed = (index * 9301 + 49297) % 233280;
-                const rand = (n: number) => ((seed * (n + 1)) % 100) / 100;
-                const randomX = rand(1) * 8 - 4;
-                const randomY = rand(2) * 8 - 4;
-                const randomRotation = rand(3) * 10 - 5;
-
+                if (adminBoneyardFaceUp) {
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleBoneyardPick(index)}
+                      className="relative cursor-pointer hover:scale-110 transition-all"
+                      aria-label="Trek deze steen"
+                    >
+                      <DominoTile data={domino} orientation="horizontal" flipped={false} />
+                    </button>
+                  );
+                }
                 return (
-                  <button
+                  <BoneyardTile
                     key={index}
-                    type="button"
-                    onClick={() => handleBoneyardPick(index)}
-                    className="relative group cursor-pointer transition-all duration-200 hover:scale-110 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-md"
-                    style={{
-                      transform: `translate(${randomX}px, ${randomY}px) rotate(${randomRotation}deg)`,
-                      filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.5))",
+                    index={index}
+                    skin={{
+                      image_url: gameData?.domino_skin_url ?? null,
+                      css_background: gameData?.domino_skin_css ?? null,
                     }}
-                    aria-label="Trek deze steen"
-                  >
-                    <DominoTile
-                      data={adminBoneyardFaceUp ? domino : { value1: 0, value2: 0 }}
-                      orientation="horizontal"
-                      flipped={false}
-                      className="w-14 h-7 bg-gradient-to-br from-slate-700 to-slate-900 border-2 border-slate-500 group-hover:border-yellow-400 transition-colors"
-                    />
-                  </button>
+                    onClick={() => handleBoneyardPick(index)}
+                  />
                 );
               })}
             </div>

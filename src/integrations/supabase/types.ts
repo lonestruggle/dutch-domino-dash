@@ -169,6 +169,42 @@ export type Database = {
         }
         Relationships: []
       }
+      domino_skins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          css_background: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_builtin: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          css_background?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_builtin?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          css_background?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_builtin?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       game_player_stats: {
         Row: {
           created_at: string
@@ -265,6 +301,8 @@ export type Database = {
           background_choice: string | null
           created_at: string
           current_player_turn: number
+          domino_skin_css: string | null
+          domino_skin_url: string | null
           game_state: Json
           id: string
           lobby_id: string
@@ -277,6 +315,8 @@ export type Database = {
           background_choice?: string | null
           created_at?: string
           current_player_turn?: number
+          domino_skin_css?: string | null
+          domino_skin_url?: string | null
           game_state: Json
           id?: string
           lobby_id: string
@@ -289,6 +329,8 @@ export type Database = {
           background_choice?: string | null
           created_at?: string
           current_player_turn?: number
+          domino_skin_css?: string | null
+          domino_skin_url?: string | null
           game_state?: Json
           id?: string
           lobby_id?: string
@@ -390,6 +432,7 @@ export type Database = {
           created_at: string
           created_by: string
           created_by_username: string | null
+          domino_skin_id: string | null
           hard_slam_enabled: boolean | null
           hard_slam_uses_per_player: number | null
           id: string
@@ -403,6 +446,7 @@ export type Database = {
           created_at?: string
           created_by: string
           created_by_username?: string | null
+          domino_skin_id?: string | null
           hard_slam_enabled?: boolean | null
           hard_slam_uses_per_player?: number | null
           id?: string
@@ -416,6 +460,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           created_by_username?: string | null
+          domino_skin_id?: string | null
           hard_slam_enabled?: boolean | null
           hard_slam_uses_per_player?: number | null
           id?: string
@@ -425,7 +470,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lobbies_domino_skin_id_fkey"
+            columns: ["domino_skin_id"]
+            isOneToOne: false
+            referencedRelation: "domino_skins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lobby_players: {
         Row: {
