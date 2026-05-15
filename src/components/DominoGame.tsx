@@ -49,6 +49,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     () => (syncState?.allPlayers || []).map((player: any) => player.user_id).filter(Boolean),
     [syncState?.allPlayers]
   );
+  const currentTurnUserId = useMemo(
+    () => (syncState?.allPlayers || []).find((p: any) => p.position === syncState?.currentPlayer)?.user_id || null,
+    [syncState?.allPlayers, syncState?.currentPlayer]
+  );
 
   // Hard Slam logic - separate local button state from global effect
   const canUseHardSlam = canHardSlam && !gameState?.isGameOver;
@@ -583,6 +587,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           gameState={gameState}
           legalMoves={legalMovesWithIndex}
           playerUserIds={playerUserIds}
+          currentTurnUserId={currentTurnUserId}
           onMoveExecute={(move) => {
             if (isMoveLockedByAnimation) return;
             // Pass local hard slam state to the move execution
