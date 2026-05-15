@@ -32,6 +32,7 @@ interface GameBoardProps {
   gameState: GameState;
   legalMoves: LegalMove[];
   playerUserIds?: string[];
+  currentTurnUserId?: string | null;
   onMoveExecute: (move: LegalMove) => void;
   onCenterView: () => void;
   hasDifferentNeighbor: (x: number, y: number) => boolean;
@@ -80,6 +81,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   gameState, 
   legalMoves, 
   playerUserIds = [],
+  currentTurnUserId = null,
   onMoveExecute, 
   onCenterView, 
   hasDifferentNeighbor, 
@@ -117,7 +119,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const fallbackSkinConfig: PlayerGloveSkinConfig | null = null;
   const resolveUserSkinConfig = (userId?: string | null): PlayerGloveSkinConfig | null =>
     (userId ? playerGloveSkinByUserId[userId] : undefined) || fallbackSkinConfig;
-  const persistentGloveSkinConfig = resolveUserSkinConfig(user?.id || null);
+  const persistentGloveSkinConfig = resolveUserSkinConfig(currentTurnUserId || user?.id || null);
   const placeAnimationGloveSkinConfig = resolveUserSkinConfig(gameState.lastMoveActorUserId || null);
   const hardSlamGloveSkinConfig = resolveUserSkinConfig(gameState.hardSlamActorUserId || null);
   const globalGloveAlwaysVisible = Boolean(getSetting('global_glove_always_visible', true));
