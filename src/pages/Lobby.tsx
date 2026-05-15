@@ -202,23 +202,7 @@ export default function Lobby() {
       return;
     }
 
-    // Update lobby status to playing
-    const { error: updateError } = await supabase
-      .from('lobbies')
-      .update({ status: 'playing' })
-      .eq('id', lobby.id);
-
-    if (updateError) {
-      console.error('Lobby status update error:', updateError);
-      toast({
-        title: "Error",
-        description: `Could not update lobby: ${updateError.message}`,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Navigate to game
+    // Navigate to game. Other players also detect the created game row below.
     navigate(`/game/${lobby.id}`);
   };
 
@@ -332,6 +316,16 @@ export default function Lobby() {
         { event: '*', schema: 'public', table: 'lobby_players', filter: `lobby_id=eq.${lobbyId}` },
         () => fetchLobby()
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'games', filter: `lobby_id=eq.${lobbyId}` },
+        (payload) => {
+          console.log('🎲 Game row change detected:', payload);
+          if ((payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new.status === 'active') {
+            navigate(`/game/${lobbyId}`, { replace: true });
+          }
+        }
+      )
       .subscribe((status) => {
         console.log('📡 Subscription status:', status);
         if (status === 'SUBSCRIBED') {
@@ -346,13 +340,21 @@ export default function Lobby() {
       if (!lobbyId) return;
       
       console.log('🔄 Polling lobby status...');
-      const { data, error } = await supabase
+      const [{ data, error }, { data: gameData, error: gameError }] = await Promise.all([
+        supabase
         .from('lobbies')
         .select('status')
         .eq('id', lobbyId)
-        .single();
+          .single(),
+        supabase
+          .from('games')
+          .select('id,status')
+          .eq('lobby_id', lobbyId)
+          .eq('status', 'active')
+          .maybeSingle()
+      ]);
         
-      if (!error && data && data.status === 'playing') {
+      if ((!error && data && data.status === 'playing') || (!gameError && gameData)) {
         console.log('🎯 Polling detected game started! Navigating...');
         clearInterval(pollInterval);
         navigate(`/game/${lobbyId}`, { replace: true });
