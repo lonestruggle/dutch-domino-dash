@@ -191,9 +191,10 @@ export default function Lobby() {
         .eq('id', existingGame.id);
 
       if (updateError) {
+        console.error('Game update error:', updateError);
         toast({
           title: "Error",
-          description: "Could not start game",
+          description: `Could not update game: ${updateError.message}`,
           variant: "destructive"
         });
         return;
@@ -231,9 +232,10 @@ export default function Lobby() {
       .eq('id', lobby.id);
 
     if (updateError) {
+      console.error('Lobby status update error:', updateError);
       toast({
         title: "Error",
-        description: "Could not start game",
+        description: `Could not update lobby: ${updateError.message}`,
         variant: "destructive"
       });
       return;
