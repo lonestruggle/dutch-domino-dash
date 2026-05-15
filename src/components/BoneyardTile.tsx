@@ -18,9 +18,9 @@ interface BoneyardTileProps {
 export const BoneyardTile: React.FC<BoneyardTileProps> = ({ index, skin, onClick, className }) => {
   const seed = (index * 9301 + 49297) % 233280;
   const rand = (n: number) => ((seed * (n + 1)) % 100) / 100;
-  const randomX = rand(1) * 8 - 4;
-  const randomY = rand(2) * 8 - 4;
-  const randomRotation = rand(3) * 30 - 15; // -15..+15 deg
+  const randomX = rand(1) * 14 - 7;
+  const randomY = rand(2) * 10 - 5;
+  const randomRotation = rand(3) * 80 - 40; // -40..+40 deg
 
   return (
     <button
