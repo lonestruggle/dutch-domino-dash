@@ -19,7 +19,7 @@ import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { cn } from '@/lib/utils';
-import type { DominoData, ShakeAnimationProfile } from '@/types/domino';
+import type { DominoData, DominoState, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
 
 interface DominoGameProps {
   gameHook: any;
@@ -205,10 +205,10 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const blockedDebug = useMemo(() => {
     if (!gameState) return null;
 
-    const boardDominoes = Object.values(gameState.dominoes || {});
-    const openEnds = gameState.openEnds || [];
+    const boardDominoes = Object.values(gameState.dominoes || {}) as DominoState[];
+    const openEnds = (gameState.openEnds || []) as OpenEnd[];
     const openValues = openEnds.map((end) => end.value);
-    const requiredValues = Array.from(new Set(openValues));
+    const requiredValues = Array.from(new Set<number>(openValues));
     const singleRequiredValue = requiredValues.length === 1 ? requiredValues[0] : null;
     const boardTilesWithSingleValue = singleRequiredValue === null
       ? 0
