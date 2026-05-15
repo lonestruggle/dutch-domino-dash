@@ -153,6 +153,21 @@ export default function Lobby() {
       currentPlayer: starterPlayerIndex
     };
 
+    // Resolve selected domino skin (host-chosen)
+    let dominoSkinUrl: string | null = null;
+    let dominoSkinCss: string | null = null;
+    if (selectedDominoSkinId) {
+      const { data: skinRow } = await supabase
+        .from('domino_skins')
+        .select('image_url, css_background')
+        .eq('id', selectedDominoSkinId)
+        .maybeSingle();
+      if (skinRow) {
+        dominoSkinUrl = skinRow.image_url;
+        dominoSkinCss = skinRow.css_background;
+      }
+    }
+
     // Check if game already exists, if so update it, otherwise create new
     const { data: existingGame } = await supabase
       .from('games')
@@ -169,7 +184,9 @@ export default function Lobby() {
           game_state: initialGameState,
           status: 'active',
           background_choice: selectedBackground,
-          table_background_url: selectedTableBackground
+          table_background_url: selectedTableBackground,
+          domino_skin_url: dominoSkinUrl,
+          domino_skin_css: dominoSkinCss,
         })
         .eq('id', existingGame.id);
 
@@ -191,7 +208,9 @@ export default function Lobby() {
           game_state: initialGameState,
           status: 'active',
           background_choice: selectedBackground,
-          table_background_url: selectedTableBackground
+          table_background_url: selectedTableBackground,
+          domino_skin_url: dominoSkinUrl,
+          domino_skin_css: dominoSkinCss,
         });
 
       if (createError) {
