@@ -168,61 +168,38 @@ export default function Lobby() {
       }
     }
 
-    // Check if game already exists, if so update it, otherwise create new
-    const { data: existingGame } = await supabase
+    // Verwijder eventueel bestaand spel voor deze lobby en maak een nieuw spel aan.
+    // (UPDATE faalde soms met "Failed to fetch"; DELETE+INSERT is robuuster.)
+    const { error: deleteError } = await supabase
       .from('games')
-      .select('id')
-      .eq('lobby_id', lobby.id)
-      .maybeSingle();
+      .delete()
+      .eq('lobby_id', lobby.id);
 
-    if (existingGame) {
-      // Update existing game
-      const { error: updateError } = await supabase
-        .from('games')
-        .update({
-          current_player_turn: starterPlayerIndex,
-          game_state: initialGameState,
-          status: 'active',
-          background_choice: selectedBackground,
-          table_background_url: selectedTableBackground,
-          domino_skin_url: dominoSkinUrl,
-          domino_skin_css: dominoSkinCss,
-        })
-        .eq('id', existingGame.id);
+    if (deleteError) {
+      console.error('Game delete error:', deleteError);
+    }
 
-      if (updateError) {
-        console.error('Game update error:', updateError);
-        toast({
-          title: "Error",
-          description: `Could not update game: ${updateError.message}`,
-          variant: "destructive"
-        });
-        return;
-      }
-    } else {
-    // Create new game
-      const { error: createError } = await supabase
-        .from('games')
-        .insert({
-          lobby_id: lobby.id,
-          current_player_turn: starterPlayerIndex,
-          game_state: initialGameState,
-          status: 'active',
-          background_choice: selectedBackground,
-          table_background_url: selectedTableBackground,
-          domino_skin_url: dominoSkinUrl,
-          domino_skin_css: dominoSkinCss,
-        });
+    const { error: createError } = await supabase
+      .from('games')
+      .insert({
+        lobby_id: lobby.id,
+        current_player_turn: starterPlayerIndex,
+        game_state: initialGameState,
+        status: 'active',
+        background_choice: selectedBackground,
+        table_background_url: selectedTableBackground,
+        domino_skin_url: dominoSkinUrl,
+        domino_skin_css: dominoSkinCss,
+      });
 
-      if (createError) {
-        console.error('Game creation error:', createError);
-        toast({
-          title: "Error",
-          description: `Could not create game: ${createError.message}`,
-          variant: "destructive"
-        });
-        return;
-      }
+    if (createError) {
+      console.error('Game creation error:', createError);
+      toast({
+        title: "Error",
+        description: `Could not create game: ${createError.message}`,
+        variant: "destructive"
+      });
+      return;
     }
 
     // Update lobby status to playing
