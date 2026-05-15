@@ -903,6 +903,10 @@ export type Database = {
         Returns: boolean
       }
       reset_season_stats: { Args: { _season_id: string }; Returns: number }
+      set_selected_glove_skin: {
+        Args: { _skin_id: string }
+        Returns: undefined
+      }
       start_new_season: { Args: { _name: string }; Returns: string }
       update_game_state_for_lobby: {
         Args: {
