@@ -158,21 +158,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           return;
         }
 
-        const [{ data: userSkinRows, error: userSkinError }, { data: skinRows, error: skinError }] = await Promise.all([
-          supabase
-            .from('user_glove_skins')
-            .select('user_id, skin_id')
-            .in('user_id', uniqueUserIds)
-            .in('skin_id', selectedSkinIds)
-            .eq('is_enabled', true),
-          supabase
-            .from('glove_skins')
-            .select('id, name, image_url, overlay_offset_x, overlay_offset_y, overlay_scale, overlay_rotation')
-            .in('id', selectedSkinIds)
-            .eq('is_active', true),
-        ]);
+        const { data: skinRows, error: skinError } = await supabase
+          .from('glove_skins')
+          .select('id, name, image_url, overlay_offset_x, overlay_offset_y, overlay_scale, overlay_rotation')
+          .in('id', selectedSkinIds)
+          .eq('is_active', true);
 
-        if (userSkinError) throw userSkinError;
         if (skinError) throw skinError;
         if (cancelled) return;
 
@@ -190,14 +181,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           });
         });
 
-        const ownedSkinSet = new Set<string>();
-        (userSkinRows || []).forEach((row) => {
-          ownedSkinSet.add(`${row.user_id}::${row.skin_id}`);
-        });
-
         const resolvedMap: Record<string, PlayerGloveSkinConfig> = {};
         selectedByUser.forEach((skinId, selectedUserId) => {
-          if (!ownedSkinSet.has(`${selectedUserId}::${skinId}`)) return;
           const skinConfig = validSkinById.get(skinId);
           if (!skinConfig) return;
           resolvedMap[selectedUserId] = skinConfig;
@@ -787,7 +772,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             className="domino-hand-skin-mask"
             style={
               {
-                '--glove-mask-image': `url("${configuredBaseGloveImageUrl}")`,
+                '--glove-mask-image': `url("${finalBaseGloveSrc}")`,
               } as React.CSSProperties
             }
           >

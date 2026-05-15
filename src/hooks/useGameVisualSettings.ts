@@ -171,7 +171,7 @@ const clampNumber = (value: unknown, min: number, max: number, fallback: number)
 const normalizePersonalSettings = (input?: Partial<DeviceSpecificPersonalSettings> | null): DeviceSpecificPersonalSettings => {
   const normalizeDevice = (device: DeviceType): PersonalSettings => {
     const fallback = DEFAULT_DEVICE_PERSONAL_SETTINGS[device];
-    const source = input?.[device] || {};
+    const source = (input?.[device] || {}) as Partial<PersonalSettings>;
     return {
       dominoScale: clampNumber(source.dominoScale, 0.5, 2.0, fallback.dominoScale),
       handDominoScale: clampNumber(source.handDominoScale, 0.35, 1.2, fallback.handDominoScale),

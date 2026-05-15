@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { CSSProperties, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { InviteUsers } from '@/components/InviteUsers';
 import { InvitationHistory } from '@/components/InvitationHistory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import {
   Select,
   SelectContent,
@@ -40,13 +41,25 @@ interface ProfileGloveSkin {
   id: string;
   name: string;
   image_url: string;
+  overlay_offset_x: number;
+  overlay_offset_y: number;
+  overlay_scale: number;
+  overlay_rotation: number;
 }
+
+const BASE_GLOVE_IMAGE = '/glove-hand.svg';
+const withCacheBuster = (url: string, version: string) => {
+  if (!url) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${encodeURIComponent(version)}`;
+};
 
 const Profile = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { getSetting } = useAppSettings();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -140,7 +153,7 @@ const Profile = () => {
 
       const { data: skinRows, error: skinError } = await supabase
         .from('glove_skins')
-        .select('id, name, image_url, is_active')
+        .select('id, name, image_url, is_active, overlay_offset_x, overlay_offset_y, overlay_scale, overlay_rotation')
         .in('id', skinIds)
         .eq('is_active', true)
         .order('name', { ascending: true });
@@ -151,6 +164,10 @@ const Profile = () => {
         id: row.id,
         name: row.name,
         image_url: row.image_url,
+        overlay_offset_x: row.overlay_offset_x ?? 0,
+        overlay_offset_y: row.overlay_offset_y ?? 0,
+        overlay_scale: row.overlay_scale ?? 1,
+        overlay_rotation: row.overlay_rotation ?? 0,
       }));
       setAvailableGloveSkins(skins);
 
@@ -296,6 +313,13 @@ const Profile = () => {
   }
 
   const winRate = profile.games_played > 0 ? Math.round((profile.games_won / profile.games_played) * 100) : 0;
+  const selectedGloveSkin = availableGloveSkins.find((skin) => skin.id === selectedGloveSkinId) || null;
+  const configuredBaseGloveImageUrl = String(getSetting('global_base_glove_image_url', BASE_GLOVE_IMAGE) || BASE_GLOVE_IMAGE).trim() || BASE_GLOVE_IMAGE;
+  const gloveAssetVersion = String(getSetting('global_glove_asset_version', '1') || '1');
+  const isStandardGloveSkin = selectedGloveSkin?.name.trim().toLowerCase() === 'standaard';
+  const showSelectedGloveOverlay = Boolean(
+    selectedGloveSkin && !isStandardGloveSkin && Number(selectedGloveSkin.overlay_scale) > 0.001
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-4">
@@ -483,16 +507,32 @@ const Profile = () => {
                             </SelectContent>
                           </Select>
 
-                          {selectedGloveSkinId && (
+                          {selectedGloveSkin && (
                             <div className="flex items-center gap-3 rounded border p-3">
-                              <img
-                                src={availableGloveSkins.find((skin) => skin.id === selectedGloveSkinId)?.image_url}
-                                alt="Selected glove skin"
-                                className="h-12 w-12 rounded object-cover border"
-                              />
+                              <div className="relative h-14 w-14 shrink-0 rounded-full bg-muted/60 flex items-center justify-center overflow-hidden border">
+                                <img src={withCacheBuster(configuredBaseGloveImageUrl, gloveAssetVersion)} alt="Basis handschoen" className="domino-hand-image fixed-glove-image" />
+                                {showSelectedGloveOverlay && (
+                                  <span
+                                    className="domino-hand-skin-mask"
+                                    style={{ '--glove-mask-image': `url("${configuredBaseGloveImageUrl}")` } as CSSProperties}
+                                  >
+                                    <img
+                                      src={withCacheBuster(selectedGloveSkin.image_url, gloveAssetVersion)}
+                                      alt={`${selectedGloveSkin.name} overlay`}
+                                      className="domino-hand-skin-overlay"
+                                      style={{
+                                        '--skin-overlay-x': `${selectedGloveSkin.overlay_offset_x}%`,
+                                        '--skin-overlay-y': `${selectedGloveSkin.overlay_offset_y}%`,
+                                        '--skin-overlay-scale': String(selectedGloveSkin.overlay_scale),
+                                        '--skin-overlay-rotation': `${selectedGloveSkin.overlay_rotation}deg`,
+                                      } as CSSProperties}
+                                    />
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-sm text-muted-foreground">
                                 Actieve skin: <span className="font-medium text-foreground">
-                                  {availableGloveSkins.find((skin) => skin.id === selectedGloveSkinId)?.name}
+                                  {selectedGloveSkin.name}
                                 </span>
                               </div>
                             </div>
