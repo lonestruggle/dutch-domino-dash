@@ -5,6 +5,7 @@ import { GameState, LegalMove } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { Hand } from 'lucide-react';
+import { HardSlamHandLottie } from '@/components/HardSlamHandLottie';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
@@ -535,8 +536,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       {showHardSlamHand && (
         <div className="pointer-events-none absolute inset-0 z-[100]">
           <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2">
-            <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-20 w-20 items-center justify-center rounded-full bg-red-500/90 text-white shadow-2xl">
-              {renderAnimatedHand('h-10 w-10', 2.8, settings.hardSlamGloveScale || 1)}
+            <div
+              key={hardSlamHandAnimKey}
+              className="hard-slam-hand flex items-center justify-center"
+              aria-hidden
+            >
+              <HardSlamHandLottie
+                playKey={hardSlamHandAnimKey}
+                scale={settings.hardSlamGloveScale || 1}
+              />
             </div>
           </div>
         </div>
