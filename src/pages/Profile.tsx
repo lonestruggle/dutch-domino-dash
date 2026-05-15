@@ -185,10 +185,9 @@ const Profile = () => {
     if (!user || !profile || !skinId) return;
     setSavingGloveSkin(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ selected_glove_skin_id: skinId })
-        .eq('user_id', user.id);
+      const { error } = await supabase.rpc('set_selected_glove_skin', {
+        _skin_id: skinId,
+      });
 
       if (error) throw error;
 
