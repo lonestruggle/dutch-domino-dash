@@ -814,7 +814,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               </div>
             ) : (
               <BoneyardScatter
-                count={gameState?.boneyard?.length || 0}
+                slotCount={gameState?.boneyard?.length || 0}
                 skin={{
                   image_url: gameData?.domino_skin_url ?? null,
                   css_background: gameData?.domino_skin_css ?? null,
