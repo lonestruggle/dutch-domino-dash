@@ -453,6 +453,11 @@ export default function Lobby() {
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-white">
                 <Users className="h-5 w-5" />
                 <span className="truncate">{lobby.name}</span>
+                {gameMode === 'wega_di_sen' && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-yellow-100 text-xs">
+                    <Coins className="h-3 w-3" /> {wegaStake}
+                  </span>
+                )}
               </CardTitle>
               <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <Button 
