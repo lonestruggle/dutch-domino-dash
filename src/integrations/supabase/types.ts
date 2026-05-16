@@ -433,6 +433,7 @@ export type Database = {
           created_by: string
           created_by_username: string | null
           domino_skin_id: string | null
+          game_mode: string
           hard_slam_enabled: boolean | null
           hard_slam_uses_per_player: number | null
           id: string
@@ -441,12 +442,14 @@ export type Database = {
           player_count: number
           status: string
           updated_at: string
+          wega_stake: number
         }
         Insert: {
           created_at?: string
           created_by: string
           created_by_username?: string | null
           domino_skin_id?: string | null
+          game_mode?: string
           hard_slam_enabled?: boolean | null
           hard_slam_uses_per_player?: number | null
           id?: string
@@ -455,12 +458,14 @@ export type Database = {
           player_count?: number
           status?: string
           updated_at?: string
+          wega_stake?: number
         }
         Update: {
           created_at?: string
           created_by?: string
           created_by_username?: string | null
           domino_skin_id?: string | null
+          game_mode?: string
           hard_slam_enabled?: boolean | null
           hard_slam_uses_per_player?: number | null
           id?: string
@@ -469,6 +474,7 @@ export type Database = {
           player_count?: number
           status?: string
           updated_at?: string
+          wega_stake?: number
         }
         Relationships: [
           {
@@ -561,6 +567,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          coins: number
           created_at: string | null
           games_played: number | null
           games_won: number | null
@@ -576,6 +583,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          coins?: number
           created_at?: string | null
           games_played?: number | null
           games_won?: number | null
@@ -591,6 +599,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          coins?: number
           created_at?: string | null
           games_played?: number | null
           games_won?: number | null
@@ -908,6 +917,10 @@ export type Database = {
         Returns: undefined
       }
       start_new_season: { Args: { _name: string }; Returns: string }
+      transfer_coins: {
+        Args: { _amount: number; _from_user: string; _to_user: string }
+        Returns: undefined
+      }
       update_game_state_for_lobby: {
         Args: {
           _current_player_turn: number
@@ -924,6 +937,10 @@ export type Database = {
       validate_invitation_code: {
         Args: { _code: string; _email?: string }
         Returns: Json
+      }
+      wega_settle: {
+        Args: { _lobby_id: string; _payload: Json }
+        Returns: undefined
       }
     }
     Enums: {
