@@ -1781,6 +1781,13 @@ export default function Game() {
           gameData: syncState.gameData || { background_choice: null }
         }}
       />
+      <WegaPhaseOverlay
+        lobbyId={gameId || ''}
+        gameState={syncState.gameState}
+        playerPosition={syncState.playerPosition}
+        allPlayers={syncState.allPlayers}
+        onChanged={() => { /* realtime listener verzorgt update */ }}
+      />
     </div>
   );
 }
