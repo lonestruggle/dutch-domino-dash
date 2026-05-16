@@ -83,7 +83,7 @@ export default function Lobby() {
     }
 
     setLobby({
-      ...data,
+      ...(data as any),
       players: data.lobby_players || []
     });
 
