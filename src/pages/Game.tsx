@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
+import { WegaPhaseOverlay } from '@/components/WegaPhaseOverlay';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
 
