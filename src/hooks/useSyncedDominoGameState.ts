@@ -35,6 +35,12 @@ const toDominoArray = (value: unknown): DominoData[] =>
 const toDominoHands = (value: unknown): DominoData[][] =>
   Array.isArray(value) ? value.map((hand) => toDominoArray(hand)) : [];
 
+/** Like toDominoArray, maar behoudt null-slots (gebruikt door Wega boneyard scatter zodat posities stabiel blijven). */
+const toDominoArrayPreserveNulls = (value: unknown): Array<DominoData | null> =>
+  Array.isArray(value)
+    ? value.map((v) => (isDominoData(v) ? (v as DominoData) : null))
+    : [];
+
 const asPersistedGameState = (value: Json | null | undefined): PersistedGameState | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
@@ -108,7 +114,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
       board: persistedGameState.board || {},
       playerHand: [...playerHand],
       playerHands: persistedHands,
-      boneyard: toDominoArray(persistedGameState.boneyard),
+      boneyard: toDominoArrayPreserveNulls(persistedGameState.boneyard) as unknown as DominoData[],
       openEnds: persistedGameState.openEnds || [],
       forbiddens: persistedGameState.forbiddens || {},
       nextDominoId: persistedGameState.nextDominoId || 0,
@@ -140,7 +146,9 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
       );
       localGameState.playerHands = sanitizedHands;
       localGameState.playerHand = sanitizedHands[playerPosition] || [];
-      localGameState.boneyard = (localGameState.boneyard || []).filter((d) => !placedKeys.has(keyOf(d)));
+      localGameState.boneyard = (localGameState.boneyard || []).map((d) =>
+        d && placedKeys.has(keyOf(d)) ? (null as unknown as DominoData) : d
+      );
     }
 
     return applyServerHardSlamStart(localGameState);
