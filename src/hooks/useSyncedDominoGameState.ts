@@ -340,6 +340,57 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     startLockRef.current = true;
 
     try {
+      // Lees lobby modus
+      const { data: lobbyData } = await supabase
+        .from('lobbies')
+        .select('game_mode, wega_stake')
+        .eq('id', gameId)
+        .maybeSingle();
+      const gameMode = (lobbyData?.game_mode as string) || 'classic';
+      const wegaStake = (lobbyData?.wega_stake as number) || 10;
+
+      // === Wega di sen modus: 26 stenen, geen uitdeling, drawing phase ===
+      if (gameMode === 'wega_di_sen') {
+        const fullSet: DominoData[] = [];
+        for (let i = 0; i <= 6; i++) {
+          for (let j = i; j <= 6; j++) {
+            if (i === j && (i === 0 || i === 6)) continue; // skip 0-0 en 6-6
+            fullSet.push({ value1: i, value2: j });
+          }
+        }
+        for (let i = fullSet.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [fullSet[i], fullSet[j]] = [fullSet[j], fullSet[i]];
+        }
+        const emptyHands: DominoData[][] = syncState.allPlayers.map(() => []);
+        const myName = syncState.allPlayers.find(p => p.position === syncState.playerPosition)?.username || 'Unknown';
+        const wegaState: PersistedGameState = {
+          dominoes: {},
+          board: {},
+          playerHands: emptyHands,
+          boneyard: fullSet,
+          openEnds: [],
+          forbiddens: {},
+          nextDominoId: 0,
+          spinnerId: null,
+          isGameOver: false,
+          selectedHandIndex: null,
+          playerHand: [],
+          gameMode,
+          wegaStake,
+          wegaPhase: 'drawing',
+          lastResetById: userId,
+          lastResetByName: myName,
+          lastResetAt: new Date().toISOString(),
+          resetCounter: getResetCounter(syncState.gameData?.game_state) + 1,
+          resetReason: 'wega_new_game',
+        } as PersistedGameState;
+        await updateGameState(wegaState, 0);
+        setTimeout(() => loadGameState(true), 1300);
+        return wegaState;
+      }
+
+      // === Classic modus: zoals voorheen ===
       // Create full domino set and shuffle
       const fullSet = [] as Array<{ value1: number; value2: number }>;
       for (let i = 0; i <= 6; i++) {

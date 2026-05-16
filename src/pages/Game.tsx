@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
+import { WegaPhaseOverlay } from '@/components/WegaPhaseOverlay';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
 
@@ -1780,6 +1781,13 @@ export default function Game() {
           syncState,
           gameData: syncState.gameData || { background_choice: null }
         }}
+      />
+      <WegaPhaseOverlay
+        lobbyId={gameId || ''}
+        gameState={syncState.gameState}
+        playerPosition={syncState.playerPosition}
+        allPlayers={syncState.allPlayers}
+        onChanged={() => { /* realtime listener verzorgt update */ }}
       />
     </div>
   );
