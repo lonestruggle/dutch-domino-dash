@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Play, LogOut, Copy, Plus, Minus, Bot } from 'lucide-react';
+import { Users, Play, LogOut, Copy, Plus, Minus, Bot, Coins } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { BackgroundSelector } from '@/components/BackgroundSelector';
 import { TableBackgroundSelector } from '@/components/TableBackgroundSelector';
 import { DominoSkinSelector } from '@/components/DominoSkinSelector';
@@ -19,6 +22,7 @@ interface LobbyPlayer {
   joined_at: string;
   is_bot?: boolean;
   bot_name?: string | null;
+  coins?: number | null;
 }
 
 interface LobbyDetails {
@@ -28,6 +32,8 @@ interface LobbyDetails {
   max_players: number;
   status: string;
   players: LobbyPlayer[];
+  game_mode?: 'classic' | 'wega_di_sen';
+  wega_stake?: number;
 }
 
 export default function Lobby() {
@@ -42,6 +48,8 @@ export default function Lobby() {
   const [selectedBackground, setSelectedBackground] = useState<string>('domino-table-2');
   const [selectedTableBackground, setSelectedTableBackground] = useState<string | null>(null);
   const [selectedDominoSkinId, setSelectedDominoSkinId] = useState<string | null>(null);
+  const [gameMode, setGameMode] = useState<'classic' | 'wega_di_sen'>('classic');
+  const [wegaStake, setWegaStake] = useState<number>(10);
   
   console.log('Lobby params:', params);
   console.log('Lobby ID extracted:', lobbyId);
@@ -78,6 +86,31 @@ export default function Lobby() {
       ...data,
       players: data.lobby_players || []
     });
+
+    const mode = ((data as any).game_mode ?? 'classic') as 'classic' | 'wega_di_sen';
+    const stake = (data as any).wega_stake ?? 10;
+    setGameMode(mode);
+    setWegaStake(stake);
+
+    // Fetch coin balances for human players (single query)
+    const humanIds = (data.lobby_players || [])
+      .filter((p: any) => !p.is_bot && p.user_id)
+      .map((p: any) => p.user_id as string);
+    if (humanIds.length > 0) {
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('user_id, coins')
+        .in('user_id', humanIds);
+      const coinMap = new Map<string, number>();
+      (profs || []).forEach((p: any) => coinMap.set(p.user_id, p.coins ?? 0));
+      setLobby((prev) => prev ? {
+        ...prev,
+        players: prev.players.map((pl) => ({
+          ...pl,
+          coins: pl.user_id ? coinMap.get(pl.user_id) ?? null : null,
+        })),
+      } : prev);
+    }
     setLoading(false);
   };
 
