@@ -135,44 +135,49 @@ export default function Lobby() {
       return;
     }
 
-    // Create full domino set and shuffle
-    const fullSet = [];
-    for (let i = 0; i <= 6; i++) {
-      for (let j = i; j <= 6; j++) {
-        fullSet.push({ value1: i, value2: j });
-      }
-    }
-    
-    // Shuffle the domino set
-    for (let i = fullSet.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [fullSet[i], fullSet[j]] = [fullSet[j], fullSet[i]];
-    }
-
-    // Create hands for each player
-    const playerHands = [];
     const playersCount = lobby.players.length;
-    
-    for (let p = 0; p < playersCount; p++) {
-      playerHands.push(fullSet.slice(p * 7, (p + 1) * 7));
-    }
-    
-    const boneyard = fullSet.slice(playersCount * 7);
-
-    // Het spel begint met een leeg bord - zoek eerste menselijke speler
+    const isWega = (lobby.game_mode ?? 'classic') === 'wega_di_sen';
+    let playerHands: Array<Array<{value1:number;value2:number}>> = [];
+    let boneyard: Array<{value1:number;value2:number}> = [];
     let starterPlayerIndex = 0;
-    
-    // Zoek de eerste menselijke speler (geen bot)
-    for (let i = 0; i < playersCount; i++) {
-      const player = lobby.players[i];
-      if (!player.is_bot) {
-        starterPlayerIndex = i;
-        break;
+
+    if (isWega) {
+      // Wega di sen: 26 stenen (zonder 0-0 en 6-6), lege handen, drawing phase
+      const fullSet: Array<{value1:number;value2:number}> = [];
+      for (let i = 0; i <= 6; i++) {
+        for (let j = i; j <= 6; j++) {
+          if (i === j && (i === 0 || i === 6)) continue;
+          fullSet.push({ value1: i, value2: j });
+        }
+      }
+      for (let i = fullSet.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [fullSet[i], fullSet[j]] = [fullSet[j], fullSet[i]];
+      }
+      playerHands = lobby.players.map(() => []);
+      boneyard = fullSet;
+    } else {
+      const fullSet: Array<{value1:number;value2:number}> = [];
+      for (let i = 0; i <= 6; i++) {
+        for (let j = i; j <= 6; j++) {
+          fullSet.push({ value1: i, value2: j });
+        }
+      }
+      for (let i = fullSet.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [fullSet[i], fullSet[j]] = [fullSet[j], fullSet[i]];
+      }
+      for (let p = 0; p < playersCount; p++) {
+        playerHands.push(fullSet.slice(p * 7, (p + 1) * 7));
+      }
+      boneyard = fullSet.slice(playersCount * 7);
+      for (let i = 0; i < playersCount; i++) {
+        if (!lobby.players[i].is_bot) { starterPlayerIndex = i; break; }
       }
     }
 
     // Create initial game state met LEEG bord
-    const initialGameState = {
+    const initialGameState: any = {
       dominoes: {}, // VOLLEDIG LEEG
       board: {}, // VOLLEDIG LEEG
       playerHands,
@@ -185,6 +190,12 @@ export default function Lobby() {
       selectedHandIndex: null,
       currentPlayer: starterPlayerIndex
     };
+
+    if (isWega) {
+      initialGameState.gameMode = 'wega_di_sen';
+      initialGameState.wegaStake = lobby.wega_stake ?? 10;
+      initialGameState.wegaPhase = 'drawing';
+    }
 
     // Resolve selected domino skin (host-chosen)
     let dominoSkinUrl: string | null = null;
