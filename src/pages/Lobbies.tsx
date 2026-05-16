@@ -35,6 +35,13 @@ export default function Lobbies() {
     }
   }, [user]);
 
+  // Set default lobby name based on username when dialog opens
+  useEffect(() => {
+    if (showCreateDialog && displayUsername && !lobbyName.trim()) {
+      setLobbyName(`${displayUsername}'s lobby`);
+    }
+  }, [showCreateDialog, displayUsername]);
+
   const fetchUsername = async () => {
     if (!user) return;
     const { data } = await supabase
@@ -206,8 +213,8 @@ export default function Lobbies() {
                   <div>
                     <Label>Spelmodus</Label>
                     <Select value={gameMode} onValueChange={(v) => setGameMode(v as 'classic' | 'wega_di_sen')}>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="text-foreground">
+                        <SelectValue placeholder="Kies een spelmodus" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="classic">Klassiek</SelectItem>
