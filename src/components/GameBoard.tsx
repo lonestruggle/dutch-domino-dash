@@ -416,6 +416,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (dominoEntries.length < previousIds.size) {
       lastAnimatedDominoIdRef.current = null;
       setPlaceHandAnimation(null);
+      // Reset previous-id tracking too, anders blokkeren oude id's (zoals d0)
+      // de animatie van de eerste steen in een nieuw spel.
+      previousDominoIdsRef.current = currentIds;
+      return;
     }
 
     const addedEntries = dominoEntries.filter(([id]) => !previousIds.has(id));
