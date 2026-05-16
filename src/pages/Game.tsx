@@ -1216,7 +1216,7 @@ export default function Game() {
     // Ook als de boneyard nog stenen heeft, kan het spel al effectief geblokkeerd zijn
     // wanneer GEEN enkele boneyard-steen een legale zet oplevert op dit bord.
     const boneyardPlayableTileCount = (state.boneyard || []).reduce(
-      (count, domino) => count + (gameHook.findLegalMoves(domino).length > 0 ? 1 : 0),
+      (count, domino) => count + (domino && gameHook.findLegalMoves(domino).length > 0 ? 1 : 0),
       0
     );
     const blockedByNoMoves = !somePlayerCanPlay && boneyardPlayableTileCount === 0;
