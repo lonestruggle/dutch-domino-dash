@@ -510,6 +510,11 @@ export default function Lobby() {
                               Creator
                             </span>
                           )}
+                          {!player.is_bot && typeof player.coins === 'number' && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-yellow-100 text-xs">
+                              <Coins className="h-3 w-3" /> {player.coins}
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <span className="text-muted-foreground">Waiting for player...</span>
@@ -545,6 +550,56 @@ export default function Lobby() {
             {/* Background selectors for lobby creator */}
             {isLobbyCreator && (
               <div className="space-y-3 sm:space-y-4">
+                <div className="rounded-lg border border-white/20 p-3 space-y-3 bg-black/20">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Coins className="h-4 w-4" /> Spelmodus
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-white/80">Modus</Label>
+                      <Select
+                        value={gameMode}
+                        onValueChange={async (v) => {
+                          const newMode = v as 'classic' | 'wega_di_sen';
+                          setGameMode(newMode);
+                          if (lobbyId) {
+                            await supabase
+                              .from('lobbies')
+                              .update({ game_mode: newMode } as any)
+                              .eq('id', lobbyId);
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="classic">Klassiek</SelectItem>
+                          <SelectItem value="wega_di_sen">Wega di sen</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {gameMode === 'wega_di_sen' && (
+                      <div>
+                        <Label className="text-white/80">Inzet (coins)</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={wegaStake}
+                          onChange={(e) => setWegaStake(parseInt(e.target.value) || 1)}
+                          onBlur={async () => {
+                            if (lobbyId) {
+                              await supabase
+                                .from('lobbies')
+                                .update({ wega_stake: Math.max(1, wegaStake) } as any)
+                                .eq('id', lobbyId);
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <BackgroundSelector
                   selectedBackground={selectedBackground}
                   onBackgroundChange={setSelectedBackground}
