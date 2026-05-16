@@ -232,7 +232,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     );
     const anyHandPlayable = handPlayableTileCounts.some((count) => count > 0);
     const boneyardPlayableTileCount = (gameState.boneyard || []).reduce(
-      (count, domino) => count + (findLegalMoves(domino).length > 0 ? 1 : 0),
+      (count, domino) => count + (domino && findLegalMoves(domino).length > 0 ? 1 : 0),
       0
     );
     const allHandsNonEmpty = allHands.every((hand) => hand.length > 0);
