@@ -10,6 +10,8 @@ import { useLobbies } from '@/hooks/useLobbies';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Users, LogIn, Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Coins } from 'lucide-react';
 
 export default function Lobbies() {
   const navigate = useNavigate();
@@ -22,6 +24,9 @@ export default function Lobbies() {
   const [displayUsername, setDisplayUsername] = useState('');
   const [lobbyName, setLobbyName] = useState('');
   const [maxPlayers, setMaxPlayers] = useState(4);
+  const [gameMode, setGameMode] = useState<'classic' | 'wega_di_sen'>('classic');
+  const [wegaStake, setWegaStake] = useState<number>(10);
+  const [myCoins, setMyCoins] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -34,12 +39,13 @@ export default function Lobbies() {
     if (!user) return;
     const { data } = await supabase
       .from('profiles')
-      .select('username')
+      .select('username, coins')
       .eq('user_id', user.id)
       .single();
     
     if (data) {
       setDisplayUsername(data.username);
+      setMyCoins((data as any).coins ?? 0);
     }
   };
 
@@ -57,7 +63,13 @@ export default function Lobbies() {
     }
 
     setCreating(true);
-    const { data, error } = await createLobby(lobbyName.trim(), user, maxPlayers);
+    const { data, error } = await createLobby(
+      lobbyName.trim(),
+      user,
+      maxPlayers,
+      gameMode,
+      gameMode === 'wega_di_sen' ? Math.max(1, wegaStake) : 10,
+    );
     
     if (error) {
       toast({
@@ -146,7 +158,14 @@ export default function Lobbies() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-white">Multiplayer Lobbies</h1>
-            <p className="text-white/80">Welcome, {displayUsername || user?.email}!</p>
+            <p className="text-white/80 flex items-center gap-2">
+              Welcome, {displayUsername || user?.email}!
+              {myCoins !== null && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-yellow-100 text-xs">
+                  <Coins className="h-3 w-3" /> {myCoins}
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex w-full sm:w-auto gap-2 sm:justify-end">
             <Button variant="outline" onClick={() => navigate('/')} className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20">
@@ -184,6 +203,33 @@ export default function Lobbies() {
                       onChange={(e) => setMaxPlayers(parseInt(e.target.value) || 4)}
                     />
                   </div>
+                  <div>
+                    <Label>Spelmodus</Label>
+                    <Select value={gameMode} onValueChange={(v) => setGameMode(v as 'classic' | 'wega_di_sen')}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="classic">Klassiek</SelectItem>
+                        <SelectItem value="wega_di_sen">Wega di sen (coins)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {gameMode === 'wega_di_sen' && (
+                    <div>
+                      <Label htmlFor="wegaStake">Inzet (coins per ronde)</Label>
+                      <Input
+                        id="wegaStake"
+                        type="number"
+                        min={1}
+                        value={wegaStake}
+                        onChange={(e) => setWegaStake(parseInt(e.target.value) || 1)}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Jouw saldo: {myCoins ?? 0} coins
+                      </p>
+                    </div>
+                  )}
                   <Button 
                     onClick={handleCreateLobby} 
                     disabled={creating}
@@ -220,6 +266,11 @@ export default function Lobbies() {
                         {lobby.player_count}/{lobby.max_players}
                       </div>
                     </CardTitle>
+                    {lobby.game_mode === 'wega_di_sen' && (
+                      <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-yellow-100 text-xs w-fit">
+                        <Coins className="h-3 w-3" /> Wega di sen · {lobby.wega_stake} coins
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

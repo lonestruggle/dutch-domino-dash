@@ -10,6 +10,8 @@ export interface Lobby {
   status: 'waiting' | 'playing' | 'finished';
   player_count: number;
   created_at: string;
+  game_mode?: 'classic' | 'wega_di_sen';
+  wega_stake?: number;
 }
 
 export const useLobbies = () => {
@@ -47,14 +49,22 @@ export const useLobbies = () => {
       max_players: lobby.max_players,
       status: lobby.status as 'waiting' | 'playing' | 'finished',
       created_at: lobby.created_at,
-      player_count: lobby.lobby_players?.[0]?.count || 0
+      player_count: lobby.lobby_players?.[0]?.count || 0,
+      game_mode: ((lobby as any).game_mode ?? 'classic') as 'classic' | 'wega_di_sen',
+      wega_stake: (lobby as any).wega_stake ?? 10,
     })) || [];
 
     setLobbies(lobbiesWithCount);
     setLoading(false);
   };
 
-  const createLobby = async (name: string, user: User, maxPlayers: number = 4) => {
+  const createLobby = async (
+    name: string,
+    user: User,
+    maxPlayers: number = 4,
+    gameMode: 'classic' | 'wega_di_sen' = 'classic',
+    wegaStake: number = 10,
+  ) => {
     if (!user) return { error: 'Not authenticated' };
 
     // Get username from profiles table
@@ -72,8 +82,10 @@ export const useLobbies = () => {
         name,
         created_by: user.id,
         created_by_username: username,
-        max_players: maxPlayers
-      })
+        max_players: maxPlayers,
+        game_mode: gameMode,
+        wega_stake: wegaStake,
+      } as any)
       .select()
       .single();
 
