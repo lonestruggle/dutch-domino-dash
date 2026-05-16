@@ -29,7 +29,9 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
   const hands: DominoData[][] = Array.isArray(gameState?.playerHands) ? gameState.playerHands : [];
   const myHand: DominoData[] = hands[playerPosition] || [];
   const myCount = myHand.length;
-  const boneyard: DominoData[] = Array.isArray(gameState?.boneyard) ? gameState.boneyard : [];
+  const boneyard: Array<DominoData | null> = Array.isArray(gameState?.boneyard) ? gameState.boneyard : [];
+  const slotCount = boneyard.length || 26;
+  const available = boneyard.map(t => t !== null && t !== undefined);
   const stake = Number(gameState?.wegaStake) || 10;
 
   const handleDraw = async (index: number) => {
@@ -105,7 +107,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
             <div className="text-white/80 text-sm mb-2 text-center">
               {myCount < 5 ? `Klik op een steen — nog ${5 - myCount} te trekken` : 'Wacht tot iedereen 5 stenen heeft…'}
             </div>
-            <BoneyardScatter count={boneyard.length} onPick={handleDraw} skin={null} />
+            <BoneyardScatter slotCount={slotCount} available={available} onPick={handleDraw} skin={null} />
           </div>
         )}
 
