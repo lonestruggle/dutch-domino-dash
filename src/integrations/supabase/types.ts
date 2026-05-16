@@ -938,6 +938,14 @@ export type Database = {
         Args: { _code: string; _email?: string }
         Returns: Json
       }
+      wega_claim_boneyard_tile: {
+        Args: { _lobby_id: string; _tile_index: number }
+        Returns: Json
+      }
+      wega_claim_starter: {
+        Args: { _hand_index: number; _lobby_id: string }
+        Returns: Json
+      }
       wega_settle: {
         Args: { _lobby_id: string; _payload: Json }
         Returns: undefined
