@@ -1981,16 +1981,15 @@ export default function Game() {
     }
   }, [isWegaPlay, passMove, gameId, syncState.gameState, toast]);
 
-  // Auto-pas: als ingeschakeld en speler heeft geen enkele legale zet, pas automatisch
-  const [autoPassEnabled, setAutoPassEnabled] = useState<boolean>(() => {
-    try { return localStorage.getItem('wega:autoPass') === '1'; } catch { return false; }
-  });
-  useEffect(() => {
-    const handler = (e: Event) => setAutoPassEnabled(!!(e as CustomEvent).detail);
-    window.addEventListener('wega:autoPassChanged', handler);
-    return () => window.removeEventListener('wega:autoPassChanged', handler);
-  }, []);
+  // Auto-pas: instelling staat op game_state (host bepaalt voor iedereen)
+  const autoPassEnabled = !!(syncState.gameState as any)?.wegaAutoPass;
   const autoPassFiredRef = useRef<string>('');
+  useEffect(() => {
+    // Reset fingerprint zodra het niet meer mijn beurt is, zodat een nieuwe beurt opnieuw beoordeeld wordt
+    if (syncState.currentPlayer !== syncState.playerPosition) {
+      autoPassFiredRef.current = '';
+    }
+  }, [syncState.currentPlayer, syncState.playerPosition]);
   useEffect(() => {
     if (!isWegaPlay || !autoPassEnabled) return;
     if (!gameState || gameState.isGameOver) return;
@@ -1999,14 +1998,22 @@ export default function Game() {
     if (hand.length === 0) return;
     const hasAnyMove = hand.some((t) => wegaFindLegalMoves(t).length > 0);
     if (hasAnyMove) return;
-    // Fingerprint zodat we niet meermaals voor dezelfde beurt afvuren
-    const fp = `${syncState.currentPlayer}:${hand.length}:${Object.keys(gameState.board || {}).length}`;
+    const consecutivePasses = Number((gameState as any).consecutivePasses) || 0;
+    const fp = `${syncState.currentPlayer}:${hand.length}:${Object.keys(gameState.board || {}).length}:${consecutivePasses}`;
     if (autoPassFiredRef.current === fp) return;
     autoPassFiredRef.current = fp;
     toast({ title: 'Automatisch gepast', description: 'Je had geen legale zet.', duration: 2000 });
     const t = setTimeout(() => { wegaPassMove(); }, 600);
     return () => clearTimeout(t);
   }, [isWegaPlay, autoPassEnabled, gameState, syncState.currentPlayer, syncState.playerPosition, wegaFindLegalMoves, wegaPassMove, toast]);
+
+  const handleToggleWegaAutoPass = useCallback(async (value: boolean) => {
+    if (!syncState.isHost) return;
+    const current = syncState.gameState as any;
+    if (!current) return;
+    const next = { ...current, wegaAutoPass: value };
+    await updateGameState(next, syncState.currentPlayer);
+  }, [syncState.isHost, syncState.gameState, syncState.currentPlayer, updateGameState]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -2043,6 +2050,8 @@ export default function Game() {
         playerPosition={syncState.playerPosition}
         currentPlayer={syncState.currentPlayer}
         allPlayers={syncState.allPlayers}
+        isHost={syncState.isHost}
+        onToggleAutoPass={handleToggleWegaAutoPass}
       />
     </div>
   );
