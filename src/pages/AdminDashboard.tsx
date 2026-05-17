@@ -18,8 +18,9 @@ import { GloveSkinManager } from '@/components/GloveSkinManager';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { 
   Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
-  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star, Zap, Copy, LogOut, Image as ImageIcon
+  Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star, Zap, Copy, LogOut, Image as ImageIcon, FileText
 } from 'lucide-react';
+import { GameLogsViewer } from '@/components/admin/GameLogsViewer';
 import {
   Select,
   SelectContent,
@@ -985,6 +986,10 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
             <TabsTrigger value="invitations" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <Mail className="h-4 w-4" />
               Uitnodigingen
+            </TabsTrigger>
+            <TabsTrigger value="game-logs" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
+              <FileText className="h-4 w-4" />
+              Game Logs
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <Settings className="h-4 w-4" />
