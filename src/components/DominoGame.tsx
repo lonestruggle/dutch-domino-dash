@@ -614,6 +614,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           selectedIndex={gameState?.selectedHandIndex}
           onDominoSelect={selectHandDomino}
           isMyTurn={isMyTurn}
+          flippedTiles={gameHook?.wegaFlipMap}
+          onTileDoubleClick={gameHook?.flipWegaTile}
         />
 
         {/* Game Actions */}
