@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useLobbies } from '@/hooks/useLobbies';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Users, LogIn, Trash2 } from 'lucide-react';
@@ -17,6 +18,8 @@ export default function Lobbies() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { lobbies, loading, createLobby, joinLobby, deleteLobby } = useLobbies();
+  const { getSetting } = useAppSettings();
+  const wegaEnabled = getSetting('wega_di_sen_enabled') !== false;
   const { toast } = useToast();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
@@ -26,6 +29,12 @@ export default function Lobbies() {
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [gameMode, setGameMode] = useState<'classic' | 'wega_di_sen'>('classic');
   const [wegaStake, setWegaStake] = useState<number>(10);
+
+  useEffect(() => {
+    if (!wegaEnabled && gameMode === 'wega_di_sen') {
+      setGameMode('classic');
+    }
+  }, [wegaEnabled, gameMode]);
   const [myCoins, setMyCoins] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -220,7 +229,9 @@ export default function Lobbies() {
                       </SelectTrigger>
                       <SelectContent className="bg-white text-black">
                         <SelectItem value="classic" className="text-black focus:bg-black/10 focus:text-black">Klassiek</SelectItem>
-                        <SelectItem value="wega_di_sen" className="text-black focus:bg-black/10 focus:text-black">Wega di sen (coins)</SelectItem>
+                        {wegaEnabled && (
+                          <SelectItem value="wega_di_sen" className="text-black focus:bg-black/10 focus:text-black">Wega di sen (coins)</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
