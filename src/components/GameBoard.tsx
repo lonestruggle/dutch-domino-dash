@@ -802,9 +802,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     );
   };
 
+  const shouldShowPersistentGlove =
+    globalGloveAlwaysVisible &&
+    !showHardSlamHand &&
+    !placeHandAnimation &&
+    legalMoves.length === 0;
+
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
-      {globalGloveAlwaysVisible && !showHardSlamHand && !placeHandAnimation && (
+      {shouldShowPersistentGlove && (
         <div className="pointer-events-none absolute inset-0 z-[95]">
           <div
             className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-grab active:cursor-grabbing select-none"
@@ -953,7 +959,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             const size = orientation === "horizontal" ? [2, 1] : [1, 2];
             const isInitialPlacement = Object.keys(gameState.dominoes).length === 0;
-            const isWegaPlay = (gameState as any)?.wegaPhase === 'playing';
+            const isWegaPlay = (gameState as GameState & { wegaPhase?: string }).wegaPhase === 'playing';
 
             return (
               <PlacementTarget
