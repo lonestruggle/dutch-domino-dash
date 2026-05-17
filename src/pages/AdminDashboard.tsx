@@ -1762,6 +1762,7 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
           
           {/* Settings Tab */}
           <TabsContent value="settings">
+            {/* placeholder anchor */}
             <div className="space-y-6">
               <Card>
                 <CardHeader>
