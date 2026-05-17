@@ -586,12 +586,12 @@ export default function Lobby() {
                           }
                         }}
                       >
-                        <SelectTrigger>
-                          <SelectValue />
+                        <SelectTrigger className="bg-white text-black border-white/70 [&>span]:text-black [&_svg]:text-black">
+                          <SelectValue className="text-black" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="classic">Klassiek</SelectItem>
-                          <SelectItem value="wega_di_sen">Wega di sen</SelectItem>
+                        <SelectContent className="bg-white text-black border-white/70">
+                          <SelectItem value="classic" className="text-black focus:bg-black/10 focus:text-black">Klassiek</SelectItem>
+                          <SelectItem value="wega_di_sen" className="text-black focus:bg-black/10 focus:text-black">Wega di sen</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -603,6 +603,7 @@ export default function Lobby() {
                           min={1}
                           value={wegaStake}
                           onChange={(e) => setWegaStake(parseInt(e.target.value) || 1)}
+                          className="bg-white text-black placeholder:text-black/50 border-white/70"
                           onBlur={async () => {
                             if (lobbyId) {
                               await supabase
