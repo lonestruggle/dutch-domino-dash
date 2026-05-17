@@ -407,21 +407,44 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardSize = calculateBoardSize();
   const dynamicScale = calculateOptimalScale();
 
-  // Compute centroid of placed dominoes so we can keep the chain centered
-  // in the container as it grows asymmetrically.
-  const boardCentroid = (() => {
+  // Camera offset in board pixels. Keep the visible chain centered without
+  // scrolling the container; scrolling plus transforms caused stones to slide
+  // out of view after a move.
+  const boardCameraOffset = (() => {
     const dominoes = Object.values(gameState.dominoes);
-    if (dominoes.length === 0) return { x: 0, y: 0 };
+    const hasDominoes = dominoes.length > 0;
+    const hasTargets = legalMoves.length > 0;
+    if (!hasDominoes && !hasTargets) return { x: 0, y: 0 };
+
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const includeRect = (x: number, y: number, width: number, height: number) => {
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x + width);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y + height);
+    };
+
     dominoes.forEach(domino => {
-      const w = domino.orientation === 'horizontal' ? 2 : 1;
-      const h = domino.orientation === 'vertical' ? 2 : 1;
-      minX = Math.min(minX, domino.x);
-      maxX = Math.max(maxX, domino.x + w - 1);
-      minY = Math.min(minY, domino.y);
-      maxY = Math.max(maxY, domino.y + h - 1);
+      includeRect(
+        domino.x,
+        domino.y,
+        domino.orientation === 'horizontal' ? 2 : 1,
+        domino.orientation === 'vertical' ? 2 : 1
+      );
     });
-    return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+
+    legalMoves.forEach(move => {
+      let targetX = typeof move.x === 'number' ? move.x : move.end.x;
+      let targetY = typeof move.y === 'number' ? move.y : move.end.y;
+      if (typeof move.x !== 'number' && move.orientation === 'horizontal' && move.end.fromDir === 'W') targetX -= 1;
+      if (typeof move.y !== 'number' && move.orientation === 'vertical' && move.end.fromDir === 'N') targetY -= 1;
+      includeRect(targetX, targetY, move.orientation === 'horizontal' ? 2 : 1, move.orientation === 'vertical' ? 2 : 1);
+    });
+
+    return {
+      x: ((minX + maxX) / 2) * GRID_CELL_SIZE,
+      y: ((minY + maxY) / 2) * GRID_CELL_SIZE,
+    };
   })();
 
   useEffect(() => {
@@ -537,64 +560,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const backgroundImage = getBackgroundImage(backgroundChoice);
 
-  // Original PC auto-center logic
   useEffect(() => {
-    if (!containerRef.current || Object.keys(gameState.dominoes).length === 0) return;
-    
-    const checkIfRecenterNeeded = () => {
-      const containerRect = containerRef.current!.getBoundingClientRect();
-      const currentScale = dynamicScale;
-      const boardSize = calculateBoardSize();
-      
-      const dominoes = Object.values(gameState.dominoes);
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      
-      dominoes.forEach(domino => {
-        const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
-        const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
-        
-        minX = Math.min(minX, domino.x);
-        maxX = Math.max(maxX, domino.x + dominoWidth - 1);
-        minY = Math.min(minY, domino.y);
-        maxY = Math.max(maxY, domino.y + dominoHeight - 1);
-      });
-      
-      const centerX = (minX + maxX) / 2;
-      const centerY = (minY + maxY) / 2;
-      
-      const pixelCenterX = boardSize / 2 + centerX * GRID_CELL_SIZE * currentScale;
-      const pixelCenterY = boardSize / 2 + centerY * GRID_CELL_SIZE * currentScale;
-      
-      const optimalScrollX = pixelCenterX - containerRect.width / 2;
-      const optimalScrollY = pixelCenterY - containerRect.height / 2;
-      
-      containerRef.current!.scrollTo({
-        left: Math.max(0, optimalScrollX),
-        top: Math.max(0, optimalScrollY),
-        behavior: 'smooth'
-      });
-    };
-    
-    const timer = setTimeout(checkIfRecenterNeeded, 100);
-    return () => clearTimeout(timer);
-  }, [gameState.dominoes, dynamicScale]);
-
-  // Original PC initial center logic
-  useEffect(() => {
-    if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
-      const firstDomino = Object.values(gameState.dominoes)[0];
-      const firstDominoX = firstDomino.x * GRID_CELL_SIZE * dynamicScale;
-      const firstDominoY = firstDomino.y * GRID_CELL_SIZE * dynamicScale;
-      
-      setTimeout(() => {
-        containerRef.current?.scrollTo({
-          left: boardSize / 2 + firstDominoX - containerRef.current.clientWidth / 2,
-          top: boardSize / 2 + firstDominoY - containerRef.current.clientHeight / 2,
-          behavior: 'smooth'
-        });
-      }, 100);
-    }
-  }, [gameState.dominoes, dynamicScale, boardSize]);
+    if (!containerRef.current) return;
+    containerRef.current.scrollTo({ left: 0, top: 0, behavior: 'auto' });
+  }, [gameState.dominoes, legalMoves]);
 
   useEffect(() => {
     let cancelled = false;
@@ -894,7 +863,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             top: '50%',
             width: boardSize, 
             height: boardSize,
-            transform: `translate(-50%, -50%) scale(${dynamicScale}) translate(${-boardCentroid.x * GRID_CELL_SIZE}px, ${-boardCentroid.y * GRID_CELL_SIZE}px)`,
+            transform: `translate(-50%, -50%) translate(${-boardCameraOffset.x * dynamicScale}px, ${-boardCameraOffset.y * dynamicScale}px) scale(${dynamicScale})`,
             transformOrigin: 'center'
           }}
         >
@@ -973,8 +942,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const { orientation, dominoData } = move;
             const isDouble = dominoData.value1 === dominoData.value2;
             
-            if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
-            if (orientation === "vertical" && end.fromDir === "N") y -= 1;
+            if (typeof move.x === 'number') x = move.x;
+            else if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
+            if (typeof move.y === 'number') y = move.y;
+            else if (orientation === "vertical" && end.fromDir === "N") y -= 1;
 
             const size = orientation === "horizontal" ? [2, 1] : [1, 2];
             const isInitialPlacement = Object.keys(gameState.dominoes).length === 0;
