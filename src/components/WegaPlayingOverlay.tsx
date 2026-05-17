@@ -31,9 +31,6 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, player
   const [orientation, setOrientation] = useState<Orientation>('horizontal');
 
   const phase = gameState?.wegaPhase as string | undefined;
-  if (phase !== 'playing') return null;
-  if (gameState?.isGameOver) return null;
-
   const hands: DominoData[][] = Array.isArray(gameState?.playerHands) ? gameState.playerHands : [];
   const myHand: DominoData[] = hands[playerPosition] || [];
   const stake = Number(gameState?.wegaStake) || 10;
@@ -55,6 +52,8 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, player
       return { x, y };
     }).sort((a, b) => a.y === b.y ? a.x - b.x : a.y - b.y);
   }, [board]);
+
+  if (phase !== 'playing' || gameState?.isGameOver) return null;
 
   const handleSelect = (idx: number) => {
     if (selectedIdx === idx) {
