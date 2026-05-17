@@ -1811,12 +1811,23 @@ export default function Game() {
         if (board[k] || seen.has(k)) continue;
         seen.add(k);
         const orientation: 'horizontal' | 'vertical' = (dir === 'N' || dir === 'S') ? 'vertical' : 'horizontal';
-        let flipped = false;
-        if (dominoData.value1 === cellValue) flipped = false;
-        else if (dominoData.value2 === cellValue) flipped = true;
         let topX = nx, topY = ny;
+        const adjacencyOnSecondCell = (orientation === 'horizontal' && dir === 'W') || (orientation === 'vertical' && dir === 'N');
         if (orientation === 'horizontal' && dir === 'W') topX = nx - 1;
         if (orientation === 'vertical' && dir === 'N') topY = ny - 1;
+        // Bepaal flip zodat de helft die tegen cellValue ligt matcht.
+        // Bij dir W/N ligt cell_keys[2] (= pip2) tegen de bestaande cel, anders cell_keys[1] (= pip1).
+        // pip1 = flipped ? v2 : v1 ; pip2 = flipped ? v1 : v2
+        let flipped = false;
+        if (adjacencyOnSecondCell) {
+          // pip2 moet == cellValue → flipped=false als v2==cellValue, anders flipped=true als v1==cellValue
+          if (dominoData.value2 === cellValue) flipped = false;
+          else if (dominoData.value1 === cellValue) flipped = true;
+        } else {
+          // pip1 moet == cellValue
+          if (dominoData.value1 === cellValue) flipped = false;
+          else if (dominoData.value2 === cellValue) flipped = true;
+        }
         // Check second cell free
         const otherKey = orientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
         if (board[otherKey]) continue;
