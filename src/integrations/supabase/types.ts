@@ -205,6 +205,48 @@ export type Database = {
         }
         Relationships: []
       }
+      game_logs: {
+        Row: {
+          created_at: string
+          current_turn: number | null
+          event_data: Json
+          event_type: string
+          game_id: string
+          id: string
+          lobby_id: string | null
+          player_position: number | null
+          user_id: string | null
+          username: string | null
+          wega_phase: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_turn?: number | null
+          event_data?: Json
+          event_type: string
+          game_id: string
+          id?: string
+          lobby_id?: string | null
+          player_position?: number | null
+          user_id?: string | null
+          username?: string | null
+          wega_phase?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_turn?: number | null
+          event_data?: Json
+          event_type?: string
+          game_id?: string
+          id?: string
+          lobby_id?: string | null
+          player_position?: number | null
+          user_id?: string | null
+          username?: string | null
+          wega_phase?: string | null
+        }
+        Relationships: []
+      }
       game_player_stats: {
         Row: {
           created_at: string
@@ -922,6 +964,18 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_moderator: { Args: { _user_id: string }; Returns: boolean }
+      log_game_event: {
+        Args: {
+          _current_turn?: number
+          _event_data?: Json
+          _event_type: string
+          _game_id: string
+          _lobby_id: string
+          _player_position?: number
+          _wega_phase?: string
+        }
+        Returns: string
+      }
       recalc_lobby_player_count: {
         Args: { _lobby_id: string }
         Returns: undefined
