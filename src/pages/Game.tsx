@@ -1850,7 +1850,7 @@ export default function Game() {
     const boardKeys = Object.keys(board);
     const moves: LegalMove[] = [];
     // Bepaal of dominoData de momenteel geselecteerde steen is — alleen dan respecteren we de user-flip
-    const selIdx = gameState?.selectedHandIndex;
+    const selIdx = wegaSelectedIndex;
     const selDom = (selIdx !== null && selIdx !== undefined) ? gameState?.playerHand?.[selIdx] : null;
     const isSelectedTile = !!selDom && selDom.value1 === dominoData.value1 && selDom.value2 === dominoData.value2;
     const forcedFlip: boolean | null = (isSelectedTile && selIdx !== null && selIdx !== undefined && wegaFlipMap[selIdx] !== undefined)
@@ -1939,14 +1939,14 @@ export default function Game() {
       }
     }
     return moves;
-  }, [isWegaPlay, gameHook, gameState?.board, gameState?.selectedHandIndex, gameState?.playerHand, wegaFlipMap]);
+  }, [isWegaPlay, gameHook, gameState?.board, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
 
   const wegaExecuteMove = useCallback(async (move: MoveWithEffects) => {
     if (!isWegaPlay) {
       return wrappedExecuteMove(move);
     }
     try {
-      const handIndex = typeof move.index === 'number' ? move.index : (gameState?.selectedHandIndex ?? -1);
+      const handIndex = typeof move.index === 'number' ? move.index : (wegaSelectedIndex ?? -1);
       if (handIndex < 0) return;
       const { data, error } = await supabase.rpc('wega_submit_move' as any, {
         _lobby_id: gameId,
@@ -1976,7 +1976,7 @@ export default function Game() {
     } catch (e: any) {
       toast({ title: 'Fout', description: e?.message || String(e), variant: 'destructive' });
     }
-  }, [isWegaPlay, wrappedExecuteMove, gameId, gameState?.selectedHandIndex, syncState.gameState, toast]);
+  }, [isWegaPlay, wrappedExecuteMove, gameId, wegaSelectedIndex, syncState.gameState, toast]);
 
   const wegaPassMove = useCallback(async (actorPosition?: number) => {
     if (!isWegaPlay) return passMove(actorPosition);
