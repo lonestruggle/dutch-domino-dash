@@ -1199,6 +1199,27 @@ export default function Game() {
     // If anyone has already emptied their hand, this is not a blocked endgame.
     if (allHands.some((hand) => hand.length === 0)) return false;
 
+    // In Wega di sen "playing" fase: gebruik een pip-gebaseerde check op alle lege buurcellen
+    // van bezette cellen. Voorkomt dat strikte forbiddens/neighbor-regels ten onrechte een
+    // blokkade triggeren terwijl er nog speelbare zetten zijn.
+    const wegaPhaseNow = (syncState.gameState as any)?.wegaPhase;
+    if (wegaPhaseNow === 'playing') {
+      const board = state.board as Record<string, { dominoId: string; value: number }>;
+      const openValues = new Set<number>();
+      for (const key of Object.keys(board)) {
+        const [cx, cy] = key.split(',').map(Number);
+        const dirs = [[cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy]];
+        for (const [nx, ny] of dirs) {
+          if (!board[`${nx},${ny}`]) { openValues.add(board[key].value); break; }
+        }
+      }
+      const anyMatch =
+        allHands.some((h) => h.some((d) => openValues.has(d.value1) || openValues.has(d.value2))) ||
+        (state.boneyard || []).some((d) => d && (openValues.has(d.value1) || openValues.has(d.value2)));
+      if (anyMatch) return false;
+      return finalizeBlockedGame('wega-no-pip-match', allHands);
+    }
+
     // Use stored openEnds when present so blocked debug and blocked engine are consistent.
     // Fallback to regenerated open ends only when state has none.
     const currentOpenEnds =
@@ -1262,7 +1283,7 @@ export default function Game() {
     }
 
     return finalizeBlockedGame('no-legal-moves', allHands);
-  }, [gameHook, resolvePlayerCount, setGameState, syncState.currentPlayer, syncState.playerPosition, updateGameState]);
+  }, [gameHook, resolvePlayerCount, setGameState, syncState.currentPlayer, syncState.playerPosition, syncState.gameState, updateGameState]);
 
   // Auto-check for blocked game after each move
   useEffect(() => {
@@ -1832,6 +1853,7 @@ export default function Game() {
       });
       return moves;
     }
+    const isDoubleTile = dominoData.value1 === dominoData.value2;
     const seen = new Set<string>();
     for (const key of boardKeys) {
       const [cx, cy] = key.split(',').map(Number);
@@ -1846,6 +1868,29 @@ export default function Game() {
         const k = `${nx},${ny}`;
         if (board[k] || seen.has(k)) continue;
         seen.add(k);
+        // Dubbele steen ligt áltijd dwars t.o.v. de aansluitrichting
+        if (isDoubleTile) {
+          if (dominoData.value1 !== cellValue) continue;
+          const perpOrientation: 'horizontal' | 'vertical' = (dir === 'N' || dir === 'S') ? 'horizontal' : 'vertical';
+          // Probeer beide kanten waar de dubbele zich kan uitstrekken
+          const extensions: Array<{ topX: number; topY: number }> = perpOrientation === 'horizontal'
+            ? [{ topX: nx, topY: ny }, { topX: nx - 1, topY: ny }]
+            : [{ topX: nx, topY: ny }, { topX: nx, topY: ny - 1 }];
+          for (const { topX, topY } of extensions) {
+            const c1 = `${topX},${topY}`;
+            const c2 = perpOrientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
+            if (board[c1] || board[c2]) continue;
+            moves.push({
+              end: { x: nx, y: ny, value: cellValue, fromDir: dir },
+              dominoData,
+              flipped: false,
+              orientation: perpOrientation,
+              x: topX,
+              y: topY,
+            });
+          }
+          continue;
+        }
         const orientation: 'horizontal' | 'vertical' = (dir === 'N' || dir === 'S') ? 'vertical' : 'horizontal';
         let topX = nx, topY = ny;
         const adjacencyOnSecondCell = (orientation === 'horizontal' && dir === 'W') || (orientation === 'vertical' && dir === 'N');
