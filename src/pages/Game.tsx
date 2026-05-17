@@ -1981,6 +1981,33 @@ export default function Game() {
     }
   }, [isWegaPlay, passMove, gameId, syncState.gameState, toast]);
 
+  // Auto-pas: als ingeschakeld en speler heeft geen enkele legale zet, pas automatisch
+  const [autoPassEnabled, setAutoPassEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem('wega:autoPass') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    const handler = (e: Event) => setAutoPassEnabled(!!(e as CustomEvent).detail);
+    window.addEventListener('wega:autoPassChanged', handler);
+    return () => window.removeEventListener('wega:autoPassChanged', handler);
+  }, []);
+  const autoPassFiredRef = useRef<string>('');
+  useEffect(() => {
+    if (!isWegaPlay || !autoPassEnabled) return;
+    if (!gameState || gameState.isGameOver) return;
+    if (syncState.currentPlayer !== syncState.playerPosition) return;
+    const hand = gameState.playerHand || [];
+    if (hand.length === 0) return;
+    const hasAnyMove = hand.some((t) => wegaFindLegalMoves(t).length > 0);
+    if (hasAnyMove) return;
+    // Fingerprint zodat we niet meermaals voor dezelfde beurt afvuren
+    const fp = `${syncState.currentPlayer}:${hand.length}:${Object.keys(gameState.board || {}).length}`;
+    if (autoPassFiredRef.current === fp) return;
+    autoPassFiredRef.current = fp;
+    toast({ title: 'Automatisch gepast', description: 'Je had geen legale zet.', duration: 2000 });
+    const t = setTimeout(() => { wegaPassMove(); }, 600);
+    return () => clearTimeout(t);
+  }, [isWegaPlay, autoPassEnabled, gameState, syncState.currentPlayer, syncState.playerPosition, wegaFindLegalMoves, wegaPassMove, toast]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Wega di sen overrides */}
