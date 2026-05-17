@@ -1,84 +1,117 @@
-## Fase C — Wega di sen: vrij spelen
+## Game Debug Logs
 
-### 1. Steen oriëntatie in de hand (UX)
-- **Tap** op een steen in `PlayerHand` (in wega-modus, fase `playing`):
-  - 1e tap: selecteer steen
-  - 2e tap op zelfde steen: **flip** (wisselt `value1`/`value2` visueel via een lokale `flipped`-state per steen)
-  - Lang indrukken (≥400ms) of dubbel-tap-toggle: **roteer** horizontaal ↔ verticaal
-- Geselecteerde steen toont een klein indicator-balkje "🔄 Flip · ↻ Draai" zodat het ontdekbaar is
-- State leeft in `Lobby`/`Game` component, niet in DB (alleen de uiteindelijke zet wordt verstuurd)
+Doel: per spel een gedetailleerde event-log bijhouden, zichtbaar in de Admin Dashboard, zodat je precies kunt nalopen waar iets misgaat.
 
-### 2. Vrij plaatsen op het bord
-- In `GameBoard.tsx`: wanneer `gameMode === 'wega_di_sen'` en `wegaPhase === 'playing'`:
-  - **Géén** `findLegalMoves` / `placement-targets` renderen
-  - Het hele bord wordt een drop-zone die `clientX/Y` → grid `(x, y)` mapt
-  - Speler sleept geselecteerde steen → release op cel → cliënt roept RPC `wega_submit_move` aan met `{ hand_index, x, y, orientation, flipped }`
-- Boneyard is **uitgeschakeld** zodra `wegaPhase !== 'drawing'` (geen klik, grijs/disabled, "Boneyard gesloten")
+### 1. Database
 
-### 3. Server-side RPC `wega_submit_move`
-Nieuwe Postgres functie (SECURITY DEFINER). Validatie:
-1. Authenticated + speler zit in lobby + het is zijn beurt
-2. `wegaPhase = 'playing'` en `isGameOver = false`
-3. Hand-index bestaat, steen matcht
-4. Cel `(x,y)` en zijn 2e cel (afhankelijk van orientation) zijn vrij
-5. Zet sluit aan op een **open end** met matchend pip-getal (server berekent open ends uit `board`)
-6. Bij **succes**: bord/dominoes/hand bijwerken, beurt door, `lastPlacerUserId` zetten, openingPasses bijwerken, changa-check
-7. Bij **fout (foute positie, fout pip, niet jouw beurt)**: boete X aan **elke andere menselijke speler** via `transfer_coins`, steen blijft in hand, beurt blijft (speler mag opnieuw of passen)
+Nieuwe tabel `public.game_logs`:
 
-### 4. Pas-knop
-- Knop "Pas" zichtbaar in wega-modus tijdens jouw beurt
-- Nieuwe RPC `wega_pass`:
-  - Boete X aan `lastPlacerUserId` (de laatste die plaatste); als die er niet is (eerste zet) → X aan iedereen
-  - **Openingsbonus**: als de huidige speler positie 2 of 3 is sinds de starter én nog niemand legaal heeft kunnen leggen op het juiste open einde → 2X bonus van passer aan starter
-  - Beurt door naar volgende speler
-  - Track `openingPasses` in `game_state`
+| kolom | type | doel |
+|---|---|---|
+| id | uuid pk | |
+| game_id | uuid | koppeling aan `games.id` |
+| lobby_id | uuid | snel filteren per lobby |
+| player_position | int null | wie de actie deed (null = systeem) |
+| user_id | uuid null | wie de actie deed |
+| username | text null | snapshot voor leesbaarheid |
+| event_type | text | zie hieronder |
+| event_data | jsonb | payload (zet, hand, board snapshot, etc.) |
+| current_turn | int null | wiens beurt het was |
+| wega_phase | text null | drawing/claiming_starter/playing/ended |
+| created_at | timestamptz | |
 
-### 5. Changa-detectie
-- In `wega_submit_move`, na succesvolle plaatsing:
-  - Bereken nieuwe open ends; check of de laatst geplaatste steen **beide** openstaande pip-waardes "sluit" (= identiek aan beide open ends die nu zijn weggevallen) → `gameEndReason = 'changa'`
-  - Winnaar krijgt **2X per andere speler**
-- Lege hand → `gameEndReason = 'normal'`, winnaar krijgt **X per andere speler**
-- Geblokkeerd (geen open ends meer aanspreekbaar én iedereen heeft gepast) → laagste pips wint X per speler (optioneel — kunnen we later finetunen)
+RLS:
+- INSERT: elke speler in de lobby (en service role)
+- SELECT: alleen admin/moderator (via `can_moderate`)
 
-### 6. Eindafrekening
-Eén RPC-call `wega_settle` (bestaat al) wordt automatisch aangeroepen vanuit `wega_submit_move`/`wega_pass` zodra game eindigt. Transfers worden gebundeld in de `transfers`-array.
+Index op `(game_id, created_at)` en `(lobby_id, created_at)`.
 
-### 7. UI
-- `WegaPassButton.tsx`: knop met confirmatie en preview van de boete
-- `GameBoard.tsx`: vrij-plaats drop-zone toevoegen achter een `if (gameMode === 'wega_di_sen' && wegaPhase === 'playing')` branch
-- `PlayerHand.tsx`: flip/rotate gestures, visuele indicator
-- `WegaPhaseOverlay.tsx`: extend met 'playing'-status (toont saldi, laatste plaatser, beurt)
+### 2. Event-types die we loggen
 
-### Technische details
+**Lifecycle**
+- `game_started` — aantal spelers, mode, stake, starthand per positie, boneyard size
+- `game_ended` — reden (changa/normal/blocked/false_starter_claim), winner_position, eindhanden, pip-totalen
 
-**Nieuwe RPC's (migratie):**
-- `wega_submit_move(_lobby_id uuid, _hand_index int, _x int, _y int, _orientation text, _flipped boolean) returns jsonb`
-- `wega_pass(_lobby_id uuid) returns jsonb`
+**Beurten / zetten**
+- `tile_selected` (client, alleen lokale speler) — welke hand-index/steen geselecteerd
+- `move_submitted` — hand_index, tile, x, y, orientation, flipped, resulterende open ends
+- `move_rejected` — reden (not_your_turn, cell_occupied, no_matching_end, illegal_adjacency) + boete
+- `tile_drawn` — getrokken steen (klassiek) of boneyard claim (wega)
+- `pass` — boete, openingsbonus ja/nee, lastPlacer
+- `turn_changed` — van → naar positie
 
-**Game state aanvullingen:**
-```
-{
-  ...
-  lastPlacerUserId: uuid | null,
-  openingPlacements: number,   // hoeveel legale zetten sinds opener
-  wegaPhase: 'drawing' | 'claiming_starter' | 'playing' | 'ended',
-  gameEndReason: 'changa' | 'normal' | 'blocked'
-}
-```
+**Wega specifiek**
+- `starter_claimed` — tile, geldig of niet, eventuele boete
+- `boneyard_claimed` — tile_index, tile, hand-size na
 
-**Open-end berekening server-side:** een SQL helper die over `board`-jsonb itereert en per bezette cel de 4 buren checkt; cellen die niet in `board` zitten zijn open ends met `value = pip aan die kant`.
+**Coins / settle**
+- `coin_transfer` — from, to, amount, reden
+
+**Debug helpers (extra die het naloopbaar maken)**
+- `state_snapshot` — periodieke / on-demand volledige `game_state` dump (zware payload, alleen op key events)
+- `client_error` — frontend exceptions tijdens spel
+- `hand_sync_mismatch` — als client een handlengte ziet die niet matcht met server (handig voor de "kan niet leggen"-bugs)
+
+### 3. Server-side hooks
+
+Logging-helper `_log_game_event(_game_id, _lobby_id, _user_id, _player_pos, _event_type, _event_data, _state)` toevoegen en aanroepen in:
+- `wega_submit_move` (succes + alle rejection-paden)
+- `wega_pass`
+- `wega_claim_starter`
+- `wega_claim_boneyard_tile`
+- `_wega_finalize_game` → `game_ended`
+- `update_game_state_for_lobby` → optioneel `state_changed`
+
+Voor klassieke modus: client logt `move_submitted`/`tile_drawn` direct, plus `state_snapshot` na elke server-update.
+
+### 4. Client-side hooks
+
+In `Game.tsx` / `useDominoGame` / `useSyncedDominoGame`:
+- Bij selecteren steen → `tile_selected`
+- Bij plaatsing/draw → ook clientzijde event (klassiek)
+- Bij elke `setGameState` met `gameStarted` true en nieuwe `dominoes`-count → `state_snapshot` (throttle 1x per beurt)
+- Window `onerror` / React errorboundary → `client_error`
+
+Lichte util `logGameEvent(gameId, type, data)` die naar tabel `game_logs` inserts doet via supabase-js. Faalt stil zodat het nooit gameplay breekt.
+
+### 5. Admin UI
+
+Nieuwe sectie in `AdminDashboard.tsx`: **Game Logs**
+- Lijst van recente games (laatste 50) uit `games` + lobby-naam + status + winner
+- Klik op game → drawer/dialog met:
+  - Metadata (mode, stake, spelers, start/eind, duur)
+  - Filter: event_type (multi-select), player
+  - Timeline van events (compact, timestamp · type · speler · samenvatting)
+  - Klik event → JSON-detail (event_data + state_snapshot)
+- Knop "Exporteer JSON" voor 1 game
+- Auto-refresh elke 5s (realtime channel optioneel)
+
+### 6. Wat we nog meer kunnen vastleggen
+
+Extra ideeën om debug rijker te maken:
+- **Latency**: client-timestamp + server-receive timestamp diff per event → opsporen van trage updates / dubbele clicks
+- **Device info** bij eerste log per sessie: userAgent, viewport, devicePixelRatio, isMobile
+- **Network status**: online/offline transities, supabase realtime reconnects
+- **Hand-hash per beurt**: sha van speler-hand → snel zien of clients out-of-sync raken
+- **Open-ends snapshot** na elke succesvolle zet (vergelijken met wat client toont)
+- **Legal-moves count** die client berekent vs wat server zou accepteren
+- **Boneyard contents** snapshot bij start + na elke trek
+- **Bot decisions**: welke move een bot koos en waarom (score/heuristic)
+- **Performance**: render-tijden GameBoard bij grote chains
+- **Coin balance voor/na** bij elke transfer
+- **RPC duration** per call
+
+### 7. Onderhoud
+
+- Cron / edge function `cleanup-game-logs` die logs ouder dan 14 dagen verwijdert (instelbaar via `app_settings`)
+- Optioneel: per game een "compact" log na afloop (alleen key events) als de full log groot is
 
 ### Volgorde van implementatie
 
-1. **Migratie**: `wega_submit_move` + `wega_pass` + helper voor open-ends + extra velden in game_state defaults
-2. **PlayerHand flip/rotate** in wega-modus
-3. **GameBoard vrij-plaatsen** drop-zone + boneyard disable
-4. **Pas-knop** component + integratie
-5. **Eindscherm** met coin-transfers
+1. Migratie: tabel `game_logs` + RLS + indexes + helper functie `_log_game_event`
+2. Server: log-calls toevoegen in alle wega RPC's + finalize
+3. Client: util `logGameEvent` + hooks in Game/useDominoGame
+4. Admin: Game Logs sectie met lijst + detail-viewer
+5. Cleanup edge function (optioneel, later)
 
-### Niet in scope nu
-- Animatie van coin-transfers
-- Undo / "weet je het zeker"-confirm (gebruiker koos: gewoon boete + door)
-- Geblokkeerd-detectie volautomatisch (alleen via pas-cyclus)
-
-Akkoord met dit plan? Dan begin ik met de migratie + RPC's.
+Akkoord? Dan begin ik met de migratie.
