@@ -1214,7 +1214,14 @@ export default function Game() {
       const boardTilesWithValueX = Object.values(state.dominoes || {}).filter(
         (domino) => domino.data.value1 === singleRequiredValue || domino.data.value2 === singleRequiredValue
       ).length;
-      if (boardTilesWithValueX >= 7) {
+      // Extra safety: ook nagaan dat er écht geen tile met deze waarde meer in hand of boneyard zit.
+      const handHasValueX = allHands.some((hand) =>
+        hand.some((d) => d.value1 === singleRequiredValue || d.value2 === singleRequiredValue)
+      );
+      const boneyardHasValueX = (state.boneyard || []).some(
+        (d) => d && (d.value1 === singleRequiredValue || d.value2 === singleRequiredValue)
+      );
+      if (boardTilesWithValueX >= 7 && !handHasValueX && !boneyardHasValueX) {
         return finalizeBlockedGame(`seven-x-rule:${singleRequiredValue}`, allHands);
       }
     }
@@ -1230,12 +1237,24 @@ export default function Game() {
       (count, domino) => count + (domino && gameHook.findLegalMoves(domino).length > 0 ? 1 : 0),
       0
     );
-    const blockedByNoMoves = !somePlayerCanPlay && boneyardPlayableTileCount === 0;
+    // Extra vangnet: vergelijk open-end-waardes met alle resterende pip-waardes in hand+boneyard.
+    // Als er nog een match is op pip-niveau, is het spel zeker niet geblokkeerd (forbiddens/neighbor
+    // checks zouden anders ten onrechte een blokkade kunnen triggeren).
+    const openEndValues = new Set(currentOpenEnds.map((e) => e.value));
+    const remainingPipMatch =
+      allHands.some((hand) =>
+        hand.some((d) => openEndValues.has(d.value1) || openEndValues.has(d.value2))
+      ) ||
+      (state.boneyard || []).some(
+        (d) => d && (openEndValues.has(d.value1) || openEndValues.has(d.value2))
+      );
+    const blockedByNoMoves = !somePlayerCanPlay && boneyardPlayableTileCount === 0 && !remainingPipMatch;
 
     if (!blockedByNoMoves) {
       console.log('🧪 Not blocked yet:', {
         handPlayableTileCounts,
         boneyardPlayableTileCount,
+        remainingPipMatch,
         singleRequiredValue,
         openEndsCount: currentOpenEnds.length,
       });
