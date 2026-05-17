@@ -213,10 +213,10 @@ export default function Lobbies() {
                   <div>
                     <Label>Spelmodus</Label>
                     <Select value={gameMode} onValueChange={(v) => setGameMode(v as 'classic' | 'wega_di_sen')}>
-                      <SelectTrigger className="text-foreground">
+                      <SelectTrigger className="bg-background text-foreground border-input">
                         <SelectValue placeholder="Kies een spelmodus" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-popover text-popover-foreground">
                         <SelectItem value="classic">Klassiek</SelectItem>
                         <SelectItem value="wega_di_sen">Wega di sen (coins)</SelectItem>
                       </SelectContent>
