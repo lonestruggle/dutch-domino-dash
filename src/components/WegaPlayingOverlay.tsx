@@ -10,8 +10,7 @@ interface Props {
   playerPosition: number;
   currentPlayer: number;
   allPlayers: Array<{ username: string; position: number; is_bot: boolean; user_id?: string }>;
-  isHost: boolean;
-  onToggleAutoPass: (value: boolean) => void;
+  autoPassEnabled: boolean;
 }
 
 /**
@@ -19,10 +18,10 @@ interface Props {
  * Plaatsings-targets worden via Game.tsx in de bestaande GameBoard-flow gerenderd
  * (zoals in klassieke mode), zodat elk open einde speelbaar is.
  */
-export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, currentPlayer, playerPosition, allPlayers, isHost, onToggleAutoPass }) => {
+export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, currentPlayer, playerPosition, allPlayers, autoPassEnabled }) => {
   const { toast } = useToast();
   const [busy, setBusy] = React.useState(false);
-  const autoPass = !!gameState?.wegaAutoPass;
+  const autoPass = !!autoPassEnabled;
 
   // Notify everyone when someone passes (detected via consecutivePasses increase)
   const prevPassesRef = React.useRef<number>(Number(gameState?.consecutivePasses) || 0);
@@ -70,19 +69,7 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, curren
       <span className="flex items-center gap-1 text-yellow-300 font-semibold">
         <Coins className="h-3.5 w-3.5" /> Wega — Inzet {stake}
       </span>
-      {isHost ? (
-        <label className="flex items-center gap-1 cursor-pointer select-none" title="Past automatisch als spelers geen zet hebben (geldt voor iedereen)">
-          <input
-            type="checkbox"
-            checked={autoPass}
-            onChange={(e) => onToggleAutoPass(e.target.checked)}
-            className="accent-yellow-400"
-          />
-          Auto-pas (iedereen)
-        </label>
-      ) : autoPass ? (
-        <span className="text-yellow-300/80">Auto-pas aan</span>
-      ) : null}
+      {autoPass ? <span className="text-yellow-300/80">Auto-pas aan</span> : null}
       <Button size="sm" variant="destructive" disabled={!isMyTurn || busy} onClick={handlePass} className="h-7 px-3 text-xs">
         Pas
       </Button>

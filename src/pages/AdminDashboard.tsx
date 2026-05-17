@@ -1834,6 +1834,39 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
                       {getSetting('admin_boneyard_face_up') === true ? 'Ingeschakeld' : 'Uitgeschakeld'}
                     </Button>
                   </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t pt-3">
+                    <div className="space-y-0.5">
+                      <Label className="text-base">Wega di sen — Auto-pas</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Als aan: in Wega di sen wordt automatisch gepast wanneer een speler geen legale zet heeft. Geldt voor iedereen.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={getSetting('wega_auto_pass') === true ? 'default' : 'outline'}
+                      onClick={async () => {
+                        const currentValue = getSetting('wega_auto_pass');
+                        const newValue = !currentValue;
+                        const result = await updateSetting('wega_auto_pass', newValue);
+                        if (result.success) {
+                          toast({
+                            title: 'Instelling bijgewerkt',
+                            description: `Wega auto-pas is nu ${newValue ? 'ingeschakeld' : 'uitgeschakeld'}`,
+                          });
+                        } else {
+                          toast({
+                            title: 'Fout',
+                            description: 'Kon instelling niet bijwerken',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                      disabled={settingsLoading}
+                    >
+                      {getSetting('wega_auto_pass') === true ? 'Ingeschakeld' : 'Uitgeschakeld'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 

@@ -1981,8 +1981,8 @@ export default function Game() {
     }
   }, [isWegaPlay, passMove, gameId, syncState.gameState, toast]);
 
-  // Auto-pas: instelling staat op game_state (host bepaalt voor iedereen)
-  const autoPassEnabled = !!(syncState.gameState as any)?.wegaAutoPass;
+  // Auto-pas: globale app-instelling, alleen admin kan toggelen
+  const autoPassEnabled = appSettings?.wega_auto_pass === true;
   const autoPassFiredRef = useRef<string>('');
   useEffect(() => {
     // Reset fingerprint zodra het niet meer mijn beurt is, zodat een nieuwe beurt opnieuw beoordeeld wordt
@@ -2006,14 +2006,6 @@ export default function Game() {
     const t = setTimeout(() => { wegaPassMove(); }, 600);
     return () => clearTimeout(t);
   }, [isWegaPlay, autoPassEnabled, gameState, syncState.currentPlayer, syncState.playerPosition, wegaFindLegalMoves, wegaPassMove, toast]);
-
-  const handleToggleWegaAutoPass = useCallback(async (value: boolean) => {
-    if (!syncState.isHost) return;
-    const current = syncState.gameState as any;
-    if (!current) return;
-    const next = { ...current, wegaAutoPass: value };
-    await updateGameState(next, syncState.currentPlayer);
-  }, [syncState.isHost, syncState.gameState, syncState.currentPlayer, updateGameState]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -2050,8 +2042,7 @@ export default function Game() {
         playerPosition={syncState.playerPosition}
         currentPlayer={syncState.currentPlayer}
         allPlayers={syncState.allPlayers}
-        isHost={syncState.isHost}
-        onToggleAutoPass={handleToggleWegaAutoPass}
+        autoPassEnabled={autoPassEnabled}
       />
     </div>
   );
