@@ -1283,7 +1283,7 @@ export default function Game() {
     }
 
     return finalizeBlockedGame('no-legal-moves', allHands);
-  }, [gameHook, resolvePlayerCount, setGameState, syncState.currentPlayer, syncState.playerPosition, updateGameState]);
+  }, [gameHook, resolvePlayerCount, setGameState, syncState.currentPlayer, syncState.playerPosition, syncState.gameState, updateGameState]);
 
   // Auto-check for blocked game after each move
   useEffect(() => {
