@@ -848,7 +848,15 @@ export default function Game() {
   // Sync the game state when synced state changes
   useEffect(() => {
     if (syncState.gameState && !syncState.isLoading) {
-      setGameState(syncState.gameState);
+      // Behoud lokale UI-state (zoals selectedHandIndex) zodat realtime updates
+      // niet jouw selectie wissen tijdens je beurt (belangrijk in Wega di sen).
+      setGameState((prev) => ({
+        ...syncState.gameState,
+        selectedHandIndex:
+          prev?.selectedHandIndex !== undefined && prev?.selectedHandIndex !== null
+            ? prev.selectedHandIndex
+            : (syncState.gameState as any)?.selectedHandIndex ?? null,
+      }));
     }
   }, [syncState.gameState, syncState.isLoading, setGameState]);
 
