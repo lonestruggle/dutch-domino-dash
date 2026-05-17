@@ -1780,10 +1780,11 @@ export default function Game() {
       <DominoGame 
         gameHook={{
           ...gameHook, 
-          executeMove: wrappedExecuteMove,
+          executeMove: wegaExecuteMove,
+          findLegalMoves: wegaFindLegalMoves,
           drawFromBoneyard: wrappedDrawFromBoneyard,
           drawSpecificFromBoneyard: wrappedDrawSpecificFromBoneyard,
-          passMove,
+          passMove: wegaPassMove,
           manualBlockedCheck,
           fixTableStones: wrappedFixTableStones,
           startNewGame: wrappedStartNewGame,
