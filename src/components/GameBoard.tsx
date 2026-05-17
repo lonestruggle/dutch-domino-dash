@@ -407,21 +407,44 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardSize = calculateBoardSize();
   const dynamicScale = calculateOptimalScale();
 
-  // Compute centroid of placed dominoes so we can keep the chain centered
-  // in the container as it grows asymmetrically.
-  const boardCentroid = (() => {
+  // Camera offset in board pixels. Keep the visible chain centered without
+  // scrolling the container; scrolling plus transforms caused stones to slide
+  // out of view after a move.
+  const boardCameraOffset = (() => {
     const dominoes = Object.values(gameState.dominoes);
-    if (dominoes.length === 0) return { x: 0, y: 0 };
+    const hasDominoes = dominoes.length > 0;
+    const hasTargets = legalMoves.length > 0;
+    if (!hasDominoes && !hasTargets) return { x: 0, y: 0 };
+
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const includeRect = (x: number, y: number, width: number, height: number) => {
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x + width);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y + height);
+    };
+
     dominoes.forEach(domino => {
-      const w = domino.orientation === 'horizontal' ? 2 : 1;
-      const h = domino.orientation === 'vertical' ? 2 : 1;
-      minX = Math.min(minX, domino.x);
-      maxX = Math.max(maxX, domino.x + w - 1);
-      minY = Math.min(minY, domino.y);
-      maxY = Math.max(maxY, domino.y + h - 1);
+      includeRect(
+        domino.x,
+        domino.y,
+        domino.orientation === 'horizontal' ? 2 : 1,
+        domino.orientation === 'vertical' ? 2 : 1
+      );
     });
-    return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+
+    legalMoves.forEach(move => {
+      let targetX = typeof move.x === 'number' ? move.x : move.end.x;
+      let targetY = typeof move.y === 'number' ? move.y : move.end.y;
+      if (typeof move.x !== 'number' && move.orientation === 'horizontal' && move.end.fromDir === 'W') targetX -= 1;
+      if (typeof move.y !== 'number' && move.orientation === 'vertical' && move.end.fromDir === 'N') targetY -= 1;
+      includeRect(targetX, targetY, move.orientation === 'horizontal' ? 2 : 1, move.orientation === 'vertical' ? 2 : 1);
+    });
+
+    return {
+      x: ((minX + maxX) / 2) * GRID_CELL_SIZE,
+      y: ((minY + maxY) / 2) * GRID_CELL_SIZE,
+    };
   })();
 
   useEffect(() => {
