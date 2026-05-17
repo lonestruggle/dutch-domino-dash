@@ -871,11 +871,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       >
         <div 
           ref={boardRef}
-          className="relative w-full h-full"
+          className="absolute"
           style={{ 
+            left: '50%',
+            top: '50%',
             width: boardSize, 
             height: boardSize,
-            transform: `scale(${dynamicScale})`,
+            transform: `translate(-50%, -50%) scale(${dynamicScale})`,
             transformOrigin: 'center'
           }}
         >
