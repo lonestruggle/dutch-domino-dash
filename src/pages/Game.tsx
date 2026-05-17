@@ -1790,6 +1790,13 @@ export default function Game() {
         allPlayers={syncState.allPlayers}
         onChanged={() => { /* realtime listener verzorgt update */ }}
       />
+      <WegaPlayingOverlay
+        lobbyId={gameId || ''}
+        gameState={syncState.gameState}
+        playerPosition={syncState.playerPosition}
+        currentPlayer={syncState.currentPlayer}
+        allPlayers={syncState.allPlayers}
+      />
     </div>
   );
 }
