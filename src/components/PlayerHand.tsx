@@ -10,6 +10,8 @@ interface PlayerHandProps {
   selectedIndex: number | null;
   onDominoSelect: (index: number) => void;
   isMyTurn?: boolean;
+  flippedTiles?: Record<number, boolean>;
+  onTileDoubleClick?: (index: number) => void;
 }
 
 const isDouble = (data: DominoData) => data.value1 === data.value2;
@@ -22,7 +24,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   hand,
   selectedIndex,
   onDominoSelect,
-  isMyTurn = true
+  isMyTurn = true,
+  flippedTiles,
+  onTileDoubleClick,
 }) => {
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
@@ -95,17 +99,23 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         style={{ gap: `${gapPx}px` }}
       >
         {hand.map((domino, index) => (
-          <DominoTile
+          <div
             key={getDominoKey(domino, index)}
-            data={domino}
-            orientation={isDouble(domino) ? "vertical" : "horizontal"}
-            selected={index === selectedIndex}
-            rotateX={settings.rotateX}
-            rotateY={settings.rotateY}
-            rotateZ={settings.rotateZ}
-            onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
-            className="relative transition-all duration-200 domino-tile-hand hover:z-20"
-          />
+            onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
+            className="relative"
+          >
+            <DominoTile
+              data={domino}
+              orientation={isDouble(domino) ? "vertical" : "horizontal"}
+              flipped={!!flippedTiles?.[index]}
+              selected={index === selectedIndex}
+              rotateX={settings.rotateX}
+              rotateY={settings.rotateY}
+              rotateZ={settings.rotateZ}
+              onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
+              className="relative transition-all duration-200 domino-tile-hand hover:z-20"
+            />
+          </div>
         ))}
       </div>
     </div>
