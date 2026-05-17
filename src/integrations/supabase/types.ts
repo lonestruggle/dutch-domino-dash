@@ -872,6 +872,27 @@ export type Database = {
       }
     }
     Functions: {
+      _wega_finalize_game: {
+        Args: {
+          _game_id: string
+          _lobby_id: string
+          _multiplier: number
+          _reason: string
+          _state: Json
+          _winner_pos: number
+        }
+        Returns: Json
+      }
+      _wega_open_ends: {
+        Args: { _board: Json }
+        Returns: {
+          ovalue: number
+          ox: number
+          oy: number
+          src_x: number
+          src_y: number
+        }[]
+      }
       can_moderate: { Args: { _user_id: string }; Returns: boolean }
       cleanup_expired_invitations: { Args: never; Returns: number }
       cleanup_expired_lobbies: { Args: never; Returns: number }
@@ -946,9 +967,21 @@ export type Database = {
         Args: { _hand_index: number; _lobby_id: string }
         Returns: Json
       }
+      wega_pass: { Args: { _lobby_id: string }; Returns: Json }
       wega_settle: {
         Args: { _lobby_id: string; _payload: Json }
         Returns: undefined
+      }
+      wega_submit_move: {
+        Args: {
+          _flipped: boolean
+          _hand_index: number
+          _lobby_id: string
+          _orientation: string
+          _x: number
+          _y: number
+        }
+        Returns: Json
       }
     }
     Enums: {

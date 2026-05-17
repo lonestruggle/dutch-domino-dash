@@ -13,6 +13,7 @@ import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
 import { WegaPhaseOverlay } from '@/components/WegaPhaseOverlay';
+import { WegaPlayingOverlay } from '@/components/WegaPlayingOverlay';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
 
@@ -990,6 +991,11 @@ export default function Game() {
 
   const wrappedDrawFromBoneyard = useCallback(async (actorPosition?: number) => {
     console.log('🎲 Draw from boneyard - turn validation removed, database controls turns');
+    const wegaPhase = (syncState.gameState as any)?.wegaPhase;
+    if (wegaPhase === 'playing' || wegaPhase === 'ended') {
+      toast({ title: 'Boneyard gesloten', description: 'In Wega di sen kun je geen extra stenen meer trekken.', variant: 'destructive' });
+      return;
+    }
     const actingPosition = typeof actorPosition === 'number' ? actorPosition : syncState.currentPlayer;
 
     // Execute draw locally - database will validate turn
@@ -1022,6 +1028,11 @@ export default function Game() {
 
   const wrappedDrawSpecificFromBoneyard = useCallback(async (index: number, actorPosition?: number) => {
     console.log('🎲 Draw specific from boneyard - turn validation removed, database controls turns');
+    const wegaPhase = (syncState.gameState as any)?.wegaPhase;
+    if (wegaPhase === 'playing' || wegaPhase === 'ended') {
+      toast({ title: 'Boneyard gesloten', description: 'In Wega di sen kun je geen extra stenen meer trekken.', variant: 'destructive' });
+      return;
+    }
     const actingPosition = typeof actorPosition === 'number' ? actorPosition : syncState.currentPlayer;
 
     // Execute draw locally - database will validate turn
@@ -1788,6 +1799,13 @@ export default function Game() {
         playerPosition={syncState.playerPosition}
         allPlayers={syncState.allPlayers}
         onChanged={() => { /* realtime listener verzorgt update */ }}
+      />
+      <WegaPlayingOverlay
+        lobbyId={gameId || ''}
+        gameState={syncState.gameState}
+        playerPosition={syncState.playerPosition}
+        currentPlayer={syncState.currentPlayer}
+        allPlayers={syncState.allPlayers}
       />
     </div>
   );
