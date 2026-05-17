@@ -959,7 +959,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             const size = orientation === "horizontal" ? [2, 1] : [1, 2];
             const isInitialPlacement = Object.keys(gameState.dominoes).length === 0;
-            const isWegaPlay = (gameState as any)?.wegaPhase === 'playing';
+            const isWegaPlay = (gameState as GameState & { wegaPhase?: string }).wegaPhase === 'playing';
 
             return (
               <PlacementTarget
