@@ -197,6 +197,7 @@ export default function Lobbies() {
                       value={lobbyName}
                       onChange={(e) => setLobbyName(e.target.value)}
                       placeholder="Enter lobby name"
+                      className="bg-white text-black placeholder:text-black/50"
                     />
                   </div>
                   <div>
@@ -208,17 +209,18 @@ export default function Lobbies() {
                       max="4"
                       value={maxPlayers}
                       onChange={(e) => setMaxPlayers(parseInt(e.target.value) || 4)}
+                      className="bg-white text-black"
                     />
                   </div>
                   <div>
                     <Label>Spelmodus</Label>
                     <Select value={gameMode} onValueChange={(v) => setGameMode(v as 'classic' | 'wega_di_sen')}>
-                      <SelectTrigger className="bg-background text-foreground border-input">
+                      <SelectTrigger className="bg-white text-black border-input">
                         <SelectValue placeholder="Kies een spelmodus" />
                       </SelectTrigger>
-                      <SelectContent className="bg-popover text-popover-foreground">
-                        <SelectItem value="classic">Klassiek</SelectItem>
-                        <SelectItem value="wega_di_sen">Wega di sen (coins)</SelectItem>
+                      <SelectContent className="bg-white text-black">
+                        <SelectItem value="classic" className="text-black focus:bg-black/10 focus:text-black">Klassiek</SelectItem>
+                        <SelectItem value="wega_di_sen" className="text-black focus:bg-black/10 focus:text-black">Wega di sen (coins)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -231,6 +233,7 @@ export default function Lobbies() {
                         min={1}
                         value={wegaStake}
                         onChange={(e) => setWegaStake(parseInt(e.target.value) || 1)}
+                        className="bg-white text-black"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         Jouw saldo: {myCoins ?? 0} coins
