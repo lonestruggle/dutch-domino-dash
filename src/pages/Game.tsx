@@ -1204,19 +1204,11 @@ export default function Game() {
     // blokkade triggeren terwijl er nog speelbare zetten zijn.
     const wegaPhaseNow = (syncState.gameState as any)?.wegaPhase;
     if (wegaPhaseNow === 'playing') {
-      const board = state.board as Record<string, { dominoId: string; value: number }>;
-      const openValues = new Set<number>();
-      for (const key of Object.keys(board)) {
-        const [cx, cy] = key.split(',').map(Number);
-        const dirs = [[cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy]];
-        for (const [nx, ny] of dirs) {
-          if (!board[`${nx},${ny}`]) { openValues.add(board[key].value); break; }
-        }
-      }
-      const anyMatch =
-        allHands.some((h) => h.some((d) => openValues.has(d.value1) || openValues.has(d.value2))) ||
-        (state.boneyard || []).some((d) => d && (openValues.has(d.value1) || openValues.has(d.value2)));
-      if (anyMatch) return false;
+      // Echte legaliteits-check: kunnen we ergens daadwerkelijk plaatsen?
+      const anyLegal = allHands.some((hand) =>
+        hand.some((domino) => gameHook.findLegalMoves(domino).length > 0)
+      );
+      if (anyLegal) return false;
       return finalizeBlockedGame('wega-no-pip-match', allHands);
     }
 
