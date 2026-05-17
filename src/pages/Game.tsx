@@ -1829,6 +1829,20 @@ export default function Game() {
   const handLen = gameState?.playerHand?.length ?? 0;
   useEffect(() => { setWegaFlipMap({}); }, [handLen, isWegaPlay]);
 
+  // Volledig lokale selectie-state voor Wega di sen, zodat realtime sync deze
+  // niet kan overschrijven (race-condities veroorzaakten 'tegel selecteert niet').
+  const [wegaSelectedIndex, setWegaSelectedIndex] = useState<number | null>(null);
+  const wegaSelectHandDomino = useCallback((index: number) => {
+    setWegaSelectedIndex((prev) => (prev === index ? null : index));
+  }, []);
+  useEffect(() => { if (!isWegaPlay) setWegaSelectedIndex(null); }, [isWegaPlay]);
+  // Reset selectie wanneer de hand korter wordt (na succesvolle plaatsing)
+  useEffect(() => {
+    if (wegaSelectedIndex !== null && wegaSelectedIndex >= handLen) {
+      setWegaSelectedIndex(null);
+    }
+  }, [handLen, wegaSelectedIndex]);
+
   const wegaFindLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
     if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
     if (!dominoData) return [];
