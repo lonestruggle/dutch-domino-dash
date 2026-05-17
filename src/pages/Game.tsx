@@ -1829,6 +1829,20 @@ export default function Game() {
   const handLen = gameState?.playerHand?.length ?? 0;
   useEffect(() => { setWegaFlipMap({}); }, [handLen, isWegaPlay]);
 
+  // Volledig lokale selectie-state voor Wega di sen, zodat realtime sync deze
+  // niet kan overschrijven (race-condities veroorzaakten 'tegel selecteert niet').
+  const [wegaSelectedIndex, setWegaSelectedIndex] = useState<number | null>(null);
+  const wegaSelectHandDomino = useCallback((index: number) => {
+    setWegaSelectedIndex((prev) => (prev === index ? null : index));
+  }, []);
+  useEffect(() => { if (!isWegaPlay) setWegaSelectedIndex(null); }, [isWegaPlay]);
+  // Reset selectie wanneer de hand korter wordt (na succesvolle plaatsing)
+  useEffect(() => {
+    if (wegaSelectedIndex !== null && wegaSelectedIndex >= handLen) {
+      setWegaSelectedIndex(null);
+    }
+  }, [handLen, wegaSelectedIndex]);
+
   const wegaFindLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
     if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
     if (!dominoData) return [];
@@ -1836,7 +1850,7 @@ export default function Game() {
     const boardKeys = Object.keys(board);
     const moves: LegalMove[] = [];
     // Bepaal of dominoData de momenteel geselecteerde steen is — alleen dan respecteren we de user-flip
-    const selIdx = gameState?.selectedHandIndex;
+    const selIdx = wegaSelectedIndex;
     const selDom = (selIdx !== null && selIdx !== undefined) ? gameState?.playerHand?.[selIdx] : null;
     const isSelectedTile = !!selDom && selDom.value1 === dominoData.value1 && selDom.value2 === dominoData.value2;
     const forcedFlip: boolean | null = (isSelectedTile && selIdx !== null && selIdx !== undefined && wegaFlipMap[selIdx] !== undefined)
@@ -1925,14 +1939,14 @@ export default function Game() {
       }
     }
     return moves;
-  }, [isWegaPlay, gameHook, gameState?.board, gameState?.selectedHandIndex, gameState?.playerHand, wegaFlipMap]);
+  }, [isWegaPlay, gameHook, gameState?.board, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
 
   const wegaExecuteMove = useCallback(async (move: MoveWithEffects) => {
     if (!isWegaPlay) {
       return wrappedExecuteMove(move);
     }
     try {
-      const handIndex = typeof move.index === 'number' ? move.index : (gameState?.selectedHandIndex ?? -1);
+      const handIndex = typeof move.index === 'number' ? move.index : (wegaSelectedIndex ?? -1);
       if (handIndex < 0) return;
       const { data, error } = await supabase.rpc('wega_submit_move' as any, {
         _lobby_id: gameId,
@@ -1945,6 +1959,7 @@ export default function Game() {
       if (error) throw error;
       const r = data as any;
       if (r?.ok) {
+        setWegaSelectedIndex(null);
         if (r?.win) {
           toast({ title: r.changa ? '🎉 CHANGA!' : 'Je hebt gewonnen!', description: r.changa ? 'Dubbele uitbetaling!' : 'Spel afgelopen.' });
         }
@@ -1962,7 +1977,7 @@ export default function Game() {
     } catch (e: any) {
       toast({ title: 'Fout', description: e?.message || String(e), variant: 'destructive' });
     }
-  }, [isWegaPlay, wrappedExecuteMove, gameId, gameState?.selectedHandIndex, syncState.gameState, toast]);
+  }, [isWegaPlay, wrappedExecuteMove, gameId, wegaSelectedIndex, syncState.gameState, toast]);
 
   const wegaPassMove = useCallback(async (actorPosition?: number) => {
     if (!isWegaPlay) return passMove(actorPosition);
@@ -2027,6 +2042,10 @@ export default function Game() {
           gameData: syncState.gameData || { background_choice: null },
           wegaFlipMap: isWegaPlay ? wegaFlipMap : undefined,
           flipWegaTile: isWegaPlay ? flipWegaTile : undefined,
+          selectHandDomino: isWegaPlay ? wegaSelectHandDomino : gameHook.selectHandDomino,
+          gameState: isWegaPlay
+            ? { ...gameHook.gameState, selectedHandIndex: wegaSelectedIndex }
+            : gameHook.gameState,
         }}
       />
       <WegaPhaseOverlay
