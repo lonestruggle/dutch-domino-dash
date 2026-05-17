@@ -10,23 +10,19 @@ interface Props {
   playerPosition: number;
   currentPlayer: number;
   allPlayers: Array<{ username: string; position: number; is_bot: boolean; user_id?: string }>;
+  isHost: boolean;
+  onToggleAutoPass: (value: boolean) => void;
 }
-
-const AUTO_PASS_KEY = 'wega:autoPass';
-
-export const getWegaAutoPass = () => {
-  try { return localStorage.getItem(AUTO_PASS_KEY) === '1'; } catch { return false; }
-};
 
 /**
  * Klein info-/pas-paneel voor Wega di sen "playing" fase.
  * Plaatsings-targets worden via Game.tsx in de bestaande GameBoard-flow gerenderd
  * (zoals in klassieke mode), zodat elk open einde speelbaar is.
  */
-export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, currentPlayer, playerPosition, allPlayers }) => {
+export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, currentPlayer, playerPosition, allPlayers, isHost, onToggleAutoPass }) => {
   const { toast } = useToast();
   const [busy, setBusy] = React.useState(false);
-  const [autoPass, setAutoPass] = React.useState<boolean>(getWegaAutoPass());
+  const autoPass = !!gameState?.wegaAutoPass;
 
   // Notify everyone when someone passes (detected via consecutivePasses increase)
   const prevPassesRef = React.useRef<number>(Number(gameState?.consecutivePasses) || 0);
@@ -69,26 +65,24 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, curren
     }
   };
 
-  const toggleAutoPass = (v: boolean) => {
-    setAutoPass(v);
-    try { localStorage.setItem(AUTO_PASS_KEY, v ? '1' : '0'); } catch {}
-    window.dispatchEvent(new CustomEvent('wega:autoPassChanged', { detail: v }));
-  };
-
   return (
     <div className="fixed top-20 right-4 z-40 bg-black/80 backdrop-blur-sm border border-yellow-400/40 rounded-lg px-3 py-2 flex items-center gap-3 text-xs text-white shadow-lg">
       <span className="flex items-center gap-1 text-yellow-300 font-semibold">
         <Coins className="h-3.5 w-3.5" /> Wega — Inzet {stake}
       </span>
-      <label className="flex items-center gap-1 cursor-pointer select-none" title="Past automatisch als je geen zet hebt">
-        <input
-          type="checkbox"
-          checked={autoPass}
-          onChange={(e) => toggleAutoPass(e.target.checked)}
-          className="accent-yellow-400"
-        />
-        Auto-pas
-      </label>
+      {isHost ? (
+        <label className="flex items-center gap-1 cursor-pointer select-none" title="Past automatisch als spelers geen zet hebben (geldt voor iedereen)">
+          <input
+            type="checkbox"
+            checked={autoPass}
+            onChange={(e) => onToggleAutoPass(e.target.checked)}
+            className="accent-yellow-400"
+          />
+          Auto-pas (iedereen)
+        </label>
+      ) : autoPass ? (
+        <span className="text-yellow-300/80">Auto-pas aan</span>
+      ) : null}
       <Button size="sm" variant="destructive" disabled={!isMyTurn || busy} onClick={handlePass} className="h-7 px-3 text-xs">
         Pas
       </Button>
