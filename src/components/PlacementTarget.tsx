@@ -2,6 +2,8 @@ import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { cn } from '@/lib/utils';
+import { DominoTile } from './DominoTile';
+import type { DominoData } from '@/types/domino';
 
 interface PlacementTargetProps {
   x: number;
@@ -16,6 +18,8 @@ interface PlacementTargetProps {
   isInitialPlacement?: boolean;
   disabled?: boolean;
   matchValue?: number;
+  ghostTile?: DominoData;
+  ghostFlipped?: boolean;
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -31,6 +35,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   isInitialPlacement = false,
   disabled = false,
   matchValue,
+  ghostTile,
+  ghostFlipped,
 }) => {
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
@@ -46,6 +52,7 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         isDouble && orientation === 'vertical' && 'double-vertical-offset',
         isDouble && orientation === 'horizontal' && 'double-horizontal-offset',
         isMobile && 'cursor-pointer active:bg-opacity-80',
+        ghostTile && 'placement-target--ghost',
         className
       )}
       style={{
@@ -67,14 +74,28 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
       }}
       onTouchStart={isMobile ? (e) => e.stopPropagation() : undefined}
     >
-      {typeof matchValue === 'number' && (
+      {ghostTile ? (
         <div
-          className="absolute -top-2 -left-2 z-10 flex items-center justify-center rounded-full bg-yellow-400 text-black text-[10px] font-bold shadow-md pointer-events-none"
-          style={{ width: 18, height: 18, border: '1px solid hsl(var(--background))' }}
-          title={`Open einde verwacht: ${matchValue}`}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          style={{ opacity: 0.55 }}
         >
-          {matchValue}
+          <DominoTile
+            data={ghostTile}
+            orientation={orientation}
+            flipped={!!ghostFlipped}
+            className="pointer-events-none"
+          />
         </div>
+      ) : (
+        typeof matchValue === 'number' && (
+          <div
+            className="absolute -top-2 -left-2 z-10 flex items-center justify-center rounded-full bg-yellow-400 text-black text-[10px] font-bold shadow-md pointer-events-none"
+            style={{ width: 18, height: 18, border: '1px solid hsl(var(--background))' }}
+            title={`Open einde verwacht: ${matchValue}`}
+          >
+            {matchValue}
+          </div>
+        )
       )}
     </div>
   );
