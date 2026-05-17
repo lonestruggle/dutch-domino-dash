@@ -15,6 +15,7 @@ interface PlacementTargetProps {
   className?: string;
   isInitialPlacement?: boolean;
   disabled?: boolean;
+  matchValue?: number;
 }
 
 export const PlacementTarget: React.FC<PlacementTargetProps> = ({
@@ -28,7 +29,8 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
   style,
   className,
   isInitialPlacement = false,
-  disabled = false
+  disabled = false,
+  matchValue,
 }) => {
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
@@ -64,6 +66,16 @@ export const PlacementTarget: React.FC<PlacementTargetProps> = ({
         }
       }}
       onTouchStart={isMobile ? (e) => e.stopPropagation() : undefined}
-    />
+    >
+      {typeof matchValue === 'number' && (
+        <div
+          className="absolute -top-2 -left-2 z-10 flex items-center justify-center rounded-full bg-yellow-400 text-black text-[10px] font-bold shadow-md pointer-events-none"
+          style={{ width: 18, height: 18, border: '1px solid hsl(var(--background))' }}
+          title={`Open einde verwacht: ${matchValue}`}
+        >
+          {matchValue}
+        </div>
+      )}
+    </div>
   );
 };

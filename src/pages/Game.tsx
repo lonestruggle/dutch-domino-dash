@@ -1779,17 +1779,34 @@ export default function Game() {
   const wegaPhase = (syncState.gameState as any)?.wegaPhase as string | undefined;
   const isWegaPlay = wegaPhase === 'playing';
 
+  // Lokale flip-state per handsteen (alleen voor Wega di sen "playing" fase)
+  const [wegaFlipMap, setWegaFlipMap] = useState<Record<number, boolean>>({});
+  const flipWegaTile = useCallback((index: number) => {
+    if (!isWegaPlay) return;
+    setWegaFlipMap((m) => ({ ...m, [index]: !m[index] }));
+  }, [isWegaPlay]);
+  // Reset flip-map als de hand verandert van lengte (nieuwe ronde / steen gespeeld)
+  const handLen = gameState?.playerHand?.length ?? 0;
+  useEffect(() => { setWegaFlipMap({}); }, [handLen, isWegaPlay]);
+
   const wegaFindLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
     if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
     if (!dominoData) return [];
     const board = (gameState?.board || {}) as Record<string, { dominoId: string; value: number }>;
     const boardKeys = Object.keys(board);
     const moves: LegalMove[] = [];
+    // Bepaal of dominoData de momenteel geselecteerde steen is — alleen dan respecteren we de user-flip
+    const selIdx = gameState?.selectedHandIndex;
+    const selDom = (selIdx !== null && selIdx !== undefined) ? gameState?.playerHand?.[selIdx] : null;
+    const isSelectedTile = !!selDom && selDom.value1 === dominoData.value1 && selDom.value2 === dominoData.value2;
+    const forcedFlip: boolean | null = (isSelectedTile && selIdx !== null && selIdx !== undefined && wegaFlipMap[selIdx] !== undefined)
+      ? !!wegaFlipMap[selIdx]
+      : null;
     if (boardKeys.length === 0) {
       moves.push({
         end: { x: 0, y: 0, value: 0, fromDir: 'E' },
         dominoData,
-        flipped: false,
+        flipped: forcedFlip ?? false,
         orientation: dominoData.value1 === dominoData.value2 ? 'vertical' : 'horizontal',
         x: 0,
         y: 0,
@@ -1831,10 +1848,12 @@ export default function Game() {
         // Check second cell free
         const otherKey = orientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
         if (board[otherKey]) continue;
+        // Respecteer user-flip wanneer de geselecteerde steen handmatig is geflipt
+        const finalFlipped = forcedFlip !== null ? forcedFlip : flipped;
         moves.push({
           end: { x: nx, y: ny, value: cellValue, fromDir: dir },
           dominoData,
-          flipped,
+          flipped: finalFlipped,
           orientation,
           x: topX,
           y: topY,
@@ -1842,7 +1861,7 @@ export default function Game() {
       }
     }
     return moves;
-  }, [isWegaPlay, gameHook, gameState?.board]);
+  }, [isWegaPlay, gameHook, gameState?.board, gameState?.selectedHandIndex, gameState?.playerHand, wegaFlipMap]);
 
   const wegaExecuteMove = useCallback(async (move: MoveWithEffects) => {
     if (!isWegaPlay) {
@@ -1915,7 +1934,9 @@ export default function Game() {
           hardSlam: wrappedHardSlam,
           botDebugInfo,
           syncState,
-          gameData: syncState.gameData || { background_choice: null }
+          gameData: syncState.gameData || { background_choice: null },
+          wegaFlipMap: isWegaPlay ? wegaFlipMap : undefined,
+          flipWegaTile: isWegaPlay ? flipWegaTile : undefined,
         }}
       />
       <WegaPhaseOverlay
