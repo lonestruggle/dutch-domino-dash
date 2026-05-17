@@ -1157,6 +1157,32 @@ export default function Game() {
     if (!state || state.isGameOver || state.gameEndReason === 'changa') return false;
     if (!state.board || Object.keys(state.board).length === 0) return false;
 
+    // In Wega di sen "playing" fase: gebruik een pip-gebaseerde check op alle lege buurcellen
+    // van bezette cellen. Zo voorkomen we dat strikte forbiddens/neighbor-regels ten onrechte
+    // een blokkade triggeren terwijl er nog gespeeld kan worden.
+    const wegaPhaseNow = (syncState.gameState as any)?.wegaPhase;
+    if (wegaPhaseNow === 'playing') {
+      const board = state.board as Record<string, { dominoId: string; value: number }>;
+      const openValues = new Set<number>();
+      for (const key of Object.keys(board)) {
+        const [cx, cy] = key.split(',').map(Number);
+        const dirs = [[cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy]];
+        for (const [nx, ny] of dirs) {
+          if (!board[`${nx},${ny}`]) openValues.add(board[key].value);
+        }
+      }
+      const wegaHands: DominoData[][] =
+        Array.isArray(state.playerHands) && state.playerHands.length > 0
+          ? state.playerHands
+          : [state.playerHand || []];
+      if (wegaHands.some((h) => h.length === 0)) return false;
+      const anyMatch =
+        wegaHands.some((h) => h.some((d) => openValues.has(d.value1) || openValues.has(d.value2))) ||
+        (state.boneyard || []).some((d) => d && (openValues.has(d.value1) || openValues.has(d.value2)));
+      if (anyMatch) return false;
+      return finalizeBlockedGame('wega-no-pip-match', wegaHands);
+    }
+
     const finalizeBlockedGame = (reason: string, allHandsForScoring: DominoData[][]): boolean => {
       const playerPoints = allHandsForScoring.map((hand) =>
         hand.reduce((sum, domino) => sum + domino.value1 + domino.value2, 0)
