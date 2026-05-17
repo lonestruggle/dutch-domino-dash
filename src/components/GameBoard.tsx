@@ -407,6 +407,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardSize = calculateBoardSize();
   const dynamicScale = calculateOptimalScale();
 
+  // Compute centroid of placed dominoes so we can keep the chain centered
+  // in the container as it grows asymmetrically.
+  const boardCentroid = (() => {
+    const dominoes = Object.values(gameState.dominoes);
+    if (dominoes.length === 0) return { x: 0, y: 0 };
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    dominoes.forEach(domino => {
+      const w = domino.orientation === 'horizontal' ? 2 : 1;
+      const h = domino.orientation === 'vertical' ? 2 : 1;
+      minX = Math.min(minX, domino.x);
+      maxX = Math.max(maxX, domino.x + w - 1);
+      minY = Math.min(minY, domino.y);
+      maxY = Math.max(maxY, domino.y + h - 1);
+    });
+    return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  })();
+
   useEffect(() => {
     const dominoEntries = Object.entries(gameState.dominoes);
     const currentIds = new Set(dominoEntries.map(([id]) => id));
@@ -877,7 +894,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             top: '50%',
             width: boardSize, 
             height: boardSize,
-            transform: `translate(-50%, -50%) scale(${dynamicScale})`,
+            transform: `translate(-50%, -50%) scale(${dynamicScale}) translate(${-boardCentroid.x * GRID_CELL_SIZE}px, ${-boardCentroid.y * GRID_CELL_SIZE}px)`,
             transformOrigin: 'center'
           }}
         >
