@@ -560,64 +560,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const backgroundImage = getBackgroundImage(backgroundChoice);
 
-  // Original PC auto-center logic
   useEffect(() => {
-    if (!containerRef.current || Object.keys(gameState.dominoes).length === 0) return;
-    
-    const checkIfRecenterNeeded = () => {
-      const containerRect = containerRef.current!.getBoundingClientRect();
-      const currentScale = dynamicScale;
-      const boardSize = calculateBoardSize();
-      
-      const dominoes = Object.values(gameState.dominoes);
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      
-      dominoes.forEach(domino => {
-        const dominoWidth = domino.orientation === 'horizontal' ? 2 : 1;
-        const dominoHeight = domino.orientation === 'vertical' ? 2 : 1;
-        
-        minX = Math.min(minX, domino.x);
-        maxX = Math.max(maxX, domino.x + dominoWidth - 1);
-        minY = Math.min(minY, domino.y);
-        maxY = Math.max(maxY, domino.y + dominoHeight - 1);
-      });
-      
-      const centerX = (minX + maxX) / 2;
-      const centerY = (minY + maxY) / 2;
-      
-      const pixelCenterX = boardSize / 2 + centerX * GRID_CELL_SIZE * currentScale;
-      const pixelCenterY = boardSize / 2 + centerY * GRID_CELL_SIZE * currentScale;
-      
-      const optimalScrollX = pixelCenterX - containerRect.width / 2;
-      const optimalScrollY = pixelCenterY - containerRect.height / 2;
-      
-      containerRef.current!.scrollTo({
-        left: Math.max(0, optimalScrollX),
-        top: Math.max(0, optimalScrollY),
-        behavior: 'smooth'
-      });
-    };
-    
-    const timer = setTimeout(checkIfRecenterNeeded, 100);
-    return () => clearTimeout(timer);
-  }, [gameState.dominoes, dynamicScale]);
-
-  // Original PC initial center logic
-  useEffect(() => {
-    if (containerRef.current && Object.keys(gameState.dominoes).length === 1) {
-      const firstDomino = Object.values(gameState.dominoes)[0];
-      const firstDominoX = firstDomino.x * GRID_CELL_SIZE * dynamicScale;
-      const firstDominoY = firstDomino.y * GRID_CELL_SIZE * dynamicScale;
-      
-      setTimeout(() => {
-        containerRef.current?.scrollTo({
-          left: boardSize / 2 + firstDominoX - containerRef.current.clientWidth / 2,
-          top: boardSize / 2 + firstDominoY - containerRef.current.clientHeight / 2,
-          behavior: 'smooth'
-        });
-      }, 100);
-    }
-  }, [gameState.dominoes, dynamicScale, boardSize]);
+    if (!containerRef.current) return;
+    containerRef.current.scrollTo({ left: 0, top: 0, behavior: 'auto' });
+  }, [gameState.dominoes, legalMoves]);
 
   useEffect(() => {
     let cancelled = false;
