@@ -1760,9 +1760,13 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
             </div>
           </TabsContent>
           
+          {/* Game Logs Tab */}
+          <TabsContent value="game-logs">
+            <GameLogsViewer />
+          </TabsContent>
+
           {/* Settings Tab */}
           <TabsContent value="settings">
-            {/* placeholder anchor */}
             <div className="space-y-6">
               <Card>
                 <CardHeader>
