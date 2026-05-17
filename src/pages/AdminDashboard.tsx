@@ -1867,6 +1867,39 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
                       {getSetting('wega_auto_pass') === true ? 'Ingeschakeld' : 'Uitgeschakeld'}
                     </Button>
                   </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t pt-3">
+                    <div className="space-y-0.5">
+                      <Label className="text-base">Wega di sen — Beschikbaar</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Als uit: spelers kunnen geen lobbies in Wega di sen mode aanmaken.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={getSetting('wega_di_sen_enabled') !== false ? 'default' : 'outline'}
+                      onClick={async () => {
+                        const currentValue = getSetting('wega_di_sen_enabled') !== false;
+                        const newValue = !currentValue;
+                        const result = await updateSetting('wega_di_sen_enabled', newValue);
+                        if (result.success) {
+                          toast({
+                            title: 'Instelling bijgewerkt',
+                            description: `Wega di sen is nu ${newValue ? 'beschikbaar' : 'uitgeschakeld'}`,
+                          });
+                        } else {
+                          toast({
+                            title: 'Fout',
+                            description: 'Kon instelling niet bijwerken',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                      disabled={settingsLoading}
+                    >
+                      {getSetting('wega_di_sen_enabled') !== false ? 'Ingeschakeld' : 'Uitgeschakeld'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
