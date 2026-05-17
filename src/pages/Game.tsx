@@ -13,6 +13,7 @@ import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
 import { WegaPhaseOverlay } from '@/components/WegaPhaseOverlay';
+import { WegaPlayingOverlay } from '@/components/WegaPlayingOverlay';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
 
