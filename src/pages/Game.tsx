@@ -1959,6 +1959,7 @@ export default function Game() {
       if (error) throw error;
       const r = data as any;
       if (r?.ok) {
+        setWegaSelectedIndex(null);
         if (r?.win) {
           toast({ title: r.changa ? '🎉 CHANGA!' : 'Je hebt gewonnen!', description: r.changa ? 'Dubbele uitbetaling!' : 'Spel afgelopen.' });
         }
