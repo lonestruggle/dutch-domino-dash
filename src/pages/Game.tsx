@@ -1832,6 +1832,7 @@ export default function Game() {
       });
       return moves;
     }
+    const isDoubleTile = dominoData.value1 === dominoData.value2;
     const seen = new Set<string>();
     for (const key of boardKeys) {
       const [cx, cy] = key.split(',').map(Number);
@@ -1846,6 +1847,29 @@ export default function Game() {
         const k = `${nx},${ny}`;
         if (board[k] || seen.has(k)) continue;
         seen.add(k);
+        // Dubbele steen ligt áltijd dwars t.o.v. de aansluitrichting
+        if (isDoubleTile) {
+          if (dominoData.value1 !== cellValue) continue;
+          const perpOrientation: 'horizontal' | 'vertical' = (dir === 'N' || dir === 'S') ? 'horizontal' : 'vertical';
+          // Probeer beide kanten waar de dubbele zich kan uitstrekken
+          const extensions: Array<{ topX: number; topY: number }> = perpOrientation === 'horizontal'
+            ? [{ topX: nx, topY: ny }, { topX: nx - 1, topY: ny }]
+            : [{ topX: nx, topY: ny }, { topX: nx, topY: ny - 1 }];
+          for (const { topX, topY } of extensions) {
+            const c1 = `${topX},${topY}`;
+            const c2 = perpOrientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
+            if (board[c1] || board[c2]) continue;
+            moves.push({
+              end: { x: nx, y: ny, value: cellValue, fromDir: dir },
+              dominoData,
+              flipped: false,
+              orientation: perpOrientation,
+              x: topX,
+              y: topY,
+            });
+          }
+          continue;
+        }
         const orientation: 'horizontal' | 'vertical' = (dir === 'N' || dir === 'S') ? 'vertical' : 'horizontal';
         let topX = nx, topY = ny;
         const adjacencyOnSecondCell = (orientation === 'horizontal' && dir === 'W') || (orientation === 'vertical' && dir === 'N');
