@@ -893,6 +893,14 @@ export type Database = {
           src_y: number
         }[]
       }
+      _wega_tail_values: {
+        Args: { _board: Json }
+        Returns: {
+          tvalue: number
+          tx: number
+          ty: number
+        }[]
+      }
       can_moderate: { Args: { _user_id: string }; Returns: boolean }
       cleanup_expired_invitations: { Args: never; Returns: number }
       cleanup_expired_lobbies: { Args: never; Returns: number }
