@@ -863,7 +863,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             top: '50%',
             width: boardSize, 
             height: boardSize,
-            transform: `translate(-50%, -50%) scale(${dynamicScale}) translate(${-boardCentroid.x * GRID_CELL_SIZE}px, ${-boardCentroid.y * GRID_CELL_SIZE}px)`,
+            transform: `translate(-50%, -50%) translate(${-boardCameraOffset.x * dynamicScale}px, ${-boardCameraOffset.y * dynamicScale}px) scale(${dynamicScale})`,
             transformOrigin: 'center'
           }}
         >
@@ -942,8 +942,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const { orientation, dominoData } = move;
             const isDouble = dominoData.value1 === dominoData.value2;
             
-            if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
-            if (orientation === "vertical" && end.fromDir === "N") y -= 1;
+            if (typeof move.x === 'number') x = move.x;
+            else if (orientation === "horizontal" && end.fromDir === "W") x -= 1;
+            if (typeof move.y === 'number') y = move.y;
+            else if (orientation === "vertical" && end.fromDir === "N") y -= 1;
 
             const size = orientation === "horizontal" ? [2, 1] : [1, 2];
             const isInitialPlacement = Object.keys(gameState.dominoes).length === 0;
