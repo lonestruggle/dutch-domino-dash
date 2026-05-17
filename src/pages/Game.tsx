@@ -1775,6 +1775,118 @@ export default function Game() {
     syncState.allPlayers,
   ]);
 
+  // ===== Wega di sen overrides =====
+  const wegaPhase = (syncState.gameState as any)?.wegaPhase as string | undefined;
+  const isWegaPlay = wegaPhase === 'playing';
+
+  const wegaFindLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
+    if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
+    if (!dominoData) return [];
+    const board = (gameState?.board || {}) as Record<string, { dominoId: string; value: number }>;
+    const boardKeys = Object.keys(board);
+    const moves: LegalMove[] = [];
+    if (boardKeys.length === 0) {
+      moves.push({
+        end: { x: 0, y: 0, value: 0, fromDir: 'E' },
+        dominoData,
+        flipped: false,
+        orientation: dominoData.value1 === dominoData.value2 ? 'vertical' : 'horizontal',
+        x: 0,
+        y: 0,
+      });
+      return moves;
+    }
+    const seen = new Set<string>();
+    for (const key of boardKeys) {
+      const [cx, cy] = key.split(',').map(Number);
+      const cellValue = board[key].value;
+      const neighbors: Array<{ nx: number; ny: number; dir: 'N' | 'S' | 'E' | 'W' }> = [
+        { nx: cx, ny: cy - 1, dir: 'N' },
+        { nx: cx, ny: cy + 1, dir: 'S' },
+        { nx: cx - 1, ny: cy, dir: 'W' },
+        { nx: cx + 1, ny: cy, dir: 'E' },
+      ];
+      for (const { nx, ny, dir } of neighbors) {
+        const k = `${nx},${ny}`;
+        if (board[k] || seen.has(k)) continue;
+        seen.add(k);
+        const orientation: 'horizontal' | 'vertical' = (dir === 'N' || dir === 'S') ? 'vertical' : 'horizontal';
+        let flipped = false;
+        if (dominoData.value1 === cellValue) flipped = false;
+        else if (dominoData.value2 === cellValue) flipped = true;
+        let topX = nx, topY = ny;
+        if (orientation === 'horizontal' && dir === 'W') topX = nx - 1;
+        if (orientation === 'vertical' && dir === 'N') topY = ny - 1;
+        // Check second cell free
+        const otherKey = orientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
+        if (board[otherKey]) continue;
+        moves.push({
+          end: { x: nx, y: ny, value: cellValue, fromDir: dir },
+          dominoData,
+          flipped,
+          orientation,
+          x: topX,
+          y: topY,
+        });
+      }
+    }
+    return moves;
+  }, [isWegaPlay, gameHook, gameState?.board]);
+
+  const wegaExecuteMove = useCallback(async (move: MoveWithEffects) => {
+    if (!isWegaPlay) {
+      return wrappedExecuteMove(move);
+    }
+    try {
+      const handIndex = typeof move.index === 'number' ? move.index : (gameState?.selectedHandIndex ?? -1);
+      if (handIndex < 0) return;
+      const { data, error } = await supabase.rpc('wega_submit_move' as any, {
+        _lobby_id: gameId,
+        _hand_index: handIndex,
+        _x: move.x,
+        _y: move.y,
+        _orientation: move.orientation,
+        _flipped: !!move.flipped,
+      });
+      if (error) throw error;
+      const r = data as any;
+      if (r?.ok) {
+        if (r?.win) {
+          toast({ title: r.changa ? '🎉 CHANGA!' : 'Je hebt gewonnen!', description: r.changa ? 'Dubbele uitbetaling!' : 'Spel afgelopen.' });
+        }
+      } else {
+        const stake = (syncState.gameState as any)?.wegaStake || 10;
+        toast({
+          title: `Foute zet — boete ${r?.penalty || stake} coins per speler`,
+          description: r?.reason === 'cell_occupied' ? 'Cel is al bezet'
+            : r?.reason === 'no_matching_end' ? 'Geen passende open einde'
+            : r?.reason === 'illegal_adjacency' ? 'Pips komen niet overeen'
+            : r?.reason === 'not_your_turn' ? 'Niet jouw beurt' : 'Ongeldige zet',
+          variant: 'destructive',
+        });
+      }
+    } catch (e: any) {
+      toast({ title: 'Fout', description: e?.message || String(e), variant: 'destructive' });
+    }
+  }, [isWegaPlay, wrappedExecuteMove, gameId, gameState?.selectedHandIndex, syncState.gameState, toast]);
+
+  const wegaPassMove = useCallback(async (actorPosition?: number) => {
+    if (!isWegaPlay) return passMove(actorPosition);
+    try {
+      const { data, error } = await supabase.rpc('wega_pass' as any, { _lobby_id: gameId });
+      if (error) throw error;
+      const r = data as any;
+      const stake = (syncState.gameState as any)?.wegaStake || 10;
+      if (r?.blocked) {
+        toast({ title: 'Spel geblokkeerd', description: `Speler ${r.winner_position + 1} wint met laagste pips.` });
+      } else {
+        toast({ title: 'Gepast', description: `Boete: ${r?.penalty || stake} coins${r?.bonus ? ' (openingsbonus x2)' : ''}` });
+      }
+    } catch (e: any) {
+      toast({ title: 'Fout', description: e?.message || String(e), variant: 'destructive' });
+    }
+  }, [isWegaPlay, passMove, gameId, syncState.gameState, toast]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Wega di sen overrides */}
