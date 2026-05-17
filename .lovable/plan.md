@@ -1,76 +1,84 @@
-## Nieuwe Spelmodus: "Wega di sen"
+## Fase C — Wega di sen: vrij spelen
 
-Een high-stakes free-play modus waarbij ongeldige zetten niet worden geblokkeerd, maar afgestraft via een coin-economie.
+### 1. Steen oriëntatie in de hand (UX)
+- **Tap** op een steen in `PlayerHand` (in wega-modus, fase `playing`):
+  - 1e tap: selecteer steen
+  - 2e tap op zelfde steen: **flip** (wisselt `value1`/`value2` visueel via een lokale `flipped`-state per steen)
+  - Lang indrukken (≥400ms) of dubbel-tap-toggle: **roteer** horizontaal ↔ verticaal
+- Geselecteerde steen toont een klein indicator-balkje "🔄 Flip · ↻ Draai" zodat het ontdekbaar is
+- State leeft in `Lobby`/`Game` component, niet in DB (alleen de uiteindelijke zet wordt verstuurd)
 
-### 1. Database wijzigingen (migratie)
+### 2. Vrij plaatsen op het bord
+- In `GameBoard.tsx`: wanneer `gameMode === 'wega_di_sen'` en `wegaPhase === 'playing'`:
+  - **Géén** `findLegalMoves` / `placement-targets` renderen
+  - Het hele bord wordt een drop-zone die `clientX/Y` → grid `(x, y)` mapt
+  - Speler sleept geselecteerde steen → release op cel → cliënt roept RPC `wega_submit_move` aan met `{ hand_index, x, y, orientation, flipped }`
+- Boneyard is **uitgeschakeld** zodra `wegaPhase !== 'drawing'` (geen klik, grijs/disabled, "Boneyard gesloten")
 
-**Nieuwe kolommen op `lobbies`:**
-- `game_mode` (text, default `'classic'`) — waarden: `'classic'` | `'wega_di_sen'`
-- `wega_stake` (integer, default 10) — de inzet X in coins
+### 3. Server-side RPC `wega_submit_move`
+Nieuwe Postgres functie (SECURITY DEFINER). Validatie:
+1. Authenticated + speler zit in lobby + het is zijn beurt
+2. `wegaPhase = 'playing'` en `isGameOver = false`
+3. Hand-index bestaat, steen matcht
+4. Cel `(x,y)` en zijn 2e cel (afhankelijk van orientation) zijn vrij
+5. Zet sluit aan op een **open end** met matchend pip-getal (server berekent open ends uit `board`)
+6. Bij **succes**: bord/dominoes/hand bijwerken, beurt door, `lastPlacerUserId` zetten, openingPasses bijwerken, changa-check
+7. Bij **fout (foute positie, fout pip, niet jouw beurt)**: boete X aan **elke andere menselijke speler** via `transfer_coins`, steen blijft in hand, beurt blijft (speler mag opnieuw of passen)
 
-**Nieuwe kolom op `profiles`:**
-- `coins` (integer, default 1000) — speler saldo
+### 4. Pas-knop
+- Knop "Pas" zichtbaar in wega-modus tijdens jouw beurt
+- Nieuwe RPC `wega_pass`:
+  - Boete X aan `lastPlacerUserId` (de laatste die plaatste); als die er niet is (eerste zet) → X aan iedereen
+  - **Openingsbonus**: als de huidige speler positie 2 of 3 is sinds de starter én nog niemand legaal heeft kunnen leggen op het juiste open einde → 2X bonus van passer aan starter
+  - Beurt door naar volgende speler
+  - Track `openingPasses` in `game_state`
 
-**Nieuwe RPC functies:**
-- `transfer_coins(_from_user uuid, _to_user uuid, _amount int)` — SECURITY DEFINER, atomair coins verplaatsen
-- `claim_boneyard_tile(_lobby_id, _tile_index)` — atomair een steen claimen tijdens gelijktijdig trekken (voorkomt race conditions)
-- `claim_starter(_lobby_id, _domino)` — speler claimt startbeurt; valideert of het écht de hoogste is; zo niet → betaalt X aan alle anderen en spel eindigt
+### 5. Changa-detectie
+- In `wega_submit_move`, na succesvolle plaatsing:
+  - Bereken nieuwe open ends; check of de laatst geplaatste steen **beide** openstaande pip-waardes "sluit" (= identiek aan beide open ends die nu zijn weggevallen) → `gameEndReason = 'changa'`
+  - Winnaar krijgt **2X per andere speler**
+- Lege hand → `gameEndReason = 'normal'`, winnaar krijgt **X per andere speler**
+- Geblokkeerd (geen open ends meer aanspreekbaar én iedereen heeft gepast) → laagste pips wint X per speler (optioneel — kunnen we later finetunen)
 
-### 2. Lobby UI
+### 6. Eindafrekening
+Eén RPC-call `wega_settle` (bestaat al) wordt automatisch aangeroepen vanuit `wega_submit_move`/`wega_pass` zodra game eindigt. Transfers worden gebundeld in de `transfers`-array.
 
-In `Lobby.tsx` / lobby aanmaken:
-- Dropdown "Spelmodus": Klassiek / Wega di sen
-- Bij Wega di sen: input voor inzet X (coins)
-- Toon coin-saldo van elke speler
-
-### 3. Game flow aanpassingen
-
-**Voorbereiding (`useSyncedDominoGameState.startNewGame`):**
-- Bij `wega_di_sen`: bouw set zonder 6-6 en 0-0 (26 stenen)
-- Géén automatische uitdeling: alle stenen blijven in boneyard
-- Nieuwe fase `'drawing'` in game state
-
-**Drawing fase (nieuwe UI in `GameBoard.tsx`):**
-- Toon boneyard zichtbaar voor iedereen
-- Elke klik op een tegel → `claim_boneyard_tile` RPC
-- Loopt tot elke speler 5 stenen heeft
-
-**Starter fase:**
-- Spelers zien knop "Ik begin" op elke domino in hun hand
-- Klik → `claim_starter` RPC valideert
-- Bij valse claim: boete + game over
-
-**Play fase (vrij spelen):**
-- `findLegalMoves` / `placement-targets` worden NIET gebruikt in deze modus
-- Speler kan elke steen op elke open positie slepen
-- Nieuwe RPC `wega_submit_move(_lobby_id, _domino, _x, _y, _orientation)` valideert server-side:
-  - Niet jouw beurt? → boete X aan iedereen, game over
-  - Niet aansluitend op open eind? → boete X aan iedereen, game over
-  - Anders: zet wordt toegepast, beurt door
-- "Pas" knop → boete X aan laatste plaatser; opening bonus check (2X als pos 2 of 3 na opener)
-
-**Win conditie:**
-- Lege hand of geblokkeerd → winnaar krijgt X per speler
-- Changa (laatste steen sluit beide kanten) → 2X per speler
-
-### 4. Components
-
-- `WegaDiSenLobbySettings.tsx` — modus + stake selector
-- `WegaBoneyardPicker.tsx` — gelijktijdig trekken UI
-- `WegaStarterClaim.tsx` — startbeurt claim knoppen
-- `WegaPassButton.tsx` — pas knop met boete confirmatie
-- `CoinBalance.tsx` — saldo weergave
-- Aanpassingen in `GameBoard.tsx` om vrij plaatsen toe te staan bij wega modus
+### 7. UI
+- `WegaPassButton.tsx`: knop met confirmatie en preview van de boete
+- `GameBoard.tsx`: vrij-plaats drop-zone toevoegen achter een `if (gameMode === 'wega_di_sen' && wegaPhase === 'playing')` branch
+- `PlayerHand.tsx`: flip/rotate gestures, visuele indicator
+- `WegaPhaseOverlay.tsx`: extend met 'playing'-status (toont saldi, laatste plaatser, beurt)
 
 ### Technische details
 
-- Alle boete/win uitbetalingen via één RPC `wega_settle(_lobby_id, _outcome jsonb)` voor atomaire transfers
-- Game state krijgt extra velden: `gameMode`, `wegaStake`, `wegaPhase` (`'drawing'|'claiming_starter'|'playing'|'ended'`), `lastPlacerUserId`, `openingPasses` (om de 2X bonus te tracken voor positie 2 en 3)
-- Changa detectie: na plaatsing controleren of beide open eindes nu "gesloten" zijn door dezelfde steen
+**Nieuwe RPC's (migratie):**
+- `wega_submit_move(_lobby_id uuid, _hand_index int, _x int, _y int, _orientation text, _flipped boolean) returns jsonb`
+- `wega_pass(_lobby_id uuid) returns jsonb`
+
+**Game state aanvullingen:**
+```
+{
+  ...
+  lastPlacerUserId: uuid | null,
+  openingPlacements: number,   // hoeveel legale zetten sinds opener
+  wegaPhase: 'drawing' | 'claiming_starter' | 'playing' | 'ended',
+  gameEndReason: 'changa' | 'normal' | 'blocked'
+}
+```
+
+**Open-end berekening server-side:** een SQL helper die over `board`-jsonb itereert en per bezette cel de 4 buren checkt; cellen die niet in `board` zitten zijn open ends met `value = pip aan die kant`.
+
+### Volgorde van implementatie
+
+1. **Migratie**: `wega_submit_move` + `wega_pass` + helper voor open-ends + extra velden in game_state defaults
+2. **PlayerHand flip/rotate** in wega-modus
+3. **GameBoard vrij-plaatsen** drop-zone + boneyard disable
+4. **Pas-knop** component + integratie
+5. **Eindscherm** met coin-transfers
 
 ### Niet in scope nu
-- Coin top-up / aankoop
-- Historie van wega-spellen
-- Animaties voor coin-transfers (kan later)
+- Animatie van coin-transfers
+- Undo / "weet je het zeker"-confirm (gebruiker koos: gewoon boete + door)
+- Geblokkeerd-detectie volautomatisch (alleen via pas-cyclus)
 
-Wil je dat ik dit zo bouw, of eerst alleen stap 1+2 (database + lobby UI) en daarna stap 3+4?
+Akkoord met dit plan? Dan begin ik met de migratie + RPC's.
