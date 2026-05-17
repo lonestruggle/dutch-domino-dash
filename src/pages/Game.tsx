@@ -1777,6 +1777,7 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Wega di sen overrides */}
       <DominoGame 
         gameHook={{
           ...gameHook, 
