@@ -823,6 +823,59 @@ export default function Game() {
 
   // Ref om Changa-detectie te markeren tussen pre- en post-move
   const changaRef = useRef(false);
+
+  // === Client-side game logging (debug) ===
+  // Snapshot loggen bij elke verandering van dominoes-count, beurt of wegaPhase.
+  const lastSnapshotKeyRef = useRef<string>('');
+  useEffect(() => {
+    if (!gameId) return;
+    const gs: any = syncState.gameState;
+    if (!gs) return;
+    const lobbyId = (syncState as any)?.gameData?.lobby_id || null;
+    const dominoCount = gs.dominoes ? Object.keys(gs.dominoes).length : 0;
+    const handsLengths = Array.isArray(gs.playerHands) ? gs.playerHands.map((h: any[]) => (Array.isArray(h) ? h.length : 0)) : [];
+    const key = `${syncState.currentPlayer}|${dominoCount}|${gs.wegaPhase || ''}|${gs.isGameOver ? 1 : 0}|${handsLengths.join(',')}`;
+    if (key === lastSnapshotKeyRef.current) return;
+    lastSnapshotKeyRef.current = key;
+    logGameEvent({
+      gameId,
+      lobbyId,
+      eventType: 'state_snapshot',
+      currentTurn: syncState.currentPlayer,
+      wegaPhase: gs.wegaPhase || null,
+      playerPosition: syncState.playerPosition,
+      data: {
+        domino_count: dominoCount,
+        hand_sizes: handsLengths,
+        boneyard: Array.isArray(gs.boneyard) ? gs.boneyard.length : 0,
+        is_game_over: !!gs.isGameOver,
+        wega_phase: gs.wegaPhase || null,
+        last_placer_position: gs.lastPlacerPosition ?? null,
+        opening_placements: gs.openingPlacements ?? null,
+        consecutive_passes: gs.consecutivePasses ?? null,
+      },
+    });
+  }, [gameId, syncState.gameState, syncState.currentPlayer, syncState.playerPosition]);
+
+  // Tile selection loggen (alleen door lokale speler)
+  useEffect(() => {
+    if (!gameId) return;
+    const idx = gameState?.selectedHandIndex;
+    if (idx == null || idx < 0) return;
+    const tile = (gameState?.playerHand || [])[idx];
+    if (!tile) return;
+    const lobbyId = (syncState as any)?.gameData?.lobby_id || null;
+    logGameEvent({
+      gameId,
+      lobbyId,
+      eventType: 'tile_selected',
+      currentTurn: syncState.currentPlayer,
+      playerPosition: syncState.playerPosition,
+      wegaPhase: (syncState.gameState as any)?.wegaPhase || null,
+      data: { hand_index: idx, tile },
+    });
+  }, [gameId, gameState?.selectedHandIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const resolvePlayerCount = useCallback(() => {
     const fromSync = syncState.allPlayers.length;
     if (fromSync > 0) return fromSync;
