@@ -2041,6 +2041,10 @@ export default function Game() {
           gameData: syncState.gameData || { background_choice: null },
           wegaFlipMap: isWegaPlay ? wegaFlipMap : undefined,
           flipWegaTile: isWegaPlay ? flipWegaTile : undefined,
+          selectHandDomino: isWegaPlay ? wegaSelectHandDomino : gameHook.selectHandDomino,
+          gameState: isWegaPlay
+            ? { ...gameHook.gameState, selectedHandIndex: wegaSelectedIndex }
+            : gameHook.gameState,
         }}
       />
       <WegaPhaseOverlay
