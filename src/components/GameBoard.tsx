@@ -894,7 +894,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             top: '50%',
             width: boardSize, 
             height: boardSize,
-            transform: `translate(-50%, -50%) scale(${dynamicScale})`,
+            transform: `translate(-50%, -50%) scale(${dynamicScale}) translate(${-boardCentroid.x * GRID_CELL_SIZE}px, ${-boardCentroid.y * GRID_CELL_SIZE}px)`,
             transformOrigin: 'center'
           }}
         >
