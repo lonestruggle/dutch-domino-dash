@@ -1199,6 +1199,27 @@ export default function Game() {
     // If anyone has already emptied their hand, this is not a blocked endgame.
     if (allHands.some((hand) => hand.length === 0)) return false;
 
+    // In Wega di sen "playing" fase: gebruik een pip-gebaseerde check op alle lege buurcellen
+    // van bezette cellen. Voorkomt dat strikte forbiddens/neighbor-regels ten onrechte een
+    // blokkade triggeren terwijl er nog speelbare zetten zijn.
+    const wegaPhaseNow = (syncState.gameState as any)?.wegaPhase;
+    if (wegaPhaseNow === 'playing') {
+      const board = state.board as Record<string, { dominoId: string; value: number }>;
+      const openValues = new Set<number>();
+      for (const key of Object.keys(board)) {
+        const [cx, cy] = key.split(',').map(Number);
+        const dirs = [[cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy]];
+        for (const [nx, ny] of dirs) {
+          if (!board[`${nx},${ny}`]) { openValues.add(board[key].value); break; }
+        }
+      }
+      const anyMatch =
+        allHands.some((h) => h.some((d) => openValues.has(d.value1) || openValues.has(d.value2))) ||
+        (state.boneyard || []).some((d) => d && (openValues.has(d.value1) || openValues.has(d.value2)));
+      if (anyMatch) return false;
+      return finalizeBlockedGame('wega-no-pip-match', allHands);
+    }
+
     // Use stored openEnds when present so blocked debug and blocked engine are consistent.
     // Fallback to regenerated open ends only when state has none.
     const currentOpenEnds =
