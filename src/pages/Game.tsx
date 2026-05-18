@@ -1941,6 +1941,34 @@ export default function Game() {
     const board = (gameState?.board || {}) as Record<string, { dominoId: string; value: number }>;
     const boardKeys = Object.keys(board);
     const dominoesMap = (gameState?.dominoes || {}) as Record<string, { x: number; y: number; orientation: 'horizontal' | 'vertical'; data: { value1: number; value2: number } }>;
+    const placementMatchesServerRules = (topX: number, topY: number, orientation: 'horizontal' | 'vertical', flipped: boolean): boolean => {
+      const pip1 = flipped ? dominoData.value2 : dominoData.value1;
+      const pip2 = flipped ? dominoData.value1 : dominoData.value2;
+      const cells = orientation === 'horizontal'
+        ? [{ x: topX, y: topY, pip: pip1 }, { x: topX + 1, y: topY, pip: pip2 }]
+        : [{ x: topX, y: topY, pip: pip1 }, { x: topX, y: topY + 1, pip: pip2 }];
+      let adjMatch = false;
+      let adjMismatch = false;
+      cells.forEach((cell, idx) => {
+        const other = cells[1 - idx];
+        ([[cell.x, cell.y - 1], [cell.x, cell.y + 1], [cell.x - 1, cell.y], [cell.x + 1, cell.y]] as Array<[number, number]>).forEach(([nbX, nbY]) => {
+          if (nbX === other.x && nbY === other.y) return;
+          const nbCell = board[`${nbX},${nbY}`];
+          if (!nbCell) return;
+          const isEndDir = orientation === 'horizontal' ? nbY === cell.y : nbX === cell.x;
+          if (isDoubleTile) {
+            if (nbCell.value === cell.pip) adjMatch = true;
+            else adjMismatch = true;
+          } else if (isEndDir) {
+            if (nbCell.value === cell.pip) adjMatch = true;
+            else adjMismatch = true;
+          } else {
+            adjMismatch = true;
+          }
+        });
+      });
+      return adjMatch && !adjMismatch;
+    };
     // Bepaal of een cel (cx,cy) van zijn tegel een open einde is in richting `dir`.
     // Niet-dubbele stenen: alleen de twee uiteinden (langs de tegel-as) zijn open.
     // Dubbele stenen (spinner): alle 4 zijden zijn open, behalve de richting naar de andere helft.
@@ -2018,6 +2046,7 @@ export default function Game() {
             const c1 = `${topX},${topY}`;
             const c2 = perpOrientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
             if (board[c1] || board[c2]) continue;
+            if (!placementMatchesServerRules(topX, topY, perpOrientation, false)) continue;
             moves.push({
               end: { x: nx, y: ny, value: cellValue, fromDir: dir },
               dominoData,
@@ -2057,6 +2086,7 @@ export default function Game() {
           ? (finalFlipped ? dominoData.value1 : dominoData.value2)
           : (finalFlipped ? dominoData.value2 : dominoData.value1);
         if (adjacentPip !== cellValue) continue;
+        if (!placementMatchesServerRules(topX, topY, orientation, finalFlipped)) continue;
         moves.push({
           end: { x: nx, y: ny, value: cellValue, fromDir: dir },
           dominoData,
