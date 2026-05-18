@@ -2600,7 +2600,7 @@ export default function Game() {
         gameHook={{
           ...gameHook, 
           executeMove: wegaExecuteMove,
-          findLegalMoves: wegaFindLegalMoves,
+          findLegalMoves: isWegaPlay ? wegaFindLegalMovesForHuman : wegaFindLegalMoves,
           drawFromBoneyard: wrappedDrawFromBoneyard,
           drawSpecificFromBoneyard: wrappedDrawSpecificFromBoneyard,
           passMove: wegaPassMove,
