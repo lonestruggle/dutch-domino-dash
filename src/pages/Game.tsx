@@ -2332,7 +2332,10 @@ export default function Game() {
           if (!actor) return;
           const hand = hands[actor.position] || [];
           const lockKey = `play:${actor.position}:${hand.length}:${Object.keys(gs.board || {}).length}:${gs.consecutivePasses ?? 0}`;
-          if (wegaBotActionLockRef.current === lockKey) return;
+          if (wegaBotActionLockRef.current === lockKey) {
+            scheduleBotRetry(botMaxActionMs);
+            return;
+          }
           wegaBotActionLockRef.current = lockKey;
 
           let chosen: any = null;
@@ -2345,11 +2348,14 @@ export default function Game() {
               break;
             }
           }
-          await new Promise((r) => setTimeout(r, 1200));
-          if (cancelled) return;
+          await new Promise((r) => setTimeout(r, Math.min(1200, Math.max(120, botMaxActionMs - 250))));
+          if (cancelled) {
+            if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
+            return;
+          }
 
           if (chosen) {
-            await supabase.rpc('wega_submit_move' as any, {
+            const { data, error } = await supabase.rpc('wega_submit_move' as any, {
               _lobby_id: gameId,
               _hand_index: chosenIdx,
               _x: chosen.x,
@@ -2358,20 +2364,33 @@ export default function Game() {
               _flipped: !!chosen.flipped,
               _actor_position: actor.position,
             });
+            if (error) throw error;
+            const result = data as any;
+            if (!result?.ok && result?.reason !== 'not_your_turn') {
+              console.warn('[wegaBot] rejected move, retrying/pass fallback', result);
+              wegaBotActionLockRef.current = '';
+              scheduleBotRetry(120);
+              return;
+            }
           } else {
-            await supabase.rpc('wega_pass' as any, {
+            const { error } = await supabase.rpc('wega_pass' as any, {
               _lobby_id: gameId,
               _actor_position: actor.position,
             });
+            if (error) throw error;
           }
+          wegaBotActionLockRef.current = '';
+          scheduleBotRetry(120);
           return;
         }
       } catch (err) {
         console.error('[wegaBot] action failed', err);
+        wegaBotActionLockRef.current = '';
+        scheduleBotRetry(300);
       }
     };
 
-    const t = setTimeout(run, 250);
+    const t = setTimeout(run, 80);
     return () => {
       cancelled = true;
       clearTimeout(t);
@@ -2383,6 +2402,9 @@ export default function Game() {
     syncState.allPlayers,
     syncState.playerPosition,
     syncState.currentPlayer,
+    botMaxActionMs,
+    botTick,
+    scheduleBotRetry,
   ]);
 
   return (
