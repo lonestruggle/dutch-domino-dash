@@ -36,6 +36,10 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
 
   const handleDraw = async (index: number) => {
     if (busy || myCount >= 5) return;
+    if (phase !== 'drawing') {
+      toast({ title: 'Kon steen niet trekken', description: `Niet meer in trekfase (huidige fase: ${phase})`, variant: 'destructive' });
+      return;
+    }
     setBusy(true);
     try {
       const { error } = await supabase.rpc('wega_claim_boneyard_tile' as any, {
@@ -45,7 +49,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
       if (error) throw error;
       onChanged();
     } catch (e: any) {
-      toast({ title: 'Kon steen niet trekken', description: e?.message || String(e), variant: 'destructive' });
+      toast({ title: 'Kon steen niet trekken', description: `${e?.message || String(e)} · fase=${phase}`, variant: 'destructive' });
     } finally {
       setBusy(false);
     }

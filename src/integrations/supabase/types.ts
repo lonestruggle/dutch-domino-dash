@@ -935,6 +935,14 @@ export type Database = {
           src_y: number
         }[]
       }
+      _wega_resolve_actor: {
+        Args: { _actor_override: number; _lobby_id: string }
+        Returns: {
+          actor_is_bot: boolean
+          actor_pos: number
+          actor_uid: string
+        }[]
+      }
       _wega_tail_values: {
         Args: { _board: Json }
         Returns: {
@@ -1021,30 +1029,60 @@ export type Database = {
         Args: { _code: string; _email?: string }
         Returns: Json
       }
-      wega_claim_boneyard_tile: {
-        Args: { _lobby_id: string; _tile_index: number }
-        Returns: Json
-      }
-      wega_claim_starter: {
-        Args: { _hand_index: number; _lobby_id: string }
-        Returns: Json
-      }
-      wega_pass: { Args: { _lobby_id: string }; Returns: Json }
+      wega_claim_boneyard_tile:
+        | { Args: { _lobby_id: string; _tile_index: number }; Returns: Json }
+        | {
+            Args: {
+              _actor_position?: number
+              _lobby_id: string
+              _tile_index: number
+            }
+            Returns: Json
+          }
+      wega_claim_starter:
+        | { Args: { _hand_index: number; _lobby_id: string }; Returns: Json }
+        | {
+            Args: {
+              _actor_position?: number
+              _hand_index: number
+              _lobby_id: string
+            }
+            Returns: Json
+          }
+      wega_pass:
+        | { Args: { _lobby_id: string }; Returns: Json }
+        | {
+            Args: { _actor_position?: number; _lobby_id: string }
+            Returns: Json
+          }
       wega_settle: {
         Args: { _lobby_id: string; _payload: Json }
         Returns: undefined
       }
-      wega_submit_move: {
-        Args: {
-          _flipped: boolean
-          _hand_index: number
-          _lobby_id: string
-          _orientation: string
-          _x: number
-          _y: number
-        }
-        Returns: Json
-      }
+      wega_submit_move:
+        | {
+            Args: {
+              _flipped: boolean
+              _hand_index: number
+              _lobby_id: string
+              _orientation: string
+              _x: number
+              _y: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _actor_position?: number
+              _flipped: boolean
+              _hand_index: number
+              _lobby_id: string
+              _orientation: string
+              _x: number
+              _y: number
+            }
+            Returns: Json
+          }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
