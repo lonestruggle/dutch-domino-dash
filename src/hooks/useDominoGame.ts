@@ -959,6 +959,21 @@ export const useDominoGame = (localPlayerPosition?: number) => {
         const allHands = newState.playerHands || [newPlayerHand];
         const isBlocked = checkBlockedGame(newOpenEnds, newBoard, allHands, newState.boneyard);
         newState.isGameOver = isBlocked;
+        console.log('[classicMove] post-place', {
+          actorPosition,
+          activeHandSize: activeHand.length,
+          isGameWon,
+          isBlocked,
+          boneyard: newState.boneyard.length,
+          openEnds: newOpenEnds.length,
+          allHandSizes: allHands.map((h) => h?.length ?? 0),
+        });
+      } else {
+        console.log('[classicMove] post-place WIN', {
+          actorPosition,
+          activeHandSize: activeHand.length,
+          allHandSizes: (newState.playerHands || []).map((h) => h?.length ?? 0),
+        });
       }
       
       
