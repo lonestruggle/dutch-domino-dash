@@ -815,6 +815,15 @@ export const useDominoGame = (localPlayerPosition?: number) => {
         ? [...(prev.playerHands?.[actorPosition] || [])]
         : [...prev.playerHand];
 
+      console.log('[classicMove] executeMove pre', {
+        actorPosition,
+        usePlayerHands,
+        index,
+        activeHandSize: activeHand.length,
+        allHandSizes: (prev.playerHands || []).map((h) => h?.length ?? 0),
+        boneyard: prev.boneyard.length,
+      });
+
       if (index < 0 || index >= activeHand.length) {
         console.warn('❌ executeMove aborted: invalid hand index for active player', {
           index,
