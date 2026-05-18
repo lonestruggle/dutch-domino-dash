@@ -210,7 +210,35 @@ export const GameLogsViewer: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* Mobiele kaartlijst */}
+          <div className="space-y-2 sm:hidden">
+            {filteredGames.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => openGame(g)}
+                className="w-full text-left rounded-md border p-3 hover:bg-muted/40"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium truncate">{g.lobby_name || g.lobby_id.slice(0, 8)}</span>
+                  <Badge variant={g.status === 'finished' ? 'secondary' : 'default'}>{g.status}</Badge>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+                  <span>{g.log_count} events</span>
+                  {g.winner_position != null ? <span>winnaar pos {g.winner_position}</span> : null}
+                  <span>{new Date(g.created_at).toLocaleString('nl-NL')}</span>
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <span className="inline-flex items-center text-xs text-primary"><Eye className="h-3 w-3 mr-1" /> Bekijk log</span>
+                </div>
+              </button>
+            ))}
+            {filteredGames.length === 0 && !loading ? (
+              <div className="py-6 text-center text-muted-foreground text-sm">Geen games gevonden.</div>
+            ) : null}
+          </div>
+
+          {/* Desktop tabel */}
+          <div className="overflow-x-auto hidden sm:block">
             <table className="w-full text-sm">
               <thead className="text-left text-muted-foreground border-b">
                 <tr>
@@ -245,7 +273,7 @@ export const GameLogsViewer: React.FC = () => {
       </Card>
 
       <Dialog open={!!selectedGame} onOpenChange={(o) => !o && setSelectedGame(null)}>
-        <DialogContent className="max-w-5xl">
+        <DialogContent className="max-w-5xl w-[calc(100vw-1rem)] sm:w-full p-3 sm:p-6">
           <DialogHeader>
             <DialogTitle>{selectedGame?.lobby_name || selectedGame?.lobby_id?.slice(0, 8)} — Log</DialogTitle>
             <DialogDescription>
@@ -273,11 +301,13 @@ export const GameLogsViewer: React.FC = () => {
           <ScrollArea className="h-[60vh] border rounded-md">
             <div className="divide-y">
               {filteredLogs.map((l) => (
-                <button key={l.id} onClick={() => setSelectedLog(l)} className="w-full text-left p-2 hover:bg-muted/40 grid grid-cols-[110px_140px_1fr_60px] gap-2 items-center">
-                  <span className="text-xs text-muted-foreground tabular-nums">{new Date(l.created_at).toLocaleTimeString('nl-NL')}</span>
-                  <Badge variant="outline" className={EVENT_COLORS[l.event_type] || ''}>{l.event_type}</Badge>
-                  <span className="text-sm truncate">{summarize(l)}</span>
-                  <span className="text-xs text-right text-muted-foreground">{l.username ? l.username : (l.player_position != null ? `p${l.player_position}` : '—')}</span>
+                <button key={l.id} onClick={() => setSelectedLog(l)} className="w-full text-left p-2 hover:bg-muted/40 flex flex-col sm:grid sm:grid-cols-[110px_140px_1fr_80px] gap-1 sm:gap-2 sm:items-center">
+                  <div className="flex items-center gap-2 sm:contents">
+                    <span className="text-xs text-muted-foreground tabular-nums">{new Date(l.created_at).toLocaleTimeString('nl-NL')}</span>
+                    <Badge variant="outline" className={EVENT_COLORS[l.event_type] || ''}>{l.event_type}</Badge>
+                  </div>
+                  <span className="text-sm break-words sm:truncate">{summarize(l)}</span>
+                  <span className="text-xs sm:text-right text-muted-foreground">{l.username ? l.username : (l.player_position != null ? `p${l.player_position}` : '—')}</span>
                 </button>
               ))}
               {filteredLogs.length === 0 && !logsLoading ? (
