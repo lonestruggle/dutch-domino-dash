@@ -1941,6 +1941,7 @@ export default function Game() {
     const board = (gameState?.board || {}) as Record<string, { dominoId: string; value: number }>;
     const boardKeys = Object.keys(board);
     const dominoesMap = (gameState?.dominoes || {}) as Record<string, { x: number; y: number; orientation: 'horizontal' | 'vertical'; data: { value1: number; value2: number } }>;
+    const isDoubleTile = dominoData.value1 === dominoData.value2;
     const placementMatchesServerRules = (topX: number, topY: number, orientation: 'horizontal' | 'vertical', flipped: boolean): boolean => {
       const pip1 = flipped ? dominoData.value2 : dominoData.value1;
       const pip2 = flipped ? dominoData.value1 : dominoData.value2;
@@ -2017,7 +2018,6 @@ export default function Game() {
       });
       return moves;
     }
-    const isDoubleTile = dominoData.value1 === dominoData.value2;
     const seen = new Set<string>();
     for (const key of boardKeys) {
       const [cx, cy] = key.split(',').map(Number);
@@ -2098,7 +2098,7 @@ export default function Game() {
       }
     }
     return moves;
-  }, [isWegaPlay, gameHook, gameState?.board, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
+  }, [isWegaPlay, gameHook, gameState?.board, gameState?.dominoes, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
 
   const wegaExecuteMove = useCallback(async (move: MoveWithEffects) => {
     if (!isWegaPlay) {
