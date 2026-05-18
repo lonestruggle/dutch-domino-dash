@@ -120,6 +120,7 @@ const AdminDashboard = () => {
   const [newSeasonName, setNewSeasonName] = useState<string>('');
   const [placementDelayMsInput, setPlacementDelayMsInput] = useState<string>('950');
   const [botBlockAggressionInput, setBotBlockAggressionInput] = useState<string>('65');
+  const [botMaxActionMsInput, setBotMaxActionMsInput] = useState<string>('1500');
 const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
 const [permissionsUser, setPermissionsUser] = useState<UserProfile | null>(null);
 const [manageDialogOpen, setManageDialogOpen] = useState(false);
@@ -195,6 +196,12 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
       ? Math.max(0, Math.min(100, Math.round(rawAggression)))
       : 65;
     setBotBlockAggressionInput(String(normalizedAggression));
+
+    const rawBotMax = Number(settings?.bot_max_action_ms ?? 1500);
+    const normalizedBotMax = Number.isFinite(rawBotMax)
+      ? Math.max(300, Math.min(10000, Math.round(rawBotMax)))
+      : 1500;
+    setBotMaxActionMsInput(String(normalizedBotMax));
   }, [settings, settingsLoading]);
 
 
