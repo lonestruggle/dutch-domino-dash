@@ -787,6 +787,8 @@ export default function Game() {
   const botTurnObservedAtRef = useRef<Record<string, number>>({});
   const botAwaitingTurnAdvanceRef = useRef<{ player: number | null; until: number }>({ player: null, until: 0 });
   const botCooldownUntilRef = useRef<number>(0);
+  const botRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [botTick, setBotTick] = useState(0);
   const [botDebugInfo, setBotDebugInfo] = useState<BotDebugInfo>({
     status: 'init',
     details: 'Bot debug gestart',
@@ -808,6 +810,19 @@ export default function Game() {
     if (!Number.isFinite(raw)) return 65;
     return Math.max(0, Math.min(100, Math.round(raw)));
   }, [appSettings]);
+  const botMaxActionMs = useMemo(() => {
+    const raw = Number(appSettings?.bot_max_action_ms ?? 1500);
+    if (!Number.isFinite(raw)) return 1500;
+    return Math.max(300, Math.min(10000, Math.round(raw)));
+  }, [appSettings]);
+  const scheduleBotRetry = useCallback((delayMs: number) => {
+    const clamped = Math.max(60, Math.min(3000, delayMs));
+    if (botRetryTimerRef.current) clearTimeout(botRetryTimerRef.current);
+    botRetryTimerRef.current = setTimeout(() => {
+      botRetryTimerRef.current = null;
+      setBotTick((t) => t + 1);
+    }, clamped);
+  }, []);
   const minPlacementDelayMs = useMemo(() => {
     const raw = Number(appSettings?.global_min_placement_delay_ms ?? DEFAULT_MIN_PLACEMENT_DELAY_MS);
     if (!Number.isFinite(raw)) return DEFAULT_MIN_PLACEMENT_DELAY_MS;
@@ -896,6 +911,7 @@ export default function Game() {
       if (drawSyncTimeoutRef.current) clearTimeout(drawSyncTimeoutRef.current);
       if (passMoveTimeoutRef.current) clearTimeout(passMoveTimeoutRef.current);
       if (hardSlamResetTimeoutRef.current) clearTimeout(hardSlamResetTimeoutRef.current);
+      if (botRetryTimerRef.current) clearTimeout(botRetryTimerRef.current);
     };
   }, []);
   
@@ -1484,6 +1500,7 @@ export default function Game() {
       const remainingHardSlam = Math.max(0, hardSlamEndMs - now);
       const remainingSharedLock = Math.max(0, sharedMoveCooldownUntil - now);
       const remainingMs = Math.max(remainingHardSlam, remainingLocalLock, remainingSharedLock);
+      scheduleBotRetry(remainingMs + 40);
       setBotDebugInfo((prev) => ({
         ...prev,
         status: 'waiting-animation',
@@ -1524,7 +1541,9 @@ export default function Game() {
     const isDesignatedController = botControllerPosition !== null && syncState.playerPosition === botControllerPosition;
 
     // Fallback takeover: if designated controller did nothing, any human can execute after delay.
-    if (!isDesignatedController && turnAgeMs < 1800) {
+    const fallbackWaitMs = Math.min(1800, Math.max(400, botMaxActionMs + 200));
+    if (!isDesignatedController && turnAgeMs < fallbackWaitMs) {
+      scheduleBotRetry(fallbackWaitMs - turnAgeMs + 40);
       setBotDebugInfo((prev) => ({
         ...prev,
         status: 'waiting-controller',
@@ -1544,6 +1563,7 @@ export default function Game() {
       botAwaitingTurnAdvanceRef.current.player === actorPosition &&
       now < botAwaitingTurnAdvanceRef.current.until
     ) {
+      scheduleBotRetry(botAwaitingTurnAdvanceRef.current.until - now + 40);
       setBotDebugInfo((prev) => ({
         ...prev,
         status: 'awaiting-turn-advance',
@@ -1559,6 +1579,7 @@ export default function Game() {
     }
 
     if (now < botCooldownUntilRef.current) {
+      scheduleBotRetry(botCooldownUntilRef.current - now + 40);
       setBotDebugInfo((prev) => ({
         ...prev,
         status: 'cooldown',
@@ -1619,7 +1640,8 @@ export default function Game() {
       });
 
       try {
-        await new Promise((resolve) => setTimeout(resolve, 350));
+        const thinkDelay = Math.max(80, Math.min(350, botMaxActionMs - 250));
+        await new Promise((resolve) => setTimeout(resolve, thinkDelay));
         if (botTurnExecutionRef.current !== botTurnKey) return;
 
         const boneyardSize = gameState.boneyard.length;
@@ -1669,8 +1691,10 @@ export default function Game() {
         }));
 
         if (selectedMove) {
-          botCooldownUntilRef.current = Date.now() + 900;
-          botAwaitingTurnAdvanceRef.current = { player: actorPosition, until: Date.now() + 2600 };
+          const cd = Math.min(900, Math.max(150, botMaxActionMs - 200));
+          const adv = Math.min(2600, Math.max(600, botMaxActionMs * 2));
+          botCooldownUntilRef.current = Date.now() + cd;
+          botAwaitingTurnAdvanceRef.current = { player: actorPosition, until: Date.now() + adv };
           botTurnExecutionRef.current = null;
 
           wrappedExecuteMove({ ...selectedMove, actorPosition });
@@ -1678,14 +1702,17 @@ export default function Game() {
         }
 
         if (boneyardSize > 0) {
-          botCooldownUntilRef.current = Date.now() + 900;
+          const cd = Math.min(900, Math.max(150, botMaxActionMs - 200));
+          botCooldownUntilRef.current = Date.now() + cd;
           botTurnExecutionRef.current = null;
           void wrappedDrawFromBoneyard(actorPosition);
           return;
         }
 
-        botCooldownUntilRef.current = Date.now() + 900;
-        botAwaitingTurnAdvanceRef.current = { player: actorPosition, until: Date.now() + 2600 };
+        const cd2 = Math.min(900, Math.max(150, botMaxActionMs - 200));
+        const adv2 = Math.min(2600, Math.max(600, botMaxActionMs * 2));
+        botCooldownUntilRef.current = Date.now() + cd2;
+        botAwaitingTurnAdvanceRef.current = { player: actorPosition, until: Date.now() + adv2 };
         botTurnExecutionRef.current = null;
         passMove(actorPosition);
       } catch (error) {
@@ -1708,6 +1735,9 @@ export default function Game() {
     void runBotTurn();
   }, [
     appSettings?.bot_block_aggression,
+    botMaxActionMs,
+    botTick,
+    scheduleBotRetry,
     gameHook,
     gameState,
     isAnimating,

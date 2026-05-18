@@ -120,6 +120,7 @@ const AdminDashboard = () => {
   const [newSeasonName, setNewSeasonName] = useState<string>('');
   const [placementDelayMsInput, setPlacementDelayMsInput] = useState<string>('950');
   const [botBlockAggressionInput, setBotBlockAggressionInput] = useState<string>('65');
+  const [botMaxActionMsInput, setBotMaxActionMsInput] = useState<string>('1500');
 const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
 const [permissionsUser, setPermissionsUser] = useState<UserProfile | null>(null);
 const [manageDialogOpen, setManageDialogOpen] = useState(false);
@@ -195,6 +196,12 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
       ? Math.max(0, Math.min(100, Math.round(rawAggression)))
       : 65;
     setBotBlockAggressionInput(String(normalizedAggression));
+
+    const rawBotMax = Number(settings?.bot_max_action_ms ?? 1500);
+    const normalizedBotMax = Number.isFinite(rawBotMax)
+      ? Math.max(300, Math.min(10000, Math.round(rawBotMax)))
+      : 1500;
+    setBotMaxActionMsInput(String(normalizedBotMax));
   }, [settings, settingsLoading]);
 
 
@@ -1993,6 +2000,48 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
                             toast({
                               title: 'Opslaan mislukt',
                               description: 'Kon bot blokkering-agressie niet bijwerken.',
+                              variant: 'destructive',
+                            });
+                          }
+                        }}
+                      >
+                        Opslaan
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-3 space-y-2">
+                    <Label className="text-sm font-medium">Max bot reactietijd (ms)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Bovengrens voor hoe lang de bot mag "denken" voordat hij een zet doet, een steen trekt of past. Standaard 1500ms.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Input
+                        type="number"
+                        min={300}
+                        max={10000}
+                        step={50}
+                        value={botMaxActionMsInput}
+                        onChange={(e) => setBotMaxActionMsInput(e.target.value)}
+                        className="max-w-[220px]"
+                      />
+                      <Button
+                        onClick={async () => {
+                          const parsed = Number(botMaxActionMsInput);
+                          const normalized = Number.isFinite(parsed)
+                            ? Math.max(300, Math.min(10000, Math.round(parsed)))
+                            : 1500;
+                          const result = await updateSetting('bot_max_action_ms', normalized);
+                          if (result.success) {
+                            setBotMaxActionMsInput(String(normalized));
+                            toast({
+                              title: 'Bot reactietijd opgeslagen',
+                              description: `Max bot reactietijd: ${normalized}ms`,
+                            });
+                          } else {
+                            toast({
+                              title: 'Opslaan mislukt',
+                              description: 'Kon bot reactietijd niet bijwerken.',
                               variant: 'destructive',
                             });
                           }
