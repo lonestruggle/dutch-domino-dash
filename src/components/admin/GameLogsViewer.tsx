@@ -90,29 +90,58 @@ export const GameLogsViewer: React.FC = () => {
   const fetchGames = React.useCallback(async () => {
     setLoading(true);
     try {
-      const { data: gameData, error } = await supabase
-        .from('games')
-        .select('id, lobby_id, status, winner_position, created_at, updated_at')
+      // Bouw lijst rechtstreeks vanuit game_logs, zodat ook synthetische game_ids
+      // (die niet in de games-tabel staan) zichtbaar worden.
+      const { data: logRows, error } = await supabase
+        .from('game_logs' as any)
+        .select('game_id, lobby_id, created_at')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(5000);
       if (error) throw error;
-      const lobbyIds = Array.from(new Set((gameData || []).map((g: any) => g.lobby_id).filter(Boolean)));
+
+      const agg: Record<string, { game_id: string; lobby_id: string; first: string; last: string; count: number }> = {};
+      (logRows || []).forEach((r: any) => {
+        const k = r.game_id;
+        if (!k) return;
+        if (!agg[k]) {
+          agg[k] = { game_id: k, lobby_id: r.lobby_id, first: r.created_at, last: r.created_at, count: 0 };
+        }
+        agg[k].count += 1;
+        if (r.created_at < agg[k].first) agg[k].first = r.created_at;
+        if (r.created_at > agg[k].last) agg[k].last = r.created_at;
+      });
+
+      const sessions = Object.values(agg).sort((a, b) => (a.last < b.last ? 1 : -1));
+
+      // Vul aan met info uit games-tabel (status/winner) waar mogelijk
+      const gameIds = sessions.map(s => s.game_id);
+      let gameInfo: Record<string, { status: string; winner_position: number | null }> = {};
+      if (gameIds.length) {
+        const { data: gs } = await supabase
+          .from('games')
+          .select('id, status, winner_position')
+          .in('id', gameIds);
+        (gs || []).forEach((g: any) => { gameInfo[g.id] = { status: g.status, winner_position: g.winner_position }; });
+      }
+
+      // Vul lobby-namen aan
+      const lobbyIds = Array.from(new Set(sessions.map(s => s.lobby_id).filter(Boolean)));
       let lobbyNames: Record<string, string> = {};
       if (lobbyIds.length) {
         const { data: lobs } = await supabase.from('lobbies').select('id, name').in('id', lobbyIds);
         (lobs || []).forEach((l: any) => { lobbyNames[l.id] = l.name; });
       }
-      // Counts via log table per-game (lichte query)
-      const gameIds = (gameData || []).map((g: any) => g.id);
-      let counts: Record<string, number> = {};
-      if (gameIds.length) {
-        const { data: logRows } = await supabase
-          .from('game_logs' as any)
-          .select('game_id')
-          .in('game_id', gameIds);
-        (logRows || []).forEach((r: any) => { counts[r.game_id] = (counts[r.game_id] || 0) + 1; });
-      }
-      setGames((gameData || []).map((g: any) => ({ ...g, lobby_name: lobbyNames[g.lobby_id], log_count: counts[g.id] || 0 })));
+
+      setGames(sessions.map(s => ({
+        id: s.game_id,
+        lobby_id: s.lobby_id,
+        status: gameInfo[s.game_id]?.status ?? 'log-only',
+        winner_position: gameInfo[s.game_id]?.winner_position ?? null,
+        created_at: s.first,
+        updated_at: s.last,
+        lobby_name: lobbyNames[s.lobby_id] || null,
+        log_count: s.count,
+      })));
     } catch (e: any) {
       toast({ title: 'Fout bij laden games', description: e?.message || String(e), variant: 'destructive' });
     } finally {
