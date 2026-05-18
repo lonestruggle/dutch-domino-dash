@@ -2316,6 +2316,8 @@ export default function Game() {
   // wanneer de menselijke speler een steen selecteert of flipt.
   const wegaFindLegalMovesRef = useRef(wegaFindLegalMoves);
   useEffect(() => { wegaFindLegalMovesRef.current = wegaFindLegalMoves; }, [wegaFindLegalMoves]);
+  const wegaFindLegalMovesForHumanRef = useRef(wegaFindLegalMovesForHuman);
+  useEffect(() => { wegaFindLegalMovesForHumanRef.current = wegaFindLegalMovesForHuman; }, [wegaFindLegalMovesForHuman]);
 
   // Laad bot-claim-chance en bot-error-chance uit app_settings (eenmalig)
   useEffect(() => {
