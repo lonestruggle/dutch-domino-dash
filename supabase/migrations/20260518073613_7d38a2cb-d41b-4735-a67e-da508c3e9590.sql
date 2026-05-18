@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.wega_claim_boneyard_tile(uuid, integer);
