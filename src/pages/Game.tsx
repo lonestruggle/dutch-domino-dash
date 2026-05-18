@@ -2290,6 +2290,7 @@ export default function Game() {
           await new Promise((r) => setTimeout(r, Math.min(700, Math.max(120, botMaxActionMs - 250))));
           if (cancelled) {
             if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
+            scheduleBotRetry(60);
             return;
           }
           const pick = availableIdx[Math.floor(Math.random() * availableIdx.length)];
@@ -2339,6 +2340,7 @@ export default function Game() {
             await new Promise((r) => setTimeout(r, delay));
             if (cancelled) {
               if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
+              scheduleBotRetry(60);
               return;
             }
             try {
@@ -2381,6 +2383,7 @@ export default function Game() {
           await new Promise((r) => setTimeout(r, Math.min(1200, Math.max(120, botMaxActionMs - 250))));
           if (cancelled) {
             if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
+            scheduleBotRetry(60);
             return;
           }
 
