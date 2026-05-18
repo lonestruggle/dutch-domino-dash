@@ -553,13 +553,24 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             {syncState?.allPlayers?.map((player: any) => {
               const isCurrentPlayer = player.position === syncState?.currentPlayer;
               const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition && player.position === syncState?.playerPosition;
+              const canOpenBotHand = canInspectBotHands && player.is_bot;
               return (
                 <Badge 
                   key={player.position} 
                   variant={isCurrentPlayer ? "default" : "outline"}
+                  role={canOpenBotHand ? 'button' : undefined}
+                  tabIndex={canOpenBotHand ? 0 : undefined}
+                  onClick={canOpenBotHand ? () => setVisibleBotHandPosition(player.position) : undefined}
+                  onKeyDown={canOpenBotHand ? (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setVisibleBotHandPosition(player.position);
+                    }
+                  } : undefined}
                   className={cn(
                     "flex items-center space-x-1 transition-all duration-300",
                     isMobile ? "text-xs" : "",
+                    canOpenBotHand && "cursor-pointer hover:bg-accent hover:text-accent-foreground",
                     isCurrentPlayer && "ring-2 ring-primary ring-offset-2 bg-primary text-primary-foreground",
                     isMyTurn && "animate-pulse shadow-lg"
                   )}
@@ -568,6 +579,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   <span className="text-xs opacity-75">
                     ({gameState?.playerHands?.[player.position]?.length || 0})
                   </span>
+                  {canOpenBotHand && <Eye className="ml-1 h-3 w-3" />}
                   {isCurrentPlayer && <span className="text-xs ml-1">🎯</span>}
                 </Badge>
               );
