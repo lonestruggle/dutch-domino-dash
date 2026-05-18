@@ -911,6 +911,7 @@ export default function Game() {
       if (drawSyncTimeoutRef.current) clearTimeout(drawSyncTimeoutRef.current);
       if (passMoveTimeoutRef.current) clearTimeout(passMoveTimeoutRef.current);
       if (hardSlamResetTimeoutRef.current) clearTimeout(hardSlamResetTimeoutRef.current);
+      if (botRetryTimerRef.current) clearTimeout(botRetryTimerRef.current);
     };
   }, []);
   
