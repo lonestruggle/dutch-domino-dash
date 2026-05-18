@@ -2088,6 +2088,59 @@ export default function Game() {
   // Eén human-client (de host = laagste menselijke positie) stuurt alle bot-acties aan
   // namens hen via de nieuwe `_actor_position` parameter in de Wega RPCs.
   const wegaBotActionLockRef = useRef<string>('');
+  const botClaimChanceRef = useRef<number>(0.95);
+  const wegaAdvanceLockRef = useRef<string>('');
+
+  // Laad bot-claim-chance uit app_settings (eenmalig)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('app_settings')
+          .select('setting_value')
+          .eq('setting_key', 'wega_bot_claim_chance')
+          .maybeSingle();
+        if (!cancelled && data?.setting_value != null) {
+          const v = Number(data.setting_value);
+          if (!Number.isNaN(v) && v >= 0 && v <= 1) botClaimChanceRef.current = v;
+        }
+      } catch (err) {
+        console.warn('[wega] kon bot_claim_chance niet laden', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Host-client schuift claim-fase door bij timeout (elke 500ms checken)
+  useEffect(() => {
+    if (!isWegaGame || !gameId) return;
+    const gs: any = syncState.gameState;
+    if (!gs || gs.wegaPhase !== 'claiming_starter') return;
+    const humanPositions = syncState.allPlayers
+      .filter((p) => !p.is_bot)
+      .map((p) => p.position)
+      .sort((a, b) => a - b);
+    if (humanPositions.length === 0) return;
+    if (humanPositions[0] !== syncState.playerPosition) return;
+
+    const interval = setInterval(async () => {
+      const startedAt = Number(gs.wegaClaimStartedAt || 0);
+      const idx = Number(gs.wegaClaimIndex || 0);
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 3100) return;
+      const lockKey = `advance:${idx}:${startedAt}`;
+      if (wegaAdvanceLockRef.current === lockKey) return;
+      wegaAdvanceLockRef.current = lockKey;
+      try {
+        await supabase.rpc('wega_advance_claim' as any, { _lobby_id: gameId });
+      } catch (err) {
+        console.warn('[wega] advance failed', err);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [isWegaGame, gameId, syncState.gameState, syncState.allPlayers, syncState.playerPosition]);
+
   useEffect(() => {
     if (!isWegaGame) return;
     if (!gameId) return;
@@ -2134,32 +2187,33 @@ export default function Game() {
         }
 
         if (phase === 'claiming_starter') {
-          let highestDouble = -1;
-          let highestSum = -1;
-          hands.forEach((h) => (h || []).forEach((t) => {
-            if (t.value1 === t.value2) highestDouble = Math.max(highestDouble, t.value1);
-            else highestSum = Math.max(highestSum, t.value1 + t.value2);
-          }));
-          for (const bot of bots) {
-            const hand = hands[bot.position] || [];
-            let idx = -1;
-            if (highestDouble >= 0) {
-              idx = hand.findIndex((t) => t.value1 === t.value2 && t.value1 === highestDouble);
-            } else {
-              idx = hand.findIndex((t) => t.value1 !== t.value2 && t.value1 + t.value2 === highestSum);
-            }
-            if (idx >= 0) {
-              const lockKey = `claim:${bot.position}:${idx}`;
-              if (wegaBotActionLockRef.current === lockKey) return;
-              wegaBotActionLockRef.current = lockKey;
-              await new Promise((r) => setTimeout(r, 1000));
-              if (cancelled) return;
-              await supabase.rpc('wega_claim_starter' as any, {
+          // Nieuwe gestuurde claim-fase: bot claimt huidige steen als hij hem heeft
+          const seq: Array<{ value1: number; value2: number }> = Array.isArray(gs.wegaClaimSequence) ? gs.wegaClaimSequence : [];
+          const cidx = Number(gs.wegaClaimIndex || 0);
+          const currentTile = seq[cidx];
+          if (!currentTile) return;
+          const startedAt = Number(gs.wegaClaimStartedAt || 0);
+          const owner = bots.find((b) => (hands[b.position] || []).some(t =>
+            (t.value1 === currentTile.value1 && t.value2 === currentTile.value2) ||
+            (t.value1 === currentTile.value2 && t.value2 === currentTile.value1)
+          ));
+          if (owner) {
+            const lockKey = `claim2:${owner.position}:${cidx}:${startedAt}`;
+            if (wegaBotActionLockRef.current === lockKey) return;
+            wegaBotActionLockRef.current = lockKey;
+            const claimChance = Number(botClaimChanceRef.current ?? 0.95);
+            const willClaim = Math.random() < claimChance;
+            if (!willClaim) return; // bot "slaapt" → host-timer schuift door
+            const delay = 200 + Math.floor(Math.random() * 600); // 200-800ms
+            await new Promise((r) => setTimeout(r, delay));
+            if (cancelled) return;
+            try {
+              await supabase.rpc('wega_claim_current' as any, {
                 _lobby_id: gameId,
-                _hand_index: idx,
-                _actor_position: bot.position,
+                _actor_position: owner.position,
               });
-              return;
+            } catch (err) {
+              console.error('[wegaBot] claim_current failed', err);
             }
           }
           return;
