@@ -2123,6 +2123,11 @@ export default function Game() {
   const botClaimChanceRef = useRef<number>(0.95);
   const wegaAdvanceLockRef = useRef<string>('');
 
+  // Ref naar laatste wegaFindLegalMoves zodat bot-effect niet herstart
+  // wanneer de menselijke speler een steen selecteert of flipt.
+  const wegaFindLegalMovesRef = useRef(wegaFindLegalMoves);
+  useEffect(() => { wegaFindLegalMovesRef.current = wegaFindLegalMoves; }, [wegaFindLegalMoves]);
+
   // Laad bot-claim-chance uit app_settings (eenmalig)
   useEffect(() => {
     let cancelled = false;
