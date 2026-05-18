@@ -30,7 +30,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const isMobile = useIsMobile();
   const { startShakeAnimation, isAnimating: isVisualAnimating } = useGameVisualSettings();
   const { canHardSlam } = useUserPermissions();
-  const { isAdmin } = useUserRoles();
+  const { isAdmin, isDev } = useUserRoles();
   const { getSetting } = useAppSettings();
   
   const {
@@ -65,6 +65,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: DominoData; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [visibleBotHandPosition, setVisibleBotHandPosition] = useState<number | null>(null);
   const [fixShapeIndex, setFixShapeIndex] = useState(0);
   const [isFixingTable, setIsFixingTable] = useState(false);
   const [moveCooldownNowMs, setMoveCooldownNowMs] = useState(() => Date.now());
@@ -417,8 +418,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     }
   };
 
-  const showDevLockstepInfo = isAdmin;
+  const canInspectBotHands = isAdmin || isDev;
+  const showDevLockstepInfo = canInspectBotHands;
   const adminBoneyardFaceUp = isAdmin && Boolean(getSetting('admin_boneyard_face_up', false));
+  const visibleBotHandPlayer = visibleBotHandPosition !== null
+    ? syncState?.allPlayers?.find((p: any) => p.position === visibleBotHandPosition)
+    : null;
+  const visibleBotHand = visibleBotHandPosition !== null
+    ? (gameState?.playerHands?.[visibleBotHandPosition] || [])
+    : [];
   const activeHardSlamProfile = gameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
   const hardSlamPhaseMs = activeHardSlamProfile ? Math.max(0, Date.now() - activeHardSlamProfile.startedAtMs) : 0;
 
@@ -545,13 +553,24 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
             {syncState?.allPlayers?.map((player: any) => {
               const isCurrentPlayer = player.position === syncState?.currentPlayer;
               const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition && player.position === syncState?.playerPosition;
+              const canOpenBotHand = canInspectBotHands && player.is_bot;
               return (
                 <Badge 
                   key={player.position} 
                   variant={isCurrentPlayer ? "default" : "outline"}
+                  role={canOpenBotHand ? 'button' : undefined}
+                  tabIndex={canOpenBotHand ? 0 : undefined}
+                  onClick={canOpenBotHand ? () => setVisibleBotHandPosition(player.position) : undefined}
+                  onKeyDown={canOpenBotHand ? (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setVisibleBotHandPosition(player.position);
+                    }
+                  } : undefined}
                   className={cn(
                     "flex items-center space-x-1 transition-all duration-300",
                     isMobile ? "text-xs" : "",
+                    canOpenBotHand && "cursor-pointer hover:bg-accent hover:text-accent-foreground",
                     isCurrentPlayer && "ring-2 ring-primary ring-offset-2 bg-primary text-primary-foreground",
                     isMyTurn && "animate-pulse shadow-lg"
                   )}
@@ -560,6 +579,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   <span className="text-xs opacity-75">
                     ({gameState?.playerHands?.[player.position]?.length || 0})
                   </span>
+                  {canOpenBotHand && <Eye className="ml-1 h-3 w-3" />}
                   {isCurrentPlayer && <span className="text-xs ml-1">🎯</span>}
                 </Badge>
               );
@@ -617,6 +637,27 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           flippedTiles={gameHook?.wegaFlipMap}
           onTileDoubleClick={gameHook?.flipWegaTile}
         />
+
+        {canInspectBotHands && (
+          <Dialog open={visibleBotHandPosition !== null} onOpenChange={(open) => !open && setVisibleBotHandPosition(null)}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>{visibleBotHandPlayer?.username || 'Bot'} — hand</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-wrap justify-center gap-2 py-2">
+                {visibleBotHand.length > 0 ? visibleBotHand.map((domino: DominoData, index: number) => (
+                  <DominoTile
+                    key={`${domino.value1}-${domino.value2}-${index}`}
+                    data={domino}
+                    orientation={domino.value1 === domino.value2 ? 'vertical' : 'horizontal'}
+                  />
+                )) : (
+                  <p className="text-sm text-muted-foreground">Geen stenen in hand.</p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Game Actions */}
         <Card className={isMobile ? "p-3" : "p-4"}>
