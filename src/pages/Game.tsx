@@ -2268,7 +2268,7 @@ export default function Game() {
           let chosen: any = null;
           let chosenIdx = -1;
           for (let i = 0; i < hand.length; i++) {
-            const moves = wegaFindLegalMoves(hand[i] as any);
+            const moves = wegaFindLegalMovesRef.current(hand[i] as any);
             if (moves && moves.length > 0) {
               chosen = moves[0];
               chosenIdx = i;
@@ -2313,7 +2313,6 @@ export default function Game() {
     syncState.allPlayers,
     syncState.playerPosition,
     syncState.currentPlayer,
-    wegaFindLegalMoves,
   ]);
 
   return (
