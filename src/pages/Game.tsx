@@ -2241,23 +2241,43 @@ export default function Game() {
 
     const run = async () => {
       try {
+        if (cancelled) return;
         if (phase === 'drawing') {
           const boneyard: Array<any> = Array.isArray(gs.boneyard) ? gs.boneyard : [];
           const availableIdx = boneyard.map((t, i) => (t ? i : -1)).filter((i) => i >= 0);
-          if (availableIdx.length === 0) return;
+          if (availableIdx.length === 0) {
+            scheduleBotRetry(250);
+            return;
+          }
           const bot = bots.find((b) => (hands[b.position] || []).length < 5);
           if (!bot) return;
           const lockKey = `draw:${bot.position}:${(hands[bot.position] || []).length}:${availableIdx.length}`;
-          if (wegaBotActionLockRef.current === lockKey) return;
+          if (wegaBotActionLockRef.current === lockKey) {
+            scheduleBotRetry(botMaxActionMs);
+            return;
+          }
           wegaBotActionLockRef.current = lockKey;
-          await new Promise((r) => setTimeout(r, 700));
-          if (cancelled) return;
+          await new Promise((r) => setTimeout(r, Math.min(700, Math.max(120, botMaxActionMs - 250))));
+          if (cancelled) {
+            if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
+            return;
+          }
           const pick = availableIdx[Math.floor(Math.random() * availableIdx.length)];
-          await supabase.rpc('wega_claim_boneyard_tile' as any, {
+          const { error } = await supabase.rpc('wega_claim_boneyard_tile' as any, {
             _lobby_id: gameId,
             _tile_index: pick,
             _actor_position: bot.position,
           });
+          if (error) {
+            if (/already taken|invalid tile index/i.test(error.message || '')) {
+              wegaBotActionLockRef.current = '';
+              scheduleBotRetry(120);
+              return;
+            }
+            throw error;
+          }
+          wegaBotActionLockRef.current = '';
+          scheduleBotRetry(120);
           return;
         }
 
