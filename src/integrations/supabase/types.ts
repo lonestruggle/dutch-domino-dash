@@ -1031,16 +1031,14 @@ export type Database = {
         Returns: Json
       }
       wega_advance_claim: { Args: { _lobby_id: string }; Returns: Json }
-      wega_claim_boneyard_tile:
-        | { Args: { _lobby_id: string; _tile_index: number }; Returns: Json }
-        | {
-            Args: {
-              _actor_position?: number
-              _lobby_id: string
-              _tile_index: number
-            }
-            Returns: Json
-          }
+      wega_claim_boneyard_tile: {
+        Args: {
+          _actor_position?: number
+          _lobby_id: string
+          _tile_index: number
+        }
+        Returns: Json
+      }
       wega_claim_current: {
         Args: { _actor_position?: number; _lobby_id: string }
         Returns: Json
