@@ -2370,14 +2370,11 @@ export default function Game() {
           }
           wegaBotActionLockRef.current = lockKey;
 
-          let chosen: any = null;
-          let chosenIdx = -1;
+          const candidates: Array<{ move: any; index: number }> = [];
           for (let i = 0; i < hand.length; i++) {
             const moves = wegaFindLegalMovesRef.current(hand[i] as any);
             if (moves && moves.length > 0) {
-              chosen = moves[0];
-              chosenIdx = i;
-              break;
+              candidates.push(...moves.map((move) => ({ move, index: i })));
             }
           }
           await new Promise((r) => setTimeout(r, Math.min(1200, Math.max(120, botMaxActionMs - 250))));
@@ -2387,31 +2384,34 @@ export default function Game() {
             return;
           }
 
-          if (chosen) {
-            const { data, error } = await supabase.rpc('wega_submit_move' as any, {
-              _lobby_id: gameId,
-              _hand_index: chosenIdx,
-              _x: chosen.x,
-              _y: chosen.y,
-              _orientation: chosen.orientation,
-              _flipped: !!chosen.flipped,
-              _actor_position: actor.position,
-            });
-            if (error) throw error;
-            const result = data as any;
-            if (!result?.ok && result?.reason !== 'not_your_turn') {
-              console.warn('[wegaBot] rejected move, retrying/pass fallback', result);
-              wegaBotActionLockRef.current = '';
-              scheduleBotRetry(120);
-              return;
+          if (candidates.length > 0) {
+            for (const candidate of candidates) {
+              const chosen = candidate.move;
+              const { data, error } = await supabase.rpc('wega_submit_move' as any, {
+                _lobby_id: gameId,
+                _hand_index: candidate.index,
+                _x: chosen.x,
+                _y: chosen.y,
+                _orientation: chosen.orientation,
+                _flipped: !!chosen.flipped,
+                _actor_position: actor.position,
+              });
+              if (error) throw error;
+              const result = data as any;
+              if (result?.ok) {
+                wegaBotActionLockRef.current = '';
+                scheduleBotRetry(120);
+                return;
+              }
+              if (result?.reason === 'not_your_turn') break;
+              console.warn('[wegaBot] rejected candidate, trying next', result);
             }
-          } else {
-            const { error } = await supabase.rpc('wega_pass' as any, {
-              _lobby_id: gameId,
-              _actor_position: actor.position,
-            });
-            if (error) throw error;
           }
+          const { error } = await supabase.rpc('wega_pass' as any, {
+            _lobby_id: gameId,
+            _actor_position: actor.position,
+          });
+          if (error) throw error;
           wegaBotActionLockRef.current = '';
           scheduleBotRetry(120);
           return;
