@@ -1917,6 +1917,62 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
                       {getSetting('wega_di_sen_enabled') !== false ? 'Ingeschakeld' : 'Uitgeschakeld'}
                     </Button>
                   </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t pt-3">
+                    <div className="space-y-0.5">
+                      <Label className="text-base">Wega — Bot claim-kans (0–1)</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Kans dat een bot in de claim-fase een steen succesvol claimt. 1 = altijd, 0 = nooit.
+                      </p>
+                    </div>
+                    <Input
+                      type="number"
+                      step="0.05"
+                      min={0}
+                      max={1}
+                      className="w-32"
+                      defaultValue={Number(getSetting('wega_bot_claim_chance') ?? 0.95)}
+                      onBlur={async (e) => {
+                        const v = Math.max(0, Math.min(1, Number(e.target.value)));
+                        if (Number.isNaN(v)) return;
+                        const result = await updateSetting('wega_bot_claim_chance', v);
+                        toast({
+                          title: result.success ? 'Instelling bijgewerkt' : 'Fout',
+                          description: result.success ? `Bot claim-kans = ${v}` : 'Kon instelling niet bijwerken',
+                          variant: result.success ? 'default' : 'destructive',
+                        });
+                      }}
+                      disabled={settingsLoading}
+                    />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t pt-3">
+                    <div className="space-y-0.5">
+                      <Label className="text-base">Wega — Bot foutkans (0–1)</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Kans dat een bot in de speel-fase bewust een verkeerde steen legt. Server eindigt het spel en past de boete toe.
+                      </p>
+                    </div>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      max={1}
+                      className="w-32"
+                      defaultValue={Number(getSetting('wega_bot_error_chance') ?? 0.05)}
+                      onBlur={async (e) => {
+                        const v = Math.max(0, Math.min(1, Number(e.target.value)));
+                        if (Number.isNaN(v)) return;
+                        const result = await updateSetting('wega_bot_error_chance', v);
+                        toast({
+                          title: result.success ? 'Instelling bijgewerkt' : 'Fout',
+                          description: result.success ? `Bot foutkans = ${v}` : 'Kon instelling niet bijwerken',
+                          variant: result.success ? 'default' : 'destructive',
+                        });
+                      }}
+                      disabled={settingsLoading}
+                    />
+                  </div>
                 </CardContent>
               </Card>
 
