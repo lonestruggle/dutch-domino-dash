@@ -1,49 +1,70 @@
-## Doel
+## Nieuwe claim-fase voor "Wega di sen"
 
-1. Als admin/dev mag je een Wega-lobby starten met **slechts 1 echte speler** (de rest wordt automatisch aangevuld met bots).
-2. De bot moet ook **Wega kunnen spelen**: stenen uit boneyard kiezen, starter claimen, leggen of passen.
-3. Onderzoek waarom de melding **"Kon steen niet trekken – Not in drawing phase"** verschijnt terwijl de hand 0/5 toont.
+Vervangt de huidige vrije claim (iedereen klikt op eigen stenen) door een **gestuurde aftel-pop-up** die alle spelers samen doorloopt.
 
-## Aanpak
+### Volgorde van te claimen stenen
+Server berekent eenmalig per ronde, in deze vaste volgorde:
 
-### Stap 1 — Solo-test mode (snel)
-- In `Lobby.tsx` (start-knop) en aan serverkant: een lobby met `is_test = true` (of als de host een `admin`/`dev` is) mag starten met `player_count = 1`. De overige slots worden gevuld met bots via bestaande `useBotManager`.
-- Geen nieuwe permissies: hergebruik `has_role(auth.uid(),'admin'|'dev')` (zoals al in je memory staat).
-- UI: extra knop "Start solo-test (vul met bots)" voor admins/devs, naast de gewone Start-knop.
+1. **Dubbels hoog → laag**: 6-6, 5-5, 4-4, 3-3, 2-2, 1-1, 0-0
+2. **Niet-dubbels hoog → laag** (op som, bij gelijke som hoogste pip eerst): 6-5, 6-4, 6-3, 5-4, 6-2, 5-3, 6-1, 5-2, 4-3, 6-0, 5-1, 4-2, 5-0, 4-1, 3-2, 4-0, 3-1, 2-1, 3-0, 2-0, 1-0
 
-### Stap 2 — Bot voor Wega
-Voeg in `useBotAI` / `useBotManager` Wega-fase-bewustzijn toe:
-- **drawing**: bot kiest na korte delay een willekeurige tile uit `boneyard` → roept `wega_claim_boneyard_tile` aan tot zijn hand 5 is.
-- **claiming_starter**: bot bekijkt zijn hand, pakt zijn hoogste dubbel of (anders) zijn hoogste som, en roept `wega_claim_starter` aan met die index. Als hij denkt er één te hebben en het is fout → server handelt dat correct af (penalty).
-- **playing**: bot zoekt eerste legale zet (zelfde matcher als de UI) en roept `wega_submit_move`. Als geen legale zet → `wega_pass`.
+> **Vraag ter bevestiging**: je schreef "5-5 t/m 1-1" en "6-5 t/m 1-0". Ik ga ervan uit dat dit een typo is en dat **6-6 en 0-0 wel meedoen** (standaard Wega di sen). Laat me weten als dat anders moet.
 
-Bot draait alleen op de **host-client** (huidige conventie). Zelfde delays als nu (1–2s).
+### Mechaniek per steen (3 seconden timer)
 
-### Stap 3 — "Not in drawing phase"
-- Op het screenshot staat hand 0/5 maar server zegt geen `drawing` meer. Mogelijke oorzaak: phase overslag of stale client-state. Toevoegen:
-  - In `Game.tsx`: voor de draw-knop checken op `state.wegaPhase === 'drawing'` voordat call uitgevoerd wordt (i.p.v. blindelings RPC aanroepen).
-  - In `wega_claim_boneyard_tile`: bij `RAISE EXCEPTION 'Not in drawing phase'` óók een `client_error`-vriendelijk log neerzetten met de huidige phase, zodat we in de logs zien wat de server-phase op dat moment was.
+```text
+[Pop-up volledig scherm]
+  "Wie heeft de 6-6?"           <-- huidige steen groot in beeld
+  [██████░░░░] 3s aftellen
+  
+  Speler-acties:
+   - Heeft steen in hand → grote "Claim 6-6!" knop pulseert
+   - Heeft steen NIET    → knop disabled, "Wachten..."
+  
+  Bot-acties (server timer):
+   - 0-300ms willekeurig delay
+   - 95% kans: claimt automatisch
+   - 5% kans: verzuimt (bewust niets doen)
+```
 
-### Technische details
+### Wat gebeurt er bij timeout?
+- Server logt **wie de steen in zijn hand had** (de "verzuimer").
+- Pop-up rolt door naar de volgende steen, zónder direct te straffen.
 
-- Bot-cycle: bij elke `game_state` change kijkt `useBotManager` of het de beurt van een bot is OR of de bot in `drawing` nog tiles moet trekken. Drawing is parallel (geen beurt-volgorde) — dus elke bot trekt onafhankelijk tot 5.
-- Solo-test in `wega_start` (of waar de game wordt aangemaakt): de check op minimum aantal echte spelers wordt afhankelijk van `lobby.is_test` of `has_role`. Eenvoudigst: laat de **host-client** bots toevoegen als lobby_players vóór game start; de bestaande start-flow blijft hetzelfde.
-- `lobby_players.is_bot = true` bestaat al (gezien in `_wega_finalize_game`), dus geen schema-wijziging nodig.
+### Wat gebeurt er bij een claim?
+Server checkt of er een eerdere verzuimer bestaat (iemand met een hogere steen die niet claimde):
 
-### Bestanden die ik wijzig
-- `src/hooks/useBotManager.ts` en/of `src/hooks/useBotAI.ts` (Wega-acties toevoegen)
-- `src/pages/Lobby.tsx` (solo-test knop voor admin/dev, bot-slots vullen)
-- `src/pages/Game.tsx` (phase-check voor draw-knop, logging)
-- DB-migratie alleen als blijkt dat er geen RPC bestaat om vanaf de client een bot in `lobby_players` te zetten met de juiste velden — anders direct insert via supabase-js.
+- **Geen verzuimer** → claimer wint, wordt starter, spel begint.
+- **Wel verzuimer** → spel wordt stilgelegd:
+  - Grote rode overlay: *"Spel stilgelegd! [Naam] heeft verzuimd de [6-6] tijdig te claimen!"*
+  - Misgelopen steen flitst rood naast naam verzuimer.
+  - **Boete**: verzuimer betaalt `stake` aan **elke andere speler** aan tafel (4 spelers, inzet 10 → verzuimer betaalt 30).
+  - Ronde eindigt direct, geen spel.
 
-### Wat ik NIET doe
-- Starter autoplaatsen (jouw keuze: handmatig laten).
-- Geen schemawijzigingen tenzij strikt nodig.
+### Bot-foutkans (admin instelbaar)
+- Nieuwe app-setting `wega_bot_claim_chance` (default 0.95).
+- Bewerkbaar via bestaand admin-instellingenscherm.
 
-## Volgorde van uitvoering
+### Technische uitvoering
 
-1. Lees `useBotManager`, `useBotAI`, `Lobby.tsx`, `Game.tsx`.
-2. Bouw solo-test knop + bot-spawn.
-3. Bouw bot-Wega logica (drawing → claim → play/pass).
-4. Fix draw-knop check + extra logging.
-5. Testen via admin console.
+**Database (1 migratie):**
+- `lobbies.wega_claim_sequence jsonb` — gegenereerde volgorde van stenen voor deze ronde.
+- `lobbies.wega_claim_index int` — huidige positie in de sequence.
+- `lobbies.wega_claim_started_at timestamptz` — start huidige 3s timer.
+- `lobbies.wega_claim_missed jsonb` — `[{position, tile, expired_at}]` per gemiste steen.
+- App-setting `wega_bot_claim_chance` (numeric, 0.95).
+
+**Nieuwe/aangepaste RPC's:**
+- `wega_start_claim_phase(_lobby_id)` — bouwt sequence o.b.v. wie wat in zijn hand heeft, zet index=0.
+- `wega_claim_current(_lobby_id, _actor_position)` — vervangt `wega_claim_starter`. Valideert dat caller de huidige steen heeft; bij verzuimer triggert blocked-ronde + boete-uitkering aan andere spelers; anders → starter gezet, fase → playing.
+- `wega_advance_claim(_lobby_id)` — door host-client aangeroepen na 3s timeout; schuift index op, logt verzuimer indien iemand de steen had.
+
+**Frontend:**
+- `WegaPhaseOverlay.tsx` claiming_starter-blok herschreven: toont 1 steen + timer + claim-knop, geen handweergave meer.
+- Nieuwe `WegaBlockedOverlay.tsx` voor de rode "Spel stilgelegd"-melding.
+- `Game.tsx` bot-orchestrator uitgebreid: bot roept `wega_claim_current` aan met 0-300ms delay als hij de huidige steen heeft, met `Math.random() < botClaimChance`.
+- Host-client driver `wega_advance_claim` zodra `now - wega_claim_started_at > 3s`.
+
+### Wat ik NIET doe (jouw eerdere keuzes blijven staan)
+- Geen autoplaatsen van starter.
+- Solo-test mode (1 mens + bots) blijft zoals nu.
