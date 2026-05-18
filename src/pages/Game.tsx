@@ -2134,32 +2134,33 @@ export default function Game() {
         }
 
         if (phase === 'claiming_starter') {
-          let highestDouble = -1;
-          let highestSum = -1;
-          hands.forEach((h) => (h || []).forEach((t) => {
-            if (t.value1 === t.value2) highestDouble = Math.max(highestDouble, t.value1);
-            else highestSum = Math.max(highestSum, t.value1 + t.value2);
-          }));
-          for (const bot of bots) {
-            const hand = hands[bot.position] || [];
-            let idx = -1;
-            if (highestDouble >= 0) {
-              idx = hand.findIndex((t) => t.value1 === t.value2 && t.value1 === highestDouble);
-            } else {
-              idx = hand.findIndex((t) => t.value1 !== t.value2 && t.value1 + t.value2 === highestSum);
-            }
-            if (idx >= 0) {
-              const lockKey = `claim:${bot.position}:${idx}`;
-              if (wegaBotActionLockRef.current === lockKey) return;
-              wegaBotActionLockRef.current = lockKey;
-              await new Promise((r) => setTimeout(r, 1000));
-              if (cancelled) return;
-              await supabase.rpc('wega_claim_starter' as any, {
+          // Nieuwe gestuurde claim-fase: bot claimt huidige steen als hij hem heeft
+          const seq: Array<{ value1: number; value2: number }> = Array.isArray(gs.wegaClaimSequence) ? gs.wegaClaimSequence : [];
+          const cidx = Number(gs.wegaClaimIndex || 0);
+          const currentTile = seq[cidx];
+          if (!currentTile) return;
+          const startedAt = Number(gs.wegaClaimStartedAt || 0);
+          const owner = bots.find((b) => (hands[b.position] || []).some(t =>
+            (t.value1 === currentTile.value1 && t.value2 === currentTile.value2) ||
+            (t.value1 === currentTile.value2 && t.value2 === currentTile.value1)
+          ));
+          if (owner) {
+            const lockKey = `claim2:${owner.position}:${cidx}:${startedAt}`;
+            if (wegaBotActionLockRef.current === lockKey) return;
+            wegaBotActionLockRef.current = lockKey;
+            const claimChance = Number(botClaimChanceRef.current ?? 0.95);
+            const willClaim = Math.random() < claimChance;
+            if (!willClaim) return; // bot "slaapt" → host-timer schuift door
+            const delay = 200 + Math.floor(Math.random() * 600); // 200-800ms
+            await new Promise((r) => setTimeout(r, delay));
+            if (cancelled) return;
+            try {
+              await supabase.rpc('wega_claim_current' as any, {
                 _lobby_id: gameId,
-                _hand_index: idx,
-                _actor_position: bot.position,
+                _actor_position: owner.position,
               });
-              return;
+            } catch (err) {
+              console.error('[wegaBot] claim_current failed', err);
             }
           }
           return;
