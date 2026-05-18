@@ -787,6 +787,8 @@ export default function Game() {
   const botTurnObservedAtRef = useRef<Record<string, number>>({});
   const botAwaitingTurnAdvanceRef = useRef<{ player: number | null; until: number }>({ player: null, until: 0 });
   const botCooldownUntilRef = useRef<number>(0);
+  const botRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [botTick, setBotTick] = useState(0);
   const [botDebugInfo, setBotDebugInfo] = useState<BotDebugInfo>({
     status: 'init',
     details: 'Bot debug gestart',
@@ -808,6 +810,19 @@ export default function Game() {
     if (!Number.isFinite(raw)) return 65;
     return Math.max(0, Math.min(100, Math.round(raw)));
   }, [appSettings]);
+  const botMaxActionMs = useMemo(() => {
+    const raw = Number(appSettings?.bot_max_action_ms ?? 1500);
+    if (!Number.isFinite(raw)) return 1500;
+    return Math.max(300, Math.min(10000, Math.round(raw)));
+  }, [appSettings]);
+  const scheduleBotRetry = useCallback((delayMs: number) => {
+    const clamped = Math.max(60, Math.min(3000, delayMs));
+    if (botRetryTimerRef.current) clearTimeout(botRetryTimerRef.current);
+    botRetryTimerRef.current = setTimeout(() => {
+      botRetryTimerRef.current = null;
+      setBotTick((t) => t + 1);
+    }, clamped);
+  }, []);
   const minPlacementDelayMs = useMemo(() => {
     const raw = Number(appSettings?.global_min_placement_delay_ms ?? DEFAULT_MIN_PLACEMENT_DELAY_MS);
     if (!Number.isFinite(raw)) return DEFAULT_MIN_PLACEMENT_DELAY_MS;
