@@ -2134,6 +2134,100 @@ export default function Game() {
     return moves;
   }, [isWegaPlay, gameHook, gameState?.board, gameState?.dominoes, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
 
+  // === Permissieve variant voor menselijke spelers in Wega di sen ===
+  // Volgens de huidige spelregels: een speler mag elke steen op elk open einde leggen.
+  // De server controleert of de zet klopt en eindigt het spel met boete bij een foute zet.
+  const wegaFindLegalMovesForHuman = useCallback((dominoData: DominoData): LegalMove[] => {
+    if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
+    if (!dominoData) return [];
+    const board = (gameState?.board || {}) as Record<string, { dominoId: string; value: number }>;
+    const dominoesMap = (gameState?.dominoes || {}) as Record<string, { x: number; y: number; orientation: 'horizontal' | 'vertical'; data: { value1: number; value2: number } }>;
+    const isDoubleTile = dominoData.value1 === dominoData.value2;
+    const selIdx = wegaSelectedIndex;
+    const selDom = (selIdx !== null && selIdx !== undefined) ? gameState?.playerHand?.[selIdx] : null;
+    const isSelectedTile = !!selDom && selDom === dominoData;
+    const forcedFlip: boolean = (isSelectedTile && selIdx !== null && selIdx !== undefined && wegaFlipMap[selIdx] !== undefined)
+      ? !!wegaFlipMap[selIdx] : false;
+    const isOpenEndDirection = (cx: number, cy: number, dir: 'N' | 'S' | 'E' | 'W'): boolean => {
+      const cellInfo = board[`${cx},${cy}`];
+      if (!cellInfo) return false;
+      const dom = dominoesMap[cellInfo.dominoId];
+      if (!dom) return false;
+      const isDoubleDom = dom.data.value1 === dom.data.value2;
+      if (dom.orientation === 'horizontal') {
+        const isLeft = cx === dom.x && cy === dom.y;
+        const isRight = cx === dom.x + 1 && cy === dom.y;
+        if (isDoubleDom) {
+          if (isLeft && dir === 'E') return false;
+          if (isRight && dir === 'W') return false;
+          return isLeft || isRight;
+        }
+        return (isLeft && dir === 'W') || (isRight && dir === 'E');
+      }
+      const isTop = cx === dom.x && cy === dom.y;
+      const isBottom = cx === dom.x && cy === dom.y + 1;
+      if (isDoubleDom) {
+        if (isTop && dir === 'S') return false;
+        if (isBottom && dir === 'N') return false;
+        return isTop || isBottom;
+      }
+      return (isTop && dir === 'N') || (isBottom && dir === 'S');
+    };
+    const boardKeys = Object.keys(board);
+    if (boardKeys.length === 0) {
+      return [{
+        end: { x: 0, y: 0, value: 0, fromDir: 'E' },
+        dominoData,
+        flipped: forcedFlip,
+        orientation: isDoubleTile ? 'vertical' : 'horizontal',
+        x: 0, y: 0,
+      }];
+    }
+    const moves: LegalMove[] = [];
+    const seen = new Set<string>();
+    for (const key of boardKeys) {
+      const [cx, cy] = key.split(',').map(Number);
+      const cellValue = board[key].value;
+      const neighbors: Array<{ nx: number; ny: number; dir: 'N' | 'S' | 'E' | 'W' }> = [
+        { nx: cx, ny: cy - 1, dir: 'N' },
+        { nx: cx, ny: cy + 1, dir: 'S' },
+        { nx: cx - 1, ny: cy, dir: 'W' },
+        { nx: cx + 1, ny: cy, dir: 'E' },
+      ];
+      for (const { nx, ny, dir } of neighbors) {
+        const k = `${nx},${ny}`;
+        if (board[k] || seen.has(k)) continue;
+        if (!isOpenEndDirection(cx, cy, dir)) continue;
+        if (isDoubleTile) {
+          const perpOrientation: 'horizontal' | 'vertical' = (dir === 'N' || dir === 'S') ? 'horizontal' : 'vertical';
+          const topX = nx, topY = ny;
+          const otherKey = perpOrientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
+          if (board[otherKey]) continue;
+          seen.add(k);
+          moves.push({
+            end: { x: nx, y: ny, value: cellValue, fromDir: dir },
+            dominoData, flipped: false, orientation: perpOrientation,
+            x: topX, y: topY,
+          });
+        } else {
+          const orientation: 'horizontal' | 'vertical' = (dir === 'N' || dir === 'S') ? 'vertical' : 'horizontal';
+          let topX = nx, topY = ny;
+          if (orientation === 'horizontal' && dir === 'W') topX = nx - 1;
+          if (orientation === 'vertical' && dir === 'N') topY = ny - 1;
+          const otherKey = orientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
+          if (board[otherKey]) continue;
+          seen.add(k);
+          moves.push({
+            end: { x: nx, y: ny, value: cellValue, fromDir: dir },
+            dominoData, flipped: forcedFlip, orientation,
+            x: topX, y: topY,
+          });
+        }
+      }
+    }
+    return moves;
+  }, [isWegaPlay, gameHook, gameState?.board, gameState?.dominoes, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
+
   const wegaExecuteMove = useCallback(async (move: MoveWithEffects) => {
     if (!isWegaPlay) {
       return wrappedExecuteMove(move);
@@ -2202,20 +2296,12 @@ export default function Game() {
     }
   }, [syncState.currentPlayer, syncState.playerPosition]);
   useEffect(() => {
-    if (!isWegaPlay || !autoPassEnabled) return;
-    if (!gameState || gameState.isGameOver) return;
-    if (syncState.currentPlayer !== syncState.playerPosition) return;
-    const hand = gameState.playerHand || [];
-    if (hand.length === 0) return;
-    const hasAnyMove = hand.some((t) => wegaFindLegalMoves(t).length > 0);
-    if (hasAnyMove) return;
-    const consecutivePasses = Number((gameState as any).consecutivePasses) || 0;
-    const fp = `${syncState.currentPlayer}:${hand.length}:${Object.keys(gameState.board || {}).length}:${consecutivePasses}`;
-    if (autoPassFiredRef.current === fp) return;
-    autoPassFiredRef.current = fp;
-    toast({ title: 'Automatisch gepast', description: 'Je had geen legale zet.', duration: 2000 });
-    const t = setTimeout(() => { wegaPassMove(); }, 600);
-    return () => clearTimeout(t);
+    // In Wega di sen mag een speler elke steen op elk open einde leggen.
+    // De server controleert of de zet klopt en eindigt het spel bij een foute zet.
+    // Daarom passen mensen alleen handmatig via de Pas-knop. Auto-pas is hier
+    // bewust uitgezet om te voorkomen dat het systeem ten onrechte namens de
+    // verkeerde speler past (waardoor het leek alsof de bot 2x speelde).
+    return;
   }, [isWegaPlay, autoPassEnabled, gameState, syncState.currentPlayer, syncState.playerPosition, wegaFindLegalMoves, wegaPassMove, toast]);
 
   // === Wega di sen bot orchestrator ===
@@ -2223,29 +2309,41 @@ export default function Game() {
   // namens hen via de nieuwe `_actor_position` parameter in de Wega RPCs.
   const wegaBotActionLockRef = useRef<string>('');
   const botClaimChanceRef = useRef<number>(0.95);
+  const botErrorChanceRef = useRef<number>(0.05);
   const wegaAdvanceLockRef = useRef<string>('');
 
   // Ref naar laatste wegaFindLegalMoves zodat bot-effect niet herstart
   // wanneer de menselijke speler een steen selecteert of flipt.
   const wegaFindLegalMovesRef = useRef(wegaFindLegalMoves);
   useEffect(() => { wegaFindLegalMovesRef.current = wegaFindLegalMoves; }, [wegaFindLegalMoves]);
+  const wegaFindLegalMovesForHumanRef = useRef(wegaFindLegalMovesForHuman);
+  useEffect(() => { wegaFindLegalMovesForHumanRef.current = wegaFindLegalMovesForHuman; }, [wegaFindLegalMovesForHuman]);
 
-  // Laad bot-claim-chance uit app_settings (eenmalig)
+  // Laad bot-claim-chance en bot-error-chance uit app_settings (eenmalig)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase
+        const { data: claim } = await supabase
           .from('app_settings')
           .select('setting_value')
           .eq('setting_key', 'wega_bot_claim_chance')
           .maybeSingle();
-        if (!cancelled && data?.setting_value != null) {
-          const v = Number(data.setting_value);
+        if (!cancelled && claim?.setting_value != null) {
+          const v = Number(claim.setting_value);
           if (!Number.isNaN(v) && v >= 0 && v <= 1) botClaimChanceRef.current = v;
         }
+        const { data: errSetting } = await supabase
+          .from('app_settings')
+          .select('setting_value')
+          .eq('setting_key', 'wega_bot_error_chance')
+          .maybeSingle();
+        if (!cancelled && errSetting?.setting_value != null) {
+          const v = Number(errSetting.setting_value);
+          if (!Number.isNaN(v) && v >= 0 && v <= 1) botErrorChanceRef.current = v;
+        }
       } catch (err) {
-        console.warn('[wega] kon bot_claim_chance niet laden', err);
+        console.warn('[wega] kon bot-instellingen niet laden', err);
       }
     })();
     return () => { cancelled = true; };
@@ -2411,6 +2509,27 @@ export default function Game() {
               candidates.push(...moves.map((move) => ({ move, index: i })));
             }
           }
+          // Admin-instelbare foutkans: bot kiest soms bewust een verkeerde plaatsing.
+          // Server-side validatie eindigt het spel en past de boete toe.
+          const errorChance = Number(botErrorChanceRef.current ?? 0);
+          const makeMistake = errorChance > 0 && hand.length > 0 && Math.random() < errorChance;
+          if (makeMistake) {
+            const permissive = wegaFindLegalMovesForHumanRef.current(hand[Math.floor(Math.random() * hand.length)] as any) || [];
+            // Filter zetten die toevallig wél kloppen (alleen écht foute zetten gebruiken)
+            const wrong = permissive.filter((m: any) => {
+              const strict = wegaFindLegalMovesRef.current(m.dominoData) || [];
+              return !strict.some((s: any) => s.x === m.x && s.y === m.y && s.orientation === m.orientation);
+            });
+            if (wrong.length > 0) {
+              const w = wrong[Math.floor(Math.random() * wrong.length)];
+              const handIdx = hand.findIndex((t: any) => t === w.dominoData
+                || (t.value1 === w.dominoData.value1 && t.value2 === w.dominoData.value2));
+              if (handIdx >= 0) {
+                console.log('[wegaBot] bewust foute zet (errorChance=' + errorChance + ')', w);
+                candidates.unshift({ move: w, index: handIdx });
+              }
+            }
+          }
           await new Promise((r) => setTimeout(r, Math.min(1200, Math.max(120, botMaxActionMs - 250))));
           if (cancelled) {
             if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
@@ -2481,7 +2600,7 @@ export default function Game() {
         gameHook={{
           ...gameHook, 
           executeMove: wegaExecuteMove,
-          findLegalMoves: wegaFindLegalMoves,
+          findLegalMoves: isWegaPlay ? wegaFindLegalMovesForHuman : wegaFindLegalMoves,
           drawFromBoneyard: wrappedDrawFromBoneyard,
           drawSpecificFromBoneyard: wrappedDrawSpecificFromBoneyard,
           passMove: wegaPassMove,
