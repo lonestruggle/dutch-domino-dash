@@ -1626,6 +1626,17 @@ export default function Game() {
       updatedAt: Date.now(),
     }));
 
+    console.log('[classicBot] turn detected', {
+      pos: actorPosition,
+      bot: currentPlayerData.username,
+      handSize: (gameState.playerHands?.[actorPosition] || []).length,
+      boardSize: Object.keys(gameState.board || {}).length,
+      boneyard: gameState.boneyard.length,
+      nextDominoId: gameState.nextDominoId,
+      controllerPos: botControllerPosition,
+      isController: isDesignatedController,
+    });
+
     const runBotTurn = async () => {
       const latestBotHand = gameState.playerHands?.[actorPosition] || [];
       let legalMovesForBot: MoveWithEffects[] = [];
@@ -1637,6 +1648,15 @@ export default function Game() {
         legalMovesForBot = legalMovesForBot.concat(
           moves.map((move) => ({ ...move, index, actorPosition }))
         );
+      });
+
+      console.log('[classicBot] runBotTurn', {
+        pos: actorPosition,
+        hand: latestBotHand.map((d, i) => `${i}:${d.value1}-${d.value2}`),
+        handSize: latestBotHand.length,
+        legalMovesCount: legalMovesForBot.length,
+        boneyard: gameState.boneyard.length,
+        openEnds: (gameState.openEnds || []).length,
       });
 
       try {
@@ -1691,6 +1711,14 @@ export default function Game() {
         }));
 
         if (selectedMove) {
+          console.log('[classicBot] PLAY', {
+            pos: actorPosition,
+            index: selectedMove.index,
+            tile: `${selectedMove.dominoData.value1}-${selectedMove.dominoData.value2}`,
+            at: `${selectedMove.x},${selectedMove.y}`,
+            orient: selectedMove.orientation,
+            flipped: selectedMove.flipped,
+          });
           const cd = Math.min(900, Math.max(150, botMaxActionMs - 200));
           const adv = Math.min(2600, Math.max(600, botMaxActionMs * 2));
           botCooldownUntilRef.current = Date.now() + cd;
@@ -1702,6 +1730,7 @@ export default function Game() {
         }
 
         if (boneyardSize > 0) {
+          console.log('[classicBot] DRAW', { pos: actorPosition, boneyardSize });
           const cd = Math.min(900, Math.max(150, botMaxActionMs - 200));
           botCooldownUntilRef.current = Date.now() + cd;
           botTurnExecutionRef.current = null;
@@ -1709,6 +1738,11 @@ export default function Game() {
           return;
         }
 
+        console.log('[classicBot] PASS', {
+          pos: actorPosition,
+          handSize: latestBotHand.length,
+          legalMoves: legalMovesForBot.length,
+        });
         const cd2 = Math.min(900, Math.max(150, botMaxActionMs - 200));
         const adv2 = Math.min(2600, Math.max(600, botMaxActionMs * 2));
         botCooldownUntilRef.current = Date.now() + cd2;
