@@ -291,15 +291,15 @@ export const useDominoGame = (localPlayerPosition?: number) => {
           continue;
         }
 
-        // Check double domino connection rules: a double exposes one centered open end on
-        // each perpendicular side, not separate top/bottom or left/right cell ends.
+        // Check double domino connection rules
         if (isDouble(domino.data)) {
-          const isCenterAnchorCell = x === domino.x && y === domino.y;
-          const allowedFromDouble = domino.orientation === 'vertical'
-            ? isCenterAnchorCell && (dir === 'W' || dir === 'E')
-            : isCenterAnchorCell && (dir === 'N' || dir === 'S');
+          const isVertical = domino.orientation === 'vertical';
 
-          if (!allowedFromDouble) {
+          // Non-spinner doubles only connect perpendicular to their orientation
+          if (
+            (isVertical && (dir === 'N' || dir === 'S')) ||
+            (!isVertical && (dir === 'W' || dir === 'E'))
+          ) {
             continue;
           }
         }
