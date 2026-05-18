@@ -1,117 +1,49 @@
-## Game Debug Logs
+## Doel
 
-Doel: per spel een gedetailleerde event-log bijhouden, zichtbaar in de Admin Dashboard, zodat je precies kunt nalopen waar iets misgaat.
+1. Als admin/dev mag je een Wega-lobby starten met **slechts 1 echte speler** (de rest wordt automatisch aangevuld met bots).
+2. De bot moet ook **Wega kunnen spelen**: stenen uit boneyard kiezen, starter claimen, leggen of passen.
+3. Onderzoek waarom de melding **"Kon steen niet trekken – Not in drawing phase"** verschijnt terwijl de hand 0/5 toont.
 
-### 1. Database
+## Aanpak
 
-Nieuwe tabel `public.game_logs`:
+### Stap 1 — Solo-test mode (snel)
+- In `Lobby.tsx` (start-knop) en aan serverkant: een lobby met `is_test = true` (of als de host een `admin`/`dev` is) mag starten met `player_count = 1`. De overige slots worden gevuld met bots via bestaande `useBotManager`.
+- Geen nieuwe permissies: hergebruik `has_role(auth.uid(),'admin'|'dev')` (zoals al in je memory staat).
+- UI: extra knop "Start solo-test (vul met bots)" voor admins/devs, naast de gewone Start-knop.
 
-| kolom | type | doel |
-|---|---|---|
-| id | uuid pk | |
-| game_id | uuid | koppeling aan `games.id` |
-| lobby_id | uuid | snel filteren per lobby |
-| player_position | int null | wie de actie deed (null = systeem) |
-| user_id | uuid null | wie de actie deed |
-| username | text null | snapshot voor leesbaarheid |
-| event_type | text | zie hieronder |
-| event_data | jsonb | payload (zet, hand, board snapshot, etc.) |
-| current_turn | int null | wiens beurt het was |
-| wega_phase | text null | drawing/claiming_starter/playing/ended |
-| created_at | timestamptz | |
+### Stap 2 — Bot voor Wega
+Voeg in `useBotAI` / `useBotManager` Wega-fase-bewustzijn toe:
+- **drawing**: bot kiest na korte delay een willekeurige tile uit `boneyard` → roept `wega_claim_boneyard_tile` aan tot zijn hand 5 is.
+- **claiming_starter**: bot bekijkt zijn hand, pakt zijn hoogste dubbel of (anders) zijn hoogste som, en roept `wega_claim_starter` aan met die index. Als hij denkt er één te hebben en het is fout → server handelt dat correct af (penalty).
+- **playing**: bot zoekt eerste legale zet (zelfde matcher als de UI) en roept `wega_submit_move`. Als geen legale zet → `wega_pass`.
 
-RLS:
-- INSERT: elke speler in de lobby (en service role)
-- SELECT: alleen admin/moderator (via `can_moderate`)
+Bot draait alleen op de **host-client** (huidige conventie). Zelfde delays als nu (1–2s).
 
-Index op `(game_id, created_at)` en `(lobby_id, created_at)`.
+### Stap 3 — "Not in drawing phase"
+- Op het screenshot staat hand 0/5 maar server zegt geen `drawing` meer. Mogelijke oorzaak: phase overslag of stale client-state. Toevoegen:
+  - In `Game.tsx`: voor de draw-knop checken op `state.wegaPhase === 'drawing'` voordat call uitgevoerd wordt (i.p.v. blindelings RPC aanroepen).
+  - In `wega_claim_boneyard_tile`: bij `RAISE EXCEPTION 'Not in drawing phase'` óók een `client_error`-vriendelijk log neerzetten met de huidige phase, zodat we in de logs zien wat de server-phase op dat moment was.
 
-### 2. Event-types die we loggen
+### Technische details
 
-**Lifecycle**
-- `game_started` — aantal spelers, mode, stake, starthand per positie, boneyard size
-- `game_ended` — reden (changa/normal/blocked/false_starter_claim), winner_position, eindhanden, pip-totalen
+- Bot-cycle: bij elke `game_state` change kijkt `useBotManager` of het de beurt van een bot is OR of de bot in `drawing` nog tiles moet trekken. Drawing is parallel (geen beurt-volgorde) — dus elke bot trekt onafhankelijk tot 5.
+- Solo-test in `wega_start` (of waar de game wordt aangemaakt): de check op minimum aantal echte spelers wordt afhankelijk van `lobby.is_test` of `has_role`. Eenvoudigst: laat de **host-client** bots toevoegen als lobby_players vóór game start; de bestaande start-flow blijft hetzelfde.
+- `lobby_players.is_bot = true` bestaat al (gezien in `_wega_finalize_game`), dus geen schema-wijziging nodig.
 
-**Beurten / zetten**
-- `tile_selected` (client, alleen lokale speler) — welke hand-index/steen geselecteerd
-- `move_submitted` — hand_index, tile, x, y, orientation, flipped, resulterende open ends
-- `move_rejected` — reden (not_your_turn, cell_occupied, no_matching_end, illegal_adjacency) + boete
-- `tile_drawn` — getrokken steen (klassiek) of boneyard claim (wega)
-- `pass` — boete, openingsbonus ja/nee, lastPlacer
-- `turn_changed` — van → naar positie
+### Bestanden die ik wijzig
+- `src/hooks/useBotManager.ts` en/of `src/hooks/useBotAI.ts` (Wega-acties toevoegen)
+- `src/pages/Lobby.tsx` (solo-test knop voor admin/dev, bot-slots vullen)
+- `src/pages/Game.tsx` (phase-check voor draw-knop, logging)
+- DB-migratie alleen als blijkt dat er geen RPC bestaat om vanaf de client een bot in `lobby_players` te zetten met de juiste velden — anders direct insert via supabase-js.
 
-**Wega specifiek**
-- `starter_claimed` — tile, geldig of niet, eventuele boete
-- `boneyard_claimed` — tile_index, tile, hand-size na
+### Wat ik NIET doe
+- Starter autoplaatsen (jouw keuze: handmatig laten).
+- Geen schemawijzigingen tenzij strikt nodig.
 
-**Coins / settle**
-- `coin_transfer` — from, to, amount, reden
+## Volgorde van uitvoering
 
-**Debug helpers (extra die het naloopbaar maken)**
-- `state_snapshot` — periodieke / on-demand volledige `game_state` dump (zware payload, alleen op key events)
-- `client_error` — frontend exceptions tijdens spel
-- `hand_sync_mismatch` — als client een handlengte ziet die niet matcht met server (handig voor de "kan niet leggen"-bugs)
-
-### 3. Server-side hooks
-
-Logging-helper `_log_game_event(_game_id, _lobby_id, _user_id, _player_pos, _event_type, _event_data, _state)` toevoegen en aanroepen in:
-- `wega_submit_move` (succes + alle rejection-paden)
-- `wega_pass`
-- `wega_claim_starter`
-- `wega_claim_boneyard_tile`
-- `_wega_finalize_game` → `game_ended`
-- `update_game_state_for_lobby` → optioneel `state_changed`
-
-Voor klassieke modus: client logt `move_submitted`/`tile_drawn` direct, plus `state_snapshot` na elke server-update.
-
-### 4. Client-side hooks
-
-In `Game.tsx` / `useDominoGame` / `useSyncedDominoGame`:
-- Bij selecteren steen → `tile_selected`
-- Bij plaatsing/draw → ook clientzijde event (klassiek)
-- Bij elke `setGameState` met `gameStarted` true en nieuwe `dominoes`-count → `state_snapshot` (throttle 1x per beurt)
-- Window `onerror` / React errorboundary → `client_error`
-
-Lichte util `logGameEvent(gameId, type, data)` die naar tabel `game_logs` inserts doet via supabase-js. Faalt stil zodat het nooit gameplay breekt.
-
-### 5. Admin UI
-
-Nieuwe sectie in `AdminDashboard.tsx`: **Game Logs**
-- Lijst van recente games (laatste 50) uit `games` + lobby-naam + status + winner
-- Klik op game → drawer/dialog met:
-  - Metadata (mode, stake, spelers, start/eind, duur)
-  - Filter: event_type (multi-select), player
-  - Timeline van events (compact, timestamp · type · speler · samenvatting)
-  - Klik event → JSON-detail (event_data + state_snapshot)
-- Knop "Exporteer JSON" voor 1 game
-- Auto-refresh elke 5s (realtime channel optioneel)
-
-### 6. Wat we nog meer kunnen vastleggen
-
-Extra ideeën om debug rijker te maken:
-- **Latency**: client-timestamp + server-receive timestamp diff per event → opsporen van trage updates / dubbele clicks
-- **Device info** bij eerste log per sessie: userAgent, viewport, devicePixelRatio, isMobile
-- **Network status**: online/offline transities, supabase realtime reconnects
-- **Hand-hash per beurt**: sha van speler-hand → snel zien of clients out-of-sync raken
-- **Open-ends snapshot** na elke succesvolle zet (vergelijken met wat client toont)
-- **Legal-moves count** die client berekent vs wat server zou accepteren
-- **Boneyard contents** snapshot bij start + na elke trek
-- **Bot decisions**: welke move een bot koos en waarom (score/heuristic)
-- **Performance**: render-tijden GameBoard bij grote chains
-- **Coin balance voor/na** bij elke transfer
-- **RPC duration** per call
-
-### 7. Onderhoud
-
-- Cron / edge function `cleanup-game-logs` die logs ouder dan 14 dagen verwijdert (instelbaar via `app_settings`)
-- Optioneel: per game een "compact" log na afloop (alleen key events) als de full log groot is
-
-### Volgorde van implementatie
-
-1. Migratie: tabel `game_logs` + RLS + indexes + helper functie `_log_game_event`
-2. Server: log-calls toevoegen in alle wega RPC's + finalize
-3. Client: util `logGameEvent` + hooks in Game/useDominoGame
-4. Admin: Game Logs sectie met lijst + detail-viewer
-5. Cleanup edge function (optioneel, later)
-
-Akkoord? Dan begin ik met de migratie.
+1. Lees `useBotManager`, `useBotAI`, `Lobby.tsx`, `Game.tsx`.
+2. Bouw solo-test knop + bot-spawn.
+3. Bouw bot-Wega logica (drawing → claim → play/pass).
+4. Fix draw-knop check + extra logging.
+5. Testen via admin console.
