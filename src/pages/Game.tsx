@@ -1872,6 +1872,8 @@ export default function Game() {
   // ===== Wega di sen overrides =====
   const wegaPhase = (syncState.gameState as any)?.wegaPhase as string | undefined;
   const isWegaPlay = wegaPhase === 'playing';
+  const isWegaGame = ((syncState.gameState as any)?.gameMode === 'wega_di_sen') ||
+    !!wegaPhase;
 
   // Lokale flip-state per handsteen (alleen voor Wega di sen "playing" fase)
   const [wegaFlipMap, setWegaFlipMap] = useState<Record<number, boolean>>({});
