@@ -2294,21 +2294,33 @@ export default function Game() {
           ));
           if (owner) {
             const lockKey = `claim2:${owner.position}:${cidx}:${startedAt}`;
-            if (wegaBotActionLockRef.current === lockKey) return;
+            if (wegaBotActionLockRef.current === lockKey) {
+              scheduleBotRetry(250);
+              return;
+            }
             wegaBotActionLockRef.current = lockKey;
             const claimChance = Number(botClaimChanceRef.current ?? 0.95);
             const willClaim = Math.random() < claimChance;
-            if (!willClaim) return; // bot "slaapt" → host-timer schuift door
-            const delay = 200 + Math.floor(Math.random() * 600); // 200-800ms
+            if (!willClaim) {
+              wegaBotActionLockRef.current = '';
+              return; // bot "slaapt" → host-timer schuift door
+            }
+            const delay = Math.min(800, Math.max(120, botMaxActionMs - 300));
             await new Promise((r) => setTimeout(r, delay));
-            if (cancelled) return;
+            if (cancelled) {
+              if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
+              return;
+            }
             try {
-              await supabase.rpc('wega_claim_current' as any, {
+              const { error } = await supabase.rpc('wega_claim_current' as any, {
                 _lobby_id: gameId,
                 _actor_position: owner.position,
               });
+              if (error) throw error;
             } catch (err) {
               console.error('[wegaBot] claim_current failed', err);
+            } finally {
+              wegaBotActionLockRef.current = '';
             }
           }
           return;
