@@ -2020,7 +2020,16 @@ export default function Game() {
         if (isDoubleDom) {
           return isLeft && (dir === 'N' || dir === 'S');
         }
-        return (isLeft && dir === 'W') || (isRight && dir === 'E');
+        // Niet-dubbel, horizontaal: alleen aan de vrije uiteinde (outward + 2 dwars)
+        if (isLeft) {
+          if (board[`${dom.x - 1},${dom.y}`]) return false; // niet vrij
+          return dir === 'W' || dir === 'N' || dir === 'S';
+        }
+        if (isRight) {
+          if (board[`${dom.x + 2},${dom.y}`]) return false;
+          return dir === 'E' || dir === 'N' || dir === 'S';
+        }
+        return false;
       }
       // vertical
       const isTop = cx === dom.x && cy === dom.y;
@@ -2028,7 +2037,15 @@ export default function Game() {
       if (isDoubleDom) {
         return isTop && (dir === 'W' || dir === 'E');
       }
-      return (isTop && dir === 'N') || (isBottom && dir === 'S');
+      if (isTop) {
+        if (board[`${dom.x},${dom.y - 1}`]) return false;
+        return dir === 'N' || dir === 'W' || dir === 'E';
+      }
+      if (isBottom) {
+        if (board[`${dom.x},${dom.y + 2}`]) return false;
+        return dir === 'S' || dir === 'W' || dir === 'E';
+      }
+      return false;
     };
     const moves: LegalMove[] = [];
     // Bepaal of dominoData de momenteel geselecteerde steen is — alleen dan respecteren we de user-flip
@@ -2153,14 +2170,30 @@ export default function Game() {
         if (isDoubleDom) {
           return isLeft && (dir === 'N' || dir === 'S');
         }
-        return (isLeft && dir === 'W') || (isRight && dir === 'E');
+        if (isLeft) {
+          if (board[`${dom.x - 1},${dom.y}`]) return false;
+          return dir === 'W' || dir === 'N' || dir === 'S';
+        }
+        if (isRight) {
+          if (board[`${dom.x + 2},${dom.y}`]) return false;
+          return dir === 'E' || dir === 'N' || dir === 'S';
+        }
+        return false;
       }
       const isTop = cx === dom.x && cy === dom.y;
       const isBottom = cx === dom.x && cy === dom.y + 1;
       if (isDoubleDom) {
         return isTop && (dir === 'W' || dir === 'E');
       }
-      return (isTop && dir === 'N') || (isBottom && dir === 'S');
+      if (isTop) {
+        if (board[`${dom.x},${dom.y - 1}`]) return false;
+        return dir === 'N' || dir === 'W' || dir === 'E';
+      }
+      if (isBottom) {
+        if (board[`${dom.x},${dom.y + 2}`]) return false;
+        return dir === 'S' || dir === 'W' || dir === 'E';
+      }
+      return false;
     };
     const boardKeys = Object.keys(board);
     if (boardKeys.length === 0) {
