@@ -2037,7 +2037,7 @@ export default function Game() {
         // Bepaal flip zodat de helft die tegen cellValue ligt matcht.
         // Bij dir W/N ligt cell_keys[2] (= pip2) tegen de bestaande cel, anders cell_keys[1] (= pip1).
         // pip1 = flipped ? v2 : v1 ; pip2 = flipped ? v1 : v2
-        let flipped = false;
+        let flipped: boolean | null = null;
         if (adjacencyOnSecondCell) {
           // pip2 moet == cellValue → flipped=false als v2==cellValue, anders flipped=true als v1==cellValue
           if (dominoData.value2 === cellValue) flipped = false;
@@ -2047,11 +2047,16 @@ export default function Game() {
           if (dominoData.value1 === cellValue) flipped = false;
           else if (dominoData.value2 === cellValue) flipped = true;
         }
+        if (flipped === null) continue;
         // Check second cell free
         const otherKey = orientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
         if (board[otherKey]) continue;
         // Respecteer user-flip wanneer de geselecteerde steen handmatig is geflipt
         const finalFlipped = forcedFlip !== null ? forcedFlip : flipped;
+        const adjacentPip = adjacencyOnSecondCell
+          ? (finalFlipped ? dominoData.value1 : dominoData.value2)
+          : (finalFlipped ? dominoData.value2 : dominoData.value1);
+        if (adjacentPip !== cellValue) continue;
         moves.push({
           end: { x: nx, y: ny, value: cellValue, fromDir: dir },
           dominoData,
@@ -2106,7 +2111,10 @@ export default function Game() {
   const wegaPassMove = useCallback(async (actorPosition?: number) => {
     if (!isWegaPlay) return passMove(actorPosition);
     try {
-      const { data, error } = await supabase.rpc('wega_pass' as any, { _lobby_id: gameId });
+      const payload = typeof actorPosition === 'number'
+        ? { _lobby_id: gameId, _actor_position: actorPosition }
+        : { _lobby_id: gameId };
+      const { data, error } = await supabase.rpc('wega_pass' as any, payload);
       if (error) throw error;
       const r = data as any;
       const stake = (syncState.gameState as any)?.wegaStake || 10;
