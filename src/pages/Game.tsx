@@ -1941,6 +1941,35 @@ export default function Game() {
     const board = (gameState?.board || {}) as Record<string, { dominoId: string; value: number }>;
     const boardKeys = Object.keys(board);
     const dominoesMap = (gameState?.dominoes || {}) as Record<string, { x: number; y: number; orientation: 'horizontal' | 'vertical'; data: { value1: number; value2: number } }>;
+    const isDoubleTile = dominoData.value1 === dominoData.value2;
+    const placementMatchesServerRules = (topX: number, topY: number, orientation: 'horizontal' | 'vertical', flipped: boolean): boolean => {
+      const pip1 = flipped ? dominoData.value2 : dominoData.value1;
+      const pip2 = flipped ? dominoData.value1 : dominoData.value2;
+      const cells = orientation === 'horizontal'
+        ? [{ x: topX, y: topY, pip: pip1 }, { x: topX + 1, y: topY, pip: pip2 }]
+        : [{ x: topX, y: topY, pip: pip1 }, { x: topX, y: topY + 1, pip: pip2 }];
+      let adjMatch = false;
+      let adjMismatch = false;
+      cells.forEach((cell, idx) => {
+        const other = cells[1 - idx];
+        ([[cell.x, cell.y - 1], [cell.x, cell.y + 1], [cell.x - 1, cell.y], [cell.x + 1, cell.y]] as Array<[number, number]>).forEach(([nbX, nbY]) => {
+          if (nbX === other.x && nbY === other.y) return;
+          const nbCell = board[`${nbX},${nbY}`];
+          if (!nbCell) return;
+          const isEndDir = orientation === 'horizontal' ? nbY === cell.y : nbX === cell.x;
+          if (isDoubleTile) {
+            if (nbCell.value === cell.pip) adjMatch = true;
+            else adjMismatch = true;
+          } else if (isEndDir) {
+            if (nbCell.value === cell.pip) adjMatch = true;
+            else adjMismatch = true;
+          } else {
+            adjMismatch = true;
+          }
+        });
+      });
+      return adjMatch && !adjMismatch;
+    };
     // Bepaal of een cel (cx,cy) van zijn tegel een open einde is in richting `dir`.
     // Niet-dubbele stenen: alleen de twee uiteinden (langs de tegel-as) zijn open.
     // Dubbele stenen (spinner): alle 4 zijden zijn open, behalve de richting naar de andere helft.
@@ -1974,7 +2003,7 @@ export default function Game() {
     // Bepaal of dominoData de momenteel geselecteerde steen is — alleen dan respecteren we de user-flip
     const selIdx = wegaSelectedIndex;
     const selDom = (selIdx !== null && selIdx !== undefined) ? gameState?.playerHand?.[selIdx] : null;
-    const isSelectedTile = !!selDom && selDom.value1 === dominoData.value1 && selDom.value2 === dominoData.value2;
+    const isSelectedTile = !!selDom && selDom === dominoData;
     const forcedFlip: boolean | null = (isSelectedTile && selIdx !== null && selIdx !== undefined && wegaFlipMap[selIdx] !== undefined)
       ? !!wegaFlipMap[selIdx]
       : null;
@@ -1989,7 +2018,6 @@ export default function Game() {
       });
       return moves;
     }
-    const isDoubleTile = dominoData.value1 === dominoData.value2;
     const seen = new Set<string>();
     for (const key of boardKeys) {
       const [cx, cy] = key.split(',').map(Number);
@@ -2018,6 +2046,7 @@ export default function Game() {
             const c1 = `${topX},${topY}`;
             const c2 = perpOrientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
             if (board[c1] || board[c2]) continue;
+            if (!placementMatchesServerRules(topX, topY, perpOrientation, false)) continue;
             moves.push({
               end: { x: nx, y: ny, value: cellValue, fromDir: dir },
               dominoData,
@@ -2037,7 +2066,7 @@ export default function Game() {
         // Bepaal flip zodat de helft die tegen cellValue ligt matcht.
         // Bij dir W/N ligt cell_keys[2] (= pip2) tegen de bestaande cel, anders cell_keys[1] (= pip1).
         // pip1 = flipped ? v2 : v1 ; pip2 = flipped ? v1 : v2
-        let flipped = false;
+        let flipped: boolean | null = null;
         if (adjacencyOnSecondCell) {
           // pip2 moet == cellValue → flipped=false als v2==cellValue, anders flipped=true als v1==cellValue
           if (dominoData.value2 === cellValue) flipped = false;
@@ -2047,11 +2076,17 @@ export default function Game() {
           if (dominoData.value1 === cellValue) flipped = false;
           else if (dominoData.value2 === cellValue) flipped = true;
         }
+        if (flipped === null) continue;
         // Check second cell free
         const otherKey = orientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
         if (board[otherKey]) continue;
         // Respecteer user-flip wanneer de geselecteerde steen handmatig is geflipt
         const finalFlipped = forcedFlip !== null ? forcedFlip : flipped;
+        const adjacentPip = adjacencyOnSecondCell
+          ? (finalFlipped ? dominoData.value1 : dominoData.value2)
+          : (finalFlipped ? dominoData.value2 : dominoData.value1);
+        if (adjacentPip !== cellValue) continue;
+        if (!placementMatchesServerRules(topX, topY, orientation, finalFlipped)) continue;
         moves.push({
           end: { x: nx, y: ny, value: cellValue, fromDir: dir },
           dominoData,
@@ -2063,7 +2098,7 @@ export default function Game() {
       }
     }
     return moves;
-  }, [isWegaPlay, gameHook, gameState?.board, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
+  }, [isWegaPlay, gameHook, gameState?.board, gameState?.dominoes, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
 
   const wegaExecuteMove = useCallback(async (move: MoveWithEffects) => {
     if (!isWegaPlay) {
@@ -2106,7 +2141,10 @@ export default function Game() {
   const wegaPassMove = useCallback(async (actorPosition?: number) => {
     if (!isWegaPlay) return passMove(actorPosition);
     try {
-      const { data, error } = await supabase.rpc('wega_pass' as any, { _lobby_id: gameId });
+      const payload = typeof actorPosition === 'number'
+        ? { _lobby_id: gameId, _actor_position: actorPosition }
+        : { _lobby_id: gameId };
+      const { data, error } = await supabase.rpc('wega_pass' as any, payload);
       if (error) throw error;
       const r = data as any;
       const stake = (syncState.gameState as any)?.wegaStake || 10;
@@ -2233,23 +2271,44 @@ export default function Game() {
 
     const run = async () => {
       try {
+        if (cancelled) return;
         if (phase === 'drawing') {
           const boneyard: Array<any> = Array.isArray(gs.boneyard) ? gs.boneyard : [];
           const availableIdx = boneyard.map((t, i) => (t ? i : -1)).filter((i) => i >= 0);
-          if (availableIdx.length === 0) return;
+          if (availableIdx.length === 0) {
+            scheduleBotRetry(250);
+            return;
+          }
           const bot = bots.find((b) => (hands[b.position] || []).length < 5);
           if (!bot) return;
           const lockKey = `draw:${bot.position}:${(hands[bot.position] || []).length}:${availableIdx.length}`;
-          if (wegaBotActionLockRef.current === lockKey) return;
+          if (wegaBotActionLockRef.current === lockKey) {
+            scheduleBotRetry(botMaxActionMs);
+            return;
+          }
           wegaBotActionLockRef.current = lockKey;
-          await new Promise((r) => setTimeout(r, 700));
-          if (cancelled) return;
+          await new Promise((r) => setTimeout(r, Math.min(700, Math.max(120, botMaxActionMs - 250))));
+          if (cancelled) {
+            if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
+            scheduleBotRetry(60);
+            return;
+          }
           const pick = availableIdx[Math.floor(Math.random() * availableIdx.length)];
-          await supabase.rpc('wega_claim_boneyard_tile' as any, {
+          const { error } = await supabase.rpc('wega_claim_boneyard_tile' as any, {
             _lobby_id: gameId,
             _tile_index: pick,
             _actor_position: bot.position,
           });
+          if (error) {
+            if (/already taken|invalid tile index/i.test(error.message || '')) {
+              wegaBotActionLockRef.current = '';
+              scheduleBotRetry(120);
+              return;
+            }
+            throw error;
+          }
+          wegaBotActionLockRef.current = '';
+          scheduleBotRetry(120);
           return;
         }
 
@@ -2266,21 +2325,34 @@ export default function Game() {
           ));
           if (owner) {
             const lockKey = `claim2:${owner.position}:${cidx}:${startedAt}`;
-            if (wegaBotActionLockRef.current === lockKey) return;
+            if (wegaBotActionLockRef.current === lockKey) {
+              scheduleBotRetry(250);
+              return;
+            }
             wegaBotActionLockRef.current = lockKey;
             const claimChance = Number(botClaimChanceRef.current ?? 0.95);
             const willClaim = Math.random() < claimChance;
-            if (!willClaim) return; // bot "slaapt" → host-timer schuift door
-            const delay = 200 + Math.floor(Math.random() * 600); // 200-800ms
+            if (!willClaim) {
+              wegaBotActionLockRef.current = '';
+              return; // bot "slaapt" → host-timer schuift door
+            }
+            const delay = Math.min(800, Math.max(120, botMaxActionMs - 300));
             await new Promise((r) => setTimeout(r, delay));
-            if (cancelled) return;
+            if (cancelled) {
+              if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
+              scheduleBotRetry(60);
+              return;
+            }
             try {
-              await supabase.rpc('wega_claim_current' as any, {
+              const { error } = await supabase.rpc('wega_claim_current' as any, {
                 _lobby_id: gameId,
                 _actor_position: owner.position,
               });
+              if (error) throw error;
             } catch (err) {
               console.error('[wegaBot] claim_current failed', err);
+            } finally {
+              wegaBotActionLockRef.current = '';
             }
           }
           return;
@@ -2292,46 +2364,66 @@ export default function Game() {
           if (!actor) return;
           const hand = hands[actor.position] || [];
           const lockKey = `play:${actor.position}:${hand.length}:${Object.keys(gs.board || {}).length}:${gs.consecutivePasses ?? 0}`;
-          if (wegaBotActionLockRef.current === lockKey) return;
+          if (wegaBotActionLockRef.current === lockKey) {
+            scheduleBotRetry(botMaxActionMs);
+            return;
+          }
           wegaBotActionLockRef.current = lockKey;
 
-          let chosen: any = null;
-          let chosenIdx = -1;
+          const candidates: Array<{ move: any; index: number }> = [];
           for (let i = 0; i < hand.length; i++) {
             const moves = wegaFindLegalMovesRef.current(hand[i] as any);
             if (moves && moves.length > 0) {
-              chosen = moves[0];
-              chosenIdx = i;
-              break;
+              candidates.push(...moves.map((move) => ({ move, index: i })));
             }
           }
-          await new Promise((r) => setTimeout(r, 1200));
-          if (cancelled) return;
-
-          if (chosen) {
-            await supabase.rpc('wega_submit_move' as any, {
-              _lobby_id: gameId,
-              _hand_index: chosenIdx,
-              _x: chosen.x,
-              _y: chosen.y,
-              _orientation: chosen.orientation,
-              _flipped: !!chosen.flipped,
-              _actor_position: actor.position,
-            });
-          } else {
-            await supabase.rpc('wega_pass' as any, {
-              _lobby_id: gameId,
-              _actor_position: actor.position,
-            });
+          await new Promise((r) => setTimeout(r, Math.min(1200, Math.max(120, botMaxActionMs - 250))));
+          if (cancelled) {
+            if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
+            scheduleBotRetry(60);
+            return;
           }
+
+          if (candidates.length > 0) {
+            for (const candidate of candidates) {
+              const chosen = candidate.move;
+              const { data, error } = await supabase.rpc('wega_submit_move' as any, {
+                _lobby_id: gameId,
+                _hand_index: candidate.index,
+                _x: chosen.x,
+                _y: chosen.y,
+                _orientation: chosen.orientation,
+                _flipped: !!chosen.flipped,
+                _actor_position: actor.position,
+              });
+              if (error) throw error;
+              const result = data as any;
+              if (result?.ok) {
+                wegaBotActionLockRef.current = '';
+                scheduleBotRetry(120);
+                return;
+              }
+              if (result?.reason === 'not_your_turn') break;
+              console.warn('[wegaBot] rejected candidate, trying next', result);
+            }
+          }
+          const { error } = await supabase.rpc('wega_pass' as any, {
+            _lobby_id: gameId,
+            _actor_position: actor.position,
+          });
+          if (error) throw error;
+          wegaBotActionLockRef.current = '';
+          scheduleBotRetry(120);
           return;
         }
       } catch (err) {
         console.error('[wegaBot] action failed', err);
+        wegaBotActionLockRef.current = '';
+        scheduleBotRetry(300);
       }
     };
 
-    const t = setTimeout(run, 250);
+    const t = setTimeout(run, 80);
     return () => {
       cancelled = true;
       clearTimeout(t);
@@ -2343,6 +2435,9 @@ export default function Game() {
     syncState.allPlayers,
     syncState.playerPosition,
     syncState.currentPlayer,
+    botMaxActionMs,
+    botTick,
+    scheduleBotRetry,
   ]);
 
   return (
