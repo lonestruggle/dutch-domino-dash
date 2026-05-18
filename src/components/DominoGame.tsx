@@ -638,6 +638,27 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           onTileDoubleClick={gameHook?.flipWegaTile}
         />
 
+        {canInspectBotHands && (
+          <Dialog open={visibleBotHandPosition !== null} onOpenChange={(open) => !open && setVisibleBotHandPosition(null)}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>{visibleBotHandPlayer?.username || 'Bot'} — hand</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-wrap justify-center gap-2 py-2">
+                {visibleBotHand.length > 0 ? visibleBotHand.map((domino: DominoData, index: number) => (
+                  <DominoTile
+                    key={`${domino.value1}-${domino.value2}-${index}`}
+                    data={domino}
+                    orientation={domino.value1 === domino.value2 ? 'vertical' : 'horizontal'}
+                  />
+                )) : (
+                  <p className="text-sm text-muted-foreground">Geen stenen in hand.</p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
         {/* Game Actions */}
         <Card className={isMobile ? "p-3" : "p-4"}>
           {isMobile ? (
