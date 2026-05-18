@@ -1910,6 +1910,36 @@ export default function Game() {
     if (!dominoData) return [];
     const board = (gameState?.board || {}) as Record<string, { dominoId: string; value: number }>;
     const boardKeys = Object.keys(board);
+    const dominoesMap = (gameState?.dominoes || {}) as Record<string, { x: number; y: number; orientation: 'horizontal' | 'vertical'; data: { value1: number; value2: number } }>;
+    // Bepaal of een cel (cx,cy) van zijn tegel een open einde is in richting `dir`.
+    // Niet-dubbele stenen: alleen de twee uiteinden (langs de tegel-as) zijn open.
+    // Dubbele stenen (spinner): alle 4 zijden zijn open, behalve de richting naar de andere helft.
+    const isOpenEndDirection = (cx: number, cy: number, dir: 'N' | 'S' | 'E' | 'W'): boolean => {
+      const cellInfo = board[`${cx},${cy}`];
+      if (!cellInfo) return false;
+      const dom = dominoesMap[cellInfo.dominoId];
+      if (!dom) return false;
+      const isDoubleDom = dom.data.value1 === dom.data.value2;
+      if (dom.orientation === 'horizontal') {
+        const isLeft = cx === dom.x && cy === dom.y;
+        const isRight = cx === dom.x + 1 && cy === dom.y;
+        if (isDoubleDom) {
+          if (isLeft && dir === 'E') return false;
+          if (isRight && dir === 'W') return false;
+          return isLeft || isRight;
+        }
+        return (isLeft && dir === 'W') || (isRight && dir === 'E');
+      }
+      // vertical
+      const isTop = cx === dom.x && cy === dom.y;
+      const isBottom = cx === dom.x && cy === dom.y + 1;
+      if (isDoubleDom) {
+        if (isTop && dir === 'S') return false;
+        if (isBottom && dir === 'N') return false;
+        return isTop || isBottom;
+      }
+      return (isTop && dir === 'N') || (isBottom && dir === 'S');
+    };
     const moves: LegalMove[] = [];
     // Bepaal of dominoData de momenteel geselecteerde steen is — alleen dan respecteren we de user-flip
     const selIdx = wegaSelectedIndex;
@@ -1943,6 +1973,8 @@ export default function Game() {
       for (const { nx, ny, dir } of neighbors) {
         const k = `${nx},${ny}`;
         if (board[k] || seen.has(k)) continue;
+        // Alleen daadwerkelijke open uiteinden van de tegel aan (cx,cy) toelaten
+        if (!isOpenEndDirection(cx, cy, dir)) continue;
         seen.add(k);
         // Dubbele steen ligt áltijd dwars t.o.v. de aansluitrichting
         if (isDoubleTile) {
