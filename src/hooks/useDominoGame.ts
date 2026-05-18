@@ -163,33 +163,13 @@ export const useDominoGame = (localPlayerPosition?: number) => {
     const boardCoords = Object.keys(state.board);
     const dominoCount = Object.keys(state.dominoes).length;
     
-    // Special case: first domino — a double only has one centered open end on each side.
-    // The visual double offset makes the anchor cell render as the middle of the double.
+    // Special case: first domino — ensure 3 forced open ends per side for a non-double start
     if (dominoCount === 1) {
       const coord = boardCoords[0];
       const cell = state.board[coord];
       const domino = state.dominoes[cell.dominoId];
 
       console.log(`🔍 Single domino case: ${domino.data.value1}|${domino.data.value2}`);
-
-      if (isDouble(domino.data)) {
-        const delta = { N: [0, -1], S: [0, 1], W: [-1, 0], E: [1, 0] } as const;
-        const dirs: Array<'N' | 'S' | 'E' | 'W'> = domino.orientation === 'vertical' ? ['W', 'E'] : ['N', 'S'];
-        const anchorX = domino.x;
-        const anchorY = domino.y;
-
-        for (const dir of dirs) {
-          const [dx, dy] = delta[dir];
-          const tx = anchorX + dx;
-          const ty = anchorY + dy;
-          if (!state.board[`${tx},${ty}`]) {
-            openEnds.push({ x: tx, y: ty, value: domino.data.value1, fromDir: dir, anchorX, anchorY });
-          }
-        }
-
-        console.log('🔍 Single double centered open ends:', openEnds.map(e => `(${e.x},${e.y}) v:${e.value} from:${e.fromDir}`));
-        return openEnds;
-      }
 
       if (!isDouble(domino.data)) {
         const d = domino.data;
@@ -311,15 +291,15 @@ export const useDominoGame = (localPlayerPosition?: number) => {
           continue;
         }
 
-        // Check double domino connection rules: a double exposes one centered open end on
-        // each perpendicular side, not separate top/bottom or left/right cell ends.
+        // Check double domino connection rules
         if (isDouble(domino.data)) {
-          const isCenterAnchorCell = x === domino.x && y === domino.y;
-          const allowedFromDouble = domino.orientation === 'vertical'
-            ? isCenterAnchorCell && (dir === 'W' || dir === 'E')
-            : isCenterAnchorCell && (dir === 'N' || dir === 'S');
+          const isVertical = domino.orientation === 'vertical';
 
-          if (!allowedFromDouble) {
+          // Non-spinner doubles only connect perpendicular to their orientation
+          if (
+            (isVertical && (dir === 'N' || dir === 'S')) ||
+            (!isVertical && (dir === 'W' || dir === 'E'))
+          ) {
             continue;
           }
         }
