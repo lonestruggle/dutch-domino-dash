@@ -2151,18 +2151,14 @@ export default function Game() {
         const isLeft = cx === dom.x && cy === dom.y;
         const isRight = cx === dom.x + 1 && cy === dom.y;
         if (isDoubleDom) {
-          if (isLeft && dir === 'E') return false;
-          if (isRight && dir === 'W') return false;
-          return isLeft || isRight;
+          return isLeft && (dir === 'N' || dir === 'S');
         }
         return (isLeft && dir === 'W') || (isRight && dir === 'E');
       }
       const isTop = cx === dom.x && cy === dom.y;
       const isBottom = cx === dom.x && cy === dom.y + 1;
       if (isDoubleDom) {
-        if (isTop && dir === 'S') return false;
-        if (isBottom && dir === 'N') return false;
-        return isTop || isBottom;
+        return isTop && (dir === 'W' || dir === 'E');
       }
       return (isTop && dir === 'N') || (isBottom && dir === 'S');
     };
