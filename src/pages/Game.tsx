@@ -1413,6 +1413,12 @@ export default function Game() {
   useEffect(() => {
     const now = Date.now();
 
+    // Skip classic bot loop entirely for Wega di sen games — handled by Wega bot orchestrator below.
+    const _wegaActive = (syncState.gameState as any)?.gameMode === 'wega_di_sen' || !!(syncState.gameState as any)?.wegaPhase;
+    if (_wegaActive) {
+      return;
+    }
+
     if (gameState.isGameOver || !syncState.allPlayers.length) {
       setBotDebugInfo((prev) => ({
         ...prev,
