@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const useUserRoles = () => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isDev, setIsDev] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -12,6 +13,7 @@ export const useUserRoles = () => {
     const checkRoles = async () => {
       if (!user) {
         setIsAdmin(false);
+        setIsDev(false);
         setIsModerator(false);
         setLoading(false);
         return;
@@ -20,13 +22,19 @@ export const useUserRoles = () => {
       try {
         // Prefer server-side role functions so UI keeps working when direct table
         // visibility differs across environments (e.g. Lovable vs local).
-        const [{ data: adminByRpc, error: adminRpcError }, { data: modByRpc, error: modRpcError }] = await Promise.all([
+        const [
+          { data: adminByRpc, error: adminRpcError },
+          { data: devByRpc, error: devRpcError },
+          { data: modByRpc, error: modRpcError },
+        ] = await Promise.all([
           supabase.rpc('is_admin', { _user_id: user.id }),
+          supabase.rpc('is_dev' as any, { _user_id: user.id }),
           supabase.rpc('is_moderator', { _user_id: user.id }),
         ]);
 
-        if (!adminRpcError && !modRpcError) {
+        if (!adminRpcError && !devRpcError && !modRpcError) {
           setIsAdmin(Boolean(adminByRpc));
+          setIsDev(Boolean(devByRpc));
           setIsModerator(Boolean(modByRpc));
           return;
         }
@@ -39,12 +47,14 @@ export const useUserRoles = () => {
 
         if (error) throw error;
 
-        const roles = (data || []).map(r => r.role);
+        const roles = (data || []).map(r => String(r.role));
         setIsAdmin(roles.includes('admin'));
+        setIsDev(roles.includes('dev'));
         setIsModerator(roles.includes('moderator'));
       } catch (error) {
         console.error('Error checking user roles:', error);
         setIsAdmin(false);
+        setIsDev(false);
         setIsModerator(false);
       } finally {
         setLoading(false);
@@ -56,8 +66,10 @@ export const useUserRoles = () => {
 
   return {
     isAdmin,
+    isDev,
     isModerator,
     canModerate: isAdmin || isModerator,
+    canAccessDevTools: isAdmin || isDev,
     loading
   };
 };
