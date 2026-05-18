@@ -1974,7 +1974,7 @@ export default function Game() {
     // Bepaal of dominoData de momenteel geselecteerde steen is — alleen dan respecteren we de user-flip
     const selIdx = wegaSelectedIndex;
     const selDom = (selIdx !== null && selIdx !== undefined) ? gameState?.playerHand?.[selIdx] : null;
-    const isSelectedTile = !!selDom && selDom.value1 === dominoData.value1 && selDom.value2 === dominoData.value2;
+    const isSelectedTile = !!selDom && selDom === dominoData;
     const forcedFlip: boolean | null = (isSelectedTile && selIdx !== null && selIdx !== undefined && wegaFlipMap[selIdx] !== undefined)
       ? !!wegaFlipMap[selIdx]
       : null;
