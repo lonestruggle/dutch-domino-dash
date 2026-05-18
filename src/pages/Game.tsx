@@ -2084,6 +2084,147 @@ export default function Game() {
     return () => clearTimeout(t);
   }, [isWegaPlay, autoPassEnabled, gameState, syncState.currentPlayer, syncState.playerPosition, wegaFindLegalMoves, wegaPassMove, toast]);
 
+  // === Wega di sen bot orchestrator ===
+  // Eén human-client (de host = laagste menselijke positie) stuurt alle bot-acties aan
+  // namens hen via de nieuwe `_actor_position` parameter in de Wega RPCs.
+  const wegaBotActionLockRef = useRef<string>('');
+  useEffect(() => {
+    if (!isWegaGame) return;
+    if (!gameId) return;
+    const gs: any = syncState.gameState;
+    if (!gs || gs.isGameOver) return;
+    const phase = gs.wegaPhase as string | undefined;
+    if (!phase || phase === 'ended') return;
+
+    const humanPositions = syncState.allPlayers
+      .filter((p) => !p.is_bot)
+      .map((p) => p.position)
+      .sort((a, b) => a - b);
+    if (humanPositions.length === 0) return;
+    if (humanPositions[0] !== syncState.playerPosition) return; // alleen host stuurt bots
+
+    const bots = syncState.allPlayers.filter((p) => p.is_bot);
+    if (bots.length === 0) return;
+
+    const hands: Array<Array<{ value1: number; value2: number }>> =
+      Array.isArray(gs.playerHands) ? gs.playerHands : [];
+
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        if (phase === 'drawing') {
+          const boneyard: Array<any> = Array.isArray(gs.boneyard) ? gs.boneyard : [];
+          const availableIdx = boneyard.map((t, i) => (t ? i : -1)).filter((i) => i >= 0);
+          if (availableIdx.length === 0) return;
+          const bot = bots.find((b) => (hands[b.position] || []).length < 5);
+          if (!bot) return;
+          const lockKey = `draw:${bot.position}:${(hands[bot.position] || []).length}:${availableIdx.length}`;
+          if (wegaBotActionLockRef.current === lockKey) return;
+          wegaBotActionLockRef.current = lockKey;
+          await new Promise((r) => setTimeout(r, 700));
+          if (cancelled) return;
+          const pick = availableIdx[Math.floor(Math.random() * availableIdx.length)];
+          await supabase.rpc('wega_claim_boneyard_tile' as any, {
+            _lobby_id: gameId,
+            _tile_index: pick,
+            _actor_position: bot.position,
+          });
+          return;
+        }
+
+        if (phase === 'claiming_starter') {
+          let highestDouble = -1;
+          let highestSum = -1;
+          hands.forEach((h) => (h || []).forEach((t) => {
+            if (t.value1 === t.value2) highestDouble = Math.max(highestDouble, t.value1);
+            else highestSum = Math.max(highestSum, t.value1 + t.value2);
+          }));
+          for (const bot of bots) {
+            const hand = hands[bot.position] || [];
+            let idx = -1;
+            if (highestDouble >= 0) {
+              idx = hand.findIndex((t) => t.value1 === t.value2 && t.value1 === highestDouble);
+            } else {
+              idx = hand.findIndex((t) => t.value1 !== t.value2 && t.value1 + t.value2 === highestSum);
+            }
+            if (idx >= 0) {
+              const lockKey = `claim:${bot.position}:${idx}`;
+              if (wegaBotActionLockRef.current === lockKey) return;
+              wegaBotActionLockRef.current = lockKey;
+              await new Promise((r) => setTimeout(r, 1000));
+              if (cancelled) return;
+              await supabase.rpc('wega_claim_starter' as any, {
+                _lobby_id: gameId,
+                _hand_index: idx,
+                _actor_position: bot.position,
+              });
+              return;
+            }
+          }
+          return;
+        }
+
+        if (phase === 'playing') {
+          const curPos = syncState.currentPlayer;
+          const actor = bots.find((b) => b.position === curPos);
+          if (!actor) return;
+          const hand = hands[actor.position] || [];
+          const lockKey = `play:${actor.position}:${hand.length}:${Object.keys(gs.board || {}).length}:${gs.consecutivePasses ?? 0}`;
+          if (wegaBotActionLockRef.current === lockKey) return;
+          wegaBotActionLockRef.current = lockKey;
+
+          let chosen: any = null;
+          let chosenIdx = -1;
+          for (let i = 0; i < hand.length; i++) {
+            const moves = wegaFindLegalMoves(hand[i] as any);
+            if (moves && moves.length > 0) {
+              chosen = moves[0];
+              chosenIdx = i;
+              break;
+            }
+          }
+          await new Promise((r) => setTimeout(r, 1200));
+          if (cancelled) return;
+
+          if (chosen) {
+            await supabase.rpc('wega_submit_move' as any, {
+              _lobby_id: gameId,
+              _hand_index: chosenIdx,
+              _x: chosen.x,
+              _y: chosen.y,
+              _orientation: chosen.orientation,
+              _flipped: !!chosen.flipped,
+              _actor_position: actor.position,
+            });
+          } else {
+            await supabase.rpc('wega_pass' as any, {
+              _lobby_id: gameId,
+              _actor_position: actor.position,
+            });
+          }
+          return;
+        }
+      } catch (err) {
+        console.error('[wegaBot] action failed', err);
+      }
+    };
+
+    const t = setTimeout(run, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [
+    isWegaGame,
+    gameId,
+    syncState.gameState,
+    syncState.allPlayers,
+    syncState.playerPosition,
+    syncState.currentPlayer,
+    wegaFindLegalMoves,
+  ]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Wega di sen overrides */}
