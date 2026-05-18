@@ -914,6 +914,7 @@ export type Database = {
       }
     }
     Functions: {
+      _wega_build_claim_sequence: { Args: { _hands: Json }; Returns: Json }
       _wega_finalize_game: {
         Args: {
           _game_id: string
@@ -1029,6 +1030,7 @@ export type Database = {
         Args: { _code: string; _email?: string }
         Returns: Json
       }
+      wega_advance_claim: { Args: { _lobby_id: string }; Returns: Json }
       wega_claim_boneyard_tile:
         | { Args: { _lobby_id: string; _tile_index: number }; Returns: Json }
         | {
@@ -1039,6 +1041,10 @@ export type Database = {
             }
             Returns: Json
           }
+      wega_claim_current: {
+        Args: { _actor_position?: number; _lobby_id: string }
+        Returns: Json
+      }
       wega_claim_starter:
         | { Args: { _hand_index: number; _lobby_id: string }; Returns: Json }
         | {
