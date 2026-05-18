@@ -2507,6 +2507,27 @@ export default function Game() {
               candidates.push(...moves.map((move) => ({ move, index: i })));
             }
           }
+          // Admin-instelbare foutkans: bot kiest soms bewust een verkeerde plaatsing.
+          // Server-side validatie eindigt het spel en past de boete toe.
+          const errorChance = Number(botErrorChanceRef.current ?? 0);
+          const makeMistake = errorChance > 0 && hand.length > 0 && Math.random() < errorChance;
+          if (makeMistake) {
+            const permissive = wegaFindLegalMovesForHumanRef.current(hand[Math.floor(Math.random() * hand.length)] as any) || [];
+            // Filter zetten die toevallig wél kloppen (alleen écht foute zetten gebruiken)
+            const wrong = permissive.filter((m: any) => {
+              const strict = wegaFindLegalMovesRef.current(m.dominoData) || [];
+              return !strict.some((s: any) => s.x === m.x && s.y === m.y && s.orientation === m.orientation);
+            });
+            if (wrong.length > 0) {
+              const w = wrong[Math.floor(Math.random() * wrong.length)];
+              const handIdx = hand.findIndex((t: any) => t === w.dominoData
+                || (t.value1 === w.dominoData.value1 && t.value2 === w.dominoData.value2));
+              if (handIdx >= 0) {
+                console.log('[wegaBot] bewust foute zet (errorChance=' + errorChance + ')', w);
+                candidates.unshift({ move: w, index: handIdx });
+              }
+            }
+          }
           await new Promise((r) => setTimeout(r, Math.min(1200, Math.max(120, botMaxActionMs - 250))));
           if (cancelled) {
             if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
