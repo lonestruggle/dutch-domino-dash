@@ -2296,20 +2296,12 @@ export default function Game() {
     }
   }, [syncState.currentPlayer, syncState.playerPosition]);
   useEffect(() => {
-    if (!isWegaPlay || !autoPassEnabled) return;
-    if (!gameState || gameState.isGameOver) return;
-    if (syncState.currentPlayer !== syncState.playerPosition) return;
-    const hand = gameState.playerHand || [];
-    if (hand.length === 0) return;
-    const hasAnyMove = hand.some((t) => wegaFindLegalMoves(t).length > 0);
-    if (hasAnyMove) return;
-    const consecutivePasses = Number((gameState as any).consecutivePasses) || 0;
-    const fp = `${syncState.currentPlayer}:${hand.length}:${Object.keys(gameState.board || {}).length}:${consecutivePasses}`;
-    if (autoPassFiredRef.current === fp) return;
-    autoPassFiredRef.current = fp;
-    toast({ title: 'Automatisch gepast', description: 'Je had geen legale zet.', duration: 2000 });
-    const t = setTimeout(() => { wegaPassMove(); }, 600);
-    return () => clearTimeout(t);
+    // In Wega di sen mag een speler elke steen op elk open einde leggen.
+    // De server controleert of de zet klopt en eindigt het spel bij een foute zet.
+    // Daarom passen mensen alleen handmatig via de Pas-knop. Auto-pas is hier
+    // bewust uitgezet om te voorkomen dat het systeem ten onrechte namens de
+    // verkeerde speler past (waardoor het leek alsof de bot 2x speelde).
+    return;
   }, [isWegaPlay, autoPassEnabled, gameState, syncState.currentPlayer, syncState.playerPosition, wegaFindLegalMoves, wegaPassMove, toast]);
 
   // === Wega di sen bot orchestrator ===
@@ -2317,6 +2309,7 @@ export default function Game() {
   // namens hen via de nieuwe `_actor_position` parameter in de Wega RPCs.
   const wegaBotActionLockRef = useRef<string>('');
   const botClaimChanceRef = useRef<number>(0.95);
+  const botErrorChanceRef = useRef<number>(0.05);
   const wegaAdvanceLockRef = useRef<string>('');
 
   // Ref naar laatste wegaFindLegalMoves zodat bot-effect niet herstart
@@ -2324,22 +2317,31 @@ export default function Game() {
   const wegaFindLegalMovesRef = useRef(wegaFindLegalMoves);
   useEffect(() => { wegaFindLegalMovesRef.current = wegaFindLegalMoves; }, [wegaFindLegalMoves]);
 
-  // Laad bot-claim-chance uit app_settings (eenmalig)
+  // Laad bot-claim-chance en bot-error-chance uit app_settings (eenmalig)
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase
+        const { data: claim } = await supabase
           .from('app_settings')
           .select('setting_value')
           .eq('setting_key', 'wega_bot_claim_chance')
           .maybeSingle();
-        if (!cancelled && data?.setting_value != null) {
-          const v = Number(data.setting_value);
+        if (!cancelled && claim?.setting_value != null) {
+          const v = Number(claim.setting_value);
           if (!Number.isNaN(v) && v >= 0 && v <= 1) botClaimChanceRef.current = v;
         }
+        const { data: errSetting } = await supabase
+          .from('app_settings')
+          .select('setting_value')
+          .eq('setting_key', 'wega_bot_error_chance')
+          .maybeSingle();
+        if (!cancelled && errSetting?.setting_value != null) {
+          const v = Number(errSetting.setting_value);
+          if (!Number.isNaN(v) && v >= 0 && v <= 1) botErrorChanceRef.current = v;
+        }
       } catch (err) {
-        console.warn('[wega] kon bot_claim_chance niet laden', err);
+        console.warn('[wega] kon bot-instellingen niet laden', err);
       }
     })();
     return () => { cancelled = true; };
