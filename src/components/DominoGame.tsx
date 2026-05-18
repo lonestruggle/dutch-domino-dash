@@ -30,7 +30,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const isMobile = useIsMobile();
   const { startShakeAnimation, isAnimating: isVisualAnimating } = useGameVisualSettings();
   const { canHardSlam } = useUserPermissions();
-  const { isAdmin } = useUserRoles();
+  const { isAdmin, isDev } = useUserRoles();
   const { getSetting } = useAppSettings();
   
   const {
@@ -65,6 +65,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: DominoData; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [visibleBotHandPosition, setVisibleBotHandPosition] = useState<number | null>(null);
   const [fixShapeIndex, setFixShapeIndex] = useState(0);
   const [isFixingTable, setIsFixingTable] = useState(false);
   const [moveCooldownNowMs, setMoveCooldownNowMs] = useState(() => Date.now());
@@ -417,8 +418,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     }
   };
 
-  const showDevLockstepInfo = isAdmin;
+  const canInspectBotHands = isAdmin || isDev;
+  const showDevLockstepInfo = canInspectBotHands;
   const adminBoneyardFaceUp = isAdmin && Boolean(getSetting('admin_boneyard_face_up', false));
+  const visibleBotHandPlayer = visibleBotHandPosition !== null
+    ? syncState?.allPlayers?.find((p: any) => p.position === visibleBotHandPosition)
+    : null;
+  const visibleBotHand = visibleBotHandPosition !== null
+    ? (gameState?.playerHands?.[visibleBotHandPosition] || [])
+    : [];
   const activeHardSlamProfile = gameState?.hardSlamAnimationProfile as ShakeAnimationProfile | undefined;
   const hardSlamPhaseMs = activeHardSlamProfile ? Math.max(0, Date.now() - activeHardSlamProfile.startedAtMs) : 0;
 
