@@ -1063,30 +1063,18 @@ export type Database = {
         Args: { _lobby_id: string; _payload: Json }
         Returns: undefined
       }
-      wega_submit_move:
-        | {
-            Args: {
-              _flipped: boolean
-              _hand_index: number
-              _lobby_id: string
-              _orientation: string
-              _x: number
-              _y: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              _actor_position?: number
-              _flipped: boolean
-              _hand_index: number
-              _lobby_id: string
-              _orientation: string
-              _x: number
-              _y: number
-            }
-            Returns: Json
-          }
+      wega_submit_move: {
+        Args: {
+          _actor_position?: number
+          _flipped: boolean
+          _hand_index: number
+          _lobby_id: string
+          _orientation: string
+          _x: number
+          _y: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

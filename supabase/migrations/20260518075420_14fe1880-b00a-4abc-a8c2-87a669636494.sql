@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.wega_submit_move(uuid, integer, integer, integer, text, boolean);
