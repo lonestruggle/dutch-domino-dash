@@ -2006,7 +2006,8 @@ export default function Game() {
     };
     // Bepaal of een cel (cx,cy) van zijn tegel een open einde is in richting `dir`.
     // Niet-dubbele stenen: alleen de twee uiteinden (langs de tegel-as) zijn open.
-    // Dubbele stenen (spinner): alle 4 zijden zijn open, behalve de richting naar de andere helft.
+    // Dubbele stenen: alleen één midden-aansluiting per dwarszijde; nooit boven/onder
+    // beide helften los van elkaar.
     const isOpenEndDirection = (cx: number, cy: number, dir: 'N' | 'S' | 'E' | 'W'): boolean => {
       const cellInfo = board[`${cx},${cy}`];
       if (!cellInfo) return false;
@@ -2017,9 +2018,7 @@ export default function Game() {
         const isLeft = cx === dom.x && cy === dom.y;
         const isRight = cx === dom.x + 1 && cy === dom.y;
         if (isDoubleDom) {
-          if (isLeft && dir === 'E') return false;
-          if (isRight && dir === 'W') return false;
-          return isLeft || isRight;
+          return isLeft && (dir === 'N' || dir === 'S');
         }
         return (isLeft && dir === 'W') || (isRight && dir === 'E');
       }
@@ -2027,9 +2026,7 @@ export default function Game() {
       const isTop = cx === dom.x && cy === dom.y;
       const isBottom = cx === dom.x && cy === dom.y + 1;
       if (isDoubleDom) {
-        if (isTop && dir === 'S') return false;
-        if (isBottom && dir === 'N') return false;
-        return isTop || isBottom;
+        return isTop && (dir === 'W' || dir === 'E');
       }
       return (isTop && dir === 'N') || (isBottom && dir === 'S');
     };
@@ -2072,24 +2069,20 @@ export default function Game() {
         if (isDoubleTile) {
           if (dominoData.value1 !== cellValue) continue;
           const perpOrientation: 'horizontal' | 'vertical' = (dir === 'N' || dir === 'S') ? 'horizontal' : 'vertical';
-          // Probeer beide kanten waar de dubbele zich kan uitstrekken
-          const extensions: Array<{ topX: number; topY: number }> = perpOrientation === 'horizontal'
-            ? [{ topX: nx, topY: ny }, { topX: nx - 1, topY: ny }]
-            : [{ topX: nx, topY: ny }, { topX: nx, topY: ny - 1 }];
-          for (const { topX, topY } of extensions) {
-            const c1 = `${topX},${topY}`;
-            const c2 = perpOrientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
-            if (board[c1] || board[c2]) continue;
-            if (!placementMatchesServerRules(topX, topY, perpOrientation, false)) continue;
-            moves.push({
-              end: { x: nx, y: ny, value: cellValue, fromDir: dir },
-              dominoData,
-              flipped: false,
-              orientation: perpOrientation,
-              x: topX,
-              y: topY,
-            });
-          }
+          const topX = nx;
+          const topY = ny;
+          const c1 = `${topX},${topY}`;
+          const c2 = perpOrientation === 'horizontal' ? `${topX + 1},${topY}` : `${topX},${topY + 1}`;
+          if (board[c1] || board[c2]) continue;
+          if (!placementMatchesServerRules(topX, topY, perpOrientation, false)) continue;
+          moves.push({
+            end: { x: nx, y: ny, value: cellValue, fromDir: dir },
+            dominoData,
+            flipped: false,
+            orientation: perpOrientation,
+            x: topX,
+            y: topY,
+          });
           continue;
         }
         const orientation: 'horizontal' | 'vertical' = (dir === 'N' || dir === 'S') ? 'vertical' : 'horizontal';
