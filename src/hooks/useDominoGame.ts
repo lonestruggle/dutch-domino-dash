@@ -160,9 +160,7 @@ export const useDominoGame = (localPlayerPosition?: number) => {
     console.log('🔍 All board cells:', Object.entries(state.board).map(([coord, cell]) => `${coord}: dominoId=${cell.dominoId} value=${cell.value}`));
     
     const openEnds: OpenEnd[] = [];
-    const boardCoords = Object.keys(state.board);
-    const dominoCount = Object.keys(state.dominoes).length;
-    
+
     // Find true chain ends - only cells that can actually have dominoes placed
     for (const coord in state.board) {
       const [x, y] = coord.split(',').map(Number);
