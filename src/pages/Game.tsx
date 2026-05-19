@@ -2299,6 +2299,8 @@ export default function Game() {
           description: r?.reason === 'cell_occupied' ? 'Cel is al bezet'
             : r?.reason === 'no_matching_end' ? 'Geen passende open einde'
             : r?.reason === 'illegal_adjacency' ? 'Pips komen niet overeen'
+            : r?.reason === 'pip_mismatch' ? 'Pips komen niet overeen — boete naar tegenstander'
+            : r?.reason === 'illegal_position' ? 'Ongeldige positie (lange zijde of geen open einde)'
             : r?.reason === 'not_your_turn' ? 'Niet jouw beurt' : 'Ongeldige zet',
           variant: 'destructive',
         });
