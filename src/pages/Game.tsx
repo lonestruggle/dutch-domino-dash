@@ -2199,15 +2199,20 @@ export default function Game() {
       if (board[`${tx},${ty}`]) return false;
       // Dubbel = spinner: alle 4 zijden zijn open uiteinden
       if (isDoubleDom) return true;
-      // Niet-dubbele steen: alleen aan de korte uiteinden in-lijn
+      // Niet-dubbele steen: alleen aan de end-cellen; daar zijn 3 zijden open
+      // (outward in-lijn + 2 dwars). De lange zijdes zijn geblokkeerd.
       if (dom.orientation === 'horizontal') {
-        if (cx === dom.x && cy === dom.y) return dir === 'W';
-        if (cx === dom.x + 1 && cy === dom.y) return dir === 'E';
+        const isLeft = cx === dom.x && cy === dom.y;
+        const isRight = cx === dom.x + 1 && cy === dom.y;
+        if (isLeft) return dir === 'W' || dir === 'N' || dir === 'S';
+        if (isRight) return dir === 'E' || dir === 'N' || dir === 'S';
         return false;
       }
       // vertical
-      if (cx === dom.x && cy === dom.y) return dir === 'N';
-      if (cx === dom.x && cy === dom.y + 1) return dir === 'S';
+      const isTop = cx === dom.x && cy === dom.y;
+      const isBottom = cx === dom.x && cy === dom.y + 1;
+      if (isTop) return dir === 'N' || dir === 'W' || dir === 'E';
+      if (isBottom) return dir === 'S' || dir === 'W' || dir === 'E';
       return false;
     };
     const boardKeys = Object.keys(board);

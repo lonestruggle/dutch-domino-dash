@@ -1,30 +1,40 @@
-## Doel
-Wega di sen gebruikt exact dezelfde bord-/open-end-/oriëntatie-regels als de klassieke mode. Het enige verschil: de menselijke speler mag een steen op een open end leggen ook al matcht de waarde (pip) niet. De server controleert en als de waarde fout is, eindigt het spel met de bestaande verkeerd-gelegd-afhandeling (boete uit Wega-flow).
+
+## Het probleem
+
+In de vorige iteratie heb ik de open-uiteinden-regel té streng gemaakt. Voor een niet-dubbele steen (bv. horizontale 5-3) liet ik alleen aanleggen in dezelfde lijnrichting toe:
+- west-uiteinde → alleen W
+- oost-uiteinde → alleen E
+
+Daardoor kun je niet meer **de hoek omslaan** (een steen verticaal naar boven of onder leggen aan een horizontaal uiteinde) — terwijl dat in klassieke domino wél mag en ook in Wega di sen hoort te kunnen.
+
+## Wat de regel eigenlijk moet zijn
+
+> Een nieuwe steen mag alleen aan een **open uiteinde** worden aangelegd — niet aan de lange zijde van een niet-dubbele steen.
+
+De **end-cel** van een niet-dubbele steen heeft 3 vrije zijden (één zijde is bezet door de andere helft van dezelfde steen). Aan elk van die 3 vrije zijden mag je aanleggen, mits de pip matcht:
+
+- **Horizontale niet-dubbele steen:**
+  - west-end-cel (dom.x, dom.y): toegestaan W, N, S
+  - oost-end-cel (dom.x+1, dom.y): toegestaan E, N, S
+  - lange zijdes (N en S in het midden): **geblokkeerd**
+- **Verticale niet-dubbele steen:**
+  - noord-end-cel: toegestaan N, W, E
+  - zuid-end-cel: toegestaan S, W, E
+  - lange zijdes (W en E in het midden): **geblokkeerd**
+- **Dubbele steen (spinner):** alle 4 zijden van beide cellen blijven open uiteinden (ongewijzigd).
 
 ## Wijzigingen
 
-### 1. `src/pages/Game.tsx` — `wegaFindLegalMovesForHuman`
-Vervangen door de klassieke `findLegalMoves`-logica (zelfde als bots), met één aanpassing: de pip-match check (`end.value === value`) wordt overgeslagen. De rest blijft identiek aan klassiek:
-- Open ends bepalen volgens klassieke regels (3 bij niet-dubbels, 1 centraal bij dubbels, spinner 4)
-- Oriëntatie geforceerd volgens richting van de open end
-- Forbiddens en neighbor-checks blijven gelden
-- Beide oriëntaties van de steen (flipped/niet-flipped) worden als optie aangeboden zodat de speler kan kiezen welke kant tegen het open end komt
+### Server — nieuwe migratie op `wega_submit_move`
 
-Resultaat: speler ziet placement-targets op álle klassieke open ends voor élke steen in z'n hand, ongeacht of de waarde matcht.
+In de adjacency-check de "open-end direction"-logica versoepelen:
+- Doubles: 4 zijden blijven open (ongewijzigd).
+- Niet-doubles: de end-cellen geven nu 3 toegestane richtingen (de drie niet-buur-richtingen), niet alleen de in-lijn richting. De lange zijdes blijven geblokkeerd met `illegal_adjacency`.
 
-### 2. `src/pages/Game.tsx` — pass-knop / auto-pass
-De `canPass`/auto-pass check gebruikt nu de **klassieke** legal-move check (mét pip-match), niet de permissieve. Zo kan een speler alleen passen als hij écht geen matchende steen heeft. Dit voorkomt de bug dat de mens moest passen terwijl de bot aan beurt was, en dat de bot 2× speelde.
+### Client — `src/pages/Game.tsx`
 
-### 3. Server — `wega_submit_move`
-Al aanwezig: de RPC valideert pip-match en triggert game-end bij fout. Geen wijziging nodig, alleen verifiëren dat de "fout gelegd"-tak nog steeds correct het spel eindigt met de boete-flow (zoals bij bot-fout via `wega_bot_error_chance`).
+In `wegaFindLegalMovesForHuman` (en de identieke `isOpenEndDirection` in de bot-versie rond regel 2040) dezelfde versoepeling toepassen: vanaf een end-cel van een niet-dubbele steen alle 3 niet-buur-richtingen toestaan in plaats van alleen de in-lijn richting.
 
-### 4. Bots
-Geen verandering: bots blijven via klassieke `findLegalMoves` (mét pip-match) spelen, met de admin-instelbare `wega_bot_error_chance` voor opzettelijke fouten.
+### Niet aangeraakt
 
-## Technische details
-- `wegaFindLegalMovesForHuman` wordt grotendeels gelijk aan `gameHook.findLegalMoves` (de klassieke variant) maar zonder de `end.value === dominoData.value1/2` filter — wél met flipped-varianten zodat oriëntatie/positie klassiek geforceerd blijft.
-- De pass-check in `useEffect` rond regel 2312-2327 en in de UI-pass-knop gebruikt `wegaFindLegalMoves` (klassiek, mét pip) i.p.v. de permissieve variant.
-- Geen DB-migraties nodig.
-
-## Bestanden
-- `src/pages/Game.tsx` (alleen `wegaFindLegalMovesForHuman` en pass-checks)
+- Klassieke mode, UI, bot-orkestratie, claim-fase, pip-matching, en de cel-bezet-check blijven gelijk.
