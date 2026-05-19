@@ -563,8 +563,10 @@ export const useDominoGame = (localPlayerPosition?: number) => {
           let { x, y } = end;
           let finalOrientation: 'horizontal' | 'vertical' = orientation;
 
-          // For doubles, flip the orientation like in original code
-          if (selectedIsDouble) {
+          // Doubles liggen alleen dwars op de ketting wanneer ze tegen een SPINNER
+          // worden aangelegd. Tegen een gewone (niet-spinner) steen volgt de dubbele
+          // de richting van de ketting (zelfde orientation als de aanleg-richting).
+          if (selectedIsDouble && fromDomino.isSpinner) {
             finalOrientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
           }
 
