@@ -98,9 +98,7 @@ export default function Lobby() {
       .map((p: any) => p.user_id as string);
     if (humanIds.length > 0) {
       const { data: profs } = await supabase
-        .from('profiles')
-        .select('user_id, coins')
-        .in('user_id', humanIds);
+        .rpc('get_lobby_co_players', { p_lobby_id: lobbyId });
       const coinMap = new Map<string, number>();
       (profs || []).forEach((p: any) => coinMap.set(p.user_id, p.coins ?? 0));
       setLobby((prev) => prev ? {
