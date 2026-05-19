@@ -472,25 +472,20 @@ export const useDominoGame = (localPlayerPosition?: number) => {
     const ignorePipMatch = !!opts?.ignorePipMatch;
     const forceInitialFlip = opts?.forceInitialFlip;
     
-    // EERSTE DOMINO: Als het bord leeg is, kan de eerste domino overal geplaatst worden
+    // EERSTE DOMINO: render één centrale preview-target.
+    // Een groot grid met duizenden ghost-dominoes veroorzaakt zware lag op mobiel,
+    // vooral in Wega di sen waar de preview de echte steen tekent.
     if (Object.keys(currentState.dominoes).length === 0) {
       const orientation = selectedIsDouble ? 'vertical' : 'horizontal';
-      
-      // Maak een uitgebreid grid van mogelijke posities
-      for (let x = -30; x <= 30; x += 1) {
-        for (let y = -30; y <= 30; y += 1) {
-          moves.push({
-            end: { x: x, y: y, value: dominoData.value1, fromDir: 'E' },
-            dominoData,
-            flipped: !!forceInitialFlip,
-            orientation,
-            x: x,
-            y: y
-          });
-        }
-      }
-      
-      return moves;
+
+      return [{
+        end: { x: 0, y: 0, value: dominoData.value1, fromDir: 'E' },
+        dominoData,
+        flipped: !!forceInitialFlip,
+        orientation,
+        x: 0,
+        y: 0,
+      }];
     }
     
     const openEnds = regenerateOpenEnds(currentState);
