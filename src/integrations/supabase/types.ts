@@ -1072,12 +1072,10 @@ export type Database = {
             }
             Returns: Json
           }
-      wega_pass:
-        | { Args: { _lobby_id: string }; Returns: Json }
-        | {
-            Args: { _actor_position?: number; _lobby_id: string }
-            Returns: Json
-          }
+      wega_pass: {
+        Args: { _actor_position?: number; _lobby_id: string }
+        Returns: Json
+      }
       wega_settle: {
         Args: { _lobby_id: string; _payload: Json }
         Returns: undefined

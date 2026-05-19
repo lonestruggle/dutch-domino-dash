@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.wega_pass(uuid);
