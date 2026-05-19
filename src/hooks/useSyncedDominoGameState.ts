@@ -108,9 +108,30 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     const persistedHands = toDominoHands(persistedGameState.playerHands);
     const playerHand = persistedHands[playerPosition] || [];
 
+    // Deterministic random rotation per domino id (so it stays stable across re-syncs)
+    const rotFromId = (id: string): number => {
+      let h = 2166136261 >>> 0;
+      for (let i = 0; i < id.length; i++) {
+        h ^= id.charCodeAt(i);
+        h = Math.imul(h, 16777619) >>> 0;
+      }
+      const norm = (h % 100000) / 100000; // 0..1
+      return (norm - 0.5) * 30; // -15..+15 graden
+    };
+    const rawDominoes = persistedGameState.dominoes || {};
+    const dominoesWithRotation: typeof rawDominoes = {};
+    for (const id in rawDominoes) {
+      const d = rawDominoes[id] as any;
+      if (d && (d.rotation === undefined || d.rotation === null)) {
+        dominoesWithRotation[id] = { ...d, rotation: rotFromId(id) };
+      } else {
+        dominoesWithRotation[id] = d;
+      }
+    }
+
     const localGameState: PersistedGameState = {
       ...persistedGameState,
-      dominoes: persistedGameState.dominoes || {},
+      dominoes: dominoesWithRotation,
       board: persistedGameState.board || {},
       playerHand: [...playerHand],
       playerHands: persistedHands,
