@@ -1010,6 +1010,35 @@ export default function Game() {
     // Execute the move locally
     const nextPlacementAllowedAt = Date.now() + minPlacementDelayMs;
     gameHook.executeMove({ ...move, actorPosition });
+    // Log placement to game_logs so we can debug after the fact (classic mode)
+    try {
+      const lobbyIdForLog = (syncState as any)?.gameData?.lobby_id || null;
+      if (gameId) {
+        logGameEvent({
+          gameId,
+          lobbyId: lobbyIdForLog,
+          eventType: 'tile_placed',
+          currentTurn: syncState.currentPlayer,
+          playerPosition: actorPosition,
+          wegaPhase: (syncState.gameState as any)?.wegaPhase || null,
+          data: {
+            tile: move?.dominoData,
+            x: (move as any)?.x,
+            y: (move as any)?.y,
+            orientation: move?.orientation,
+            flipped: (move as any)?.flipped,
+            from_dir: (move as any)?.end?.fromDir,
+            end_value: (move as any)?.end?.value,
+            actor_position: actorPosition,
+            actor_user_id: actorUserId,
+            hard_slam: !!move?.localHardSlamActive,
+            hand_index: (move as any)?.index,
+          },
+        });
+      }
+    } catch (e) {
+      console.debug('[gameLog] tile_placed log failed', e);
+    }
     // Enforce a minimum spacing between placements so hand animations can complete.
     moveAnimationLockUntilRef.current = nextPlacementAllowedAt;
 
