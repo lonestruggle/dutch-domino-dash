@@ -956,6 +956,13 @@ export type Database = {
       cleanup_expired_invitations: { Args: never; Returns: number }
       cleanup_expired_lobbies: { Args: never; Returns: number }
       get_active_season_id: { Args: never; Returns: string }
+      get_co_player_glove_skins: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          selected_glove_skin_id: string
+          user_id: string
+        }[]
+      }
       get_email_by_username: { Args: { _username: string }; Returns: string }
       get_lobby_co_players: {
         Args: { p_lobby_id: string }
