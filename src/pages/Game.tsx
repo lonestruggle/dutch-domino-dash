@@ -805,6 +805,8 @@ export default function Game() {
   // Hard slam functionality
   const { disarmHardSlam, settings, isAnimating } = useGameVisualSettings();
   const { settings: appSettings } = useAppSettings();
+  const { isAdmin } = useUserRoles();
+  const adminBoneyardFaceUp = isAdmin && Boolean(appSettings?.admin_boneyard_face_up);
   const { calculateBestMove } = useBotAI();
   const botBlockAggression = useMemo(() => {
     const raw = Number(appSettings?.bot_block_aggression ?? 65);
