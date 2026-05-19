@@ -464,11 +464,12 @@ export const useDominoGame = (localPlayerPosition?: number) => {
   }, [hasDifferentNeighbor]);
 
   // EXACT COPY FROM YOUR ORIGINAL CODE
-  const findLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
+  const findLegalMoves = useCallback((dominoData: DominoData, opts?: { ignorePipMatch?: boolean }): LegalMove[] => {
     const moves: LegalMove[] = [];
     const selectedIsDouble = isDouble(dominoData);
     const uniqueEnds: Record<string, boolean> = {};
     const currentState = gameStateRef.current;
+    const ignorePipMatch = !!opts?.ignorePipMatch;
     
     // EERSTE DOMINO: Als het bord leeg is, kan de eerste domino overal geplaatst worden
     if (Object.keys(currentState.dominoes).length === 0) {
@@ -501,7 +502,7 @@ export const useDominoGame = (localPlayerPosition?: number) => {
       let validMove: LegalMove | null = null;
       
       const check = (value: number, flipped: boolean) => {
-        if (end.value === value) { // Check if this value matches the open end
+        if (ignorePipMatch || end.value === value) { // In Wega-permissive mode pip-match wordt overgeslagen
           const fromCellKey = (end.forced && (end as any).anchorX !== undefined && (end as any).anchorY !== undefined)
             ? `${(end as any).anchorX},${(end as any).anchorY}`
             : ({
