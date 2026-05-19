@@ -2001,6 +2001,22 @@ export default function Game() {
   const wegaFindLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
     if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
     if (!dominoData) return [];
+    // Wega di sen — strict variant: gebruik klassieke regels 1-op-1 incl. pip-match.
+    return gameHook.findLegalMoves(dominoData);
+  }, [isWegaPlay, gameHook]);
+
+  // === Permissieve variant voor menselijke spelers in Wega di sen ===
+  // Zelfde geometrie als klassiek, maar pip-match wordt overgeslagen.
+  const wegaFindLegalMovesForHuman = useCallback((dominoData: DominoData): LegalMove[] => {
+    if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
+    if (!dominoData) return [];
+    return gameHook.findLegalMoves(dominoData, { ignorePipMatch: true });
+  }, [isWegaPlay, gameHook]);
+
+  // Dode oude implementatie hieronder (legacy) — vervangen door klassieke regels via gameHook.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _legacyWegaFindLegalMoves_DO_NOT_USE = useCallback((dominoData: DominoData): LegalMove[] => {
+    if (!dominoData) return [];
     const board = (gameState?.board || {}) as Record<string, { dominoId: string; value: number }>;
     const boardKeys = Object.keys(board);
     const dominoesMap = (gameState?.dominoes || {}) as Record<string, { x: number; y: number; orientation: 'horizontal' | 'vertical'; data: { value1: number; value2: number } }>;
