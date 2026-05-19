@@ -2397,6 +2397,7 @@ export default function Game() {
   // Eén human-client (de host = laagste menselijke positie) stuurt alle bot-acties aan
   // namens hen via de nieuwe `_actor_position` parameter in de Wega RPCs.
   const wegaBotActionLockRef = useRef<string>('');
+  const wegaBotDrawLocksRef = useRef<Set<string>>(new Set());
   const botClaimChanceRef = useRef<number>(0.95);
   const botErrorChanceRef = useRef<number>(0.05);
   const wegaAdvanceLockRef = useRef<string>('');
