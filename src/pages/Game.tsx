@@ -2623,6 +2623,7 @@ export default function Game() {
           ...gameHook, 
           executeMove: wegaExecuteMove,
           findLegalMoves: isWegaPlay ? wegaFindLegalMovesForHuman : wegaFindLegalMoves,
+          findLegalMovesStrict: isWegaPlay ? wegaFindLegalMoves : gameHook.findLegalMoves,
           drawFromBoneyard: wrappedDrawFromBoneyard,
           drawSpecificFromBoneyard: wrappedDrawSpecificFromBoneyard,
           passMove: wegaPassMove,
