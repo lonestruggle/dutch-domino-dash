@@ -586,6 +586,29 @@ export const useDominoGame = (localPlayerPosition?: number) => {
             }
           }
 
+          // PREVIEW/PLAATSING SYNC: als de speler een expliciete hand-flip heeft gekozen
+          // (Wega di sen), moet de uiteindelijke move.flipped exact die keuze weerspiegelen,
+          // zodat de ghost-preview en de daadwerkelijke plaatsing identiek zijn voor
+          // alle richtingen (incl. W/N corner-turns en doubles).
+          if (forceInitialFlip !== undefined) {
+            flipped = forceInitialFlip;
+          }
+
+          // Veiligheid (alleen strikte pip-match mode): als door bovenstaande sync de
+          // aansluit-pip niet meer matcht met end.value, beschouw deze zet als ongeldig.
+          if (!ignorePipMatch) {
+            const pip1 = flipped ? dominoData.value2 : dominoData.value1;
+            const pip2 = flipped ? dominoData.value1 : dominoData.value2;
+            // Bepaal welke helft tegen het bestaande einde ligt
+            const adjacencyOnSecondCell =
+              (finalOrientation === 'horizontal' && end.fromDir === 'W') ||
+              (finalOrientation === 'vertical' && end.fromDir === 'N');
+            const connectingPip = adjacencyOnSecondCell ? pip2 : pip1;
+            if (connectingPip !== end.value) {
+              return;
+            }
+          }
+
           // Extra anti-clutter regel: een nieuwe steen mag alleen aan de verbindingskant contact maken.
           // Zo voorkomen we "te dicht op elkaar" leggingen die latere zetten blokkeren.
           const placementCells = finalOrientation === 'horizontal'
