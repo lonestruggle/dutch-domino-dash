@@ -291,16 +291,30 @@ export const useDominoGame = (localPlayerPosition?: number) => {
           continue;
         }
 
+        // Classic rule: a placed double only opens perpendicular to its own orientation.
+        // This keeps spinner/double targets from appearing above/below when the old
+        // classic logic would only allow left/right, and vice versa.
+        if (isDouble(domino.data)) {
+          const isVertical = domino.orientation === 'vertical';
+
+          if (
+            (isVertical && (dir === 'N' || dir === 'S')) ||
+            (!isVertical && (dir === 'W' || dir === 'E'))
+          ) {
+            continue;
+          }
+        }
+
         // Correct edge value and allow OUTWARD + perpendiculars only at true chain ends.
-        // Doubles must keep their free chain end too; treating every double as only
-        // perpendicular made classic mode lose the tail after an inline double.
         let edgeValue = cell.value;
         const dominoData = domino.data;
         const isHorizontal = domino.orientation === 'horizontal';
         const isFlipped = domino.flipped;
         const [value1, value2] = isFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
         
-        if (isHorizontal) {
+        if (isDouble(domino.data)) {
+          edgeValue = domino.data.value1;
+        } else if (isHorizontal) {
           const isLeftCell = coord === `${domino.x},${domino.y}`;
           const isRightCell = coord === `${domino.x + 1},${domino.y}`;
           if (!isLeftCell && !isRightCell) continue;
@@ -524,6 +538,11 @@ export const useDominoGame = (localPlayerPosition?: number) => {
 
           let { x, y } = end;
           let finalOrientation: 'horizontal' | 'vertical' = orientation;
+
+          // Classic rule: doubles are laid perpendicular to the direction of play.
+          if (selectedIsDouble) {
+            finalOrientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
+          }
 
           // KRITIEKE FIX: Consistente positionering en flipping voor alle richtingen
           if (finalOrientation === 'horizontal') {
