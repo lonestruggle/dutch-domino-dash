@@ -539,6 +539,11 @@ export const useDominoGame = (localPlayerPosition?: number) => {
           let { x, y } = end;
           let finalOrientation: 'horizontal' | 'vertical' = orientation;
 
+          // Classic rule: doubles are laid perpendicular to the direction of play.
+          if (selectedIsDouble) {
+            finalOrientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
+          }
+
           // KRITIEKE FIX: Consistente positionering en flipping voor alle richtingen
           if (finalOrientation === 'horizontal') {
             if (end.fromDir === 'W') {
