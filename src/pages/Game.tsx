@@ -2501,36 +2501,43 @@ export default function Game() {
             scheduleBotRetry(250);
             return;
           }
-          const bot = bots.find((b) => (hands[b.position] || []).length < 5);
-          if (!bot) return;
-          const lockKey = `draw:${bot.position}:${(hands[bot.position] || []).length}:${availableIdx.length}`;
-          if (wegaBotActionLockRef.current === lockKey) {
-            scheduleBotRetry(botMaxActionMs);
+          // Alle bots die nog stenen nodig hebben tegelijk laten trekken,
+          // met elk een eigen korte willekeurige vertraging zodat het er
+          // natuurlijk uitziet (geen strikte volgorde).
+          const hungryBots = bots.filter((b) => (hands[b.position] || []).length < 5);
+          if (hungryBots.length === 0) {
+            scheduleBotRetry(200);
             return;
           }
-          wegaBotActionLockRef.current = lockKey;
-          await new Promise((r) => setTimeout(r, Math.min(700, Math.max(120, botMaxActionMs - 250))));
-          if (cancelled) {
-            if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
-            scheduleBotRetry(60);
-            return;
+          for (const bot of hungryBots) {
+            const lockKey = `draw:${bot.position}:${(hands[bot.position] || []).length}`;
+            if (wegaBotDrawLocksRef.current.has(lockKey)) continue;
+            wegaBotDrawLocksRef.current.add(lockKey);
+            const delay = 120 + Math.floor(Math.random() * 380); // 120–500ms
+            void (async () => {
+              try {
+                await new Promise((r) => setTimeout(r, delay));
+                if (cancelled) return;
+                // Pak vers de actueel beschikbare indices op het moment van trekken
+                const latestGs: any = syncState.gameState;
+                const latestBy: any[] = Array.isArray(latestGs?.boneyard) ? latestGs.boneyard : boneyard;
+                const latestAvail = latestBy.map((t, i) => (t ? i : -1)).filter((i) => i >= 0);
+                if (latestAvail.length === 0) return;
+                const pick = latestAvail[Math.floor(Math.random() * latestAvail.length)];
+                const { error } = await supabase.rpc('wega_claim_boneyard_tile' as any, {
+                  _lobby_id: gameId,
+                  _tile_index: pick,
+                  _actor_position: bot.position,
+                });
+                if (error && !/already taken|invalid tile index/i.test(error.message || '')) {
+                  console.warn('[wegaBot] draw failed', error);
+                }
+              } finally {
+                wegaBotDrawLocksRef.current.delete(lockKey);
+              }
+            })();
           }
-          const pick = availableIdx[Math.floor(Math.random() * availableIdx.length)];
-          const { error } = await supabase.rpc('wega_claim_boneyard_tile' as any, {
-            _lobby_id: gameId,
-            _tile_index: pick,
-            _actor_position: bot.position,
-          });
-          if (error) {
-            if (/already taken|invalid tile index/i.test(error.message || '')) {
-              wegaBotActionLockRef.current = '';
-              scheduleBotRetry(120);
-              return;
-            }
-            throw error;
-          }
-          wegaBotActionLockRef.current = '';
-          scheduleBotRetry(120);
+          scheduleBotRetry(250);
           return;
         }
 
