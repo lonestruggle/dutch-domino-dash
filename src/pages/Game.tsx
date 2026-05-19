@@ -11,6 +11,7 @@ import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
 import { WegaPhaseOverlay } from '@/components/WegaPhaseOverlay';
 import { WegaPlayingOverlay } from '@/components/WegaPlayingOverlay';
