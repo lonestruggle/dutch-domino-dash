@@ -2001,8 +2001,8 @@ export default function Game() {
   const wegaFindLegalMoves = useCallback((dominoData: DominoData): LegalMove[] => {
     if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
     if (!dominoData) return [];
-    // Wega di sen — strict variant: gebruik klassieke regels 1-op-1 incl. pip-match.
-    return gameHook.findLegalMoves(dominoData);
+    // Wega di sen — strict variant: klassieke regels + alleen kop/staart (tips).
+    return gameHook.findLegalMoves(dominoData, { wegaTipsOnly: true });
   }, [isWegaPlay, gameHook]);
 
   // Wega di sen gebruikt exact dezelfde legale zetten als klassiek.
@@ -2017,7 +2017,7 @@ export default function Game() {
     const forceInitialFlip = (isSelectedTile && selIdx !== null && selIdx !== undefined && wegaFlipMap[selIdx] !== undefined)
       ? !!wegaFlipMap[selIdx]
       : undefined;
-    return gameHook.findLegalMoves(dominoData, { forceInitialFlip });
+    return gameHook.findLegalMoves(dominoData, { forceInitialFlip, wegaTipsOnly: true });
   }, [isWegaPlay, gameHook, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
 
   // Dode oude implementatie hieronder (legacy) — vervangen door klassieke regels via gameHook.
