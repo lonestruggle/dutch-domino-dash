@@ -36,6 +36,7 @@ interface LogRow {
 
 const EVENT_COLORS: Record<string, string> = {
   move_submitted: 'bg-green-500/20 text-green-300 border-green-500/40',
+  tile_placed: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
   move_rejected: 'bg-red-500/20 text-red-300 border-red-500/40',
   pass: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
   boneyard_claimed: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
@@ -52,6 +53,8 @@ function summarize(log: LogRow): string {
   switch (log.event_type) {
     case 'move_submitted':
       return `Plaats ${d.tile?.value1}-${d.tile?.value2} op (${d.x},${d.y}) ${d.orientation}${d.flipped ? ' flipped' : ''}`;
+    case 'tile_placed':
+      return `Legt ${d.tile?.value1}-${d.tile?.value2} op (${d.x},${d.y}) ${d.orientation}${d.flipped ? ' gedraaid' : ''}${d.hard_slam ? ' · HARD SLAM' : ''}`;
     case 'move_rejected':
       return `Geweigerd: ${d.reason}${d.penalty ? ` · boete ${d.penalty}` : ''}`;
     case 'pass':
