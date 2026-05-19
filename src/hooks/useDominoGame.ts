@@ -651,6 +651,27 @@ export const useDominoGame = (localPlayerPosition?: number) => {
       }
     });
 
+    // Wega di sen (ignorePipMatch): beperk tot kop en staart van de ketting.
+    // Filter zetten zodat alleen ends van "tip"-dominoes (graad <= 1) overblijven.
+    if (ignorePipMatch && Object.keys(currentState.dominoes).length > 1) {
+      const degree: Record<string, Set<string>> = {};
+      for (const id in currentState.dominoes) degree[id] = new Set();
+      for (const coord in currentState.board) {
+        const [cx, cy] = coord.split(',').map(Number);
+        const myId = currentState.board[coord].dominoId;
+        const neigh = [[cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy]] as const;
+        for (const [nx, ny] of neigh) {
+          const nCell = currentState.board[`${nx},${ny}`];
+          if (nCell && nCell.dominoId !== myId) degree[myId].add(nCell.dominoId);
+        }
+      }
+      const tipIds = new Set(Object.keys(degree).filter(id => degree[id].size <= 1));
+      return moves.filter(m => {
+        const fid = Object.keys(currentState.dominoes).find(id => currentState.dominoes[id] === m.fromDomino);
+        return fid ? tipIds.has(fid) : true;
+      });
+    }
+
     return moves;
   }, [regenerateOpenEnds, hasDifferentNeighbor]);
 
