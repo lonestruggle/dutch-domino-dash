@@ -2297,8 +2297,31 @@ export default function Game() {
       return wrappedExecuteMove(move);
     }
     try {
-      const handIndex = typeof move.index === 'number' ? move.index : (wegaSelectedIndex ?? -1);
-      if (handIndex < 0) return;
+      // Resolve hand index against the SERVER hand to avoid desyncs between
+      // local selectedHandIndex and the authoritative playerHands array.
+      const serverHands: any[] = Array.isArray((syncState.gameState as any)?.playerHands)
+        ? (syncState.gameState as any).playerHands
+        : [];
+      const serverHand: Array<{ value1: number; value2: number }> = Array.isArray(serverHands[syncState.playerPosition])
+        ? serverHands[syncState.playerPosition]
+        : [];
+      const tile = move.dominoData;
+      let handIndex = -1;
+      if (tile) {
+        handIndex = serverHand.findIndex(t =>
+          (t.value1 === tile.value1 && t.value2 === tile.value2) ||
+          (t.value1 === tile.value2 && t.value2 === tile.value1)
+        );
+      }
+      if (handIndex < 0) {
+        const fallback = typeof move.index === 'number' ? move.index : (wegaSelectedIndex ?? -1);
+        if (fallback >= 0 && fallback < serverHand.length) handIndex = fallback;
+      }
+      if (handIndex < 0) {
+        toast({ title: 'Steen niet in hand', description: 'De geselecteerde steen staat niet meer in je hand. Selecteer een andere.', variant: 'destructive' });
+        setWegaSelectedIndex(null);
+        return;
+      }
       const { data, error } = await supabase.rpc('wega_submit_move' as any, {
         _lobby_id: gameId,
         _hand_index: handIndex,
@@ -2330,7 +2353,7 @@ export default function Game() {
     } catch (e: any) {
       toast({ title: 'Fout', description: e?.message || String(e), variant: 'destructive' });
     }
-  }, [isWegaPlay, wrappedExecuteMove, gameId, wegaSelectedIndex, syncState.gameState, toast]);
+  }, [isWegaPlay, wrappedExecuteMove, gameId, wegaSelectedIndex, syncState.gameState, syncState.playerPosition, toast]);
 
   const wegaPassMove = useCallback(async (actorPosition?: number) => {
     if (!isWegaPlay) return passMove(actorPosition);
