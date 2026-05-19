@@ -140,15 +140,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const loadPlayerGloveSkins = async () => {
       try {
         const { data: profileRows, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_id, selected_glove_skin_id')
-          .in('user_id', uniqueUserIds);
+          .rpc('get_co_player_glove_skins', { p_user_ids: uniqueUserIds });
 
         if (profileError) throw profileError;
         if (cancelled) return;
 
         const selectedByUser = new Map<string, string>();
-        (profileRows || []).forEach((row) => {
+        (profileRows || []).forEach((row: any) => {
           if (row.selected_glove_skin_id) {
             selectedByUser.set(row.user_id, row.selected_glove_skin_id);
           }
