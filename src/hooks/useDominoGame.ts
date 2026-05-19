@@ -464,12 +464,13 @@ export const useDominoGame = (localPlayerPosition?: number) => {
   }, [hasDifferentNeighbor]);
 
   // EXACT COPY FROM YOUR ORIGINAL CODE
-  const findLegalMoves = useCallback((dominoData: DominoData, opts?: { ignorePipMatch?: boolean }): LegalMove[] => {
+  const findLegalMoves = useCallback((dominoData: DominoData, opts?: { ignorePipMatch?: boolean; forceInitialFlip?: boolean }): LegalMove[] => {
     const moves: LegalMove[] = [];
     const selectedIsDouble = isDouble(dominoData);
     const uniqueEnds: Record<string, boolean> = {};
     const currentState = gameStateRef.current;
     const ignorePipMatch = !!opts?.ignorePipMatch;
+    const forceInitialFlip = opts?.forceInitialFlip;
     
     // EERSTE DOMINO: Als het bord leeg is, kan de eerste domino overal geplaatst worden
     if (Object.keys(currentState.dominoes).length === 0) {
@@ -481,7 +482,7 @@ export const useDominoGame = (localPlayerPosition?: number) => {
           moves.push({
             end: { x: x, y: y, value: dominoData.value1, fromDir: 'E' },
             dominoData,
-            flipped: false,
+            flipped: !!forceInitialFlip,
             orientation,
             x: x,
             y: y
@@ -640,9 +641,17 @@ export const useDominoGame = (localPlayerPosition?: number) => {
         }
       };
 
-      // Try both values, but only add the first valid one
-      check(dominoData.value1, false);
-      check(dominoData.value2, true);
+      // Try both values, but only add the first valid one.
+      // Als forceInitialFlip expliciet is gezet (Wega: speler heeft hand-flip gekozen),
+      // probeer alleen die oriëntatie zodat de placement-preview de hand-flip volgt.
+      if (forceInitialFlip === true) {
+        check(dominoData.value2, true);
+      } else if (forceInitialFlip === false) {
+        check(dominoData.value1, false);
+      } else {
+        check(dominoData.value1, false);
+        check(dominoData.value2, true);
+      }
       
       // If we found a valid move, add it and mark the position as used
       if (validMove) {
