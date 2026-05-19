@@ -2671,7 +2671,7 @@ export default function Game() {
           // ook als de pips niet matchen — een mismatch is een fout met boete.
           // findLegalMovesStrict houdt wel de pip-match aan (voor bot-keuzes/auto-pas-detectie).
           findLegalMoves: isWegaPlay
-            ? ((d: any) => gameHook.findLegalMoves(d, { ignorePipMatch: true }))
+            ? wegaFindLegalMovesForHuman
             : gameHook.findLegalMoves,
           findLegalMovesStrict: gameHook.findLegalMoves,
           drawFromBoneyard: wrappedDrawFromBoneyard,
