@@ -2644,8 +2644,14 @@ export default function Game() {
         gameHook={{
           ...gameHook, 
           executeMove: wegaExecuteMove,
-          findLegalMoves: isWegaPlay ? wegaFindLegalMovesForHuman : wegaFindLegalMoves,
-          findLegalMovesStrict: isWegaPlay ? wegaFindLegalMoves : gameHook.findLegalMoves,
+          // In Wega di sen gelden de klassieke plaatsingsregels 1-op-1.
+          // De UI (findLegalMoves) toont alle posities die geometrisch geldig zijn,
+          // ook als de pips niet matchen — een mismatch is een fout met boete.
+          // findLegalMovesStrict houdt wel de pip-match aan (voor bot-keuzes/auto-pas-detectie).
+          findLegalMoves: isWegaPlay
+            ? ((d: any) => gameHook.findLegalMoves(d, { ignorePipMatch: true }))
+            : gameHook.findLegalMoves,
+          findLegalMovesStrict: gameHook.findLegalMoves,
           drawFromBoneyard: wrappedDrawFromBoneyard,
           drawSpecificFromBoneyard: wrappedDrawSpecificFromBoneyard,
           passMove: wegaPassMove,
