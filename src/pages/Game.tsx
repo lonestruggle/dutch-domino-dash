@@ -2189,10 +2189,9 @@ export default function Game() {
     return moves;
   }, [isWegaPlay, gameHook, gameState?.board, gameState?.dominoes, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
 
-  // === Permissieve variant voor menselijke spelers in Wega di sen ===
-  // Volgens de huidige spelregels: een speler mag elke steen op elk open einde leggen.
-  // De server controleert of de zet klopt en eindigt het spel met boete bij een foute zet.
-  const wegaFindLegalMovesForHuman = useCallback((dominoData: DominoData): LegalMove[] => {
+  // Dode legacy implementatie — vervangen door klassieke regels via gameHook.findLegalMoves.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _legacyWegaFindLegalMovesForHuman = useCallback((dominoData: DominoData): LegalMove[] => {
     if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
     if (!dominoData) return [];
     const board = (gameState?.board || {}) as Record<string, { dominoId: string; value: number }>;
