@@ -2193,35 +2193,21 @@ export default function Game() {
       const dom = dominoesMap[cellInfo.dominoId];
       if (!dom) return false;
       const isDoubleDom = dom.data.value1 === dom.data.value2;
+      // Bereken de doelcel
+      const tx = dir === 'W' ? cx - 1 : dir === 'E' ? cx + 1 : cx;
+      const ty = dir === 'N' ? cy - 1 : dir === 'S' ? cy + 1 : cy;
+      if (board[`${tx},${ty}`]) return false;
+      // Dubbel = spinner: alle 4 zijden zijn open uiteinden
+      if (isDoubleDom) return true;
+      // Niet-dubbele steen: alleen aan de korte uiteinden in-lijn
       if (dom.orientation === 'horizontal') {
-        const isLeft = cx === dom.x && cy === dom.y;
-        const isRight = cx === dom.x + 1 && cy === dom.y;
-        if (isDoubleDom) {
-          return isLeft && (dir === 'N' || dir === 'S');
-        }
-        if (isLeft) {
-          if (board[`${dom.x - 1},${dom.y}`]) return false;
-          return dir === 'W' || dir === 'N' || dir === 'S';
-        }
-        if (isRight) {
-          if (board[`${dom.x + 2},${dom.y}`]) return false;
-          return dir === 'E' || dir === 'N' || dir === 'S';
-        }
+        if (cx === dom.x && cy === dom.y) return dir === 'W';
+        if (cx === dom.x + 1 && cy === dom.y) return dir === 'E';
         return false;
       }
-      const isTop = cx === dom.x && cy === dom.y;
-      const isBottom = cx === dom.x && cy === dom.y + 1;
-      if (isDoubleDom) {
-        return isTop && (dir === 'W' || dir === 'E');
-      }
-      if (isTop) {
-        if (board[`${dom.x},${dom.y - 1}`]) return false;
-        return dir === 'N' || dir === 'W' || dir === 'E';
-      }
-      if (isBottom) {
-        if (board[`${dom.x},${dom.y + 2}`]) return false;
-        return dir === 'S' || dir === 'W' || dir === 'E';
-      }
+      // vertical
+      if (cx === dom.x && cy === dom.y) return dir === 'N';
+      if (cx === dom.x && cy === dom.y + 1) return dir === 'S';
       return false;
     };
     const boardKeys = Object.keys(board);
