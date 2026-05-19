@@ -19,7 +19,7 @@ const TILE_W = 56;
 const TILE_H = 28;
 const MIN_DIST = 64;
 
-export const BoneyardScatter: React.FC<Props> = ({ slotCount = 26, available, skin, onPick }) => {
+export const BoneyardScatter: React.FC<Props> = ({ slotCount = 26, available, skin, onPick, faceUpTiles }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
