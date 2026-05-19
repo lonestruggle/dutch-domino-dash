@@ -2013,15 +2013,12 @@ export default function Game() {
   const wegaFindLegalMovesForHuman = useCallback((dominoData: DominoData): LegalMove[] => {
     if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
     if (!dominoData) return [];
-    // Bepaal of de speler de geselecteerde steen in zijn hand heeft omgedraaid.
-    const selIdx = wegaSelectedIndex;
-    const selDom = (selIdx !== null && selIdx !== undefined) ? gameState?.playerHand?.[selIdx] : null;
-    const isSelectedTile = !!selDom && selDom === dominoData;
-    const forceInitialFlip = (isSelectedTile && selIdx !== null && selIdx !== undefined && wegaFlipMap[selIdx] !== undefined)
-      ? !!wegaFlipMap[selIdx]
-      : undefined;
-    return gameHook.findLegalMoves(dominoData, { forceInitialFlip, wegaTipsOnly: true });
-  }, [isWegaPlay, gameHook, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
+    // De hand-flip is puur visueel in de hand-weergave. Voor het bepalen van
+    // legale zetten gebruiken we de klassieke regels zonder flip-restrictie,
+    // zodat een geflipte steen nog steeds op alle geldige open einden mag
+    // worden gelegd (anders verdwijnen targets ten onrechte).
+    return gameHook.findLegalMoves(dominoData, { wegaTipsOnly: true });
+  }, [isWegaPlay, gameHook]);
 
   // Dode oude implementatie hieronder (legacy) — vervangen door klassieke regels via gameHook.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
