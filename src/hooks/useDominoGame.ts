@@ -291,79 +291,41 @@ export const useDominoGame = (localPlayerPosition?: number) => {
           continue;
         }
 
-        // Check double domino connection rules
-        if (isDouble(domino.data)) {
-          const isVertical = domino.orientation === 'vertical';
-
-          // Non-spinner doubles only connect perpendicular to their orientation
-          if (
-            (isVertical && (dir === 'N' || dir === 'S')) ||
-            (!isVertical && (dir === 'W' || dir === 'E'))
-          ) {
-            continue;
-          }
-        }
-
-        // FIX: Correct edge value and allow OUTWARD + perpendiculars only at true chain ends
+        // Correct edge value and allow OUTWARD + perpendiculars only at true chain ends.
+        // Doubles must keep their free chain end too; treating every double as only
+        // perpendicular made classic mode lose the tail after an inline double.
         let edgeValue = cell.value;
+        const dominoData = domino.data;
+        const isHorizontal = domino.orientation === 'horizontal';
+        const isFlipped = domino.flipped;
+        const [value1, value2] = isFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
         
-        // For doubles, the edge value is always the same (both sides are identical)
-        if (isDouble(domino.data)) {
-          edgeValue = domino.data.value1; // or value2, they're the same for doubles
+        if (isHorizontal) {
+          const isLeftCell = coord === `${domino.x},${domino.y}`;
+          const isRightCell = coord === `${domino.x + 1},${domino.y}`;
+          if (!isLeftCell && !isRightCell) continue;
+          
+          const outwardDir: 'W' | 'E' = isLeftCell ? 'W' : 'E';
+          const perpDirs: Array<'N' | 'S'> = ['N', 'S'];
+          const [outNx, outNy] = neighbors[outwardDir as keyof typeof neighbors];
+          if (state.board[`${outNx},${outNy}`]) continue;
+          
+          const allowed = [outwardDir, ...perpDirs] as Array<'N' | 'S' | 'E' | 'W'>;
+          if (!allowed.includes(dir as 'N' | 'S' | 'E' | 'W')) continue;
+          edgeValue = isLeftCell ? value1 : value2;
         } else {
-          // For non-doubles, determine the free end and allow its outward + perpendicular directions
-          const dominoData = domino.data;
-          const isHorizontal = domino.orientation === 'horizontal';
-          const isFlipped = domino.flipped;
+          const isTopCell = coord === `${domino.x},${domino.y}`;
+          const isBottomCell = coord === `${domino.x},${domino.y + 1}`;
+          if (!isTopCell && !isBottomCell) continue;
           
-          // Get the values in the correct order
-          const [value1, value2] = isFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
+          const outwardDir: 'N' | 'S' = isTopCell ? 'N' : 'S';
+          const perpDirs: Array<'W' | 'E'> = ['W', 'E'];
+          const [outNx, outNy] = neighbors[outwardDir as keyof typeof neighbors];
+          if (state.board[`${outNx},${outNy}`]) continue;
           
-          if (isHorizontal) {
-            // For horizontal dominoes: value1 on left, value2 on right
-            const isLeftCell = coord === `${domino.x},${domino.y}`;
-            const isRightCell = coord === `${domino.x + 1},${domino.y}`;
-            
-            const outwardDir: 'W' | 'E' = isLeftCell ? 'W' : 'E';
-            const perpDirs: Array<'N' | 'S'> = ['N', 'S'];
-            
-            // Confirm this side is truly an end: outward neighbor must be empty
-            const [outNx, outNy] = neighbors[outwardDir as keyof typeof neighbors];
-            const outwardOccupied = Boolean(state.board[`${outNx},${outNy}`]);
-            if (outwardOccupied) {
-              // Not a free chain end; skip any directions for this cell
-              continue;
-            }
-            
-            const allowed = [outwardDir, ...perpDirs] as Array<'N' | 'S' | 'E' | 'W'>;
-            if (!allowed.includes(dir as 'N' | 'S' | 'E' | 'W')) {
-              // Only outward + perpendiculars allowed at a free end
-              continue;
-            }
-            edgeValue = isLeftCell ? value1 : value2;
-          } else {
-            // For vertical dominoes: value1 on top, value2 on bottom  
-            const isTopCell = coord === `${domino.x},${domino.y}`;
-            const isBottomCell = coord === `${domino.x},${domino.y + 1}`;
-            
-            const outwardDir: 'N' | 'S' = isTopCell ? 'N' : 'S';
-            const perpDirs: Array<'W' | 'E'> = ['W', 'E'];
-            
-            // Confirm this side is truly an end: outward neighbor must be empty
-            const [outNx, outNy] = neighbors[outwardDir as keyof typeof neighbors];
-            const outwardOccupied = Boolean(state.board[`${outNx},${outNy}`]);
-            if (outwardOccupied) {
-              // Not a free chain end; skip any directions for this cell
-              continue;
-            }
-            
-            const allowed = [outwardDir, ...perpDirs] as Array<'N' | 'S' | 'E' | 'W'>;
-            if (!allowed.includes(dir as 'N' | 'S' | 'E' | 'W')) {
-              // Only outward + perpendiculars allowed at a free end
-              continue;
-            }
-            edgeValue = isTopCell ? value1 : value2;
-          }
+          const allowed = [outwardDir, ...perpDirs] as Array<'N' | 'S' | 'E' | 'W'>;
+          if (!allowed.includes(dir as 'N' | 'S' | 'E' | 'W')) continue;
+          edgeValue = isTopCell ? value1 : value2;
         }
         
         console.log(`🔍 VALID CHAIN END: (${nx},${ny}) value:${edgeValue} from:${dir}`);
@@ -562,13 +524,6 @@ export const useDominoGame = (localPlayerPosition?: number) => {
 
           let { x, y } = end;
           let finalOrientation: 'horizontal' | 'vertical' = orientation;
-
-          // Doubles liggen alleen dwars op de ketting wanneer ze tegen een SPINNER
-          // worden aangelegd. Tegen een gewone (niet-spinner) steen volgt de dubbele
-          // de richting van de ketting (zelfde orientation als de aanleg-richting).
-          if (selectedIsDouble && fromDomino.isSpinner) {
-            finalOrientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
-          }
 
           // KRITIEKE FIX: Consistente positionering en flipping voor alle richtingen
           if (finalOrientation === 'horizontal') {
