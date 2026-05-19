@@ -45,6 +45,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     syncState,
     gameData
   } = gameHook;
+  // Strikte legal-move check (mét pip-match). In Wega di sen is `findLegalMoves`
+  // permissief (alle open ends), maar de pas-knop en geblokkeerd-detectie moeten
+  // de klassieke regels gebruiken zodat een speler alleen kan/moet passen wanneer
+  // er écht geen matchende steen is.
+  const findLegalMovesStrict = gameHook.findLegalMovesStrict || findLegalMoves;
   const playerUserIds = useMemo(
     () => (syncState?.allPlayers || []).map((player: any) => player.user_id).filter(Boolean),
     [syncState?.allPlayers]
@@ -229,11 +234,11 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
       return [];
     });
     const handPlayableTileCounts = allHands.map((hand) =>
-      hand.reduce((count, domino) => count + (findLegalMoves(domino).length > 0 ? 1 : 0), 0)
+      hand.reduce((count, domino) => count + (findLegalMovesStrict(domino).length > 0 ? 1 : 0), 0)
     );
     const anyHandPlayable = handPlayableTileCounts.some((count) => count > 0);
     const boneyardPlayableTileCount = (gameState.boneyard || []).reduce(
-      (count, domino) => count + (domino && findLegalMoves(domino).length > 0 ? 1 : 0),
+      (count, domino) => count + (domino && findLegalMovesStrict(domino).length > 0 ? 1 : 0),
       0
     );
     const allHandsNonEmpty = allHands.every((hand) => hand.length > 0);
@@ -255,7 +260,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
       sevenXRuleTriggered,
       blockedWouldTriggerNow,
     };
-  }, [findLegalMoves, gameState, syncState?.allPlayers?.length, syncState?.playerPosition]);
+  }, [findLegalMovesStrict, gameState, syncState?.allPlayers?.length, syncState?.playerPosition]);
 
 
   if (syncState?.isLoading) {
@@ -328,7 +333,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     
     // Check if any domino in hand has legal moves
     for (const domino of gameState.playerHand) {
-      const moves = findLegalMoves(domino);
+      const moves = findLegalMovesStrict(domino);
       console.log(`🔍 Domino ${domino.value1}|${domino.value2}: ${moves.length} moves`);
       if (moves.length > 0) {
         hasAnyLegalMoves = true;
