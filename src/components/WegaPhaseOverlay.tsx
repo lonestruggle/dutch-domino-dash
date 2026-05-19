@@ -12,6 +12,8 @@ interface Props {
   playerPosition: number;
   allPlayers: Array<{ username: string; position: number; is_bot: boolean; user_id?: string }>;
   onChanged: () => void;
+  adminFaceUp?: boolean;
+  skin?: { image_url: string | null; css_background: string | null } | null;
 }
 
 const CLAIM_TIMER_MS = 3000;
@@ -22,7 +24,7 @@ const CLAIM_TIMER_MS = 3000;
  * - claiming_starter: gestuurde pop-up; per steen 3s; speler moet actief op Claim drukken
  * - ended (claim_verzuim): rode verzuim-overlay met boete
  */
-export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPosition, allPlayers, onChanged }) => {
+export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPosition, allPlayers, onChanged, adminFaceUp, skin }) => {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState<number>(() => Date.now());
@@ -202,7 +204,13 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
           <div className="text-white/80 text-sm mb-2 text-center">
             {myCount < 5 ? `Klik op een steen — nog ${5 - myCount} te trekken` : 'Wacht tot iedereen 5 stenen heeft…'}
           </div>
-          <BoneyardScatter slotCount={slotCount} available={available} onPick={handleDraw} skin={null} />
+          <BoneyardScatter
+            slotCount={slotCount}
+            available={available}
+            onPick={handleDraw}
+            skin={skin ?? null}
+            faceUpTiles={adminFaceUp ? (boneyard as any) : undefined}
+          />
         </div>
       </div>
     </div>
