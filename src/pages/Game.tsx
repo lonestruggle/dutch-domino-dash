@@ -11,6 +11,7 @@ import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile } from '@/types/domino';
 import { WegaPhaseOverlay } from '@/components/WegaPhaseOverlay';
 import { WegaPlayingOverlay } from '@/components/WegaPlayingOverlay';
@@ -804,6 +805,8 @@ export default function Game() {
   // Hard slam functionality
   const { disarmHardSlam, settings, isAnimating } = useGameVisualSettings();
   const { settings: appSettings } = useAppSettings();
+  const { isAdmin } = useUserRoles();
+  const adminBoneyardFaceUp = isAdmin && Boolean(appSettings?.admin_boneyard_face_up);
   const { calculateBestMove } = useBotAI();
   const botBlockAggression = useMemo(() => {
     const raw = Number(appSettings?.bot_block_aggression ?? 65);
@@ -2010,15 +2013,12 @@ export default function Game() {
   const wegaFindLegalMovesForHuman = useCallback((dominoData: DominoData): LegalMove[] => {
     if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
     if (!dominoData) return [];
-    // Bepaal of de speler de geselecteerde steen in zijn hand heeft omgedraaid.
-    const selIdx = wegaSelectedIndex;
-    const selDom = (selIdx !== null && selIdx !== undefined) ? gameState?.playerHand?.[selIdx] : null;
-    const isSelectedTile = !!selDom && selDom === dominoData;
-    const forceInitialFlip = (isSelectedTile && selIdx !== null && selIdx !== undefined && wegaFlipMap[selIdx] !== undefined)
-      ? !!wegaFlipMap[selIdx]
-      : undefined;
-    return gameHook.findLegalMoves(dominoData, { forceInitialFlip, wegaTipsOnly: true });
-  }, [isWegaPlay, gameHook, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
+    // De hand-flip is puur visueel in de hand-weergave. Voor het bepalen van
+    // legale zetten gebruiken we de klassieke regels zonder flip-restrictie,
+    // zodat een geflipte steen nog steeds op alle geldige open einden mag
+    // worden gelegd (anders verdwijnen targets ten onrechte).
+    return gameHook.findLegalMoves(dominoData, { wegaTipsOnly: true });
+  }, [isWegaPlay, gameHook]);
 
   // Dode oude implementatie hieronder (legacy) — vervangen door klassieke regels via gameHook.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -2397,6 +2397,7 @@ export default function Game() {
   // Eén human-client (de host = laagste menselijke positie) stuurt alle bot-acties aan
   // namens hen via de nieuwe `_actor_position` parameter in de Wega RPCs.
   const wegaBotActionLockRef = useRef<string>('');
+  const wegaBotDrawLocksRef = useRef<Set<string>>(new Set());
   const botClaimChanceRef = useRef<number>(0.95);
   const botErrorChanceRef = useRef<number>(0.05);
   const wegaAdvanceLockRef = useRef<string>('');
@@ -2500,36 +2501,43 @@ export default function Game() {
             scheduleBotRetry(250);
             return;
           }
-          const bot = bots.find((b) => (hands[b.position] || []).length < 5);
-          if (!bot) return;
-          const lockKey = `draw:${bot.position}:${(hands[bot.position] || []).length}:${availableIdx.length}`;
-          if (wegaBotActionLockRef.current === lockKey) {
-            scheduleBotRetry(botMaxActionMs);
+          // Alle bots die nog stenen nodig hebben tegelijk laten trekken,
+          // met elk een eigen korte willekeurige vertraging zodat het er
+          // natuurlijk uitziet (geen strikte volgorde).
+          const hungryBots = bots.filter((b) => (hands[b.position] || []).length < 5);
+          if (hungryBots.length === 0) {
+            scheduleBotRetry(200);
             return;
           }
-          wegaBotActionLockRef.current = lockKey;
-          await new Promise((r) => setTimeout(r, Math.min(700, Math.max(120, botMaxActionMs - 250))));
-          if (cancelled) {
-            if (wegaBotActionLockRef.current === lockKey) wegaBotActionLockRef.current = '';
-            scheduleBotRetry(60);
-            return;
+          for (const bot of hungryBots) {
+            const lockKey = `draw:${bot.position}:${(hands[bot.position] || []).length}`;
+            if (wegaBotDrawLocksRef.current.has(lockKey)) continue;
+            wegaBotDrawLocksRef.current.add(lockKey);
+            const delay = 120 + Math.floor(Math.random() * 380); // 120–500ms
+            void (async () => {
+              try {
+                await new Promise((r) => setTimeout(r, delay));
+                if (cancelled) return;
+                // Pak vers de actueel beschikbare indices op het moment van trekken
+                const latestGs: any = syncState.gameState;
+                const latestBy: any[] = Array.isArray(latestGs?.boneyard) ? latestGs.boneyard : boneyard;
+                const latestAvail = latestBy.map((t, i) => (t ? i : -1)).filter((i) => i >= 0);
+                if (latestAvail.length === 0) return;
+                const pick = latestAvail[Math.floor(Math.random() * latestAvail.length)];
+                const { error } = await supabase.rpc('wega_claim_boneyard_tile' as any, {
+                  _lobby_id: gameId,
+                  _tile_index: pick,
+                  _actor_position: bot.position,
+                });
+                if (error && !/already taken|invalid tile index/i.test(error.message || '')) {
+                  console.warn('[wegaBot] draw failed', error);
+                }
+              } finally {
+                wegaBotDrawLocksRef.current.delete(lockKey);
+              }
+            })();
           }
-          const pick = availableIdx[Math.floor(Math.random() * availableIdx.length)];
-          const { error } = await supabase.rpc('wega_claim_boneyard_tile' as any, {
-            _lobby_id: gameId,
-            _tile_index: pick,
-            _actor_position: bot.position,
-          });
-          if (error) {
-            if (/already taken|invalid tile index/i.test(error.message || '')) {
-              wegaBotActionLockRef.current = '';
-              scheduleBotRetry(120);
-              return;
-            }
-            throw error;
-          }
-          wegaBotActionLockRef.current = '';
-          scheduleBotRetry(120);
+          scheduleBotRetry(250);
           return;
         }
 
@@ -2720,6 +2728,11 @@ export default function Game() {
         playerPosition={syncState.playerPosition}
         allPlayers={syncState.allPlayers}
         onChanged={() => { /* realtime listener verzorgt update */ }}
+        adminFaceUp={adminBoneyardFaceUp}
+        skin={{
+          image_url: (syncState.gameData as any)?.domino_skin_url ?? null,
+          css_background: (syncState.gameData as any)?.domino_skin_css ?? null,
+        }}
       />
       <WegaPlayingOverlay
         lobbyId={gameId || ''}
