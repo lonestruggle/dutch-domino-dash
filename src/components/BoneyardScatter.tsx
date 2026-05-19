@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BoneyardTile } from '@/components/BoneyardTile';
 import { DominoSkin } from '@/hooks/useDominoSkins';
+import { DominoTile } from '@/components/DominoTile';
+import type { DominoData } from '@/types/domino';
 
 interface Props {
   /** Aantal vaste slots in de layout (default 26 voor Wega di sen). */
@@ -9,6 +11,8 @@ interface Props {
   available?: Array<boolean>;
   skin?: Pick<DominoSkin, 'image_url' | 'css_background'> | null;
   onPick: (index: number) => void;
+  /** Optioneel: render de tegels face-up (voor admin debug). Lege/null entries blijven verborgen. */
+  faceUpTiles?: Array<DominoData | null | undefined>;
 }
 
 const TILE_W = 56;
@@ -79,8 +83,28 @@ export const BoneyardScatter: React.FC<Props> = ({ slotCount = 26, available, sk
       }}
     >
       {positions.map((p, i) => {
-        const isAvailable = available ? !!available[i] : true;
+        const tile = faceUpTiles?.[i];
+        const isAvailable = available ? !!available[i] : (faceUpTiles ? !!tile : true);
         if (!isAvailable) return null;
+        if (faceUpTiles && tile) {
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onPick(i)}
+              aria-label="Trek deze steen"
+              className="absolute group cursor-pointer transition-all duration-200 hover:scale-110 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-md"
+              style={{
+                left: p.x - 28,
+                top: p.y - 14,
+                transform: `rotate(${p.rotation}deg)`,
+                filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))',
+              }}
+            >
+              <DominoTile data={tile} orientation="horizontal" flipped={false} />
+            </button>
+          );
+        }
         return (
           <BoneyardTile
             key={i}
