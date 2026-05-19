@@ -2723,6 +2723,11 @@ export default function Game() {
         playerPosition={syncState.playerPosition}
         allPlayers={syncState.allPlayers}
         onChanged={() => { /* realtime listener verzorgt update */ }}
+        adminFaceUp={adminBoneyardFaceUp}
+        skin={{
+          image_url: (syncState.gameData as any)?.domino_skin_url ?? null,
+          css_background: (syncState.gameData as any)?.domino_skin_css ?? null,
+        }}
       />
       <WegaPlayingOverlay
         lobbyId={gameId || ''}
