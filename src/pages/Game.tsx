@@ -2005,8 +2005,8 @@ export default function Game() {
     return gameHook.findLegalMoves(dominoData);
   }, [isWegaPlay, gameHook]);
 
-  // === Permissieve variant voor menselijke spelers in Wega di sen ===
-  // Zelfde geometrie als klassiek, maar pip-match wordt overgeslagen.
+  // Wega di sen gebruikt exact dezelfde legale zetten als klassiek.
+  // Alleen de hand-flip blijft Wega-specifiek voor de preview/plaatsing.
   const wegaFindLegalMovesForHuman = useCallback((dominoData: DominoData): LegalMove[] => {
     if (!isWegaPlay) return gameHook.findLegalMoves(dominoData);
     if (!dominoData) return [];
@@ -2017,7 +2017,7 @@ export default function Game() {
     const forceInitialFlip = (isSelectedTile && selIdx !== null && selIdx !== undefined && wegaFlipMap[selIdx] !== undefined)
       ? !!wegaFlipMap[selIdx]
       : undefined;
-    return gameHook.findLegalMoves(dominoData, { ignorePipMatch: true, forceInitialFlip });
+    return gameHook.findLegalMoves(dominoData, { forceInitialFlip });
   }, [isWegaPlay, gameHook, wegaSelectedIndex, gameState?.playerHand, wegaFlipMap]);
 
   // Dode oude implementatie hieronder (legacy) — vervangen door klassieke regels via gameHook.
@@ -2690,9 +2690,8 @@ export default function Game() {
           ...gameHook, 
           executeMove: wegaExecuteMove,
           // In Wega di sen gelden de klassieke plaatsingsregels 1-op-1.
-          // De UI (findLegalMoves) toont alle posities die geometrisch geldig zijn,
-          // ook als de pips niet matchen — een mismatch is een fout met boete.
-          // findLegalMovesStrict houdt wel de pip-match aan (voor bot-keuzes/auto-pas-detectie).
+          // De UI toont dus alleen zetten die ook qua pips kloppen.
+          // findLegalMovesStrict blijft dezelfde bron voor bot-keuzes/auto-pas-detectie.
           findLegalMoves: isWegaPlay
             ? wegaFindLegalMovesForHuman
             : gameHook.findLegalMoves,
