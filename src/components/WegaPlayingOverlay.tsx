@@ -23,20 +23,26 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, curren
   const [busy, setBusy] = React.useState(false);
   const autoPass = !!autoPassEnabled;
 
-  // Notify everyone when someone passes (detected via consecutivePasses increase)
-  const prevPassesRef = React.useRef<number>(Number(gameState?.consecutivePasses) || 0);
-  const prevTurnRef = React.useRef<number>(Number(gameState?.currentPlayer ?? currentPlayer) || 0);
+  // Server schrijft lastPasserPosition + lastPasserAt zodra iemand past.
+  // We tonen één toast per pas-event door op lastPasserAt te triggeren.
+  const lastPasserAtSeenRef = React.useRef<number>(Number(gameState?.lastPasserAt) || 0);
   React.useEffect(() => {
-    const cp = Number(gameState?.consecutivePasses) || 0;
-    if (cp > prevPassesRef.current) {
-      const passerPos = prevTurnRef.current;
-      const passer = allPlayers?.find((p) => p.position === passerPos);
-      const name = passer?.username || `Speler ${passerPos + 1}`;
-      toast({ title: `${name} heeft gepast`, duration: 2000 });
+    const at = Number(gameState?.lastPasserAt) || 0;
+    if (!at || at === lastPasserAtSeenRef.current) return;
+    // Initialiseer bij eerste render zonder toast te tonen
+    if (lastPasserAtSeenRef.current === 0) {
+      lastPasserAtSeenRef.current = at;
+      return;
     }
-    prevPassesRef.current = cp;
-    prevTurnRef.current = Number(currentPlayer) || 0;
-  }, [gameState?.consecutivePasses, currentPlayer, allPlayers, toast]);
+    lastPasserAtSeenRef.current = at;
+    const passerPos = Number(gameState?.lastPasserPosition);
+    if (!Number.isFinite(passerPos)) return;
+    // Eigen pas: handlePass toont zelf al een "Gepast"-toast.
+    if (passerPos === playerPosition) return;
+    const passer = allPlayers?.find((p) => p.position === passerPos);
+    const name = passer?.username || `Speler ${passerPos + 1}`;
+    toast({ title: `${name} heeft gepast`, duration: 2000 });
+  }, [gameState?.lastPasserAt, gameState?.lastPasserPosition, allPlayers, playerPosition, toast]);
 
   const phase = gameState?.wegaPhase as string | undefined;
   if (phase !== 'playing' || gameState?.isGameOver) return null;
