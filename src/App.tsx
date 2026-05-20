@@ -14,6 +14,7 @@ import Lobby from "./pages/Lobby";
 import Game from "./pages/Game";
 import NotFound from "./pages/NotFound";
 import DominoTileDemo from "./components/DominoTileDemo";
+import CanvasDemo from "./pages/CanvasDemo";
 import { GameVisualControls } from "@/components/GameVisualControls";
 import Scoreboard from "./pages/Scoreboard";
 import { GameVisualSettingsProvider } from "@/hooks/useGameVisualSettings";
@@ -60,6 +61,7 @@ const App = () => {
                 <Route path="/game/:gameId" element={<Game />} />
                 <Route path="/scoreboard" element={<Scoreboard />} />
                 <Route path="/demo" element={<DominoTileDemo />} />
+                <Route path="/canvas-demo" element={<CanvasDemo />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
