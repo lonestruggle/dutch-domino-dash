@@ -2121,6 +2121,10 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
               />
             </div>
           </TabsContent>
+
+          <TabsContent value="roles">
+            <RolePermissionsMatrix />
+          </TabsContent>
         </Tabs>
         
         {/* Password Reset Dialog */}
