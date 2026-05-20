@@ -429,10 +429,10 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
 
   const handleToggleSkinActive = async (skin: GloveSkin) => {
     try {
-      const { error } = await supabase
-        .from('glove_skins')
-        .update({ is_active: !skin.is_active })
-        .eq('id', skin.id);
+      const { error } = await (supabase.rpc as any)('admin_set_glove_skin_active', {
+        _skin_id: skin.id,
+        _active: !skin.is_active,
+      });
       if (error) throw error;
 
       toast({
@@ -444,7 +444,7 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
       console.error('Failed to toggle glove skin active state:', error);
       toast({
         title: 'Opslaan mislukt',
-        description: 'Kon skin status niet aanpassen.',
+        description: (error as any)?.message || 'Kon skin status niet aanpassen.',
         variant: 'destructive',
       });
     }
@@ -454,16 +454,10 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
     if (!selectedUserId || !selectedSkinId) return;
 
     try {
-      const { error } = await supabase.from('user_glove_skins').upsert(
-        {
-          user_id: selectedUserId,
-          skin_id: selectedSkinId,
-          source: 'assigned',
-          is_enabled: true,
-          created_by: adminUserId || null,
-        },
-        { onConflict: 'user_id,skin_id' }
-      );
+      const { error } = await (supabase.rpc as any)('admin_assign_glove_skin', {
+        _target_user: selectedUserId,
+        _skin_id: selectedSkinId,
+      });
       if (error) throw error;
 
       toast({
@@ -475,7 +469,7 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
       console.error('Failed to assign glove skin:', error);
       toast({
         title: 'Toewijzen mislukt',
-        description: 'Kon skin niet toewijzen.',
+        description: (error as any)?.message || 'Kon skin niet toewijzen.',
         variant: 'destructive',
       });
     }
@@ -484,19 +478,11 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
   const handleToggleUserSkin = async (assignment: UserGloveAssignment) => {
     try {
       const nextEnabled = !assignment.is_enabled;
-      const { error } = await supabase
-        .from('user_glove_skins')
-        .update({ is_enabled: nextEnabled })
-        .eq('id', assignment.id);
+      const { error } = await (supabase.rpc as any)('admin_set_user_glove_assignment', {
+        _assignment_id: assignment.id,
+        _enabled: nextEnabled,
+      });
       if (error) throw error;
-
-      if (!nextEnabled && selectedUserCurrentSkinId === assignment.skin_id) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ selected_glove_skin_id: null })
-          .eq('user_id', assignment.user_id);
-        if (profileError) throw profileError;
-      }
 
       toast({
         title: 'Toewijzing bijgewerkt',
@@ -507,7 +493,7 @@ export function GloveSkinManager({ users, adminUserId }: GloveSkinManagerProps) 
       console.error('Failed to toggle user glove skin assignment:', error);
       toast({
         title: 'Opslaan mislukt',
-        description: 'Kon user skin-toewijzing niet aanpassen.',
+        description: (error as any)?.message || 'Kon user skin-toewijzing niet aanpassen.',
         variant: 'destructive',
       });
     }
