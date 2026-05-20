@@ -664,6 +664,27 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          allowed: boolean
+          permission_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          allowed?: boolean
+          permission_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          allowed?: boolean
+          permission_key?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       seasons: {
         Row: {
           created_at: string
@@ -952,6 +973,26 @@ export type Database = {
           ty: number
         }[]
       }
+      admin_assign_glove_skin: {
+        Args: { _skin_id: string; _target_user: string }
+        Returns: undefined
+      }
+      admin_set_glove_skin_active: {
+        Args: { _active: boolean; _skin_id: string }
+        Returns: undefined
+      }
+      admin_set_user_glove_assignment: {
+        Args: { _assignment_id: string; _enabled: boolean }
+        Returns: undefined
+      }
+      admin_set_user_role: {
+        Args: {
+          _enabled: boolean
+          _role: Database["public"]["Enums"]["app_role"]
+          _target_user: string
+        }
+        Returns: undefined
+      }
       can_moderate: { Args: { _user_id: string }; Returns: boolean }
       cleanup_expired_invitations: { Args: never; Returns: number }
       cleanup_expired_lobbies: { Args: never; Returns: number }
@@ -975,12 +1016,27 @@ export type Database = {
           username: string
         }[]
       }
+      get_my_permissions: {
+        Args: never
+        Returns: {
+          allowed: boolean
+          permission_key: string
+        }[]
+      }
+      get_user_top_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       get_users_without_display_name: {
         Args: never
         Returns: {
           user_id: string
           username: string
         }[]
+      }
+      has_permission: {
+        Args: { _key: string; _user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
