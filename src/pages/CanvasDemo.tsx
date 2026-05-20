@@ -178,9 +178,9 @@ const CanvasDemo: React.FC = () => {
       // Stenen (trillen onafhankelijk)
       for (const stone of stones) {
         ctx.save();
-        const trilX = (Math.random() - 0.5) * 35 * env;
-        const trilY = (Math.random() - 0.5) * 35 * env;
-        const trilR = (Math.random() - 0.5) * 0.22 * env;
+        const trilX = (Math.random() - 0.5) * 32 * env;
+        const trilY = (Math.random() - 0.5) * 32 * env;
+        const trilR = (Math.random() - 0.5) * 0.18 * env;
         ctx.translate(stone.x + trilX, stone.y + trilY);
         ctx.rotate(stone.angle + trilR);
         drawStone(ctx, stone, env);
