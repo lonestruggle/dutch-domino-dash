@@ -15,6 +15,7 @@ import { TableBackgroundManager } from '@/components/TableBackgroundManager';
 import { UserPermissionsDialog } from '@/components/UserPermissionsDialog';
 import { ManageUserDialog } from '@/components/ManageUserDialog';
 import { GloveSkinManager } from '@/components/GloveSkinManager';
+import { RolePermissionsMatrix } from '@/components/RolePermissionsMatrix';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { 
   Users, BarChart3, Shield, Activity, UserX, Crown, Search, Calendar, Mail, 
@@ -1001,6 +1002,10 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
             <TabsTrigger value="settings" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <Settings className="h-4 w-4" />
               Instellingen
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
+              <ShieldCheck className="h-4 w-4" />
+              Rollen
             </TabsTrigger>
           </TabsList>
           </div>
