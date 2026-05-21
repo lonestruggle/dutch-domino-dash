@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface Stone {
   id: number;
@@ -11,7 +11,7 @@ interface Stone {
   targetAngle: number;
   v1: number;
   v2: number;
-  orientation: 'h' | 'v';
+  orientation: "h" | "v";
 }
 
 const W = 56;
@@ -21,17 +21,42 @@ const DEPTH = 5;
 const PIP_MAP: Record<number, [number, number][]> = {
   0: [],
   1: [[0, 0]],
-  2: [[-1, -1], [1, 1]],
-  3: [[-1, -1], [0, 0], [1, 1]],
-  4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
-  5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],
-  6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]],
+  2: [
+    [-1, -1],
+    [1, 1],
+  ],
+  3: [
+    [-1, -1],
+    [0, 0],
+    [1, 1],
+  ],
+  4: [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ],
+  5: [
+    [-1, -1],
+    [1, -1],
+    [0, 0],
+    [-1, 1],
+    [1, 1],
+  ],
+  6: [
+    [-1, -1],
+    [1, -1],
+    [-1, 0],
+    [1, 0],
+    [-1, 1],
+    [1, 1],
+  ],
 };
 
 function drawPips(ctx: CanvasRenderingContext2D, value: number, cx: number, cy: number, size: number) {
   const r = size * 0.09;
   const step = size * 0.28;
-  ctx.fillStyle = '#1a1a1a';
+  ctx.fillStyle = "#1a1a1a";
   for (const [px, py] of PIP_MAP[value] || []) {
     ctx.beginPath();
     ctx.arc(cx + px * step, cy + py * step, r, 0, Math.PI * 2);
@@ -50,7 +75,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 }
 
 function drawStone(ctx: CanvasRenderingContext2D, stone: Stone, envelope: number) {
-  const isH = stone.orientation === 'h';
+  const isH = stone.orientation === "h";
   const w = isH ? W * 2 : W;
   const h = isH ? H : H * 2;
 
@@ -60,7 +85,7 @@ function drawStone(ctx: CanvasRenderingContext2D, stone: Stone, envelope: number
   ctx.save();
   ctx.translate(shadowOffset, shadowOffset);
   ctx.fillStyle = `rgba(0,0,0,${0.45 - envelope * 0.2})`;
-  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
   ctx.shadowBlur = 10 + envelope * 30;
   roundRect(ctx, -w / 2, -h / 2, w, h, 6);
   ctx.fill();
@@ -70,8 +95,8 @@ function drawStone(ctx: CanvasRenderingContext2D, stone: Stone, envelope: number
   ctx.translate(jumpOffset, jumpOffset);
 
   const gradR = ctx.createLinearGradient(w / 2, 0, w / 2 + DEPTH, 0);
-  gradR.addColorStop(0, '#d8c9a8');
-  gradR.addColorStop(1, '#6b5a3f');
+  gradR.addColorStop(0, "#d8c9a8");
+  gradR.addColorStop(1, "#6b5a3f");
   ctx.fillStyle = gradR;
   ctx.beginPath();
   ctx.moveTo(w / 2, -h / 2);
@@ -82,8 +107,8 @@ function drawStone(ctx: CanvasRenderingContext2D, stone: Stone, envelope: number
   ctx.fill();
 
   const gradB = ctx.createLinearGradient(0, h / 2, 0, h / 2 + DEPTH);
-  gradB.addColorStop(0, '#c9b88f');
-  gradB.addColorStop(1, '#5a4a30');
+  gradB.addColorStop(0, "#c9b88f");
+  gradB.addColorStop(1, "#5a4a30");
   ctx.fillStyle = gradB;
   ctx.beginPath();
   ctx.moveTo(-w / 2, h / 2);
@@ -94,13 +119,13 @@ function drawStone(ctx: CanvasRenderingContext2D, stone: Stone, envelope: number
   ctx.fill();
 
   const grad = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
-  grad.addColorStop(0, '#fdf6e3');
-  grad.addColorStop(1, '#e8dcb8');
+  grad.addColorStop(0, "#fdf6e3");
+  grad.addColorStop(1, "#e8dcb8");
   ctx.fillStyle = grad;
   roundRect(ctx, -w / 2, -h / 2, w, h, 6);
   ctx.fill();
 
-  ctx.strokeStyle = '#5a4a30';
+  ctx.strokeStyle = "#5a4a30";
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
@@ -124,7 +149,7 @@ function drawStone(ctx: CanvasRenderingContext2D, stone: Stone, envelope: number
 
 // 3 botsing-cirkels langs de lengte-as van een steen
 function getCollisionCircles(stone: Stone) {
-  const isH = stone.orientation === 'h';
+  const isH = stone.orientation === "h";
   const longHalf = isH ? W : H; // halve lange zijde
   const cos = Math.cos(stone.angle);
   const sin = Math.sin(stone.angle);
@@ -138,7 +163,7 @@ function getCollisionCircles(stone: Stone) {
     };
   });
 }
-const COLLISION_RADIUS = 32;
+const COLLISION_RADIUS = 36;
 const SAFE_DIST = COLLISION_RADIUS * 2;
 
 const CanvasDemo: React.FC = () => {
@@ -148,20 +173,20 @@ const CanvasDemo: React.FC = () => {
   const [intensity, setIntensity] = useState(1);
 
   const stonesRef = useRef<Stone[]>([
-    { id: 1, x: 200, y: 250, angle: 0, targetX: 200, targetY: 250, targetAngle: 0, v1: 6, v2: 6, orientation: 'h' },
-    { id: 2, x: 330, y: 250, angle: 0, targetX: 330, targetY: 250, targetAngle: 0, v1: 6, v2: 3, orientation: 'h' },
-    { id: 3, x: 460, y: 250, angle: 0, targetX: 460, targetY: 250, targetAngle: 0, v1: 3, v2: 5, orientation: 'h' },
-    { id: 4, x: 560, y: 190, angle: 0, targetX: 560, targetY: 190, targetAngle: 0, v1: 5, v2: 2, orientation: 'v' },
-    { id: 5, x: 560, y: 320, angle: 0, targetX: 560, targetY: 320, targetAngle: 0, v1: 2, v2: 4, orientation: 'v' },
-    { id: 6, x: 460, y: 380, angle: 0, targetX: 460, targetY: 380, targetAngle: 0, v1: 4, v2: 1, orientation: 'h' },
-    { id: 7, x: 330, y: 380, angle: 0, targetX: 330, targetY: 380, targetAngle: 0, v1: 1, v2: 0, orientation: 'h' },
-    { id: 8, x: 200, y: 380, angle: 0, targetX: 200, targetY: 380, targetAngle: 0, v1: 0, v2: 6, orientation: 'h' },
+    { id: 1, x: 200, y: 250, angle: 0, targetX: 200, targetY: 250, targetAngle: 0, v1: 6, v2: 6, orientation: "h" },
+    { id: 2, x: 330, y: 250, angle: 0, targetX: 330, targetY: 250, targetAngle: 0, v1: 6, v2: 3, orientation: "h" },
+    { id: 3, x: 460, y: 250, angle: 0, targetX: 460, targetY: 250, targetAngle: 0, v1: 3, v2: 5, orientation: "h" },
+    { id: 4, x: 560, y: 190, angle: 0, targetX: 560, targetY: 190, targetAngle: 0, v1: 5, v2: 2, orientation: "v" },
+    { id: 5, x: 560, y: 320, angle: 0, targetX: 560, targetY: 320, targetAngle: 0, v1: 2, v2: 4, orientation: "v" },
+    { id: 6, x: 460, y: 380, angle: 0, targetX: 460, targetY: 380, targetAngle: 0, v1: 4, v2: 1, orientation: "h" },
+    { id: 7, x: 330, y: 380, angle: 0, targetX: 330, targetY: 380, targetAngle: 0, v1: 1, v2: 0, orientation: "h" },
+    { id: 8, x: 200, y: 380, angle: 0, targetX: 200, targetY: 380, targetAngle: 0, v1: 0, v2: 6, orientation: "h" },
   ]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     let raf = 0;
@@ -178,13 +203,20 @@ const CanvasDemo: React.FC = () => {
         }
       }
 
-      const grad = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 50, canvas.width / 2, canvas.height / 2, canvas.width / 1.2);
-      grad.addColorStop(0, '#1f7a4e');
-      grad.addColorStop(1, '#0a3a23');
+      const grad = ctx.createRadialGradient(
+        canvas.width / 2,
+        canvas.height / 2,
+        50,
+        canvas.width / 2,
+        canvas.height / 2,
+        canvas.width / 1.2,
+      );
+      grad.addColorStop(0, "#1f7a4e");
+      grad.addColorStop(1, "#0a3a23");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.strokeStyle = '#3d2b15';
+      ctx.strokeStyle = "#3d2b15";
       ctx.lineWidth = 16;
       ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
 
@@ -214,10 +246,14 @@ const CanvasDemo: React.FC = () => {
                   const overlap = SAFE_DIST - dist;
                   const pushX = (dx / dist) * overlap * 0.6;
                   const pushY = (dy / dist) * overlap * 0.6;
-                  t1.x -= pushX; t1.targetX -= pushX;
-                  t1.y -= pushY; t1.targetY -= pushY;
-                  t2.x += pushX; t2.targetX += pushX;
-                  t2.y += pushY; t2.targetY += pushY;
+                  t1.x -= pushX;
+                  t1.targetX -= pushX;
+                  t1.y -= pushY;
+                  t1.targetY -= pushY;
+                  t2.x += pushX;
+                  t2.targetX += pushX;
+                  t2.y += pushY;
+                  t2.targetY += pushY;
                 }
               }
             }
@@ -251,7 +287,7 @@ const CanvasDemo: React.FC = () => {
     isSlamActiveRef.current = true;
     slamTimeRef.current = 0;
     const scatterBase = 60;
-    stonesRef.current.forEach(stone => {
+    stonesRef.current.forEach((stone) => {
       stone.targetX = stone.x + (Math.random() - 0.5) * scatterBase * intensity;
       stone.targetY = stone.y + (Math.random() - 0.5) * scatterBase * intensity;
       stone.targetAngle = stone.angle + (Math.random() - 0.5) * 2 * intensity;
@@ -265,7 +301,9 @@ const CanvasDemo: React.FC = () => {
         Stenen springen omhoog, worden groter, trillen én worden permanent van hun plek geslagen.
       </p>
       <div className="flex gap-3 items-center">
-        <Button onClick={triggerSlam} size="lg">💥 HARD SLAM!</Button>
+        <Button onClick={triggerSlam} size="lg">
+          💥 HARD SLAM!
+        </Button>
         <label className="text-sm flex items-center gap-2">
           Intensiteit: {intensity.toFixed(1)}
           <input
@@ -279,12 +317,7 @@ const CanvasDemo: React.FC = () => {
           />
         </label>
       </div>
-      <canvas
-        ref={canvasRef}
-        width={800}
-        height={560}
-        className="rounded-lg shadow-2xl border border-border"
-      />
+      <canvas ref={canvasRef} width={800} height={560} className="rounded-lg shadow-2xl border border-border" />
     </div>
   );
 };
