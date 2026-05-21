@@ -12,6 +12,9 @@ interface Stone {
   v1: number;
   v2: number;
   orientation: "h" | "v";
+  dragging?: boolean;
+  offsetX?: number;
+  offsetY?: number;
 }
 
 const W = 56;
