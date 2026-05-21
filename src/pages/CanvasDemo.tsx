@@ -12,6 +12,9 @@ interface Stone {
   v1: number;
   v2: number;
   orientation: "h" | "v";
+  dragging?: boolean;
+  offsetX?: number;
+  offsetY?: number;
 }
 
 const W = 56;
@@ -224,6 +227,7 @@ const CanvasDemo: React.FC = () => {
 
       // Stap 2: glijden naar doel (Lerp)
       for (const s of stones) {
+        if (s.dragging) continue;
         s.x += (s.targetX - s.x) * 0.25;
         s.y += (s.targetY - s.y) * 0.25;
         s.angle += (s.targetAngle - s.angle) * 0.2;
@@ -235,6 +239,7 @@ const CanvasDemo: React.FC = () => {
           for (let j = i + 1; j < stones.length; j++) {
             const t1 = stones[i];
             const t2 = stones[j];
+            if (t1.dragging || t2.dragging) continue;
             const c1s = getCollisionCircles(t1);
             const c2s = getCollisionCircles(t2);
             for (const c1 of c1s) {
