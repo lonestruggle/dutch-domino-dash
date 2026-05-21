@@ -122,6 +122,25 @@ function drawStone(ctx: CanvasRenderingContext2D, stone: Stone, envelope: number
   ctx.restore();
 }
 
+// 3 botsing-cirkels langs de lengte-as van een steen
+function getCollisionCircles(stone: Stone) {
+  const isH = stone.orientation === 'h';
+  const longHalf = isH ? W : H; // halve lange zijde
+  const cos = Math.cos(stone.angle);
+  const sin = Math.sin(stone.angle);
+  const offsets = [-longHalf * 0.66, 0, longHalf * 0.66];
+  return offsets.map((o) => {
+    const dx = isH ? o : 0;
+    const dy = isH ? 0 : o;
+    return {
+      x: stone.x + dx * cos - dy * sin,
+      y: stone.y + dx * sin + dy * cos,
+    };
+  });
+}
+const COLLISION_RADIUS = 30;
+const SAFE_DIST = COLLISION_RADIUS * 2;
+
 const CanvasDemo: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const slamTimeRef = useRef(0);
@@ -152,7 +171,7 @@ const CanvasDemo: React.FC = () => {
         slamTimeRef.current += 0.055;
         const attack = Math.min(1, slamTimeRef.current * 4.5);
         const decay = Math.exp(-slamTimeRef.current * 3.8);
-        env = attack * decay * intensity;
+        env = attack * decay;
         if (env < 0.005) {
           isSlamActiveRef.current = false;
           env = 0;
@@ -169,20 +188,56 @@ const CanvasDemo: React.FC = () => {
       ctx.lineWidth = 16;
       ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
 
-      for (const stone of stonesRef.current) {
-        stone.x += (stone.targetX - stone.x) * 0.15;
-        stone.y += (stone.targetY - stone.y) * 0.15;
-        stone.angle += (stone.targetAngle - stone.angle) * 0.15;
+      const stones = stonesRef.current;
+
+      // Stap 2: glijden naar doel (Lerp)
+      for (const s of stones) {
+        s.x += (s.targetX - s.x) * 0.25;
+        s.y += (s.targetY - s.y) * 0.25;
+        s.angle += (s.targetAngle - s.angle) * 0.2;
+      }
+
+      // Stap 3: botsings-solver, 6 iteraties
+      for (let iter = 0; iter < 6; iter++) {
+        for (let i = 0; i < stones.length; i++) {
+          for (let j = i + 1; j < stones.length; j++) {
+            const t1 = stones[i];
+            const t2 = stones[j];
+            const c1s = getCollisionCircles(t1);
+            const c2s = getCollisionCircles(t2);
+            for (const c1 of c1s) {
+              for (const c2 of c2s) {
+                const dx = c2.x - c1.x;
+                const dy = c2.y - c1.y;
+                const dist = Math.hypot(dx, dy) || 0.01;
+                if (dist < SAFE_DIST) {
+                  const overlap = SAFE_DIST - dist;
+                  const pushX = (dx / dist) * overlap * 0.6;
+                  const pushY = (dy / dist) * overlap * 0.6;
+                  t1.x -= pushX; t1.targetX -= pushX;
+                  t1.y -= pushY; t1.targetY -= pushY;
+                  t2.x += pushX; t2.targetX += pushX;
+                  t2.y += pushY; t2.targetY += pushY;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Stap 4: tekenen met jitter bovenop ware positie
+      for (const stone of stones) {
+        const shakeX = (Math.random() - 0.5) * 15 * env * intensity;
+        const shakeY = (Math.random() - 0.5) * 15 * env * intensity;
+        const shakeA = (Math.random() - 0.5) * 0.1 * env * intensity;
+        const lift = env * intensity;
 
         ctx.save();
-        const trilX = (Math.random() - 0.5) * 45 * env;
-        const trilY = (Math.random() - 0.5) * 45 * env;
-        const trilR = (Math.random() - 0.5) * 0.25 * env;
-        ctx.translate(stone.x + trilX, stone.y + trilY);
-        ctx.rotate(stone.angle + trilR);
-        const popScale = 1 + env * 0.15;
+        ctx.translate(stone.x + shakeX, stone.y + shakeY);
+        ctx.rotate(stone.angle + shakeA);
+        const popScale = 1 + lift * 0.15;
         ctx.scale(popScale, popScale);
-        drawStone(ctx, stone, env);
+        drawStone(ctx, stone, env * intensity);
         ctx.restore();
       }
 
@@ -195,10 +250,11 @@ const CanvasDemo: React.FC = () => {
   const triggerSlam = () => {
     isSlamActiveRef.current = true;
     slamTimeRef.current = 0;
+    const scatterBase = 60;
     stonesRef.current.forEach(stone => {
-      stone.targetX += (Math.random() - 0.5) * 35 * intensity;
-      stone.targetY += (Math.random() - 0.5) * 35 * intensity;
-      stone.targetAngle += (Math.random() - 0.5) * 0.3 * intensity;
+      stone.targetX = stone.x + (Math.random() - 0.5) * scatterBase * intensity;
+      stone.targetY = stone.y + (Math.random() - 0.5) * scatterBase * intensity;
+      stone.targetAngle = stone.angle + (Math.random() - 0.5) * 2 * intensity;
     });
   };
 
