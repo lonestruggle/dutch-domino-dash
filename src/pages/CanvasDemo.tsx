@@ -16,7 +16,7 @@ interface Stone {
 
 const W = 56;
 const H = 56;
-const DEPTH = 14;
+const DEPTH = 5;
 
 const PIP_MAP: Record<number, [number, number][]> = {
   0: [],
@@ -138,7 +138,7 @@ function getCollisionCircles(stone: Stone) {
     };
   });
 }
-const COLLISION_RADIUS = 30;
+const COLLISION_RADIUS = 32;
 const SAFE_DIST = COLLISION_RADIUS * 2;
 
 const CanvasDemo: React.FC = () => {
