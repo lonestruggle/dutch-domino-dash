@@ -166,7 +166,7 @@ function getCollisionCircles(stone: Stone) {
     };
   });
 }
-const COLLISION_RADIUS = 36;
+const COLLISION_RADIUS = 24;
 const SAFE_DIST = COLLISION_RADIUS * 2;
 
 const CanvasDemo: React.FC = () => {
@@ -174,6 +174,7 @@ const CanvasDemo: React.FC = () => {
   const slamTimeRef = useRef(0);
   const isSlamActiveRef = useRef(false);
   const [intensity, setIntensity] = useState(1);
+  const [showCollision, setShowCollision] = useState(true);
 
   const stonesRef = useRef<Stone[]>([
     { id: 1, x: 200, y: 250, angle: 0, targetX: 200, targetY: 250, targetAngle: 0, v1: 6, v2: 6, orientation: "h" },
@@ -349,6 +350,24 @@ const CanvasDemo: React.FC = () => {
         ctx.restore();
       }
 
+      // Debug overlay: laat botsings-cirkels zien
+      if (showCollision) {
+        ctx.save();
+        for (const stone of stones) {
+          const circles = getCollisionCircles(stone);
+          for (const c of circles) {
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, COLLISION_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255, 80, 80, 0.18)";
+            ctx.fill();
+            ctx.strokeStyle = "rgba(255, 80, 80, 0.55)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -358,7 +377,7 @@ const CanvasDemo: React.FC = () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [intensity]);
+  }, [intensity, showCollision]);
 
   const triggerSlam = () => {
     isSlamActiveRef.current = true;
@@ -392,6 +411,14 @@ const CanvasDemo: React.FC = () => {
             onChange={(e) => setIntensity(parseFloat(e.target.value))}
             className="w-32 accent-emerald-500"
           />
+        </label>
+        <label className="text-sm flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={showCollision}
+            onChange={(e) => setShowCollision(e.target.checked)}
+          />
+          Toon magneet-zones
         </label>
       </div>
       <canvas ref={canvasRef} width={800} height={560} className="rounded-lg shadow-2xl border border-border" />
