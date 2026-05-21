@@ -192,6 +192,75 @@ const CanvasDemo: React.FC = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const getMouse = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * canvas.width,
+        y: ((e.clientY - rect.top) / rect.height) * canvas.height,
+      };
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      const { x, y } = getMouse(e);
+      const tiles = stonesRef.current;
+      for (let i = tiles.length - 1; i >= 0; i--) {
+        const tile = tiles[i];
+        if (Math.hypot(tile.x - x, tile.y - y) < 50) {
+          const [selected] = tiles.splice(i, 1);
+          selected.dragging = true;
+          selected.offsetX = x - tile.x;
+          selected.offsetY = y - tile.y;
+          tiles.push(selected);
+          return;
+        }
+      }
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      const { x, y } = getMouse(e);
+      const dragging = stonesRef.current.find((t) => t.dragging);
+      if (dragging) {
+        dragging.x = x - (dragging.offsetX ?? 0);
+        dragging.y = y - (dragging.offsetY ?? 0);
+        dragging.targetX = dragging.x;
+        dragging.targetY = dragging.y;
+      }
+    };
+
+    const onMouseUp = () => {
+      const tiles = stonesRef.current;
+      const dragging = tiles.find((t) => t.dragging);
+      if (!dragging) return;
+
+      let snapped = false;
+      let snapX = dragging.x;
+      let snapY = dragging.y;
+      let snapAngle = dragging.angle;
+
+      for (const other of tiles) {
+        if (other.id === dragging.id) continue;
+        const d = Math.hypot(other.x - dragging.x, other.y - dragging.y);
+        if (d > 45 && d < 110) {
+          const a = Math.atan2(dragging.y - other.y, dragging.x - other.x);
+          const q = Math.round(a / (Math.PI / 2)) * (Math.PI / 2);
+          snapX = other.x + Math.cos(q) * 80;
+          snapY = other.y + Math.sin(q) * 80;
+          snapAngle = other.angle;
+          snapped = true;
+          break;
+        }
+      }
+
+      dragging.dragging = false;
+      dragging.targetX = snapped ? snapX : dragging.x;
+      dragging.targetY = snapped ? snapY : dragging.y;
+      dragging.targetAngle = snapped ? snapAngle : dragging.angle;
+    };
+
+    canvas.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+
     let raf = 0;
     const loop = () => {
       let env = 0;
@@ -283,7 +352,12 @@ const CanvasDemo: React.FC = () => {
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      canvas.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
   }, [intensity]);
 
   const triggerSlam = () => {
