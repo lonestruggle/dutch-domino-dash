@@ -289,20 +289,10 @@ function computeOpenEnds(stones: Stone[]): OpenEnd[] {
       ];
       for (const { d, nx, ny } of dirs) {
         if (board[`${nx},${ny}`]) continue;
-
-        if (s.isDoubleStone) {
-          if (s.orientation === "h" && (d === "W" || d === "E")) continue;
-          if (s.orientation === "v" && (d === "N" || d === "S")) continue;
-        } else if (s.orientation === "h") {
-          const isLeft = i === 0;
-          if (isLeft && d !== "W") continue;
-          if (!isLeft && d !== "E") continue;
-        } else {
-          const isTop = i === 0;
-          if (isTop && d !== "N") continue;
-          if (!isTop && d !== "S") continue;
-        }
-
+        // Klassieke logica: elke vrije buurcel van een bezette cel is een
+        // open einde. De oriëntatie van de nieuwe steen wordt verderop
+        // bepaald door de richting (E/W → horizontaal, N/S → verticaal),
+        // dus chains kunnen ook hoeken om.
         ends.push({ gx: nx, gy: ny, value, fromDir: d, anchorId: s.id });
       }
     });
