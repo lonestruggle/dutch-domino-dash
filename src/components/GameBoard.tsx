@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { useStonePhysics } from '@/hooks/useStonePhysics';
 import { supabase } from '@/integrations/supabase/client';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
@@ -106,6 +107,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [processedGloveImageSrc, setProcessedGloveImageSrc] = useState<string | null>(null);
   const [isDraggingPersistentGlove, setIsDraggingPersistentGlove] = useState(false);
   const [persistentGlovePreviewPos, setPersistentGlovePreviewPos] = useState<{ x: number; y: number } | null>(null);
+
+  // --- STAP 1: OBB / SAT physics-laag (debug) -------------------------------
+  // Anker start op 0.000: stenen blijven liggen waar collision ze duwt.
+  const [physicsEnabled, setPhysicsEnabled] = useState(true);
+  const [anchorStrength, setAnchorStrength] = useState(0);
+  const [showCollisionDebug, setShowCollisionDebug] = useState(false);
+  // ------------------------------------------------------------------------
+
   const persistentGlovePosRef = useRef<{ x: number; y: number }>({
     x: settings.glovePosX || 82,
     y: settings.glovePosY || 76,
@@ -204,6 +213,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   
   // Dynamic grid cell size based on settings - each domino = 2 grid cells
   const GRID_CELL_SIZE = settings.dominoWidth / 2;
+
+  // STAP 1: Physics-hook (OBB/SAT). Werkt puur visueel met translate3d
+  // op de wrapper-div; gameState (grid-coords) blijft onaangetast.
+  const stonePhysics = useStonePhysics(
+    gameState.dominoes as unknown as Record<
+      string,
+      { x: number; y: number; orientation: 'horizontal' | 'vertical'; rotation?: number }
+    >,
+    GRID_CELL_SIZE,
+    { anchorStrength, enabled: physicsEnabled },
+  );
 
 
   // Listen for live settings updates and reapply scaling
@@ -871,7 +891,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             
             // Connect to actual animation state from useGameVisualSettings
             const shouldAnimate = isAnimating && animationMode === 'shake';
-            
+            const phys = stonePhysics.getOffset(id);
+            const isH = domino.orientation === 'horizontal';
+            const w = isH ? GRID_CELL_SIZE * 2 : GRID_CELL_SIZE;
+            const h = isH ? GRID_CELL_SIZE : GRID_CELL_SIZE * 2;
+
             return (
               <div
                 key={id}
@@ -879,6 +903,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 style={{
                   left: boardSize / 2 + domino.x * GRID_CELL_SIZE,
                   top: boardSize / 2 + domino.y * GRID_CELL_SIZE,
+                  transform: `translate3d(${phys.dx}px, ${phys.dy}px, 0)`,
+                  willChange: physicsEnabled ? 'transform' : undefined,
                 }}
               >
                 <DominoTile
@@ -897,6 +923,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     '--individual-angle': `${individualAngle}deg`,
                   } as React.CSSProperties}
                 />
+                {showCollisionDebug && (
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: 0,
+                      top: 0,
+                      width: w,
+                      height: h,
+                      transform: `rotate(${domino.rotation || 0}deg)`,
+                      transformOrigin: 'center',
+                      background: 'rgba(255, 80, 80, 0.18)',
+                      border: '1px solid rgba(255, 80, 80, 0.7)',
+                      borderRadius: 4,
+                    }}
+                  />
+                )}
               </div>
             );
           })}
@@ -971,6 +1013,64 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               />
             );
           })}
+        </div>
+      </div>
+
+      {/* STAP 1 — Physics debug-panel (OBB/SAT). Tijdelijk, voor testen. */}
+      <div
+        className="absolute top-2 right-2 z-[200] flex flex-col gap-1 rounded-md border border-white/20 bg-black/70 p-2 text-[11px] text-white shadow-lg backdrop-blur"
+        style={{ minWidth: 200 }}
+      >
+        <div className="font-semibold tracking-wide">Physics (OBB/SAT)</div>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={physicsEnabled}
+            onChange={(e) => setPhysicsEnabled(e.target.checked)}
+          />
+          Actief
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={showCollisionDebug}
+            onChange={(e) => setShowCollisionDebug(e.target.checked)}
+          />
+          Collision-boxes
+        </label>
+        <label className="flex flex-col gap-0.5">
+          <span>Anker: {anchorStrength.toFixed(3)}</span>
+          <input
+            type="range"
+            min={0}
+            max={0.25}
+            step={0.005}
+            value={anchorStrength}
+            onChange={(e) => setAnchorStrength(parseFloat(e.target.value))}
+          />
+        </label>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            className="flex-1 rounded bg-white/10 px-2 py-1 hover:bg-white/20"
+            onClick={() => {
+              // Geef elke steen een willekeurige duw → goede test voor SAT
+              for (const id of Object.keys(gameState.dominoes)) {
+                const dx = (Math.random() - 0.5) * 60;
+                const dy = (Math.random() - 0.5) * 60;
+                stonePhysics.nudge(id, dx, dy);
+              }
+            }}
+          >
+            Nudge
+          </button>
+          <button
+            type="button"
+            className="flex-1 rounded bg-white/10 px-2 py-1 hover:bg-white/20"
+            onClick={() => stonePhysics.resetAll()}
+          >
+            Reset
+          </button>
         </div>
       </div>
     </div>

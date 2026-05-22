@@ -1,56 +1,45 @@
-# Rollen, rechten & skin-deactivatie
+## Doel
+Stap 1 van de migratie: **OBB/SAT collision-physics** toevoegen aan de klassieke mode, met **Anker = 0.000** (stenen veren niet terug naar hun grid-positie zodra ze door een botsing zijn verplaatst).
 
-## Probleem
-1. Als admin lukt het niet om skins te (de)activeren of toewijzingen aan te passen.
-   - **Oorzaak skin (de)activeren**: nog te bevestigen, maar waarschijnlijk RLS WITH CHECK of een Realtime/replica probleem. Ik los het op door een SECURITY DEFINER RPC `admin_set_glove_skin_active(skin_id, active)` te gebruiken die de permissie zelf controleert.
-   - **Oorzaak toewijzing aan/uit**: bij uitschakelen van actieve skin probeert de code `profiles.selected_glove_skin_id` van een **andere** user te resetten. De `profiles` UPDATE policy laat alleen eigen profiel toe → fout. Fix via dezelfde SECURITY DEFINER RPC.
+## Back-up
+Klaar — gekopieerd naar `.backups/pre-physics-migration/`:
+- `DominoGame.tsx`, `GameBoard.tsx`, `DominoTile.tsx`, `PlacementTarget.tsx`, `PlayerHand.tsx`
+- `useDominoGame.ts`
+- `CanvasDemo.tsx`, `Game.tsx`
 
-2. Er is nog geen centrale, door admin instelbare lijst van wat elke rol mag.
+## Aanpak
 
-## Oplossing
+De klassieke mode is **DOM-based** (elke `DominoTile` is een `<div>` op `left/top` op basis van grid). We voegen een dunne physics-laag toe die per steen een **visuele offset** (dx, dy in px) bijhoudt en die via `transform: translate()` op de DOM-elementen wordt toegepast. De grid-coördinaten van de gameState blijven onaangetast — dit is puur visueel.
 
-### 1. Nieuwe tabel `role_permissions`
-Kolommen: `role app_role`, `permission_key text`, `allowed boolean`. Uniek op (role, permission_key).
+### Nieuw bestand: `src/hooks/useStonePhysics.ts`
+- Houdt per `dominoId` een `{x, y, targetX, targetY, angle}` bij (in board-px-coords).
+- `targetX/Y` = de grid-positie (waarheen het zou willen).
+- RAF-loop:
+  1. Anchor pull: `x += (targetX - x) * anchorStrength` (start = 0 → geen pull).
+  2. Bouw OBB per steen (rotatie + W/H + DEPTH, zelfde logica als demo).
+  3. 6 iteraties van paarsgewijze SAT-resolve; bij overlap push beide stenen langs de MTV uiteen.
+  4. Schrijf resultaat naar een `Map<id, {dx, dy}>` ref en force-re-render via state-tick (1× per frame).
+- Exporteert `{ getOffset(id), anchorStrength, setAnchorStrength }`.
 
-Permissies (initieel):
-- `manage_glove_skins` (upload, (de)activeer, uitlijning)
-- `assign_glove_skins` (skin toewijzen aan speler)
-- `manage_table_backgrounds`
-- `manage_app_settings`
-- `manage_users` (rollen wijzigen, deactiveren)
-- `view_debug_console`
-- `view_boneyard_all`
-- `moderate_chat`
-- `manage_lobbies`
+### Aanpassing `GameBoard.tsx`
+- Hook `useStonePhysics(gameState.dominoes, GRID_CELL_SIZE)` aanroepen.
+- Per gerenderde `DominoTile` de offset uit de hook toepassen via een extra prop (bv. `physicsOffset={{dx, dy}}`).
+- Debug-toggle "Toon collision-boxes" + slider "Anker" (0–0.25, default **0.000**) toevoegen aan de bestaande debug-controls, zodat je het stap voor stap kan testen zoals in de demo.
 
-Standaard:
-- **admin**: alles
-- **dev**: alles behalve `manage_users`
-- **moderator**: `moderate_chat`, `manage_lobbies`, `view_boneyard_all`
-- **user**: niets
+### Aanpassing `DominoTile.tsx`
+- Extra prop `physicsOffset?: {dx: number, dy: number}`.
+- Toepassen in de `transform`: bestaande `rotate(...)` blijft, we voegen `translate(dx, dy)` eraan toe.
 
-### 2. Helper functies (SECURITY DEFINER)
-- `has_permission(_user uuid, _key text)` → bool
-- `get_user_top_role(_user uuid)` → app_role (admin > dev > moderator > user) – voor "mod mag geen admin/dev aanpassen"-check.
+### Wat we NU **niet** doen (volgt in latere stappen volgens je lijst)
+- Anchor-based `placementPosition` (komt in een latere stap).
+- 3D-DEPTH meenemen in OBB (kan in stap 1 mee, maar de klassieke tiles hebben geen visuele DEPTH-rand → we gebruiken pure W×H rechthoek).
+- Soft-anchor UI buiten de debug-slider.
+- Drag & drop / hand-selectie / click-to-place / magneet-zone toggle.
 
-### 3. RPC's
-- `admin_set_glove_skin_active(skin_id uuid, active boolean)`
-- `admin_set_user_glove_assignment(assignment_id uuid, enabled boolean)` – reset ook `profiles.selected_glove_skin_id` indien nodig.
-- `admin_set_user_role(target_user uuid, new_role app_role, enabled boolean)` – moderator mag target met admin/dev rol niet wijzigen.
+## Resultaat na stap 1
+- Stenen botsen niet meer door elkaar als ze (later) verschoven worden.
+- Bij Anker = 0.000 blijven ze waar de physics ze laat liggen; bij hogere waarde trekken ze zacht terug naar grid.
+- Visuele test: hard slam (als die in klassiek bestaat) of artificiële offset → stenen duwen elkaar netjes uit elkaar i.p.v. te overlappen.
 
-### 4. UI: nieuwe sectie "Rollen & rechten" in `/admin`
-Alleen zichtbaar voor admins. Matrix (rijen = rol, kolommen = permissie) met checkboxes. Wijzigingen direct opgeslagen via upsert in `role_permissions`.
-
-### 5. Frontend
-- `useRolePermissions()` hook die `role_permissions` cached.
-- `GloveSkinManager` schakelt over op de nieuwe RPC's.
-- Knoppen verbergen/disablen op basis van `has_permission` resultaat (via een `usePermission(key)` hook die de huidige user's permissies leest).
-
-## Bestanden
-- nieuwe migratie (tabel, seed, functies, policies)
-- nieuwe component `src/components/RolePermissionsMatrix.tsx`
-- nieuwe hook `src/hooks/useRolePermissions.ts`
-- aanpassing `src/components/GloveSkinManager.tsx` (RPC's gebruiken)
-- aanpassing `src/pages/AdminDashboard.tsx` (nieuwe sectie tonen)
-
-Akkoord? Dan begin ik met de migratie.
+## Vraag
+Akkoord met deze aanpak? Daarna implementeer ik enkel stap 1 en kunnen we testen voordat we naar de volgende uit je lijst gaan.
