@@ -79,9 +79,12 @@ function placementPosition(
     W: { x: -1, y: 0 },
   };
   const d = dirVec[t.end.fromDir];
-  const gap =
+  let gap =
     halfAlongDir(anchor.orientation, t.end.fromDir) +
     halfAlongDir(t.orientation, t.end.fromDir);
+  // Compenseer de 3D-diepte: de steen heeft een rand aan rechts (E) en
+  // onder (S), dus laat daar precies DEPTH px extra ruimte.
+  if (t.end.fromDir === "E" || t.end.fromDir === "S") gap += DEPTH;
   return { x: anchor.x + d.x * gap, y: anchor.y + d.y * gap };
 }
 
