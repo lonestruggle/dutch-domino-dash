@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GameBoard } from '@/components/GameBoard';
-import { PlayerHand } from '@/components/PlayerHand';
+import { GameBoard } from './GameBoard';
+import { PlayerHand } from './PlayerHand';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
-import { DominoTile } from '@/components/DominoTile';
+import { DominoTile } from './DominoTile';
 import { BoneyardTile } from '@/components/BoneyardTile';
 import { BoneyardScatter } from '@/components/BoneyardScatter';
 import { useIsMobile } from '@/hooks/use-mobile';
