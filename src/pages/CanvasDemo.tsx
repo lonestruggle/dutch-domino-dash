@@ -597,6 +597,22 @@ const CanvasDemo: React.FC = () => {
   const triggerSlam = () => {
     isSlamActiveRef.current = true;
     slamTimeRef.current = 0;
+    // Scatter every stone away from its grid home, then it LERPs back
+    const scatterBase = 70;
+    for (const s of stonesRef.current) {
+      const dx = (Math.random() - 0.5) * 2 * scatterBase * intensity;
+      const dy = (Math.random() - 0.5) * 2 * scatterBase * intensity;
+      s.targetX = s.x + dx;
+      s.targetY = s.y + dy;
+    }
+    // After short delay, snap targets back to grid home so they fly back
+    window.setTimeout(() => {
+      for (const s of stonesRef.current) {
+        const home = gridToPx(s.gx, s.gy, s.orientation);
+        s.targetX = home.x;
+        s.targetY = home.y;
+      }
+    }, 220);
   };
 
   const resetDemo = () => {
