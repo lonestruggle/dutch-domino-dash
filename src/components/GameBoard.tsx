@@ -1015,6 +1015,64 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           })}
         </div>
       </div>
+
+      {/* STAP 1 — Physics debug-panel (OBB/SAT). Tijdelijk, voor testen. */}
+      <div
+        className="absolute top-2 right-2 z-[200] flex flex-col gap-1 rounded-md border border-white/20 bg-black/70 p-2 text-[11px] text-white shadow-lg backdrop-blur"
+        style={{ minWidth: 200 }}
+      >
+        <div className="font-semibold tracking-wide">Physics (OBB/SAT)</div>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={physicsEnabled}
+            onChange={(e) => setPhysicsEnabled(e.target.checked)}
+          />
+          Actief
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={showCollisionDebug}
+            onChange={(e) => setShowCollisionDebug(e.target.checked)}
+          />
+          Collision-boxes
+        </label>
+        <label className="flex flex-col gap-0.5">
+          <span>Anker: {anchorStrength.toFixed(3)}</span>
+          <input
+            type="range"
+            min={0}
+            max={0.25}
+            step={0.005}
+            value={anchorStrength}
+            onChange={(e) => setAnchorStrength(parseFloat(e.target.value))}
+          />
+        </label>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            className="flex-1 rounded bg-white/10 px-2 py-1 hover:bg-white/20"
+            onClick={() => {
+              // Geef elke steen een willekeurige duw → goede test voor SAT
+              for (const id of Object.keys(gameState.dominoes)) {
+                const dx = (Math.random() - 0.5) * 60;
+                const dy = (Math.random() - 0.5) * 60;
+                stonePhysics.nudge(id, dx, dy);
+              }
+            }}
+          >
+            Nudge
+          </button>
+          <button
+            type="button"
+            className="flex-1 rounded bg-white/10 px-2 py-1 hover:bg-white/20"
+            onClick={() => stonePhysics.resetAll()}
+          >
+            Reset
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
