@@ -626,11 +626,14 @@ const CanvasDemo: React.FC = () => {
         ctx.save();
         for (const stone of stones) {
           const isH = stone.orientation === "h";
-          const w = isH ? W * 2 : W;
-          const h = isH ? H : H * 2;
+          // Inclusief 3D-rand, zelfde rechthoek als de SAT-collision
+          const w = (isH ? W * 2 : W) + DEPTH;
+          const h = (isH ? H : H * 2) + DEPTH;
           ctx.save();
           ctx.translate(stone.x, stone.y);
           ctx.rotate(stone.angle);
+          // Visueel center is DEPTH/2 naar rechts-onder verschoven
+          ctx.translate(DEPTH / 2, DEPTH / 2);
           ctx.fillStyle = "rgba(255, 80, 80, 0.18)";
           ctx.strokeStyle = "rgba(255, 80, 80, 0.55)";
           ctx.lineWidth = 1;
