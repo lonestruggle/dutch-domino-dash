@@ -160,23 +160,67 @@ function drawStone(ctx: CanvasRenderingContext2D, stone: Stone, envelope: number
   ctx.restore();
 }
 
-function getCollisionCircles(stone: Stone) {
-  const isH = stone.orientation === "h";
-  const longHalf = isH ? W : H;
-  const cos = Math.cos(stone.angle);
-  const sin = Math.sin(stone.angle);
-  const offsets = [-longHalf * 0.66, 0, longHalf * 0.66];
-  return offsets.map((o) => {
-    const dx = isH ? o : 0;
-    const dy = isH ? 0 : o;
-    return {
-      x: stone.x + dx * cos - dy * sin,
-      y: stone.y + dx * sin + dy * cos,
-    };
-  });
+// === OBB / SAT collision ===
+// Elke steen is een geroteerde rechthoek. We gebruiken Separating Axis Theorem
+// om exact te bepalen of (en met hoeveel) twee stenen overlappen, en duwen ze
+// dan langs de kortste as uit elkaar. Resultaat: stenen sluiten netjes aan,
+// zowel op lange als op korte zijden, ook bij rotatie.
+interface OBB {
+  cx: number;
+  cy: number;
+  hw: number;
+  hh: number;
+  cos: number;
+  sin: number;
 }
-const COLLISION_RADIUS = H / 2; // even dik als de korte zijde van een steen
-const SAFE_DIST = COLLISION_RADIUS * 2;
+const COLLISION_PADDING = 1; // mini-haarlijn tussen stenen, voelt natuurlijker
+
+function getOBB(s: Stone): OBB {
+  const isH = s.orientation === "h";
+  const w = (isH ? W * 2 : W) + COLLISION_PADDING * 2;
+  const h = (isH ? H : H * 2) + COLLISION_PADDING * 2;
+  return {
+    cx: s.x,
+    cy: s.y,
+    hw: w / 2,
+    hh: h / 2,
+    cos: Math.cos(s.angle),
+    sin: Math.sin(s.angle),
+  };
+}
+
+function satResolve(a: OBB, b: OBB): { x: number; y: number } | null {
+  // 4 te testen assen: de twee lokale assen van a en de twee van b
+  const axes = [
+    { x: a.cos, y: a.sin },
+    { x: -a.sin, y: a.cos },
+    { x: b.cos, y: b.sin },
+    { x: -b.sin, y: b.cos },
+  ];
+  const dx = b.cx - a.cx;
+  const dy = b.cy - a.cy;
+  let minOverlap = Infinity;
+  let mtvX = 0;
+  let mtvY = 0;
+  for (const ax of axes) {
+    const rA =
+      a.hw * Math.abs(ax.x * a.cos + ax.y * a.sin) +
+      a.hh * Math.abs(-ax.x * a.sin + ax.y * a.cos);
+    const rB =
+      b.hw * Math.abs(ax.x * b.cos + ax.y * b.sin) +
+      b.hh * Math.abs(-ax.x * b.sin + ax.y * b.cos);
+    const projDist = dx * ax.x + dy * ax.y;
+    const overlap = rA + rB - Math.abs(projDist);
+    if (overlap <= 0) return null; // separating axis → geen botsing
+    if (overlap < minOverlap) {
+      minOverlap = overlap;
+      const sign = projDist < 0 ? -1 : 1;
+      mtvX = ax.x * sign;
+      mtvY = ax.y * sign;
+    }
+  }
+  return { x: mtvX * minOverlap, y: mtvY * minOverlap };
+}
 
 function buildBoardMap(stones: Stone[]) {
   const board: Record<string, { id: number; value: number }> = {};
