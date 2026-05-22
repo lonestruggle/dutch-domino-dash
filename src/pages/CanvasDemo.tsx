@@ -289,20 +289,10 @@ function computeOpenEnds(stones: Stone[]): OpenEnd[] {
       ];
       for (const { d, nx, ny } of dirs) {
         if (board[`${nx},${ny}`]) continue;
-
-        if (s.isDoubleStone) {
-          if (s.orientation === "h" && (d === "W" || d === "E")) continue;
-          if (s.orientation === "v" && (d === "N" || d === "S")) continue;
-        } else if (s.orientation === "h") {
-          const isLeft = i === 0;
-          if (isLeft && d !== "W") continue;
-          if (!isLeft && d !== "E") continue;
-        } else {
-          const isTop = i === 0;
-          if (isTop && d !== "N") continue;
-          if (!isTop && d !== "S") continue;
-        }
-
+        // Klassieke logica: elke vrije buurcel van een bezette cel is een
+        // open einde. De oriëntatie van de nieuwe steen wordt verderop
+        // bepaald door de richting (E/W → horizontaal, N/S → verticaal),
+        // dus chains kunnen ook hoeken om.
         ends.push({ gx: nx, gy: ny, value, fromDir: d, anchorId: s.id });
       }
     });
@@ -327,44 +317,28 @@ function findPlacements(
       let gy: number;
       let matchPip: number;
 
-      if (dbl) {
-        // Double placed perpendicular to chain direction
-        if (end.fromDir === "E" || end.fromDir === "W") {
-          orientation = "v";
-          gx = end.gx;
-          gy = end.fromDir === "E" ? end.gy : end.gy; // double occupies one column, span 2 rows
-          // Center it: top cell at (gx, end.gy) and bottom at (gx, end.gy+1).
-          // But end.gy is the connecting row, so we want it spanning end.gy-? :
-          // simplest: put top cell at end.gy so connection is at top cell
-          gy = end.gy;
-        } else {
-          orientation = "h";
-          gx = end.gx;
-          gy = end.gy;
-        }
-        matchPip = data.v1;
+      // Klassieke logica: oriëntatie en cel-positie volgen puur uit fromDir.
+      // Dubbele stenen worden inline geplaatst (zoals in de klassieke code).
+      if (end.fromDir === "E") {
+        orientation = "h";
+        gx = end.gx;
+        gy = end.gy;
+        matchPip = flipped ? data.v2 : data.v1;
+      } else if (end.fromDir === "W") {
+        orientation = "h";
+        gx = end.gx - 1;
+        gy = end.gy;
+        matchPip = flipped ? data.v1 : data.v2;
+      } else if (end.fromDir === "S") {
+        orientation = "v";
+        gx = end.gx;
+        gy = end.gy;
+        matchPip = flipped ? data.v2 : data.v1;
       } else {
-        if (end.fromDir === "E") {
-          orientation = "h";
-          gx = end.gx;
-          gy = end.gy;
-          matchPip = flipped ? data.v2 : data.v1;
-        } else if (end.fromDir === "W") {
-          orientation = "h";
-          gx = end.gx - 1;
-          gy = end.gy;
-          matchPip = flipped ? data.v1 : data.v2;
-        } else if (end.fromDir === "S") {
-          orientation = "v";
-          gx = end.gx;
-          gy = end.gy;
-          matchPip = flipped ? data.v2 : data.v1;
-        } else {
-          orientation = "v";
-          gx = end.gx;
-          gy = end.gy - 1;
-          matchPip = flipped ? data.v1 : data.v2;
-        }
+        orientation = "v";
+        gx = end.gx;
+        gy = end.gy - 1;
+        matchPip = flipped ? data.v1 : data.v2;
       }
 
       if (matchPip !== end.value) return;
@@ -462,7 +436,7 @@ const CanvasDemo: React.FC = () => {
       gx: t.gx,
       gy: t.gy,
       x,
-      y: y - 40,
+      y,
       angle: jitterA,
       targetX: x,
       targetY: y,
