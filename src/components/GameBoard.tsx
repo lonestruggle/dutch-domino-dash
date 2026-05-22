@@ -107,6 +107,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [processedGloveImageSrc, setProcessedGloveImageSrc] = useState<string | null>(null);
   const [isDraggingPersistentGlove, setIsDraggingPersistentGlove] = useState(false);
   const [persistentGlovePreviewPos, setPersistentGlovePreviewPos] = useState<{ x: number; y: number } | null>(null);
+
+  // --- STAP 1: OBB / SAT physics-laag (debug) -------------------------------
+  // Anker start op 0.000: stenen blijven liggen waar collision ze duwt.
+  const [physicsEnabled, setPhysicsEnabled] = useState(true);
+  const [anchorStrength, setAnchorStrength] = useState(0);
+  const [showCollisionDebug, setShowCollisionDebug] = useState(false);
+  // ------------------------------------------------------------------------
+
   const persistentGlovePosRef = useRef<{ x: number; y: number }>({
     x: settings.glovePosX || 82,
     y: settings.glovePosY || 76,
