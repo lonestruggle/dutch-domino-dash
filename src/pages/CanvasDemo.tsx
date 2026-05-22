@@ -476,8 +476,7 @@ const CanvasDemo: React.FC = () => {
     setHand((h) => h.filter((_, i) => i !== t.handIndex));
     setSelectedIdx(null);
     targetsRef.current = [];
-    isSlamActiveRef.current = true;
-    slamTimeRef.current = 0;
+    // Geen slam-shake bij gewone plaatsing — die zit alleen op de HARD SLAM knop.
   };
 
   useEffect(() => {
