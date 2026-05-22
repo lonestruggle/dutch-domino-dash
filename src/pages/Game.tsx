@@ -842,6 +842,10 @@ export default function Game() {
   const gameHook = useDominoGame(syncState.playerPosition);
   const { gameState, setGameState } = gameHook;
 
+  // Versie-switch (stable = backup, beta = huidige physics-experimenten).
+  // Default stable, alleen admin/dev kan wisselen via GameVersionToggle.
+  const { version: gameVersion } = useGameVersion();
+
   // Ref om Changa-detectie te markeren tussen pre- en post-move
   const changaRef = useRef(false);
 
@@ -2695,9 +2699,13 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-background">
+      <GameVersionToggle />
       {/* Wega di sen overrides */}
-      <DominoGame 
-        gameHook={{
+      {(() => {
+        const ActiveDominoGame = gameVersion === 'beta' ? DominoGame : DominoGameStable;
+        return (
+        <ActiveDominoGame
+          gameHook={{
           ...gameHook, 
           executeMove: wegaExecuteMove,
           // In Wega di sen gelden de klassieke plaatsingsregels 1-op-1.
@@ -2723,8 +2731,10 @@ export default function Game() {
           gameState: isWegaPlay
             ? { ...gameHook.gameState, selectedHandIndex: wegaSelectedIndex }
             : gameHook.gameState,
-        }}
-      />
+          }}
+        />
+        );
+      })()}
       <WegaPhaseOverlay
         lobbyId={gameId || ''}
         gameState={syncState.gameState}
