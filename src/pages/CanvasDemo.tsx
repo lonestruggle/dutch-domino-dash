@@ -55,16 +55,17 @@ const gridToPx = (gx: number, gy: number, orientation: "h" | "v") => {
   return { x: cx, y: cy };
 };
 
-// Halve afmeting van een steen langs een windrichting (in px), zonder rotatie.
-// Houdt rekening met de 3D-rand (DEPTH) aan rechts/onder.
+// Afstand van het logische center (s.x / s.y) tot de visuele rand in een
+// bepaalde richting. De 3D-rand (DEPTH) wordt rechts (E) en onder (S)
+// meegenomen; links/boven niet.
 function halfAlongDir(orientation: "h" | "v", dir: Dir) {
   const isH = orientation === "h";
-  // Basishelft van de visuele rechthoek inclusief depth, gemeten vanaf het
-  // verschoven OBB-center (DEPTH/2 naar rechts-onder).
-  if (dir === "E") return (isH ? W * 2 : W) / 2 + DEPTH / 2;
-  if (dir === "W") return (isH ? W * 2 : W) / 2 - DEPTH / 2;
-  if (dir === "S") return (isH ? H : H * 2) / 2 + DEPTH / 2;
-  return (isH ? H : H * 2) / 2 - DEPTH / 2;
+  const halfW = isH ? W : W / 2;
+  const halfH = isH ? H / 2 : H;
+  if (dir === "E") return halfW + DEPTH;
+  if (dir === "W") return halfW;
+  if (dir === "S") return halfH + DEPTH;
+  return halfH; // N
 }
 
 // Bereken de visuele landingspositie van een placement target op basis van
