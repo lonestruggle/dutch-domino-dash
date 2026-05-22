@@ -555,28 +555,18 @@ const CanvasDemo: React.FC = () => {
           for (let j = i + 1; j < stones.length; j++) {
             const t1 = stones[i];
             const t2 = stones[j];
-            const c1s = getCollisionCircles(t1);
-            const c2s = getCollisionCircles(t2);
-            for (const c1 of c1s) {
-              for (const c2 of c2s) {
-                const dx = c2.x - c1.x;
-                const dy = c2.y - c1.y;
-                const dist = Math.hypot(dx, dy) || 0.01;
-                if (dist < SAFE_DIST) {
-                  const overlap = SAFE_DIST - dist;
-                  const pushX = (dx / dist) * overlap * 0.6;
-                  const pushY = (dy / dist) * overlap * 0.6;
-                  t1.x -= pushX;
-                  t1.targetX -= pushX;
-                  t1.y -= pushY;
-                  t1.targetY -= pushY;
-                  t2.x += pushX;
-                  t2.targetX += pushX;
-                  t2.y += pushY;
-                  t2.targetY += pushY;
-                }
-              }
-            }
+            const mtv = satResolve(getOBB(t1), getOBB(t2));
+            if (!mtv) continue;
+            const pushX = mtv.x * 0.5;
+            const pushY = mtv.y * 0.5;
+            t1.x -= pushX;
+            t1.targetX -= pushX;
+            t1.y -= pushY;
+            t1.targetY -= pushY;
+            t2.x += pushX;
+            t2.targetX += pushX;
+            t2.y += pushY;
+            t2.targetY += pushY;
           }
         }
       }
