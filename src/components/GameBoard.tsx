@@ -214,6 +214,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Dynamic grid cell size based on settings - each domino = 2 grid cells
   const GRID_CELL_SIZE = settings.dominoWidth / 2;
 
+  // STAP 1: Physics-hook (OBB/SAT). Werkt puur visueel met translate3d
+  // op de wrapper-div; gameState (grid-coords) blijft onaangetast.
+  const stonePhysics = useStonePhysics(
+    gameState.dominoes as unknown as Record<
+      string,
+      { x: number; y: number; orientation: 'horizontal' | 'vertical'; rotation?: number }
+    >,
+    GRID_CELL_SIZE,
+    { anchorStrength, enabled: physicsEnabled },
+  );
+
 
   // Listen for live settings updates and reapply scaling
   useEffect(() => {
