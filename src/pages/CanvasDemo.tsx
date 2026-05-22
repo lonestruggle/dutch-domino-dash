@@ -55,11 +55,17 @@ const gridToPx = (gx: number, gy: number, orientation: "h" | "v") => {
   return { x: cx, y: cy };
 };
 
-// Halve afmeting van een steen langs een windrichting (in px), zonder rotatie.
+// Afstand van het logische center (s.x / s.y) tot de visuele rand in een
+// bepaalde richting. De 3D-rand (DEPTH) wordt rechts (E) en onder (S)
+// meegenomen; links/boven niet.
 function halfAlongDir(orientation: "h" | "v", dir: Dir) {
   const isH = orientation === "h";
-  if (dir === "E" || dir === "W") return isH ? W : W / 2;
-  return isH ? H / 2 : H;
+  const halfW = isH ? W : W / 2;
+  const halfH = isH ? H / 2 : H;
+  if (dir === "E") return halfW + DEPTH;
+  if (dir === "W") return halfW;
+  if (dir === "S") return halfH + DEPTH;
+  return halfH; // N
 }
 
 // Bereken de visuele landingspositie van een placement target op basis van
@@ -79,13 +85,17 @@ function placementPosition(
     W: { x: -1, y: 0 },
   };
   const d = dirVec[t.end.fromDir];
-  let gap =
+  const gap =
     halfAlongDir(anchor.orientation, t.end.fromDir) +
-    halfAlongDir(t.orientation, t.end.fromDir);
-  // Compenseer de 3D-diepte: de steen heeft een rand aan rechts (E) en
-  // onder (S), dus laat daar precies DEPTH px extra ruimte.
-  if (t.end.fromDir === "E" || t.end.fromDir === "S") gap += DEPTH;
+    halfAlongDir(t.orientation, oppositeDir(t.end.fromDir));
   return { x: anchor.x + d.x * gap, y: anchor.y + d.y * gap };
+}
+
+function oppositeDir(d: Dir): Dir {
+  if (d === "N") return "S";
+  if (d === "S") return "N";
+  if (d === "E") return "W";
+  return "E";
 }
 
 const PIP_MAP: Record<number, [number, number][]> = {
@@ -211,15 +221,21 @@ const COLLISION_PADDING = 0; // 0 = stenen mogen elkaar raken zonder uit elkaar 
 
 function getOBB(s: Stone): OBB {
   const isH = s.orientation === "h";
-  const w = (isH ? W * 2 : W) + COLLISION_PADDING * 2;
-  const h = (isH ? H : H * 2) + COLLISION_PADDING * 2;
+  // De steen wordt visueel getekend van -w/2..w/2+DEPTH en -h/2..h/2+DEPTH
+  // (de 3D rand zit rechts en onder). We nemen die rand mee in de OBB en
+  // schuiven het center DEPTH/2 mee in lokale coördinaten.
+  const w = (isH ? W * 2 : W) + DEPTH + COLLISION_PADDING * 2;
+  const h = (isH ? H : H * 2) + DEPTH + COLLISION_PADDING * 2;
+  const cos = Math.cos(s.angle);
+  const sin = Math.sin(s.angle);
+  const offset = DEPTH / 2;
   return {
-    cx: s.x,
-    cy: s.y,
+    cx: s.x + offset * cos - offset * sin,
+    cy: s.y + offset * sin + offset * cos,
     hw: w / 2,
     hh: h / 2,
-    cos: Math.cos(s.angle),
-    sin: Math.sin(s.angle),
+    cos,
+    sin,
   };
 }
 
@@ -610,11 +626,14 @@ const CanvasDemo: React.FC = () => {
         ctx.save();
         for (const stone of stones) {
           const isH = stone.orientation === "h";
-          const w = isH ? W * 2 : W;
-          const h = isH ? H : H * 2;
+          // Inclusief 3D-rand, zelfde rechthoek als de SAT-collision
+          const w = (isH ? W * 2 : W) + DEPTH;
+          const h = (isH ? H : H * 2) + DEPTH;
           ctx.save();
           ctx.translate(stone.x, stone.y);
           ctx.rotate(stone.angle);
+          // Visueel center is DEPTH/2 naar rechts-onder verschoven
+          ctx.translate(DEPTH / 2, DEPTH / 2);
           ctx.fillStyle = "rgba(255, 80, 80, 0.18)";
           ctx.strokeStyle = "rgba(255, 80, 80, 0.55)";
           ctx.lineWidth = 1;
