@@ -608,8 +608,10 @@ const CanvasDemo: React.FC = () => {
     for (const s of stonesRef.current) {
       const dx = (Math.random() - 0.5) * 2 * scatterBase * intensity;
       const dy = (Math.random() - 0.5) * 2 * scatterBase * intensity;
+      const da = (Math.random() - 0.5) * 0.8 * intensity;
       s.targetX = s.x + dx;
       s.targetY = s.y + dy;
+      s.angle += da;
       s.targetAngle = s.angle + (Math.random() - 0.5) * 0.6 * intensity;
     }
     // After short delay, snap targets back to grid home so they fly back
