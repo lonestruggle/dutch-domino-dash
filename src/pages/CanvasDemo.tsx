@@ -211,15 +211,21 @@ const COLLISION_PADDING = 0; // 0 = stenen mogen elkaar raken zonder uit elkaar 
 
 function getOBB(s: Stone): OBB {
   const isH = s.orientation === "h";
-  const w = (isH ? W * 2 : W) + COLLISION_PADDING * 2;
-  const h = (isH ? H : H * 2) + COLLISION_PADDING * 2;
+  // De steen wordt visueel getekend van -w/2..w/2+DEPTH en -h/2..h/2+DEPTH
+  // (de 3D rand zit rechts en onder). We nemen die rand mee in de OBB en
+  // schuiven het center DEPTH/2 mee in lokale coördinaten.
+  const w = (isH ? W * 2 : W) + DEPTH + COLLISION_PADDING * 2;
+  const h = (isH ? H : H * 2) + DEPTH + COLLISION_PADDING * 2;
+  const cos = Math.cos(s.angle);
+  const sin = Math.sin(s.angle);
+  const offset = DEPTH / 2;
   return {
-    cx: s.x,
-    cy: s.y,
+    cx: s.x + offset * cos - offset * sin,
+    cy: s.y + offset * sin + offset * cos,
     hw: w / 2,
     hh: h / 2,
-    cos: Math.cos(s.angle),
-    sin: Math.sin(s.angle),
+    cos,
+    sin,
   };
 }
 
