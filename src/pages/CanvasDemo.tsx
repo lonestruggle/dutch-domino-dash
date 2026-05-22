@@ -378,16 +378,17 @@ const CanvasDemo: React.FC = () => {
 
   const placeStone = (t: PlacementTarget) => {
     const { x, y } = gridToPx(t.gx, t.gy, t.orientation);
+    const jitterA = (Math.random() - 0.5) * 0.18; // ~10° natuurlijke draai
     stonesRef.current.push({
       id: nextIdRef.current++,
       gx: t.gx,
       gy: t.gy,
       x,
       y: y - 40,
-      angle: 0,
+      angle: jitterA,
       targetX: x,
       targetY: y,
-      targetAngle: 0,
+      targetAngle: jitterA,
       v1: t.data.v1,
       v2: t.data.v2,
       orientation: t.orientation,
@@ -498,9 +499,10 @@ const CanvasDemo: React.FC = () => {
       const stones = stonesRef.current;
 
       for (const s of stones) {
-        s.x += (s.targetX - s.x) * 0.25;
-        s.y += (s.targetY - s.y) * 0.25;
-        s.angle += (s.targetAngle - s.angle) * 0.2;
+        // Zacht anker: trekt langzaam terug, laat botsingen + slam wél leven
+        s.x += (s.targetX - s.x) * 0.06;
+        s.y += (s.targetY - s.y) * 0.06;
+        s.angle += (s.targetAngle - s.angle) * 0.05;
       }
 
       for (let iter = 0; iter < 6; iter++) {
