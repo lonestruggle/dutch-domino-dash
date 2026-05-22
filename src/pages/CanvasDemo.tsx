@@ -454,7 +454,9 @@ const CanvasDemo: React.FC = () => {
 
   const placeStone = (t: PlacementTarget) => {
     const { x, y } = placementPosition(t, stonesRef.current);
-    const jitterA = (Math.random() - 0.5) * 0.18; // ~10° natuurlijke draai
+    // Geen rotatie-jitter bij plaatsing: zo sluit de nieuwe steen exact aan
+    // tegen de anker-steen zonder dat SAT-collision ze uit elkaar duwt.
+    const jitterA = 0;
     stonesRef.current.push({
       id: nextIdRef.current++,
       gx: t.gx,
