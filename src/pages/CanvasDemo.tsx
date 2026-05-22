@@ -36,6 +36,7 @@ interface OpenEnd {
   gy: number;
   value: number;
   fromDir: Dir;
+  anchorId: number;
 }
 interface PlacementTarget {
   gx: number;
@@ -53,6 +54,36 @@ const gridToPx = (gx: number, gy: number, orientation: "h" | "v") => {
   const cy = ORIGIN_Y + gy * CELL + (orientation === "h" ? CELL / 2 : CELL);
   return { x: cx, y: cy };
 };
+
+// Halve afmeting van een steen langs een windrichting (in px), zonder rotatie.
+function halfAlongDir(orientation: "h" | "v", dir: Dir) {
+  const isH = orientation === "h";
+  if (dir === "E" || dir === "W") return isH ? W : W / 2;
+  return isH ? H / 2 : H;
+}
+
+// Bereken de visuele landingspositie van een placement target op basis van
+// de HUIDIGE positie van de anker-steen (kop/staart), niet het grid.
+function placementPosition(
+  t: { orientation: "h" | "v"; end: OpenEnd },
+  stones: Stone[],
+): { x: number; y: number } {
+  const anchor = stones.find((s) => s.id === t.end.anchorId);
+  if (!anchor) {
+    return gridToPx(0, 0, t.orientation);
+  }
+  const dirVec: Record<Dir, { x: number; y: number }> = {
+    N: { x: 0, y: -1 },
+    S: { x: 0, y: 1 },
+    E: { x: 1, y: 0 },
+    W: { x: -1, y: 0 },
+  };
+  const d = dirVec[t.end.fromDir];
+  const gap =
+    halfAlongDir(anchor.orientation, t.end.fromDir) +
+    halfAlongDir(t.orientation, t.end.fromDir);
+  return { x: anchor.x + d.x * gap, y: anchor.y + d.y * gap };
+}
 
 const PIP_MAP: Record<number, [number, number][]> = {
   0: [],
@@ -272,7 +303,7 @@ function computeOpenEnds(stones: Stone[]): OpenEnd[] {
           if (!isTop && d !== "S") continue;
         }
 
-        ends.push({ gx: nx, gy: ny, value, fromDir: d });
+        ends.push({ gx: nx, gy: ny, value, fromDir: d, anchorId: s.id });
       }
     });
   }
@@ -422,7 +453,7 @@ const CanvasDemo: React.FC = () => {
   }, [selectedIdx, hand]);
 
   const placeStone = (t: PlacementTarget) => {
-    const { x, y } = gridToPx(t.gx, t.gy, t.orientation);
+    const { x, y } = placementPosition(t, stonesRef.current);
     const jitterA = (Math.random() - 0.5) * 0.18; // ~10° natuurlijke draai
     stonesRef.current.push({
       id: nextIdRef.current++,
@@ -476,7 +507,7 @@ const CanvasDemo: React.FC = () => {
       }
       // 2) Otherwise: place from hand
       for (const t of targetsRef.current) {
-        const { x: tx, y: ty } = gridToPx(t.gx, t.gy, t.orientation);
+        const { x: tx, y: ty } = placementPosition(t, stonesRef.current);
         const w = t.orientation === "h" ? W * 2 : W;
         const h = t.orientation === "h" ? H : H * 2;
         if (Math.abs(x - tx) < w / 2 && Math.abs(y - ty) < h / 2) {
@@ -497,13 +528,7 @@ const CanvasDemo: React.FC = () => {
     };
     const onMouseUp = () => {
       if (!draggingRef.current) return;
-      const s = stonesRef.current.find((st) => st.id === draggingRef.current!.id);
-      if (s) {
-        // Snap target back to grid home
-        const home = gridToPx(s.gx, s.gy, s.orientation);
-        s.targetX = home.x;
-        s.targetY = home.y;
-      }
+      // GEEN snap terug naar grid — stenen blijven waar je ze loslaat.
       draggingRef.current = null;
     };
     canvas.addEventListener("mousedown", onMouseDown);
@@ -590,7 +615,7 @@ const CanvasDemo: React.FC = () => {
         const pulse = 0.4 + 0.3 * Math.sin(Date.now() / 250);
         ctx.save();
         for (const t of targetsRef.current) {
-          const { x: tx, y: ty } = gridToPx(t.gx, t.gy, t.orientation);
+          const { x: tx, y: ty } = placementPosition(t, stonesRef.current);
           const w = t.orientation === "h" ? W * 2 : W;
           const h = t.orientation === "h" ? H : H * 2;
           ctx.fillStyle = `rgba(255, 200, 0, ${pulse * 0.4})`;
@@ -637,7 +662,6 @@ const CanvasDemo: React.FC = () => {
   const triggerSlam = () => {
     isSlamActiveRef.current = true;
     slamTimeRef.current = 0;
-    // Scatter every stone away from its grid home, then it LERPs back
     const scatterBase = 70;
     for (const s of stonesRef.current) {
       const dx = (Math.random() - 0.5) * 2 * scatterBase * intensity;
@@ -648,16 +672,8 @@ const CanvasDemo: React.FC = () => {
       s.angle += da;
       s.targetAngle = s.angle + (Math.random() - 0.5) * 0.6 * intensity;
     }
-    // After short delay, snap targets back to grid home so they fly back
-    window.setTimeout(() => {
-      for (const s of stonesRef.current) {
-        const home = gridToPx(s.gx, s.gy, s.orientation);
-        s.targetX = home.x;
-        s.targetY = home.y;
-        // laat een lichte permanente draai achter — natuurlijker
-        s.targetAngle = (Math.random() - 0.5) * 0.22;
-      }
-    }, 220);
+    // Geen terug-snap naar grid — stenen blijven liggen waar ze landen
+    // (en worden alleen door OBB-collision uit elkaar geduwd als ze overlappen).
   };
 
   const resetDemo = () => {
