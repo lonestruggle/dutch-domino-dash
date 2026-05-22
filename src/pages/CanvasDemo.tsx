@@ -56,10 +56,15 @@ const gridToPx = (gx: number, gy: number, orientation: "h" | "v") => {
 };
 
 // Halve afmeting van een steen langs een windrichting (in px), zonder rotatie.
+// Houdt rekening met de 3D-rand (DEPTH) aan rechts/onder.
 function halfAlongDir(orientation: "h" | "v", dir: Dir) {
   const isH = orientation === "h";
-  if (dir === "E" || dir === "W") return isH ? W : W / 2;
-  return isH ? H / 2 : H;
+  // Basishelft van de visuele rechthoek inclusief depth, gemeten vanaf het
+  // verschoven OBB-center (DEPTH/2 naar rechts-onder).
+  if (dir === "E") return (isH ? W * 2 : W) / 2 + DEPTH / 2;
+  if (dir === "W") return (isH ? W * 2 : W) / 2 - DEPTH / 2;
+  if (dir === "S") return (isH ? H : H * 2) / 2 + DEPTH / 2;
+  return (isH ? H : H * 2) / 2 - DEPTH / 2;
 }
 
 // Bereken de visuele landingspositie van een placement target op basis van
@@ -79,13 +84,17 @@ function placementPosition(
     W: { x: -1, y: 0 },
   };
   const d = dirVec[t.end.fromDir];
-  let gap =
+  const gap =
     halfAlongDir(anchor.orientation, t.end.fromDir) +
-    halfAlongDir(t.orientation, t.end.fromDir);
-  // Compenseer de 3D-diepte: de steen heeft een rand aan rechts (E) en
-  // onder (S), dus laat daar precies DEPTH px extra ruimte.
-  if (t.end.fromDir === "E" || t.end.fromDir === "S") gap += DEPTH;
+    halfAlongDir(t.orientation, oppositeDir(t.end.fromDir));
   return { x: anchor.x + d.x * gap, y: anchor.y + d.y * gap };
+}
+
+function oppositeDir(d: Dir): Dir {
+  if (d === "N") return "S";
+  if (d === "S") return "N";
+  if (d === "E") return "W";
+  return "E";
 }
 
 const PIP_MAP: Record<number, [number, number][]> = {
