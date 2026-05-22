@@ -436,7 +436,7 @@ const CanvasDemo: React.FC = () => {
       gx: t.gx,
       gy: t.gy,
       x,
-      y: y - 40,
+      y,
       angle: jitterA,
       targetX: x,
       targetY: y,
