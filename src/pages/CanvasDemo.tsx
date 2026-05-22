@@ -36,6 +36,7 @@ interface OpenEnd {
   gy: number;
   value: number;
   fromDir: Dir;
+  anchorId: number;
 }
 interface PlacementTarget {
   gx: number;
@@ -53,6 +54,36 @@ const gridToPx = (gx: number, gy: number, orientation: "h" | "v") => {
   const cy = ORIGIN_Y + gy * CELL + (orientation === "h" ? CELL / 2 : CELL);
   return { x: cx, y: cy };
 };
+
+// Halve afmeting van een steen langs een windrichting (in px), zonder rotatie.
+function halfAlongDir(orientation: "h" | "v", dir: Dir) {
+  const isH = orientation === "h";
+  if (dir === "E" || dir === "W") return isH ? W : W / 2;
+  return isH ? H / 2 : H;
+}
+
+// Bereken de visuele landingspositie van een placement target op basis van
+// de HUIDIGE positie van de anker-steen (kop/staart), niet het grid.
+function placementPosition(
+  t: { orientation: "h" | "v"; end: OpenEnd },
+  stones: Stone[],
+): { x: number; y: number } {
+  const anchor = stones.find((s) => s.id === t.end.anchorId);
+  if (!anchor) {
+    return gridToPx(0, 0, t.orientation);
+  }
+  const dirVec: Record<Dir, { x: number; y: number }> = {
+    N: { x: 0, y: -1 },
+    S: { x: 0, y: 1 },
+    E: { x: 1, y: 0 },
+    W: { x: -1, y: 0 },
+  };
+  const d = dirVec[t.end.fromDir];
+  const gap =
+    halfAlongDir(anchor.orientation, t.end.fromDir) +
+    halfAlongDir(t.orientation, t.end.fromDir);
+  return { x: anchor.x + d.x * gap, y: anchor.y + d.y * gap };
+}
 
 const PIP_MAP: Record<number, [number, number][]> = {
   0: [],
@@ -272,7 +303,7 @@ function computeOpenEnds(stones: Stone[]): OpenEnd[] {
           if (!isTop && d !== "S") continue;
         }
 
-        ends.push({ gx: nx, gy: ny, value, fromDir: d });
+        ends.push({ gx: nx, gy: ny, value, fromDir: d, anchorId: s.id });
       }
     });
   }
