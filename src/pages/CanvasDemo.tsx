@@ -317,44 +317,28 @@ function findPlacements(
       let gy: number;
       let matchPip: number;
 
-      if (dbl) {
-        // Double placed perpendicular to chain direction
-        if (end.fromDir === "E" || end.fromDir === "W") {
-          orientation = "v";
-          gx = end.gx;
-          gy = end.fromDir === "E" ? end.gy : end.gy; // double occupies one column, span 2 rows
-          // Center it: top cell at (gx, end.gy) and bottom at (gx, end.gy+1).
-          // But end.gy is the connecting row, so we want it spanning end.gy-? :
-          // simplest: put top cell at end.gy so connection is at top cell
-          gy = end.gy;
-        } else {
-          orientation = "h";
-          gx = end.gx;
-          gy = end.gy;
-        }
-        matchPip = data.v1;
+      // Klassieke logica: oriëntatie en cel-positie volgen puur uit fromDir.
+      // Dubbele stenen worden inline geplaatst (zoals in de klassieke code).
+      if (end.fromDir === "E") {
+        orientation = "h";
+        gx = end.gx;
+        gy = end.gy;
+        matchPip = flipped ? data.v2 : data.v1;
+      } else if (end.fromDir === "W") {
+        orientation = "h";
+        gx = end.gx - 1;
+        gy = end.gy;
+        matchPip = flipped ? data.v1 : data.v2;
+      } else if (end.fromDir === "S") {
+        orientation = "v";
+        gx = end.gx;
+        gy = end.gy;
+        matchPip = flipped ? data.v2 : data.v1;
       } else {
-        if (end.fromDir === "E") {
-          orientation = "h";
-          gx = end.gx;
-          gy = end.gy;
-          matchPip = flipped ? data.v2 : data.v1;
-        } else if (end.fromDir === "W") {
-          orientation = "h";
-          gx = end.gx - 1;
-          gy = end.gy;
-          matchPip = flipped ? data.v1 : data.v2;
-        } else if (end.fromDir === "S") {
-          orientation = "v";
-          gx = end.gx;
-          gy = end.gy;
-          matchPip = flipped ? data.v2 : data.v1;
-        } else {
-          orientation = "v";
-          gx = end.gx;
-          gy = end.gy - 1;
-          matchPip = flipped ? data.v1 : data.v2;
-        }
+        orientation = "v";
+        gx = end.gx;
+        gy = end.gy - 1;
+        matchPip = flipped ? data.v1 : data.v2;
       }
 
       if (matchPip !== end.value) return;
