@@ -175,7 +175,7 @@ function getCollisionCircles(stone: Stone) {
     };
   });
 }
-const COLLISION_RADIUS = 24;
+const COLLISION_RADIUS = H / 2; // even dik als de korte zijde van een steen
 const SAFE_DIST = COLLISION_RADIUS * 2;
 
 function buildBoardMap(stones: Stone[]) {
