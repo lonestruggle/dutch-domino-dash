@@ -662,7 +662,6 @@ const CanvasDemo: React.FC = () => {
   const triggerSlam = () => {
     isSlamActiveRef.current = true;
     slamTimeRef.current = 0;
-    // Scatter every stone away from its grid home, then it LERPs back
     const scatterBase = 70;
     for (const s of stonesRef.current) {
       const dx = (Math.random() - 0.5) * 2 * scatterBase * intensity;
@@ -673,16 +672,8 @@ const CanvasDemo: React.FC = () => {
       s.angle += da;
       s.targetAngle = s.angle + (Math.random() - 0.5) * 0.6 * intensity;
     }
-    // After short delay, snap targets back to grid home so they fly back
-    window.setTimeout(() => {
-      for (const s of stonesRef.current) {
-        const home = gridToPx(s.gx, s.gy, s.orientation);
-        s.targetX = home.x;
-        s.targetY = home.y;
-        // laat een lichte permanente draai achter — natuurlijker
-        s.targetAngle = (Math.random() - 0.5) * 0.22;
-      }
-    }, 220);
+    // Geen terug-snap naar grid — stenen blijven liggen waar ze landen
+    // (en worden alleen door OBB-collision uit elkaar geduwd als ze overlappen).
   };
 
   const resetDemo = () => {
