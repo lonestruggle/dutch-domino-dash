@@ -1,8 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
+interface DominoData {
+  v1: number;
+  v2: number;
+}
+
 interface Stone {
   id: number;
+  gx: number;
+  gy: number;
   x: number;
   y: number;
   angle: number;
@@ -12,48 +19,49 @@ interface Stone {
   v1: number;
   v2: number;
   orientation: "h" | "v";
-  dragging?: boolean;
-  offsetX?: number;
-  offsetY?: number;
+  flipped?: boolean;
+  isDoubleStone?: boolean;
 }
 
+const CELL = 64;
 const W = 56;
 const H = 56;
 const DEPTH = 5;
+const ORIGIN_X = 400;
+const ORIGIN_Y = 280;
+
+type Dir = "N" | "S" | "E" | "W";
+interface OpenEnd {
+  gx: number;
+  gy: number;
+  value: number;
+  fromDir: Dir;
+}
+interface PlacementTarget {
+  gx: number;
+  gy: number;
+  orientation: "h" | "v";
+  flipped: boolean;
+  end: OpenEnd;
+  handIndex: number;
+  data: DominoData;
+}
+
+const isDouble = (d: DominoData) => d.v1 === d.v2;
+const gridToPx = (gx: number, gy: number, orientation: "h" | "v") => {
+  const cx = ORIGIN_X + gx * CELL + (orientation === "h" ? CELL : CELL / 2);
+  const cy = ORIGIN_Y + gy * CELL + (orientation === "h" ? CELL / 2 : CELL);
+  return { x: cx, y: cy };
+};
 
 const PIP_MAP: Record<number, [number, number][]> = {
   0: [],
   1: [[0, 0]],
-  2: [
-    [-1, -1],
-    [1, 1],
-  ],
-  3: [
-    [-1, -1],
-    [0, 0],
-    [1, 1],
-  ],
-  4: [
-    [-1, -1],
-    [1, -1],
-    [-1, 1],
-    [1, 1],
-  ],
-  5: [
-    [-1, -1],
-    [1, -1],
-    [0, 0],
-    [-1, 1],
-    [1, 1],
-  ],
-  6: [
-    [-1, -1],
-    [1, -1],
-    [-1, 0],
-    [1, 0],
-    [-1, 1],
-    [1, 1],
-  ],
+  2: [[-1, -1], [1, 1]],
+  3: [[-1, -1], [0, 0], [1, 1]],
+  4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
+  5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]],
+  6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]],
 };
 
 function drawPips(ctx: CanvasRenderingContext2D, value: number, cx: number, cy: number, size: number) {
@@ -132,28 +140,29 @@ function drawStone(ctx: CanvasRenderingContext2D, stone: Stone, envelope: number
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
+  const pips = stone.flipped ? [stone.v2, stone.v1] : [stone.v1, stone.v2];
+
   ctx.beginPath();
   if (isH) {
     ctx.moveTo(0, -h / 2 + 4);
     ctx.lineTo(0, h / 2 - 4);
     ctx.stroke();
-    drawPips(ctx, stone.v1, -w / 4, 0, W);
-    drawPips(ctx, stone.v2, w / 4, 0, W);
+    drawPips(ctx, pips[0], -w / 4, 0, W);
+    drawPips(ctx, pips[1], w / 4, 0, W);
   } else {
     ctx.moveTo(-w / 2 + 4, 0);
     ctx.lineTo(w / 2 - 4, 0);
     ctx.stroke();
-    drawPips(ctx, stone.v1, 0, -h / 4, W);
-    drawPips(ctx, stone.v2, 0, h / 4, W);
+    drawPips(ctx, pips[0], 0, -h / 4, W);
+    drawPips(ctx, pips[1], 0, h / 4, W);
   }
 
   ctx.restore();
 }
 
-// 3 botsing-cirkels langs de lengte-as van een steen
 function getCollisionCircles(stone: Stone) {
   const isH = stone.orientation === "h";
-  const longHalf = isH ? W : H; // halve lange zijde
+  const longHalf = isH ? W : H;
   const cos = Math.cos(stone.angle);
   const sin = Math.sin(stone.angle);
   const offsets = [-longHalf * 0.66, 0, longHalf * 0.66];
@@ -169,23 +178,227 @@ function getCollisionCircles(stone: Stone) {
 const COLLISION_RADIUS = 24;
 const SAFE_DIST = COLLISION_RADIUS * 2;
 
+function buildBoardMap(stones: Stone[]) {
+  const board: Record<string, { id: number; value: number }> = {};
+  for (const s of stones) {
+    const pips = s.flipped ? [s.v2, s.v1] : [s.v1, s.v2];
+    const cells =
+      s.orientation === "h"
+        ? [[s.gx, s.gy], [s.gx + 1, s.gy]]
+        : [[s.gx, s.gy], [s.gx, s.gy + 1]];
+    cells.forEach((c, i) => {
+      board[`${c[0]},${c[1]}`] = { id: s.id, value: pips[i] };
+    });
+  }
+  return board;
+}
+
+function computeOpenEnds(stones: Stone[]): OpenEnd[] {
+  const board = buildBoardMap(stones);
+  const ends: OpenEnd[] = [];
+  for (const s of stones) {
+    const pips = s.flipped ? [s.v2, s.v1] : [s.v1, s.v2];
+    const cells =
+      s.orientation === "h"
+        ? [[s.gx, s.gy], [s.gx + 1, s.gy]]
+        : [[s.gx, s.gy], [s.gx, s.gy + 1]];
+
+    cells.forEach((cell, i) => {
+      const [x, y] = cell;
+      const value = pips[i];
+      const dirs: { d: Dir; nx: number; ny: number }[] = [
+        { d: "N", nx: x, ny: y - 1 },
+        { d: "S", nx: x, ny: y + 1 },
+        { d: "W", nx: x - 1, ny: y },
+        { d: "E", nx: x + 1, ny: y },
+      ];
+      for (const { d, nx, ny } of dirs) {
+        if (board[`${nx},${ny}`]) continue;
+
+        if (s.isDoubleStone) {
+          if (s.orientation === "h" && (d === "W" || d === "E")) continue;
+          if (s.orientation === "v" && (d === "N" || d === "S")) continue;
+        } else if (s.orientation === "h") {
+          const isLeft = i === 0;
+          if (isLeft && d !== "W") continue;
+          if (!isLeft && d !== "E") continue;
+        } else {
+          const isTop = i === 0;
+          if (isTop && d !== "N") continue;
+          if (!isTop && d !== "S") continue;
+        }
+
+        ends.push({ gx: nx, gy: ny, value, fromDir: d });
+      }
+    });
+  }
+  return ends;
+}
+
+function findPlacements(
+  data: DominoData,
+  handIndex: number,
+  ends: OpenEnd[],
+  board: Record<string, { id: number; value: number }>,
+): PlacementTarget[] {
+  const out: PlacementTarget[] = [];
+  const seen = new Set<string>();
+  const dbl = isDouble(data);
+
+  for (const end of ends) {
+    const tryPlace = (flipped: boolean) => {
+      let orientation: "h" | "v";
+      let gx: number;
+      let gy: number;
+      let matchPip: number;
+
+      if (dbl) {
+        // Double placed perpendicular to chain direction
+        if (end.fromDir === "E" || end.fromDir === "W") {
+          orientation = "v";
+          gx = end.gx;
+          gy = end.fromDir === "E" ? end.gy : end.gy; // double occupies one column, span 2 rows
+          // Center it: top cell at (gx, end.gy) and bottom at (gx, end.gy+1).
+          // But end.gy is the connecting row, so we want it spanning end.gy-? :
+          // simplest: put top cell at end.gy so connection is at top cell
+          gy = end.gy;
+        } else {
+          orientation = "h";
+          gx = end.gx;
+          gy = end.gy;
+        }
+        matchPip = data.v1;
+      } else {
+        if (end.fromDir === "E") {
+          orientation = "h";
+          gx = end.gx;
+          gy = end.gy;
+          matchPip = flipped ? data.v2 : data.v1;
+        } else if (end.fromDir === "W") {
+          orientation = "h";
+          gx = end.gx - 1;
+          gy = end.gy;
+          matchPip = flipped ? data.v1 : data.v2;
+        } else if (end.fromDir === "S") {
+          orientation = "v";
+          gx = end.gx;
+          gy = end.gy;
+          matchPip = flipped ? data.v2 : data.v1;
+        } else {
+          orientation = "v";
+          gx = end.gx;
+          gy = end.gy - 1;
+          matchPip = flipped ? data.v1 : data.v2;
+        }
+      }
+
+      if (matchPip !== end.value) return;
+
+      const cells =
+        orientation === "h"
+          ? [[gx, gy], [gx + 1, gy]]
+          : [[gx, gy], [gx, gy + 1]];
+      for (const [cx, cy] of cells) {
+        if (board[`${cx},${cy}`]) return;
+      }
+
+      const key = `${gx},${gy},${orientation},${flipped}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({ gx, gy, orientation, flipped, end, handIndex, data });
+    };
+    tryPlace(false);
+    if (!dbl) tryPlace(true);
+  }
+  return out;
+}
+
+function randHand(): DominoData[] {
+  const full: DominoData[] = [];
+  for (let i = 0; i <= 6; i++) for (let j = i; j <= 6; j++) full.push({ v1: i, v2: j });
+  full.sort(() => Math.random() - 0.5);
+  return full.slice(0, 7);
+}
+
+function makeStarter(nextId: { current: number }): Stone {
+  const data: DominoData = { v1: 6, v2: 6 };
+  const orientation: "h" | "v" = "h";
+  const { x, y } = gridToPx(0, 0, orientation);
+  return {
+    id: nextId.current++,
+    gx: 0,
+    gy: 0,
+    x,
+    y,
+    angle: 0,
+    targetX: x,
+    targetY: y,
+    targetAngle: 0,
+    v1: data.v1,
+    v2: data.v2,
+    orientation,
+    flipped: false,
+    isDoubleStone: true,
+  };
+}
+
 const CanvasDemo: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const slamTimeRef = useRef(0);
   const isSlamActiveRef = useRef(false);
   const [intensity, setIntensity] = useState(1);
   const [showCollision, setShowCollision] = useState(true);
+  const [hand, setHand] = useState<DominoData[]>(() => randHand());
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
-  const stonesRef = useRef<Stone[]>([
-    { id: 1, x: 200, y: 250, angle: 0, targetX: 200, targetY: 250, targetAngle: 0, v1: 6, v2: 6, orientation: "h" },
-    { id: 2, x: 330, y: 250, angle: 0, targetX: 330, targetY: 250, targetAngle: 0, v1: 6, v2: 3, orientation: "h" },
-    { id: 3, x: 460, y: 250, angle: 0, targetX: 460, targetY: 250, targetAngle: 0, v1: 3, v2: 5, orientation: "h" },
-    { id: 4, x: 560, y: 190, angle: 0, targetX: 560, targetY: 190, targetAngle: 0, v1: 5, v2: 2, orientation: "v" },
-    { id: 5, x: 560, y: 320, angle: 0, targetX: 560, targetY: 320, targetAngle: 0, v1: 2, v2: 4, orientation: "v" },
-    { id: 6, x: 460, y: 380, angle: 0, targetX: 460, targetY: 380, targetAngle: 0, v1: 4, v2: 1, orientation: "h" },
-    { id: 7, x: 330, y: 380, angle: 0, targetX: 330, targetY: 380, targetAngle: 0, v1: 1, v2: 0, orientation: "h" },
-    { id: 8, x: 200, y: 380, angle: 0, targetX: 200, targetY: 380, targetAngle: 0, v1: 0, v2: 6, orientation: "h" },
-  ]);
+  const stonesRef = useRef<Stone[]>([]);
+  const nextIdRef = useRef(1);
+  const targetsRef = useRef<PlacementTarget[]>([]);
+
+  if (stonesRef.current.length === 0) {
+    stonesRef.current.push(makeStarter(nextIdRef));
+  }
+
+  // recompute targets when selection or hand changes
+  useEffect(() => {
+    if (selectedIdx === null) {
+      targetsRef.current = [];
+      return;
+    }
+    const data = hand[selectedIdx];
+    if (!data) {
+      targetsRef.current = [];
+      return;
+    }
+    const ends = computeOpenEnds(stonesRef.current);
+    const board = buildBoardMap(stonesRef.current);
+    targetsRef.current = findPlacements(data, selectedIdx, ends, board);
+  }, [selectedIdx, hand]);
+
+  const placeStone = (t: PlacementTarget) => {
+    const { x, y } = gridToPx(t.gx, t.gy, t.orientation);
+    stonesRef.current.push({
+      id: nextIdRef.current++,
+      gx: t.gx,
+      gy: t.gy,
+      x,
+      y: y - 40,
+      angle: 0,
+      targetX: x,
+      targetY: y,
+      targetAngle: 0,
+      v1: t.data.v1,
+      v2: t.data.v2,
+      orientation: t.orientation,
+      flipped: t.flipped,
+      isDoubleStone: isDouble(t.data),
+    });
+    setHand((h) => h.filter((_, i) => i !== t.handIndex));
+    setSelectedIdx(null);
+    targetsRef.current = [];
+    isSlamActiveRef.current = true;
+    slamTimeRef.current = 0;
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -203,64 +416,17 @@ const CanvasDemo: React.FC = () => {
 
     const onMouseDown = (e: MouseEvent) => {
       const { x, y } = getMouse(e);
-      const tiles = stonesRef.current;
-      for (let i = tiles.length - 1; i >= 0; i--) {
-        const tile = tiles[i];
-        if (Math.hypot(tile.x - x, tile.y - y) < 50) {
-          const [selected] = tiles.splice(i, 1);
-          selected.dragging = true;
-          selected.offsetX = x - tile.x;
-          selected.offsetY = y - tile.y;
-          tiles.push(selected);
+      for (const t of targetsRef.current) {
+        const { x: tx, y: ty } = gridToPx(t.gx, t.gy, t.orientation);
+        const w = t.orientation === "h" ? W * 2 : W;
+        const h = t.orientation === "h" ? H : H * 2;
+        if (Math.abs(x - tx) < w / 2 && Math.abs(y - ty) < h / 2) {
+          placeStone(t);
           return;
         }
       }
     };
-
-    const onMouseMove = (e: MouseEvent) => {
-      const { x, y } = getMouse(e);
-      const dragging = stonesRef.current.find((t) => t.dragging);
-      if (dragging) {
-        dragging.x = x - (dragging.offsetX ?? 0);
-        dragging.y = y - (dragging.offsetY ?? 0);
-        dragging.targetX = dragging.x;
-        dragging.targetY = dragging.y;
-      }
-    };
-
-    const onMouseUp = () => {
-      const tiles = stonesRef.current;
-      const dragging = tiles.find((t) => t.dragging);
-      if (!dragging) return;
-
-      let snapped = false;
-      let snapX = dragging.x;
-      let snapY = dragging.y;
-      let snapAngle = dragging.angle;
-
-      for (const other of tiles) {
-        if (other.id === dragging.id) continue;
-        const d = Math.hypot(other.x - dragging.x, other.y - dragging.y);
-        if (d > 45 && d < 110) {
-          const a = Math.atan2(dragging.y - other.y, dragging.x - other.x);
-          const q = Math.round(a / (Math.PI / 2)) * (Math.PI / 2);
-          snapX = other.x + Math.cos(q) * 80;
-          snapY = other.y + Math.sin(q) * 80;
-          snapAngle = other.angle;
-          snapped = true;
-          break;
-        }
-      }
-
-      dragging.dragging = false;
-      dragging.targetX = snapped ? snapX : dragging.x;
-      dragging.targetY = snapped ? snapY : dragging.y;
-      dragging.targetAngle = snapped ? snapAngle : dragging.angle;
-    };
-
     canvas.addEventListener("mousedown", onMouseDown);
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
 
     let raf = 0;
     const loop = () => {
@@ -295,14 +461,12 @@ const CanvasDemo: React.FC = () => {
 
       const stones = stonesRef.current;
 
-      // Stap 2: glijden naar doel (Lerp)
       for (const s of stones) {
         s.x += (s.targetX - s.x) * 0.25;
         s.y += (s.targetY - s.y) * 0.25;
         s.angle += (s.targetAngle - s.angle) * 0.2;
       }
 
-      // Stap 3: botsings-solver, 6 iteraties
       for (let iter = 0; iter < 6; iter++) {
         for (let i = 0; i < stones.length; i++) {
           for (let j = i + 1; j < stones.length; j++) {
@@ -334,7 +498,6 @@ const CanvasDemo: React.FC = () => {
         }
       }
 
-      // Stap 4: tekenen met jitter bovenop ware positie
       for (const stone of stones) {
         const shakeX = (Math.random() - 0.5) * 15 * env * intensity;
         const shakeY = (Math.random() - 0.5) * 15 * env * intensity;
@@ -350,7 +513,23 @@ const CanvasDemo: React.FC = () => {
         ctx.restore();
       }
 
-      // Debug overlay: laat botsings-cirkels zien
+      if (targetsRef.current.length > 0) {
+        const pulse = 0.4 + 0.3 * Math.sin(Date.now() / 250);
+        ctx.save();
+        for (const t of targetsRef.current) {
+          const { x: tx, y: ty } = gridToPx(t.gx, t.gy, t.orientation);
+          const w = t.orientation === "h" ? W * 2 : W;
+          const h = t.orientation === "h" ? H : H * 2;
+          ctx.fillStyle = `rgba(255, 200, 0, ${pulse * 0.4})`;
+          ctx.strokeStyle = `rgba(255, 200, 0, ${Math.min(1, pulse + 0.3)})`;
+          ctx.lineWidth = 2;
+          roundRect(ctx, tx - w / 2, ty - h / 2, w, h, 6);
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
       if (showCollision) {
         ctx.save();
         for (const stone of stones) {
@@ -374,31 +553,36 @@ const CanvasDemo: React.FC = () => {
     return () => {
       cancelAnimationFrame(raf);
       canvas.removeEventListener("mousedown", onMouseDown);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [intensity, showCollision]);
+  }, [intensity, showCollision, hand, selectedIdx]);
 
   const triggerSlam = () => {
     isSlamActiveRef.current = true;
     slamTimeRef.current = 0;
-    const scatterBase = 60;
-    stonesRef.current.forEach((stone) => {
-      stone.targetX = stone.x + (Math.random() - 0.5) * scatterBase * intensity;
-      stone.targetY = stone.y + (Math.random() - 0.5) * scatterBase * intensity;
-      stone.targetAngle = stone.angle + (Math.random() - 0.5) * 2 * intensity;
-    });
+  };
+
+  const resetDemo = () => {
+    stonesRef.current = [];
+    nextIdRef.current = 1;
+    targetsRef.current = [];
+    setHand(randHand());
+    setSelectedIdx(null);
+    stonesRef.current.push(makeStarter(nextIdRef));
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6 flex flex-col items-center gap-4">
-      <h1 className="text-2xl font-bold">Fysica Slam Demo</h1>
+      <h1 className="text-2xl font-bold">Domino Plaatsing + Magneet Demo</h1>
       <p className="text-sm text-muted-foreground max-w-xl text-center">
-        Stenen springen omhoog, worden groter, trillen én worden permanent van hun plek geslagen.
+        Klik een steen in je hand, dan klik op een geel veld op het bord om hem aan te leggen.
+        Pip-matching uit de klassieke logica + magneet-fysica eroverheen.
       </p>
-      <div className="flex gap-3 items-center">
+      <div className="flex gap-3 items-center flex-wrap justify-center">
         <Button onClick={triggerSlam} size="lg">
-          💥 HARD SLAM!
+          HARD SLAM
+        </Button>
+        <Button onClick={resetDemo} variant="outline" size="lg">
+          Reset
         </Button>
         <label className="text-sm flex items-center gap-2">
           Intensiteit: {intensity.toFixed(1)}
@@ -421,7 +605,32 @@ const CanvasDemo: React.FC = () => {
           Toon magneet-zones
         </label>
       </div>
-      <canvas ref={canvasRef} width={800} height={560} className="rounded-lg shadow-2xl border border-border" />
+      <canvas
+        ref={canvasRef}
+        width={800}
+        height={560}
+        className="rounded-lg shadow-2xl border border-border cursor-pointer"
+      />
+
+      <div className="flex gap-2 items-center p-3 rounded-lg bg-card border border-border flex-wrap justify-center">
+        <span className="text-sm font-medium mr-2">Hand:</span>
+        {hand.map((d, i) => (
+          <button
+            key={i}
+            onClick={() => setSelectedIdx(selectedIdx === i ? null : i)}
+            className={`px-3 py-2 rounded border-2 text-sm font-mono transition-all ${
+              selectedIdx === i
+                ? "border-amber-400 bg-amber-100 text-amber-900 scale-110"
+                : "border-border bg-background hover:border-amber-300"
+            }`}
+          >
+            {d.v1}|{d.v2}
+          </button>
+        ))}
+        {hand.length === 0 && (
+          <span className="text-sm text-muted-foreground">Hand leeg — druk Reset</span>
+        )}
+      </div>
     </div>
   );
 };
