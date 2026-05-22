@@ -572,16 +572,19 @@ const CanvasDemo: React.FC = () => {
       if (showCollision) {
         ctx.save();
         for (const stone of stones) {
-          const circles = getCollisionCircles(stone);
-          for (const c of circles) {
-            ctx.beginPath();
-            ctx.arc(c.x, c.y, COLLISION_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(255, 80, 80, 0.18)";
-            ctx.fill();
-            ctx.strokeStyle = "rgba(255, 80, 80, 0.55)";
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
+          const isH = stone.orientation === "h";
+          const w = isH ? W * 2 : W;
+          const h = isH ? H : H * 2;
+          ctx.save();
+          ctx.translate(stone.x, stone.y);
+          ctx.rotate(stone.angle);
+          ctx.fillStyle = "rgba(255, 80, 80, 0.18)";
+          ctx.strokeStyle = "rgba(255, 80, 80, 0.55)";
+          ctx.lineWidth = 1;
+          roundRect(ctx, -w / 2, -h / 2, w, h, 6);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
         }
         ctx.restore();
       }
@@ -605,8 +608,10 @@ const CanvasDemo: React.FC = () => {
     for (const s of stonesRef.current) {
       const dx = (Math.random() - 0.5) * 2 * scatterBase * intensity;
       const dy = (Math.random() - 0.5) * 2 * scatterBase * intensity;
+      const da = (Math.random() - 0.5) * 0.8 * intensity;
       s.targetX = s.x + dx;
       s.targetY = s.y + dy;
+      s.angle += da;
       s.targetAngle = s.angle + (Math.random() - 0.5) * 0.6 * intensity;
     }
     // After short delay, snap targets back to grid home so they fly back
