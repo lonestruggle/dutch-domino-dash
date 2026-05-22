@@ -348,6 +348,7 @@ const CanvasDemo: React.FC = () => {
   const isSlamActiveRef = useRef(false);
   const [intensity, setIntensity] = useState(1);
   const [showCollision, setShowCollision] = useState(true);
+  const [anchorStrength, setAnchorStrength] = useState(0.03);
   const [hand, setHand] = useState<DominoData[]>(() => randHand());
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
@@ -500,9 +501,9 @@ const CanvasDemo: React.FC = () => {
 
       for (const s of stones) {
         // Zacht anker: trekt langzaam terug, laat botsingen + slam wél leven
-        s.x += (s.targetX - s.x) * 0.06;
-        s.y += (s.targetY - s.y) * 0.06;
-        s.angle += (s.targetAngle - s.angle) * 0.05;
+        s.x += (s.targetX - s.x) * anchorStrength;
+        s.y += (s.targetY - s.y) * anchorStrength;
+        s.angle += (s.targetAngle - s.angle) * anchorStrength * 0.8;
       }
 
       for (let iter = 0; iter < 6; iter++) {
@@ -594,7 +595,7 @@ const CanvasDemo: React.FC = () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [intensity, showCollision, hand, selectedIdx]);
+  }, [intensity, showCollision, hand, selectedIdx, anchorStrength]);
 
   const triggerSlam = () => {
     isSlamActiveRef.current = true;
@@ -662,6 +663,18 @@ const CanvasDemo: React.FC = () => {
             onChange={(e) => setShowCollision(e.target.checked)}
           />
           Toon magneet-zones
+        </label>
+        <label className="text-sm flex items-center gap-2">
+          Anker: {anchorStrength.toFixed(3)}
+          <input
+            type="range"
+            min={0}
+            max={0.25}
+            step={0.005}
+            value={anchorStrength}
+            onChange={(e) => setAnchorStrength(parseFloat(e.target.value))}
+            className="w-32 accent-amber-500"
+          />
         </label>
       </div>
       <canvas
