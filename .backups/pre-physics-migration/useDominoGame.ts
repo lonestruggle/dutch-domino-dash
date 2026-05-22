@@ -1,0 +1,1119 @@
+import { useState, useCallback, useRef } from 'react';
+import { GameState, DominoData, OpenEnd, LegalMove, DominoState } from '@/types/domino';
+import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
+import { useToast } from '@/hooks/use-toast';
+
+
+const CELL_SIZE = 48;
+
+const isDouble = (data: DominoData) => data?.value1 === data?.value2;
+
+const shuffleArray = <T>(array: T[]): void => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+};
+
+export const useDominoGame = (localPlayerPosition?: number) => {
+  const { settings } = useGameVisualSettings();
+  const { toast } = useToast();
+  const [gameState, setGameState] = useState<GameState>({
+    dominoes: {},
+    board: {},
+    playerHand: [],
+    boneyard: [],
+    openEnds: [],
+    forbiddens: {},
+    nextDominoId: 0,
+    spinnerId: null,
+    isGameOver: false,
+    selectedHandIndex: null,
+    hardSlamNextMove: false,
+    isHardSlamming: false,
+  });
+
+  const gameStateRef = useRef(gameState);
+  gameStateRef.current = gameState;
+
+  const resetGame = useCallback(() => {
+    setGameState({
+      dominoes: {},
+      board: {},
+      playerHand: [],
+      boneyard: [],
+      openEnds: [],
+      forbiddens: {},
+      nextDominoId: 0,
+      spinnerId: null,
+      isGameOver: false,
+      selectedHandIndex: null,
+      hardSlamNextMove: false,
+      isHardSlamming: false,
+    });
+  }, []);
+
+  const placeDominoOnGrid = useCallback((
+    id: string,
+    data: DominoData,
+    x: number,
+    y: number,
+    orientation: 'horizontal' | 'vertical',
+    flipped = false
+  ) => {
+    const dominoState: DominoState = {
+      data,
+      x,
+      y,
+      orientation,
+      flipped,
+      isSpinner: isDouble(data),
+      rotation: (Math.random() - 0.5) * 40, // Random rotation between -20 and +20 degrees
+    };
+
+    const pips = flipped ? [data.value2, data.value1] : [data.value1, data.value2];
+    const cells = orientation === 'horizontal' 
+      ? [[x, y], [x + 1, y]] 
+      : [[x, y], [x, y + 1]];
+
+    setGameState(prev => {
+      const newState = { ...prev };
+      newState.dominoes[id] = dominoState;
+
+      cells.forEach((cell, i) => {
+        newState.board[`${cell[0]},${cell[1]}`] = {
+          dominoId: id,
+          value: pips[i],
+        };
+      });
+
+      return newState;
+    });
+  }, []);
+
+  const startGame = useCallback(() => {
+    resetGame();
+    let fullSet: DominoData[] = [];
+    for (let i = 0; i <= 6; i++) {
+      for (let j = i; j <= 6; j++) {
+        fullSet.push({ value1: i, value2: j });
+      }
+    }
+    shuffleArray(fullSet);
+
+    const playerHand = fullSet.slice(0, 7);
+    const boneyard = fullSet.slice(7);
+
+    // Start with empty board - speler met hoogste dubbel mag zelf kiezen
+    setGameState({
+      dominoes: {},
+      board: {},
+      playerHand,
+      boneyard,
+      openEnds: [],
+      forbiddens: {},
+      nextDominoId: 0,
+      spinnerId: null,
+      isGameOver: false,
+      selectedHandIndex: null,
+      hardSlamNextMove: false,
+      isHardSlamming: false,
+    });
+  }, [resetGame]);
+
+  // EXACT COPY FROM YOUR ORIGINAL CODE
+  const hasDifferentNeighbor = useCallback((x: number, y: number, boardOverride?: GameState['board']): boolean => {
+    const board = boardOverride || gameStateRef.current.board;
+    const neighbors = {
+      N: [x, y - 1],
+      S: [x, y + 1],
+      W: [x - 1, y],
+      E: [x + 1, y],
+      NE: [x + 1, y - 1],
+      NW: [x - 1, y - 1],
+      SE: [x + 1, y + 1],
+      SW: [x - 1, y + 1]
+    };
+
+    let nCount = 0;
+
+    for (const direction in neighbors) {
+      const [nx, ny] = neighbors[direction as keyof typeof neighbors];
+      const neighborKey = `${nx},${ny}`;
+      if (board[neighborKey]) {
+        nCount += 1;
+      }
+    }
+
+    if (nCount > 3) {
+      return true;
+    }
+
+    return false;
+  }, []);
+
+  const regenerateOpenEnds = useCallback((state: GameState): OpenEnd[] => {
+    console.log('🔍 REGENERATE OPEN ENDS - Starting calculation');
+    console.log('🔍 Total dominoes on board:', Object.keys(state.dominoes).length);
+    console.log('🔍 Board cells:', Object.keys(state.board).length);
+    console.log('🔍 All dominoes on board:', Object.entries(state.dominoes).map(([id, domino]) => `${id}: ${domino.data.value1}|${domino.data.value2} at (${domino.x},${domino.y}) ${domino.orientation} flipped:${domino.flipped}`));
+    console.log('🔍 All board cells:', Object.entries(state.board).map(([coord, cell]) => `${coord}: dominoId=${cell.dominoId} value=${cell.value}`));
+    
+    const openEnds: OpenEnd[] = [];
+
+    // Find true chain ends - only cells that can actually have dominoes placed
+    for (const coord in state.board) {
+      const [x, y] = coord.split(',').map(Number);
+      const cell = state.board[coord];
+      const domino = state.dominoes[cell.dominoId];
+
+      const neighbors = {
+        N: [x, y - 1],
+        S: [x, y + 1],
+        W: [x - 1, y],
+        E: [x + 1, y],
+      };
+
+      for (const dir in neighbors) {
+        const [nx, ny] = neighbors[dir as keyof typeof neighbors];
+        const neighborKey = `${nx},${ny}`;
+        
+        // Skip if neighbor position is occupied
+        if (state.board[neighborKey]) {
+          continue;
+        }
+
+        // Apply the same validation as findLegalMoves
+        
+        // Check if forbidden
+        if (state.forbiddens[neighborKey]) {
+          continue;
+        }
+
+        // Check hasDifferentNeighbor (more than 3 neighbors blocks placement)
+        if (hasDifferentNeighbor(nx, ny, state.board)) {
+          continue;
+        }
+
+        // Check collision with forward position (same as findLegalMoves)
+        const toCellKeyForward = {
+          N: `${nx},${ny - 1}`,
+          S: `${nx},${ny + 1}`,
+          W: `${nx - 1},${ny}`,
+          E: `${nx + 1},${ny}`,
+        }[dir];
+
+        if (toCellKeyForward && state.board[toCellKeyForward]) {
+          continue;
+        }
+
+        // Classic rule: a placed double only opens perpendicular to its own orientation.
+        // This keeps spinner/double targets from appearing above/below when the old
+        // classic logic would only allow left/right, and vice versa.
+        if (isDouble(domino.data)) {
+          const isVertical = domino.orientation === 'vertical';
+
+          if (
+            (isVertical && (dir === 'N' || dir === 'S')) ||
+            (!isVertical && (dir === 'W' || dir === 'E'))
+          ) {
+            continue;
+          }
+        }
+
+        // Correct edge value and allow OUTWARD + perpendiculars only at true chain ends.
+        let edgeValue = cell.value;
+        const dominoData = domino.data;
+        const isHorizontal = domino.orientation === 'horizontal';
+        const isFlipped = domino.flipped;
+        const [value1, value2] = isFlipped ? [dominoData.value2, dominoData.value1] : [dominoData.value1, dominoData.value2];
+        
+        if (isDouble(domino.data)) {
+          edgeValue = domino.data.value1;
+        } else if (isHorizontal) {
+          const isLeftCell = coord === `${domino.x},${domino.y}`;
+          const isRightCell = coord === `${domino.x + 1},${domino.y}`;
+          if (!isLeftCell && !isRightCell) continue;
+          
+          const outwardDir: 'W' | 'E' = isLeftCell ? 'W' : 'E';
+          const perpDirs: Array<'N' | 'S'> = ['N', 'S'];
+          const [outNx, outNy] = neighbors[outwardDir as keyof typeof neighbors];
+          if (state.board[`${outNx},${outNy}`]) continue;
+          
+          const allowed = [outwardDir, ...perpDirs] as Array<'N' | 'S' | 'E' | 'W'>;
+          if (!allowed.includes(dir as 'N' | 'S' | 'E' | 'W')) continue;
+          edgeValue = isLeftCell ? value1 : value2;
+        } else {
+          const isTopCell = coord === `${domino.x},${domino.y}`;
+          const isBottomCell = coord === `${domino.x},${domino.y + 1}`;
+          if (!isTopCell && !isBottomCell) continue;
+          
+          const outwardDir: 'N' | 'S' = isTopCell ? 'N' : 'S';
+          const perpDirs: Array<'W' | 'E'> = ['W', 'E'];
+          const [outNx, outNy] = neighbors[outwardDir as keyof typeof neighbors];
+          if (state.board[`${outNx},${outNy}`]) continue;
+          
+          const allowed = [outwardDir, ...perpDirs] as Array<'N' | 'S' | 'E' | 'W'>;
+          if (!allowed.includes(dir as 'N' | 'S' | 'E' | 'W')) continue;
+          edgeValue = isTopCell ? value1 : value2;
+        }
+        
+        console.log(`🔍 VALID CHAIN END: (${nx},${ny}) value:${edgeValue} from:${dir}`);
+        
+        openEnds.push({
+          x: nx,
+          y: ny,
+          value: edgeValue,
+          fromDir: dir as 'N' | 'S' | 'E' | 'W',
+        });
+      }
+    }
+    console.log('🔍 FINAL OPEN ENDS:', openEnds.map(end => `(${end.x},${end.y}) value:${end.value} from:${end.fromDir}${end.forced ? ' FORCED' : ''}`));
+    return openEnds;
+  }, [hasDifferentNeighbor]);
+
+  // EXACT COPY FROM YOUR ORIGINAL CODE
+  const findLegalMoves = useCallback((dominoData: DominoData, opts?: { ignorePipMatch?: boolean; forceInitialFlip?: boolean; wegaTipsOnly?: boolean }): LegalMove[] => {
+    const moves: LegalMove[] = [];
+    const selectedIsDouble = isDouble(dominoData);
+    const uniqueEnds: Record<string, boolean> = {};
+    const currentState = gameStateRef.current;
+    const ignorePipMatch = !!opts?.ignorePipMatch;
+    const forceInitialFlip = opts?.forceInitialFlip;
+    const wegaTipsOnly = !!opts?.wegaTipsOnly;
+    
+    // EERSTE DOMINO: render één centrale preview-target.
+    // Een groot grid met duizenden ghost-dominoes veroorzaakt zware lag op mobiel,
+    // vooral in Wega di sen waar de preview de echte steen tekent.
+    if (Object.keys(currentState.dominoes).length === 0) {
+      const orientation = selectedIsDouble ? 'vertical' : 'horizontal';
+
+      return [{
+        end: { x: 0, y: 0, value: dominoData.value1, fromDir: 'E' },
+        dominoData,
+        flipped: !!forceInitialFlip,
+        orientation,
+        x: 0,
+        y: 0,
+      }];
+    }
+    
+    const openEnds = regenerateOpenEnds(currentState);
+
+    openEnds.forEach((end) => {
+      if (uniqueEnds[`${end.x},${end.y}`]) {
+        return;
+      }
+
+      let validMove: LegalMove | null = null;
+      
+      const check = (value: number, flipped: boolean) => {
+        if (ignorePipMatch || end.value === value) { // In Wega-permissive mode pip-match wordt overgeslagen
+          const fromCellKey = (end.forced && (end as any).anchorX !== undefined && (end as any).anchorY !== undefined)
+            ? `${(end as any).anchorX},${(end as any).anchorY}`
+            : ({
+                N: `${end.x},${end.y + 1}`,
+                S: `${end.x},${end.y - 1}`,
+                W: `${end.x + 1},${end.y}`,
+                E: `${end.x - 1},${end.y}`,
+              } as const)[end.fromDir];
+
+          const toCellKey = {
+            N: `${end.x},${end.y - 1}`,
+            S: `${end.x},${end.y + 1}`,
+            W: `${end.x - 1},${end.y}`,
+            E: `${end.x + 1},${end.y}`,
+          }[end.fromDir];
+
+          const toCellKeyForward = {
+            N: `${end.x},${end.y - 2}`,
+            S: `${end.x},${end.y + 2}`,
+            W: `${end.x - 2},${end.y}`,
+            E: `${end.x + 2},${end.y}`,
+          }[end.fromDir];
+
+          const toDomino = currentState.dominoes[currentState.board[toCellKey]?.dominoId];
+          const toDominoForward = currentState.dominoes[currentState.board[toCellKeyForward]?.dominoId];
+          const fromDomino = currentState.dominoes[currentState.board[fromCellKey]?.dominoId];
+
+          if (!fromDomino) {
+            return;
+          }
+          if (toDomino) {
+            return;
+          }
+          if (toDominoForward) {
+            return;
+          }
+
+          if (!end.forced && currentState.forbiddens[toCellKey]) {
+            return;
+          }
+
+          if (!end.forced && hasDifferentNeighbor(end.x, end.y)) {
+            return;
+          }
+
+          const orientation = end.fromDir === 'N' || end.fromDir === 'S' ? 'vertical' : 'horizontal';
+
+          if (fromDomino.isSpinner && fromDomino) {
+            // Parallel Moves from double items are forbidden.
+            if (moves.find(x => x.end.fromDir === end.fromDir && x.fromDomino === fromDomino)) {
+              return;
+            }
+          }
+
+          if (selectedIsDouble && fromDomino.orientation === 'horizontal' && (end.fromDir === 'N' || end.fromDir === 'S')) {
+            return;
+          }
+          if (selectedIsDouble && fromDomino.orientation === 'vertical' && (end.fromDir === 'E' || end.fromDir === 'W')) {
+            return;
+          }
+
+          let { x, y } = end;
+          let finalOrientation: 'horizontal' | 'vertical' = orientation;
+
+          // Classic rule: doubles are laid perpendicular to the direction of play.
+          if (selectedIsDouble) {
+            finalOrientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
+          }
+
+          // KRITIEKE FIX: Consistente positionering en flipping voor alle richtingen
+          if (finalOrientation === 'horizontal') {
+            if (end.fromDir === 'W') {
+              x -= 1; // Plaats links
+              flipped = !flipped; // Belangrijk: Flip de steen voor westelijke richting
+            }
+          } else { // vertical
+            if (end.fromDir === 'N') {
+              y -= 1; // Plaats boven
+              flipped = !flipped; // Belangrijk: Flip de steen voor noordelijke richting
+            }
+          }
+
+          // PREVIEW/PLAATSING SYNC: als de speler een expliciete hand-flip heeft gekozen
+          // (Wega di sen), moet de uiteindelijke move.flipped exact die keuze weerspiegelen,
+          // zodat de ghost-preview en de daadwerkelijke plaatsing identiek zijn voor
+          // alle richtingen (incl. W/N corner-turns en doubles).
+          if (forceInitialFlip !== undefined) {
+            flipped = forceInitialFlip;
+          }
+
+          // Veiligheid (alleen strikte pip-match mode): als door bovenstaande sync de
+          // aansluit-pip niet meer matcht met end.value, beschouw deze zet als ongeldig.
+          if (!ignorePipMatch) {
+            const pip1 = flipped ? dominoData.value2 : dominoData.value1;
+            const pip2 = flipped ? dominoData.value1 : dominoData.value2;
+            // Bepaal welke helft tegen het bestaande einde ligt
+            const adjacencyOnSecondCell =
+              (finalOrientation === 'horizontal' && end.fromDir === 'W') ||
+              (finalOrientation === 'vertical' && end.fromDir === 'N');
+            const connectingPip = adjacencyOnSecondCell ? pip2 : pip1;
+            if (connectingPip !== end.value) {
+              return;
+            }
+          }
+
+          // Extra anti-clutter regel: een nieuwe steen mag alleen aan de verbindingskant contact maken.
+          // Zo voorkomen we "te dicht op elkaar" leggingen die latere zetten blokkeren.
+          const placementCells = finalOrientation === 'horizontal'
+            ? [[x, y], [x + 1, y]] as const
+            : [[x, y], [x, y + 1]] as const;
+          const placementCellSet = new Set(placementCells.map(([cx, cy]) => `${cx},${cy}`));
+          const fromDominoCells = fromDomino
+            ? (
+                fromDomino.orientation === 'horizontal'
+                  ? [[fromDomino.x, fromDomino.y], [fromDomino.x + 1, fromDomino.y]]
+                  : [[fromDomino.x, fromDomino.y], [fromDomino.x, fromDomino.y + 1]]
+              )
+            : [];
+          const allowedContactSet = new Set<string>([
+            ...placementCellSet,
+            ...fromDominoCells.map(([cx, cy]) => `${cx},${cy}`),
+          ]);
+
+          const hasIllegalSideContact = placementCells.some(([cx, cy]) => {
+            const neighborCells = [
+              [cx, cy - 1],
+              [cx, cy + 1],
+              [cx - 1, cy],
+              [cx + 1, cy],
+              [cx - 1, cy - 1],
+              [cx + 1, cy - 1],
+              [cx - 1, cy + 1],
+              [cx + 1, cy + 1],
+            ] as const;
+
+            return neighborCells.some(([nx, ny]) => {
+              const neighborKey = `${nx},${ny}`;
+              if (allowedContactSet.has(neighborKey)) return false;
+              if (!currentState.board[neighborKey]) return false;
+              return true;
+            });
+          });
+
+          if (hasIllegalSideContact) {
+            return;
+          }
+
+          // Store the valid move but don't add it yet
+          validMove = { 
+            end, 
+            dominoData, 
+            flipped, 
+            orientation: finalOrientation, 
+            x, 
+            y, 
+            fromDomino 
+          };
+        }
+      };
+
+      // Try both values, but only add the first valid one.
+      // Als forceInitialFlip expliciet is gezet (Wega: speler heeft hand-flip gekozen),
+      // probeer alleen die oriëntatie zodat de placement-preview de hand-flip volgt.
+      if (forceInitialFlip === true) {
+        check(dominoData.value2, true);
+      } else if (forceInitialFlip === false) {
+        check(dominoData.value1, false);
+      } else {
+        check(dominoData.value1, false);
+        check(dominoData.value2, true);
+      }
+      
+      // If we found a valid move, add it and mark the position as used
+      if (validMove) {
+        moves.push(validMove);
+        uniqueEnds[`${end.x},${end.y}`] = true;
+      }
+    });
+
+    // Wega di sen (ignorePipMatch): beperk tot kop en staart van de ketting.
+    // Filter zetten zodat alleen ends van "tip"-dominoes (graad <= 1) overblijven.
+    if (ignorePipMatch && Object.keys(currentState.dominoes).length > 1) {
+      const degree: Record<string, Set<string>> = {};
+      for (const id in currentState.dominoes) degree[id] = new Set();
+      for (const coord in currentState.board) {
+        const [cx, cy] = coord.split(',').map(Number);
+        const myId = currentState.board[coord].dominoId;
+        const neigh = [[cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy]] as const;
+        for (const [nx, ny] of neigh) {
+          const nCell = currentState.board[`${nx},${ny}`];
+          if (nCell && nCell.dominoId !== myId) degree[myId].add(nCell.dominoId);
+        }
+      }
+      const tipIds = new Set(Object.keys(degree).filter(id => degree[id].size <= 1));
+      return moves.filter(m => {
+        const fid = Object.keys(currentState.dominoes).find(id => currentState.dominoes[id] === m.fromDomino);
+        return fid ? tipIds.has(fid) : true;
+      });
+    }
+
+    // Wega di sen: alleen kop en staart van de keten zijn open. Filter zetten
+    // zodat een placement-target alleen verschijnt aan een steen met graad <= 1
+    // (dus ook geen perpendiculaire spinner-takken op een middenstuk-dubbel).
+    if (wegaTipsOnly && Object.keys(currentState.dominoes).length > 1) {
+      const degree: Record<string, Set<string>> = {};
+      for (const id in currentState.dominoes) degree[id] = new Set();
+      for (const coord in currentState.board) {
+        const [cx, cy] = coord.split(',').map(Number);
+        const myId = currentState.board[coord].dominoId;
+        const neigh = [[cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy]] as const;
+        for (const [nx, ny] of neigh) {
+          const nCell = currentState.board[`${nx},${ny}`];
+          if (nCell && nCell.dominoId !== myId) degree[myId].add(nCell.dominoId);
+        }
+      }
+      const tipIds = new Set(Object.keys(degree).filter(id => degree[id].size <= 1));
+      return moves.filter(m => {
+        const fid = Object.keys(currentState.dominoes).find(id => currentState.dominoes[id] === m.fromDomino);
+        return fid ? tipIds.has(fid) : true;
+      });
+    }
+
+    return moves;
+  }, [regenerateOpenEnds, hasDifferentNeighbor]);
+
+  // BLOCKED GAME CHECK: Game is only blocked if NO moves possible AND boneyard is empty
+  const checkBlockedGame = useCallback((_openEnds: OpenEnd[], board: Record<string, { dominoId: string; value: number }>, allPlayerHands: DominoData[][], boneyard: DominoData[]): boolean => {
+    console.log('🔍 CHECKING BLOCKED GAME - Using findLegalMoves for each tile');
+    console.log('🔍 All player hands:', allPlayerHands.map((hand, i) => `Player ${i}: ${hand.length} tiles`));
+    console.log('🔍 Boneyard:', boneyard.length, 'tiles');
+    
+    // IMPORTANT: If board is empty, game cannot be blocked
+    const boardHasDominoes = Object.keys(board).length > 0;
+    if (!boardHasDominoes) {
+      console.log('✅ Board is empty - game cannot be blocked');
+      return false;
+    }
+    
+    // CRITICAL: If boneyard still has tiles, game cannot be blocked
+    // Players should draw from boneyard until they can play or boneyard is empty
+    if (boneyard.length > 0) {
+      console.log('✅ Boneyard still has tiles - game cannot be blocked (should draw instead)');
+      return false;
+    }
+    
+    // Only check for blocked game if boneyard is empty
+    console.log('🔍 Boneyard is empty - checking if any players can make moves...');
+    
+    // Check all players' hands for legal moves
+    for (let playerIndex = 0; playerIndex < allPlayerHands.length; playerIndex++) {
+      const hand = allPlayerHands[playerIndex];
+      console.log(`🔍 Checking Player ${playerIndex} hand:`, hand);
+      
+      for (let tileIndex = 0; tileIndex < hand.length; tileIndex++) {
+        const tile = hand[tileIndex];
+        const legalMoves = findLegalMoves(tile);
+        
+        if (legalMoves.length > 0) {
+          console.log(`✅ Player ${playerIndex} can place tile [${tile.value1}|${tile.value2}] - ${legalMoves.length} legal moves found`);
+          return false; // Game is NOT blocked
+        }
+      }
+    }
+    
+    console.log('❌ NO LEGAL MOVES FOUND AND BONEYARD EMPTY - Game is BLOCKED');
+    return true; // Game is blocked
+  }, [findLegalMoves]);
+
+  const executeMove = useCallback((move: LegalMove) => {
+    const { index, end, dominoData, flipped, orientation } = move;
+    const actorPosition = move.actorPosition;
+    if (index === undefined) {
+      return;
+    }
+
+    setGameState(prev => {
+      const id = `d${prev.nextDominoId}`;
+      
+      // Gebruik de reeds berekende waarden uit move object zonder verdere aanpassingen
+      // De flipped waarde is reeds correct berekend in findLegalMoves
+      const { x, y, flipped: adjustedFlipped } = move;
+
+      // Use the pre-calculated position and flipped values from findLegalMoves
+
+      // Skip forbidden positions for the very first domino
+      const isFirstDomino = Object.keys(prev.dominoes).length === 0;
+      
+      // Create new forbiddens object to avoid mutation
+      const newForbiddens = { ...prev.forbiddens };
+      
+      if (!isFirstDomino) {
+        if (isDouble(dominoData)) {
+          // Mark the double domino positions themselves as forbidden first
+          newForbiddens[`${x},${y}`] = true;
+          if (orientation === 'horizontal') {
+            newForbiddens[`${x + 1},${y}`] = true;
+          } else {
+            newForbiddens[`${x},${y + 1}`] = true;
+          }
+          
+          // Then add comprehensive forbidden positions around it
+          let dir = end.fromDir;
+          if (dir === 'N') {
+            // Forbidden positions around North direction for doubles
+            newForbiddens[`${x - 1},${y + 2}`] = true;
+            newForbiddens[`${x + 1},${y + 2}`] = true;
+            newForbiddens[`${x - 1},${y + 1}`] = true;
+            newForbiddens[`${x + 1},${y + 1}`] = true;
+            newForbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
+            newForbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
+            newForbiddens[`${x},${y + 3}`] = true;
+            newForbiddens[`${x},${y + 2}`] = true;
+          }
+          if (dir === 'S') {
+            // Forbidden positions around South direction for doubles
+            newForbiddens[`${x - 1},${y - 1}`] = true;
+            newForbiddens[`${x + 1},${y - 1}`] = true;
+            newForbiddens[`${x - 1},${y - 2}`] = true;
+            newForbiddens[`${x + 1},${y - 2}`] = true;
+            newForbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
+            newForbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
+            newForbiddens[`${x},${y - 2}`] = true;
+            newForbiddens[`${x},${y - 3}`] = true;
+          }
+          if (dir === 'E') {
+            // Forbidden positions around East direction for doubles
+            newForbiddens[`${x - 1},${y + 1}`] = true;
+            newForbiddens[`${x - 1},${y - 1}`] = true;
+            newForbiddens[`${x - 2},${y + 1}`] = true;
+            newForbiddens[`${x - 2},${y - 1}`] = true;
+            newForbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
+            newForbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
+            newForbiddens[`${x - 2},${y}`] = true;
+            newForbiddens[`${x - 3},${y}`] = true;
+          }
+          if (dir === 'W') {
+            // Forbidden positions around West direction for doubles
+            newForbiddens[`${x + 1},${y + 1}`] = true;
+            newForbiddens[`${x + 1},${y - 1}`] = true;
+            newForbiddens[`${x + 2},${y + 1}`] = true;
+            newForbiddens[`${x + 2},${y - 1}`] = true;
+            newForbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
+            newForbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
+            newForbiddens[`${x + 2},${y}`] = true;
+            newForbiddens[`${x + 3},${y}`] = true;
+          }
+        } else {
+          let dir = end.fromDir;
+          if (dir === 'N') {
+            newForbiddens[`${x - 1},${y + 2}`] = true;
+            newForbiddens[`${x + 1},${y + 2}`] = true;
+            newForbiddens[`${x - 1},${y + 1}`] = true;
+            newForbiddens[`${x + 1},${y + 1}`] = true;
+            newForbiddens[`${x},${y + 3}`] = true;
+          }
+          if (dir === 'S') {
+            newForbiddens[`${x - 1},${y - 1}`] = true;
+            newForbiddens[`${x + 1},${y - 1}`] = true;
+            newForbiddens[`${x - 1},${y}`] = true;
+            newForbiddens[`${x + 1},${y}`] = true;
+            newForbiddens[`${x},${y - 2}`] = true;
+          }
+          if (dir === 'W') {
+            newForbiddens[`${x + 2},${y + 1}`] = true;
+            newForbiddens[`${x + 2},${y - 1}`] = true;
+            newForbiddens[`${x + 1},${y + 1}`] = true;
+            newForbiddens[`${x + 1},${y - 1}`] = true;
+            if (`${x + 3},${y}` !== '1,0') newForbiddens[`${x + 3},${y}`] = true;
+          }
+          if (dir === 'E') {
+            newForbiddens[`${x - 1},${y - 1}`] = true;
+            newForbiddens[`${x - 1},${y + 1}`] = true;
+            newForbiddens[`${x},${y - 1}`] = true;
+            newForbiddens[`${x},${y + 1}`] = true;
+            if (`${x - 2},${y}` !== '-1,0') newForbiddens[`${x - 2},${y}`] = true;
+          }
+        }
+      }
+
+      const newSpinnerId = (!prev.spinnerId && isDouble(dominoData)) ? id : prev.spinnerId;
+
+      const usePlayerHands = Array.isArray(prev.playerHands);
+      const hasActorPosition = usePlayerHands && typeof actorPosition === 'number';
+      const activeHand = hasActorPosition
+        ? [...(prev.playerHands?.[actorPosition] || [])]
+        : [...prev.playerHand];
+
+      console.log('[classicMove] executeMove pre', {
+        actorPosition,
+        usePlayerHands,
+        index,
+        activeHandSize: activeHand.length,
+        allHandSizes: (prev.playerHands || []).map((h) => h?.length ?? 0),
+        boneyard: prev.boneyard.length,
+      });
+
+      if (index < 0 || index >= activeHand.length) {
+        console.warn('❌ executeMove aborted: invalid hand index for active player', {
+          index,
+          actorPosition,
+          handLength: activeHand.length
+        });
+        return prev;
+      }
+
+      activeHand.splice(index, 1);
+
+      const nextPlayerHands = usePlayerHands ? [...(prev.playerHands || [])] : undefined;
+      if (nextPlayerHands && hasActorPosition) {
+        nextPlayerHands[actorPosition] = activeHand;
+      }
+
+      const newPlayerHand = nextPlayerHands && typeof localPlayerPosition === 'number'
+        ? [...(nextPlayerHands[localPlayerPosition] || prev.playerHand)]
+        : (hasActorPosition ? [...prev.playerHand] : activeHand);
+
+      // COLLISION DETECTION - Genereer rotatie die geen overlaps veroorzaakt
+      const getRotationWithoutOverlap = () => {
+        const maxAttempts = 15;
+        let attempts = 0;
+        
+        const checkOverlapWithPosition = (rotation: number) => {
+          // Bereken bounding box met rotatie
+          const radians = (rotation * Math.PI) / 180;
+          const cos = Math.abs(Math.cos(radians));
+          const sin = Math.abs(Math.sin(radians));
+          
+          // Domino afmetingen in pixels
+          const baseWidth = orientation === 'horizontal' ? 96 : 48;
+          const baseHeight = orientation === 'horizontal' ? 48 : 96;
+          
+          // Rotated bounding box
+          const rotatedWidth = baseWidth * cos + baseHeight * sin;
+          const rotatedHeight = baseWidth * sin + baseHeight * cos;
+          
+          // Positie van nieuwe domino (in pixels)
+          const newX = x * CELL_SIZE;
+          const newY = y * CELL_SIZE;
+          
+          // Check tegen alle bestaande dominoes
+          for (const existingId in prev.dominoes) {
+            const existing = prev.dominoes[existingId];
+            const existingRadians = ((existing.rotation || 0) * Math.PI) / 180;
+            const existingCos = Math.abs(Math.cos(existingRadians));
+            const existingSin = Math.abs(Math.sin(existingRadians));
+            
+            const existingBaseWidth = existing.orientation === 'horizontal' ? 96 : 48;
+            const existingBaseHeight = existing.orientation === 'horizontal' ? 48 : 96;
+            const existingRotatedWidth = existingBaseWidth * existingCos + existingBaseHeight * existingSin;
+            const existingRotatedHeight = existingBaseWidth * existingSin + existingBaseHeight * existingCos;
+            
+            const existingX = existing.x * CELL_SIZE;
+            const existingY = existing.y * CELL_SIZE;
+            
+            // Distance tussen centers
+            const dx = Math.abs(newX - existingX);
+            const dy = Math.abs(newY - existingY);
+            
+            // Minimum afstand om overlap te voorkomen (met padding)
+            const minDistanceX = (rotatedWidth + existingRotatedWidth) / 2 + 8;
+            const minDistanceY = (rotatedHeight + existingRotatedHeight) / 2 + 8;
+            
+            if (dx < minDistanceX && dy < minDistanceY) {
+              return true; // Overlap detected
+            }
+          }
+          return false; // Geen overlap
+        };
+        
+        // Probeer verschillende rotaties
+        while (attempts < maxAttempts) {
+          const rotation = (Math.random() - 0.5) * 40; // -20 tot +20 graden
+          
+          if (!checkOverlapWithPosition(rotation)) {
+            return rotation; // Veilige rotatie gevonden
+          }
+          attempts++;
+        }
+        
+        // Als geen veilige rotatie gevonden, gebruik kleine rotatie
+        return (Math.random() - 0.5) * 15; // Kleinere rotatie als fallback
+      };
+
+      const dominoRotation = getRotationWithoutOverlap();
+
+      const dominoState: DominoState = {
+        data: dominoData,
+        x,
+        y,
+        orientation,
+        flipped: adjustedFlipped,
+        isSpinner: isDouble(dominoData),
+        rotation: dominoRotation, // Gebruik consistente rotatie
+      };
+
+      const pips = adjustedFlipped 
+        ? [dominoData.value2, dominoData.value1] 
+        : [dominoData.value1, dominoData.value2];
+
+      const cells = orientation === 'horizontal' 
+        ? [[x, y], [x + 1, y]] 
+        : [[x, y], [x, y + 1]];
+
+      const newBoard = { ...prev.board };
+      cells.forEach((cell, i) => {
+        newBoard[`${cell[0]},${cell[1]}`] = {
+          dominoId: id,
+          value: pips[i],
+        };
+      });
+
+      // Check for win condition - if player has no more dominoes
+      const isGameWon = activeHand.length === 0;
+      
+      // Create normal state
+      const newState = {
+        ...prev,
+        dominoes: { ...prev.dominoes, [id]: dominoState },
+        board: newBoard,
+        forbiddens: newForbiddens,
+        spinnerId: newSpinnerId,
+        playerHands: nextPlayerHands || prev.playerHands,
+        playerHand: newPlayerHand,
+        selectedHandIndex: null,
+        nextDominoId: prev.nextDominoId + 1,
+        isGameOver: isGameWon,
+        hardSlamNextMove: false, // Reset hard slam flag after use
+        // DON'T reset isHardSlamming immediately - let other players see it in database sync
+        // It will be reset after animation time via setTimeout below
+      };
+      
+      // Generate new open ends and check for blocked game
+      const newOpenEnds = regenerateOpenEnds(newState);
+      newState.openEnds = newOpenEnds; // FIXED: Actually store the open ends in state
+      
+      if (!isGameWon) {
+        // For single player mode, create array with just the player hand
+        const allHands = newState.playerHands || [newPlayerHand];
+        const isBlocked = checkBlockedGame(newOpenEnds, newBoard, allHands, newState.boneyard);
+        newState.isGameOver = isBlocked;
+        console.log('[classicMove] post-place', {
+          actorPosition,
+          activeHandSize: activeHand.length,
+          isGameWon,
+          isBlocked,
+          boneyard: newState.boneyard.length,
+          openEnds: newOpenEnds.length,
+          allHandSizes: allHands.map((h) => h?.length ?? 0),
+        });
+      } else {
+        console.log('[classicMove] post-place WIN', {
+          actorPosition,
+          activeHandSize: activeHand.length,
+          allHandSizes: (newState.playerHands || []).map((h) => h?.length ?? 0),
+        });
+      }
+      
+      
+      return newState;
+    });
+  }, [checkBlockedGame, localPlayerPosition, regenerateOpenEnds]);
+
+  const drawFromBoneyard = useCallback((actorPosition?: number) => {
+    console.log('🎯 LOCAL DRAW START - boneyard size:', gameStateRef.current.boneyard.length);
+    console.log('🎯 LOCAL DRAW START - hand size:', gameStateRef.current.playerHand.length);
+    
+    if (gameStateRef.current.isGameOver || gameStateRef.current.boneyard.length === 0) {
+      console.log('❌ Cannot draw - game over or empty boneyard');
+      return;
+    }
+
+    setGameState(prev => {
+      console.log('🔥 EXECUTING LOCAL DRAW STATE UPDATE');
+      console.log('🔥 Before draw - hand size:', prev.playerHand.length);
+      console.log('🔥 Before draw - boneyard size:', prev.boneyard.length);
+      
+      // Draw a domino from the boneyard
+      const drawnDomino = prev.boneyard[prev.boneyard.length - 1];
+      const usePlayerHands = Array.isArray(prev.playerHands);
+      const hasActorPosition = usePlayerHands && typeof actorPosition === 'number';
+      const activeHand = hasActorPosition
+        ? [...(prev.playerHands?.[actorPosition] || [])]
+        : [...prev.playerHand];
+      const newActiveHand = [...activeHand, drawnDomino];
+      const newBoneyard = prev.boneyard.slice(0, -1);
+      
+      console.log('🎯 Drawn domino:', drawnDomino);
+      console.log('🔥 After draw - hand size:', newActiveHand.length);
+      console.log('🔥 After draw - boneyard size:', newBoneyard.length);
+      
+      // Check if the newly drawn domino can be played
+      const openEnds = regenerateOpenEnds(prev);
+      const canPlay = openEnds.some(end => 
+        drawnDomino.value1 === end.value || drawnDomino.value2 === end.value
+      );
+
+      const nextPlayerHands = usePlayerHands ? [...(prev.playerHands || [])] : undefined;
+      if (nextPlayerHands && hasActorPosition) {
+        nextPlayerHands[actorPosition] = newActiveHand;
+      }
+
+      const newPlayerHand = nextPlayerHands && typeof localPlayerPosition === 'number'
+        ? [...(nextPlayerHands[localPlayerPosition] || prev.playerHand)]
+        : (hasActorPosition ? [...prev.playerHand] : newActiveHand);
+
+      // If the drawn domino can be played, auto-select it for local player only
+      const actorIsLocal = !hasActorPosition || actorPosition === localPlayerPosition;
+      const selectedIndex = canPlay && actorIsLocal ? newActiveHand.length - 1 : prev.selectedHandIndex;
+      
+      const newState = {
+        ...prev,
+        playerHand: newPlayerHand,
+        playerHands: nextPlayerHands || prev.playerHands,
+        boneyard: newBoneyard,
+        selectedHandIndex: selectedIndex,
+        // Don't change current player - only change when a domino is actually played
+      };
+      
+      // After drawing, check if the game is blocked (no boneyard left and no valid moves)
+      // BUT ONLY if there are actually dominoes on the board (game has started)
+      const boardHasDominoes = Object.keys(prev.board).length > 0;
+      const allHands = (nextPlayerHands && nextPlayerHands.length > 0) ? nextPlayerHands : [newPlayerHand];
+      const isBlocked = boardHasDominoes && checkBlockedGame(openEnds, prev.board, allHands, newBoneyard);
+      newState.isGameOver = isBlocked;
+      
+      console.log('✅ LOCAL DRAW COMPLETE - returning new state');
+      return newState;
+    });
+  }, [checkBlockedGame, localPlayerPosition, regenerateOpenEnds]);
+
+  const selectHandDomino = useCallback((index: number) => {
+    setGameState(prev => ({
+      ...prev,
+      selectedHandIndex: prev.selectedHandIndex === index ? null : index,
+    }));
+  }, []);
+
+  // New function to draw a specific domino from boneyard by index
+  const drawSpecificFromBoneyard = useCallback((index: number, actorPosition?: number) => {
+    console.log('🎯 DRAW SPECIFIC START - index:', index, 'boneyard size:', gameStateRef.current.boneyard.length);
+    
+    if (gameStateRef.current.isGameOver || gameStateRef.current.boneyard.length === 0 || index >= gameStateRef.current.boneyard.length) {
+      console.log('❌ Cannot draw specific - invalid conditions');
+      return;
+    }
+
+    setGameState(prev => {
+      // Draw the specific domino from the boneyard
+      const drawnDomino = prev.boneyard[index];
+      const usePlayerHands = Array.isArray(prev.playerHands);
+      const resolvedActorPosition = usePlayerHands
+        ? (typeof actorPosition === 'number' ? actorPosition : localPlayerPosition)
+        : undefined;
+      const hasActorPosition = usePlayerHands && typeof resolvedActorPosition === 'number';
+      const activeHand = hasActorPosition
+        ? [...(prev.playerHands?.[resolvedActorPosition as number] || [])]
+        : [...prev.playerHand];
+      const newActiveHand = [...activeHand, drawnDomino];
+      const newBoneyard = prev.boneyard.filter((_, i) => i !== index);
+      
+      console.log('🎯 Drawn specific domino:', drawnDomino);
+      
+      // Check if the newly drawn domino can be played
+      const openEnds = regenerateOpenEnds(prev);
+      const canPlay = openEnds.some(end => 
+        drawnDomino.value1 === end.value || drawnDomino.value2 === end.value
+      );
+      
+      const nextPlayerHands = usePlayerHands ? [...(prev.playerHands || [])] : undefined;
+      if (nextPlayerHands && hasActorPosition) {
+        nextPlayerHands[resolvedActorPosition as number] = newActiveHand;
+      }
+
+      const newPlayerHand = nextPlayerHands && typeof localPlayerPosition === 'number'
+        ? [...(nextPlayerHands[localPlayerPosition] || prev.playerHand)]
+        : (hasActorPosition ? [...prev.playerHand] : newActiveHand);
+
+      const actorIsLocal = !hasActorPosition || resolvedActorPosition === localPlayerPosition;
+      // If the drawn domino can be played, auto-select it for local player only
+      const selectedIndex = canPlay && actorIsLocal ? newActiveHand.length - 1 : prev.selectedHandIndex;
+      
+      const newState = {
+        ...prev,
+        playerHand: newPlayerHand,
+        playerHands: nextPlayerHands || prev.playerHands,
+        boneyard: newBoneyard,
+        selectedHandIndex: selectedIndex,
+      };
+      
+      // Check if the game is blocked
+      const boardHasDominoes = Object.keys(prev.board).length > 0;
+      const allHands = (nextPlayerHands && nextPlayerHands.length > 0) ? nextPlayerHands : [newPlayerHand];
+      const isBlocked = boardHasDominoes && checkBlockedGame(openEnds, prev.board, allHands, newBoneyard);
+      if (isBlocked) {
+        console.log('🔄 Game is blocked after drawing from boneyard');
+        newState.isGameOver = isBlocked;
+      }
+      
+      return newState;
+    });
+  }, [regenerateOpenEnds, checkBlockedGame, localPlayerPosition]);
+
+  // Function to rotate a domino on the board
+  const rotateDomino = useCallback((dominoId: string) => {
+    setGameState(prev => {
+      const domino = prev.dominoes[dominoId];
+      if (!domino) return prev;
+      
+      // Check if rotation is possible (not if it would cause collision)
+      const newOrientation: 'horizontal' | 'vertical' = domino.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+      
+      // Calculate new position to avoid collisions
+      let newX = domino.x;
+      let newY = domino.y;
+      
+      // For doubles, adjust position when rotating
+      if (isDouble(domino.data)) {
+        if (domino.orientation === 'horizontal' && newOrientation === 'vertical') {
+          // Horizontal double to vertical - might need to adjust Y
+          // Keep the center point the same
+        } else if (domino.orientation === 'vertical' && newOrientation === 'horizontal') {
+          // Vertical double to horizontal - might need to adjust X
+          // Keep the center point the same
+        }
+      }
+      
+      // Create new domino state
+      const rotatedDomino = {
+        ...domino,
+        orientation: newOrientation,
+        x: newX,
+        y: newY
+      };
+      
+      // Update board cells
+      const newBoard = { ...prev.board };
+      const newDominoes = { ...prev.dominoes };
+      
+      // Remove old board positions
+      const oldCells = domino.orientation === 'horizontal' 
+        ? [`${domino.x},${domino.y}`, `${domino.x + 1},${domino.y}`]
+        : [`${domino.x},${domino.y}`, `${domino.x},${domino.y + 1}`];
+      
+      oldCells.forEach(cell => delete newBoard[cell]);
+      
+      // Add new board positions
+      const pips = domino.flipped ? [domino.data.value2, domino.data.value1] : [domino.data.value1, domino.data.value2];
+      const newCells = newOrientation === 'horizontal' 
+        ? [`${newX},${newY}`, `${newX + 1},${newY}`]
+        : [`${newX},${newY}`, `${newX},${newY + 1}`];
+      
+      newCells.forEach((cell, index) => {
+        newBoard[cell] = { dominoId, value: pips[index] };
+      });
+      
+      newDominoes[dominoId] = rotatedDomino;
+      
+      // Regenerate open ends
+      const tempState = { ...prev, dominoes: newDominoes, board: newBoard };
+      const newOpenEnds = regenerateOpenEnds(tempState);
+      
+      return {
+        ...tempState,
+        openEnds: newOpenEnds,
+      };
+    });
+  }, [regenerateOpenEnds]);
+
+  // Hard Slam function
+  const hardSlam = useCallback(() => {
+    console.log('🔥 HARD SLAM ACTIVATED!');
+    setGameState(prev => ({
+      ...prev,
+      hardSlamNextMove: true,
+      isHardSlamming: true,
+    }));
+  }, []);
+
+  return {
+    gameState,
+    setGameState,
+    startGame,
+    placeDominoOnGrid,
+    findLegalMoves,
+    executeMove,
+    drawFromBoneyard,
+    drawSpecificFromBoneyard,
+    selectHandDomino,
+    resetGame,
+    rotateDomino,
+    hardSlam,
+    hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y),
+    regenerateOpenEnds: (state?: GameState) => regenerateOpenEnds(state || gameStateRef.current),
+    manualBlockedCheck: () => {
+      const currentState = gameStateRef.current;
+      const openEnds = regenerateOpenEnds(currentState);
+      const allHands = currentState.playerHands || [currentState.playerHand];
+      const isBlocked = checkBlockedGame(openEnds, currentState.board, allHands, currentState.boneyard);
+      
+      console.log('🔧 MANUAL BLOCKED CHECK:', isBlocked ? 'BLOCKED' : 'NOT BLOCKED');
+      
+      setGameState(prev => ({
+        ...prev,
+        isGameOver: isBlocked
+      }));
+    },
+  };
+};
