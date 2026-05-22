@@ -453,7 +453,7 @@ const CanvasDemo: React.FC = () => {
   }, [selectedIdx, hand]);
 
   const placeStone = (t: PlacementTarget) => {
-    const { x, y } = gridToPx(t.gx, t.gy, t.orientation);
+    const { x, y } = placementPosition(t, stonesRef.current);
     const jitterA = (Math.random() - 0.5) * 0.18; // ~10° natuurlijke draai
     stonesRef.current.push({
       id: nextIdRef.current++,
@@ -507,7 +507,7 @@ const CanvasDemo: React.FC = () => {
       }
       // 2) Otherwise: place from hand
       for (const t of targetsRef.current) {
-        const { x: tx, y: ty } = gridToPx(t.gx, t.gy, t.orientation);
+        const { x: tx, y: ty } = placementPosition(t, stonesRef.current);
         const w = t.orientation === "h" ? W * 2 : W;
         const h = t.orientation === "h" ? H : H * 2;
         if (Math.abs(x - tx) < w / 2 && Math.abs(y - ty) < h / 2) {
@@ -528,13 +528,7 @@ const CanvasDemo: React.FC = () => {
     };
     const onMouseUp = () => {
       if (!draggingRef.current) return;
-      const s = stonesRef.current.find((st) => st.id === draggingRef.current!.id);
-      if (s) {
-        // Snap target back to grid home
-        const home = gridToPx(s.gx, s.gy, s.orientation);
-        s.targetX = home.x;
-        s.targetY = home.y;
-      }
+      // GEEN snap terug naar grid — stenen blijven waar je ze loslaat.
       draggingRef.current = null;
     };
     canvas.addEventListener("mousedown", onMouseDown);
@@ -621,7 +615,7 @@ const CanvasDemo: React.FC = () => {
         const pulse = 0.4 + 0.3 * Math.sin(Date.now() / 250);
         ctx.save();
         for (const t of targetsRef.current) {
-          const { x: tx, y: ty } = gridToPx(t.gx, t.gy, t.orientation);
+          const { x: tx, y: ty } = placementPosition(t, stonesRef.current);
           const w = t.orientation === "h" ? W * 2 : W;
           const h = t.orientation === "h" ? H : H * 2;
           ctx.fillStyle = `rgba(255, 200, 0, ${pulse * 0.4})`;
