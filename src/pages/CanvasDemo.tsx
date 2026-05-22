@@ -354,6 +354,7 @@ const CanvasDemo: React.FC = () => {
   const stonesRef = useRef<Stone[]>([]);
   const nextIdRef = useRef(1);
   const targetsRef = useRef<PlacementTarget[]>([]);
+  const draggingRef = useRef<{ id: number; offX: number; offY: number } | null>(null);
 
   if (stonesRef.current.length === 0) {
     stonesRef.current.push(makeStarter(nextIdRef));
@@ -416,6 +417,18 @@ const CanvasDemo: React.FC = () => {
 
     const onMouseDown = (e: MouseEvent) => {
       const { x, y } = getMouse(e);
+      // 1) Drag existing stone (top-most first)
+      for (let i = stonesRef.current.length - 1; i >= 0; i--) {
+        const s = stonesRef.current[i];
+        const isH = s.orientation === "h";
+        const w = isH ? W * 2 : W;
+        const h = isH ? H : H * 2;
+        if (Math.abs(x - s.x) < w / 2 && Math.abs(y - s.y) < h / 2) {
+          draggingRef.current = { id: s.id, offX: x - s.x, offY: y - s.y };
+          return;
+        }
+      }
+      // 2) Otherwise: place from hand
       for (const t of targetsRef.current) {
         const { x: tx, y: ty } = gridToPx(t.gx, t.gy, t.orientation);
         const w = t.orientation === "h" ? W * 2 : W;
@@ -426,7 +439,30 @@ const CanvasDemo: React.FC = () => {
         }
       }
     };
+    const onMouseMove = (e: MouseEvent) => {
+      if (!draggingRef.current) return;
+      const { x, y } = getMouse(e);
+      const s = stonesRef.current.find((st) => st.id === draggingRef.current!.id);
+      if (!s) return;
+      s.x = x - draggingRef.current.offX;
+      s.y = y - draggingRef.current.offY;
+      s.targetX = s.x;
+      s.targetY = s.y;
+    };
+    const onMouseUp = () => {
+      if (!draggingRef.current) return;
+      const s = stonesRef.current.find((st) => st.id === draggingRef.current!.id);
+      if (s) {
+        // Snap target back to grid home
+        const home = gridToPx(s.gx, s.gy, s.orientation);
+        s.targetX = home.x;
+        s.targetY = home.y;
+      }
+      draggingRef.current = null;
+    };
     canvas.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
 
     let raf = 0;
     const loop = () => {
@@ -553,6 +589,8 @@ const CanvasDemo: React.FC = () => {
     return () => {
       cancelAnimationFrame(raf);
       canvas.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
     };
   }, [intensity, showCollision, hand, selectedIdx]);
 
