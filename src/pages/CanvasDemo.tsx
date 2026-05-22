@@ -606,6 +606,7 @@ const CanvasDemo: React.FC = () => {
       const dy = (Math.random() - 0.5) * 2 * scatterBase * intensity;
       s.targetX = s.x + dx;
       s.targetY = s.y + dy;
+      s.targetAngle = s.angle + (Math.random() - 0.5) * 0.6 * intensity;
     }
     // After short delay, snap targets back to grid home so they fly back
     window.setTimeout(() => {
@@ -613,6 +614,8 @@ const CanvasDemo: React.FC = () => {
         const home = gridToPx(s.gx, s.gy, s.orientation);
         s.targetX = home.x;
         s.targetY = home.y;
+        // laat een lichte permanente draai achter — natuurlijker
+        s.targetAngle = (Math.random() - 0.5) * 0.22;
       }
     }, 220);
   };
