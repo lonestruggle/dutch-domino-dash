@@ -2,6 +2,9 @@
 import { useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { DominoGame } from '@/components/DominoGame';
+import { DominoGame as DominoGameStable } from '@/components/stable/DominoGame';
+import { GameVersionToggle } from '@/components/GameVersionToggle';
+import { useGameVersion } from '@/hooks/useGameVersion';
 import { useDominoGame } from '@/hooks/useDominoGame';
 import { PersistedGameState, useSyncedDominoGameState } from '@/hooks/useSyncedDominoGameState';
 import { useBotAI } from '@/hooks/useBotAI';
