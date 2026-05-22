@@ -891,7 +891,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             
             // Connect to actual animation state from useGameVisualSettings
             const shouldAnimate = isAnimating && animationMode === 'shake';
-            
+            const phys = stonePhysics.getOffset(id);
+            const isH = domino.orientation === 'horizontal';
+            const w = isH ? GRID_CELL_SIZE * 2 : GRID_CELL_SIZE;
+            const h = isH ? GRID_CELL_SIZE : GRID_CELL_SIZE * 2;
+
             return (
               <div
                 key={id}
@@ -899,6 +903,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 style={{
                   left: boardSize / 2 + domino.x * GRID_CELL_SIZE,
                   top: boardSize / 2 + domino.y * GRID_CELL_SIZE,
+                  transform: `translate3d(${phys.dx}px, ${phys.dy}px, 0)`,
+                  willChange: physicsEnabled ? 'transform' : undefined,
                 }}
               >
                 <DominoTile
@@ -917,6 +923,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     '--individual-angle': `${individualAngle}deg`,
                   } as React.CSSProperties}
                 />
+                {showCollisionDebug && (
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: 0,
+                      top: 0,
+                      width: w,
+                      height: h,
+                      transform: `rotate(${domino.rotation || 0}deg)`,
+                      transformOrigin: 'center',
+                      background: 'rgba(255, 80, 80, 0.18)',
+                      border: '1px solid rgba(255, 80, 80, 0.7)',
+                      borderRadius: 4,
+                    }}
+                  />
+                )}
               </div>
             );
           })}
