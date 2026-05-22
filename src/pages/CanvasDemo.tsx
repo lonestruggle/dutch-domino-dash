@@ -204,7 +204,7 @@ interface OBB {
   cos: number;
   sin: number;
 }
-const COLLISION_PADDING = 1; // mini-haarlijn tussen stenen, voelt natuurlijker
+const COLLISION_PADDING = 0; // 0 = stenen mogen elkaar raken zonder uit elkaar geduwd te worden
 
 function getOBB(s: Stone): OBB {
   const isH = s.orientation === "h";
