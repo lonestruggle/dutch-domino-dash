@@ -29,6 +29,8 @@ interface PhysicsBody {
   baseCy: number;
   angle: number; // radians
   orientation: 'horizontal' | 'vertical';
+  /** Visuele hoogte boven de tafel in "lagen" (0 = op tafel, 1 = opgetild). */
+  z: number;
 }
 
 interface OBB {
@@ -94,11 +96,15 @@ export interface UseStonePhysicsOptions {
 }
 
 export interface StonePhysicsAPI {
-  getOffset: (id: string) => { dx: number; dy: number };
+  getOffset: (id: string) => { dx: number; dy: number; z: number };
   /** Geeft een steen een directe visuele duw (in px). Handig voor testen. */
   nudge: (id: string, dx: number, dy: number) => void;
   /** Reset alle stenen naar hun grid-positie. */
   resetAll: () => void;
+  /** Tilt een steen op (z > 0) of zet hem terug op tafel (z = 0). */
+  setLift: (id: string, z: number) => void;
+  /** Z-waarde van een steen ophalen (0 als onbekend). */
+  getLift: (id: string) => number;
 }
 
 export function useStonePhysics(
@@ -137,6 +143,7 @@ export function useStonePhysics(
           baseCy,
           angle,
           orientation: d.orientation,
+          z: 0,
         });
       } else {
         existing.baseCx = baseCx;
@@ -167,6 +174,8 @@ export function useStonePhysics(
       for (let it = 0; it < 6; it++) {
         for (let i = 0; i < bodies.length; i++) {
           for (let j = i + 1; j < bodies.length; j++) {
+            // 3D-DEPTH: stenen op verschillende lagen botsen niet.
+            if (Math.abs(bodies[i].z - bodies[j].z) >= 0.5) continue;
             const mtv = satResolve(
               bodyOBB(bodies[i], gridCellSize),
               bodyOBB(bodies[j], gridCellSize),
@@ -185,7 +194,7 @@ export function useStonePhysics(
       off.clear();
       for (let i = 0; i < entries.length; i++) {
         const [id, b] = entries[i];
-        off.set(id, { dx: b.cx - b.baseCx, dy: b.cy - b.baseCy });
+        off.set(id, { dx: b.cx - b.baseCx, dy: b.cy - b.baseCy, z: b.z });
       }
 
       forceTick((t) => (t + 1) & 0xffff);
@@ -196,7 +205,8 @@ export function useStonePhysics(
   }, [options.enabled, gridCellSize]);
 
   return {
-    getOffset: (id: string) => offsetsRef.current.get(id) || { dx: 0, dy: 0 },
+    getOffset: (id: string) =>
+      offsetsRef.current.get(id) || { dx: 0, dy: 0, z: 0 },
     nudge: (id: string, dx: number, dy: number) => {
       const b = bodiesRef.current.get(id);
       if (b) {
@@ -208,9 +218,15 @@ export function useStonePhysics(
       for (const b of bodiesRef.current.values()) {
         b.cx = b.baseCx;
         b.cy = b.baseCy;
+        b.z = 0;
       }
       offsetsRef.current.clear();
       forceTick((t) => (t + 1) & 0xffff);
     },
+    setLift: (id: string, z: number) => {
+      const b = bodiesRef.current.get(id);
+      if (b) b.z = Math.max(0, z);
+    },
+    getLift: (id: string) => bodiesRef.current.get(id)?.z ?? 0,
   };
 }
