@@ -827,7 +827,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     globalGloveAlwaysVisible &&
     !showHardSlamHand &&
     !placeHandAnimation &&
-    legalMoves.length === 0;
+    legalMoves.length === 0 &&
+    // Niet over de geplaatste stenen blijven hangen — zodra er stenen op
+    // tafel liggen is de glove al "geparkeerd" via de drag-ghost flow.
+    Object.keys(gameState.dominoes).length === 0;
 
   // --- Drag & Drop helpers -------------------------------------------------
   const selectedDomino =
