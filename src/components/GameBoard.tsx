@@ -1219,6 +1219,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 className="domino-tile-board pointer-events-none"
               />
             </div>
+            {/* Glove zit BOVEN de steen zodat het lijkt of de hand hem vasthoudt */}
+            {finalBaseGloveSrc && (
+              <div
+                className="absolute left-1/2 top-1/2 pointer-events-none"
+                style={{
+                  transform: 'translate(-30%, -70%)',
+                  zIndex: 2,
+                }}
+              >
+                <div className="domino-place-hand flex h-14 w-14 items-center justify-center">
+                  {renderAnimatedHand(settings.gloveScale || 1, persistentGloveSkinConfig)}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
