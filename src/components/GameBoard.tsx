@@ -902,6 +902,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const isH = domino.orientation === 'horizontal';
             const w = isH ? GRID_CELL_SIZE * 2 : GRID_CELL_SIZE;
             const h = isH ? GRID_CELL_SIZE : GRID_CELL_SIZE * 2;
+            // 3D-DEPTH: opgetilde stenen worden iets groter en krijgen een
+            // diepere slagschaduw zodat duidelijk wordt dat ze boven de tafel
+            // hangen. Botsingen worden in de physics-laag al overgeslagen.
+            const lift = phys.z || 0;
+            const liftScale = 1 + Math.min(lift, 2) * 0.06;
+            const liftShadow =
+              lift > 0
+                ? `0 ${6 + lift * 10}px ${10 + lift * 14}px rgba(0,0,0,${Math.min(0.55, 0.25 + lift * 0.15)})`
+                : undefined;
 
             return (
               <div
@@ -910,8 +919,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 style={{
                   left: boardSize / 2 + domino.x * GRID_CELL_SIZE,
                   top: boardSize / 2 + domino.y * GRID_CELL_SIZE,
-                  transform: `translate3d(${phys.dx}px, ${phys.dy}px, 0)`,
+                  transform: `translate3d(${phys.dx}px, ${phys.dy}px, 0) scale(${liftScale})`,
                   willChange: physicsEnabled ? 'transform' : undefined,
+                  filter: liftShadow ? `drop-shadow(${liftShadow})` : undefined,
+                  zIndex: lift > 0 ? 50 + Math.round(lift * 10) : undefined,
                 }}
               >
                 <DominoTile
@@ -1149,6 +1160,39 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div className="mt-1 text-[10px] opacity-60">
             Duwt de eerste steen op het bord (bv. d0) — selecteer daarna een
             steen uit je hand: de gele targets moeten meeschuiven.
+          </div>
+        </div>
+        <div className="mt-1 border-t border-white/10 pt-1">
+          <div className="mb-1 text-[10px] uppercase tracking-wide opacity-70">
+            3D-Depth: til steen op
+          </div>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              className="flex-1 rounded bg-white/10 px-2 py-1 hover:bg-white/20"
+              onClick={() => {
+                const id = Object.keys(gameState.dominoes)[0];
+                if (id) stonePhysics.setLift(id, 1);
+              }}
+              title="Til de eerste steen op (z=1) — botst niet meer met andere"
+            >
+              Lift d0 ↑
+            </button>
+            <button
+              type="button"
+              className="flex-1 rounded bg-white/10 px-2 py-1 hover:bg-white/20"
+              onClick={() => {
+                const id = Object.keys(gameState.dominoes)[0];
+                if (id) stonePhysics.setLift(id, 0);
+              }}
+              title="Zet de eerste steen terug op tafel"
+            >
+              Drop d0 ↓
+            </button>
+          </div>
+          <div className="mt-1 text-[10px] opacity-60">
+            Til d0 op, duw hem dan met de pijlen door een andere steen — hij
+            mag er nu doorheen omdat hij op een andere laag zit.
           </div>
         </div>
       </div>
