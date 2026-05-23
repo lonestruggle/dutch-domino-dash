@@ -1039,7 +1039,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 isDouble={isDouble}
                 isInitialPlacement={isInitialPlacement}
                 disabled={!isMyTurn}
-                onClick={() => onMoveExecute(move)}
+                onClick={() => {
+                  // STAP 2 — Anchor-based placement: seed de nieuwe steen
+                  // met de huidige anker-offset zodat hij visueel naast de
+                  // (verschoven) anker landt i.p.v. op de kale grid-positie.
+                  if (physicsEnabled && (anchorOffset.dx !== 0 || anchorOffset.dy !== 0)) {
+                    stonePhysics.seedPlacementOffset(x, y, anchorOffset.dx, anchorOffset.dy);
+                  }
+                  onMoveExecute(move);
+                }}
                 ghostTile={isWegaPlay ? dominoData : undefined}
                 ghostFlipped={isWegaPlay ? move.flipped : undefined}
                 style={{
