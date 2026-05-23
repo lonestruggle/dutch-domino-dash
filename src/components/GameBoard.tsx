@@ -899,7 +899,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    setDragGhostPos({ x: rect.width / 2, y: rect.height / 2 });
+    // Spawn de ghost onder de glove (handschoen) zodat het lijkt alsof de
+    // hand de steen vasthoudt. Glove-positie wordt in % opgeslagen.
+    const gx = (currentPersistentGlovePos.x / 100) * rect.width;
+    const gy = (currentPersistentGlovePos.y / 100) * rect.height;
+    setDragGhostPos({ x: gx, y: gy });
     setHoverMoveKey(null);
   }, [gameState.selectedHandIndex, isMyTurn]);
 
