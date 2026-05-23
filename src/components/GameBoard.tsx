@@ -919,7 +919,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 style={{
                   left: boardSize / 2 + domino.x * GRID_CELL_SIZE,
                   top: boardSize / 2 + domino.y * GRID_CELL_SIZE,
+                  width: w,
+                  height: h,
                   transform: `translate3d(${phys.dx}px, ${phys.dy}px, 0) scale(${liftScale})`,
+                  transformOrigin: 'center center',
                   willChange: physicsEnabled ? 'transform' : undefined,
                   filter: liftShadow ? `drop-shadow(${liftShadow})` : undefined,
                   zIndex: lift > 0 ? 50 + Math.round(lift * 10) : undefined,
