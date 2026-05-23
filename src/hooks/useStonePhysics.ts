@@ -113,7 +113,9 @@ export function useStonePhysics(
   options: UseStonePhysicsOptions,
 ): StonePhysicsAPI {
   const bodiesRef = useRef<Map<string, PhysicsBody>>(new Map());
-  const offsetsRef = useRef<Map<string, { dx: number; dy: number }>>(new Map());
+  const offsetsRef = useRef<Map<string, { dx: number; dy: number; z: number }>>(
+    new Map(),
+  );
   const [, forceTick] = useState(0);
 
   const anchorRef = useRef(options.anchorStrength);
