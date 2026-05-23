@@ -115,6 +115,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
   // ------------------------------------------------------------------------
 
+  // --- Drag & Drop placement -----------------------------------------------
+  // Wanneer een steen in de hand is geselecteerd verschijnt een floating
+  // ghost-steen midden op tafel. De speler kan die met pointer/touch
+  // verslepen en op een legal target droppen. Klikken op een target blijft
+  // ook werken als alternatief.
+  const [dragGhostPos, setDragGhostPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingHandGhost, setIsDraggingHandGhost] = useState(false);
+  const [hoverMoveKey, setHoverMoveKey] = useState<string | null>(null);
+  // ------------------------------------------------------------------------
+
   const persistentGlovePosRef = useRef<{ x: number; y: number }>({
     x: settings.glovePosX || 82,
     y: settings.glovePosY || 76,
@@ -819,6 +829,119 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     !placeHandAnimation &&
     legalMoves.length === 0;
 
+  // --- Drag & Drop helpers -------------------------------------------------
+  const selectedDomino =
+    gameState.selectedHandIndex !== null
+      ? gameState.playerHand?.[gameState.selectedHandIndex] ?? null
+      : null;
+
+  const computeTargetGeometry = (move: LegalMove) => {
+    const { end } = move;
+    let { x, y } = end;
+    if (typeof move.x === 'number') x = move.x;
+    else if (move.orientation === 'horizontal' && end.fromDir === 'W') x -= 1;
+    if (typeof move.y === 'number') y = move.y;
+    else if (move.orientation === 'vertical' && end.fromDir === 'N') y -= 1;
+    const size = move.orientation === 'horizontal' ? [2, 1] : [1, 2];
+    const anchorCellKey = (() => {
+      switch (end.fromDir) {
+        case 'N': return `${end.x},${end.y + 1}`;
+        case 'S': return `${end.x},${end.y - 1}`;
+        case 'W': return `${end.x + 1},${end.y}`;
+        case 'E': return `${end.x - 1},${end.y}`;
+        default: return null;
+      }
+    })();
+    const anchorId = anchorCellKey ? gameState.board[anchorCellKey]?.dominoId : undefined;
+    const aOff = anchorId ? stonePhysics.getOffset(anchorId) : { dx: 0, dy: 0 };
+    return {
+      x,
+      y,
+      cxBoard: boardSize / 2 + x * GRID_CELL_SIZE + (size[0] * GRID_CELL_SIZE) / 2 + aOff.dx,
+      cyBoard: boardSize / 2 + y * GRID_CELL_SIZE + (size[1] * GRID_CELL_SIZE) / 2 + aOff.dy,
+      wBoard: size[0] * GRID_CELL_SIZE,
+      hBoard: size[1] * GRID_CELL_SIZE,
+      anchorOffset: aOff,
+    };
+  };
+
+  const findNearestMoveAt = (
+    clientX: number,
+    clientY: number,
+  ): { move: LegalMove; key: string; geom: ReturnType<typeof computeTargetGeometry> } | null => {
+    if (!boardRef.current) return null;
+    const rect = boardRef.current.getBoundingClientRect();
+    if (rect.width <= 0) return null;
+    const scale = rect.width / boardSize;
+    let best: { move: LegalMove; key: string; geom: ReturnType<typeof computeTargetGeometry>; dist: number } | null = null;
+    legalMoves.forEach((move, idx) => {
+      if (!move.end.forced && hasDifferentNeighbor(move.end.x, move.end.y)) return;
+      if (!move.end.forced && gameState.forbiddens[`${move.end.x},${move.end.y}`]) return;
+      const geom = computeTargetGeometry(move);
+      const sx = rect.left + geom.cxBoard * scale;
+      const sy = rect.top + geom.cyBoard * scale;
+      const dist = Math.hypot(clientX - sx, clientY - sy);
+      const maxDim = Math.max(geom.wBoard, geom.hBoard) * scale * 0.9;
+      if (dist <= maxDim && (!best || dist < best.dist)) {
+        best = { move, key: `${move.end.x}-${move.end.y}-${idx}`, geom, dist };
+      }
+    });
+    return best ? { move: best.move, key: best.key, geom: best.geom } : null;
+  };
+
+  // Init / reset ghost position bij wisselen van geselecteerde steen
+  useEffect(() => {
+    if (!selectedDomino || !isMyTurn) {
+      setDragGhostPos(null);
+      setIsDraggingHandGhost(false);
+      setHoverMoveKey(null);
+      return;
+    }
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    setDragGhostPos({ x: rect.width / 2, y: rect.height / 2 });
+    setHoverMoveKey(null);
+  }, [gameState.selectedHandIndex, isMyTurn]);
+
+  // Pointer-drag listeners
+  useEffect(() => {
+    if (!isDraggingHandGhost) return;
+    const onMove = (e: PointerEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setDragGhostPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      const near = findNearestMoveAt(e.clientX, e.clientY);
+      setHoverMoveKey(near?.key ?? null);
+    };
+    const onUp = (e: PointerEvent) => {
+      const near = findNearestMoveAt(e.clientX, e.clientY);
+      setIsDraggingHandGhost(false);
+      setHoverMoveKey(null);
+      if (near) {
+        const { geom, move } = near;
+        if (physicsEnabled && (geom.anchorOffset.dx !== 0 || geom.anchorOffset.dy !== 0)) {
+          stonePhysics.seedPlacementOffset(geom.x, geom.y, geom.anchorOffset.dx, geom.anchorOffset.dy);
+        }
+        onMoveExecute(move);
+      }
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [isDraggingHandGhost, legalMoves, gameState.board, gameState.forbiddens, physicsEnabled, boardSize, GRID_CELL_SIZE]);
+
+  // Bij hover een target → ghost overneemt diens oriëntatie/flip voor preview
+  const hoverMove = hoverMoveKey
+    ? legalMoves.find((m, i) => `${m.end.x}-${m.end.y}-${i}` === hoverMoveKey) ?? null
+    : null;
+  const ghostOrientation: 'horizontal' | 'vertical' = hoverMove?.orientation
+    ?? (selectedDomino && selectedDomino.value1 === selectedDomino.value2 ? 'vertical' : 'horizontal');
+  const ghostFlipped = hoverMove?.flipped ?? false;
+  // ------------------------------------------------------------------------
+
   return (
     <div className="relative w-full max-w-4xl mx-auto aspect-square">
       {shouldShowPersistentGlove && (
@@ -1039,6 +1162,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 isDouble={isDouble}
                 isInitialPlacement={isInitialPlacement}
                 disabled={!isMyTurn}
+                className={hoverMoveKey === `${end.x}-${end.y}-${index}` ? 'placement-target--hover' : undefined}
                 onClick={() => {
                   // STAP 2 — Anchor-based placement: seed de nieuwe steen
                   // met de huidige anker-offset zodat hij visueel naast de
@@ -1060,6 +1184,39 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             );
           })}
         </div>
+
+        {/* Drag & drop ghost: volgt de cursor terwijl je een hand-steen sleept */}
+        {selectedDomino && dragGhostPos && isMyTurn && (
+          <div
+            className="absolute -translate-x-1/2 -translate-y-1/2 z-[160] select-none"
+            style={{
+              left: dragGhostPos.x,
+              top: dragGhostPos.y,
+              touchAction: 'none',
+              cursor: isDraggingHandGhost ? 'grabbing' : 'grab',
+              opacity: isDraggingHandGhost ? 0.85 : 0.95,
+              filter: hoverMoveKey ? 'drop-shadow(0 0 8px hsl(var(--accent)))' : 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))',
+              transition: isDraggingHandGhost ? 'none' : 'left 0.15s ease, top 0.15s ease',
+            }}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!containerRef.current) return;
+              const rect = containerRef.current.getBoundingClientRect();
+              setDragGhostPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+              setIsDraggingHandGhost(true);
+            }}
+          >
+            <div style={{ transform: `scale(${dynamicScale})`, transformOrigin: 'center' }}>
+              <DominoTile
+                data={selectedDomino}
+                orientation={ghostOrientation}
+                flipped={ghostFlipped}
+                className="domino-tile-board pointer-events-none"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* STAP 1 — Physics debug-panel (OBB/SAT). Tijdelijk, voor testen. */}
