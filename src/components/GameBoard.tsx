@@ -115,6 +115,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
   // ------------------------------------------------------------------------
 
+  // --- Drag & Drop placement -----------------------------------------------
+  // Wanneer een steen in de hand is geselecteerd verschijnt een floating
+  // ghost-steen midden op tafel. De speler kan die met pointer/touch
+  // verslepen en op een legal target droppen. Klikken op een target blijft
+  // ook werken als alternatief.
+  const [dragGhostPos, setDragGhostPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingHandGhost, setIsDraggingHandGhost] = useState(false);
+  const [hoverMoveKey, setHoverMoveKey] = useState<string | null>(null);
+  // ------------------------------------------------------------------------
+
   const persistentGlovePosRef = useRef<{ x: number; y: number }>({
     x: settings.glovePosX || 82,
     y: settings.glovePosY || 76,
