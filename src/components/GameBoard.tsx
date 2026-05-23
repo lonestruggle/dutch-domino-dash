@@ -113,6 +113,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [physicsEnabled, setPhysicsEnabled] = useState(true);
   const [anchorStrength, setAnchorStrength] = useState(0);
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
+  const [physicsPanelOpen, setPhysicsPanelOpen] = useState(false);
   // ------------------------------------------------------------------------
 
   // --- Drag & Drop placement -----------------------------------------------
