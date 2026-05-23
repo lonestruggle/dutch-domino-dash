@@ -181,6 +181,7 @@ export function useStonePhysics(
           for (let j = i + 1; j < bodies.length; j++) {
             // 3D-DEPTH: stenen op verschillende lagen botsen niet.
             if (Math.abs(bodies[i].z - bodies[j].z) >= 0.5) continue;
+            if (bodies[i].ghostUntilClear || bodies[j].ghostUntilClear) continue;
             const mtv = satResolve(
               bodyOBB(bodies[i], gridCellSize),
               bodyOBB(bodies[j], gridCellSize),
@@ -192,6 +193,16 @@ export function useStonePhysics(
             bodies[j].cy += mtv.y * 0.5;
           }
         }
+      }
+
+      for (let i = 0; i < bodies.length; i++) {
+        const body = bodies[i];
+        if (!body.ghostUntilClear) continue;
+        const overlaps = bodies.some((other, j) => {
+          if (i === j || other.ghostUntilClear || Math.abs(body.z - other.z) >= 0.5) return false;
+          return Boolean(satResolve(bodyOBB(body, gridCellSize), bodyOBB(other, gridCellSize)));
+        });
+        if (!overlaps) body.ghostUntilClear = false;
       }
 
       // 3) Offsets schrijven
