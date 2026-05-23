@@ -41,6 +41,7 @@ interface UserPermissionsRecord {
   can_chat: boolean;
   can_create_lobby: boolean;
   can_use_custom_backgrounds: boolean;
+  can_use_beta: boolean;
 }
 
 const defaultPerms = (userId: string): UserPermissionsRecord => ({
@@ -50,6 +51,7 @@ const defaultPerms = (userId: string): UserPermissionsRecord => ({
   can_chat: true,
   can_create_lobby: true,
   can_use_custom_backgrounds: true,
+  can_use_beta: false,
 });
 
 export function ManageUserDialog({ open, onOpenChange, user }: Props) {
@@ -138,6 +140,7 @@ export function ManageUserDialog({ open, onOpenChange, user }: Props) {
         can_chat: perms.can_chat,
         can_create_lobby: perms.can_create_lobby,
         can_use_custom_backgrounds: perms.can_use_custom_backgrounds,
+        can_use_beta: perms.can_use_beta,
       }, { onConflict: 'user_id' });
     if (error) {
       toast({ title: 'Fout', description: 'Opslaan mislukt', variant: 'destructive' });
@@ -289,6 +292,13 @@ export function ManageUserDialog({ open, onOpenChange, user }: Props) {
             <div className="flex items-center justify-between py-2">
               <Label className="mr-4 text-sm">Custom achtergronden</Label>
               <Switch checked={perms.can_use_custom_backgrounds} onCheckedChange={(v) => setPerms(p => ({ ...p, can_use_custom_backgrounds: v }))} />
+            </div>
+            <div className="flex items-center justify-between py-2 border-t pt-3">
+              <div className="mr-4">
+                <Label className="text-sm">Beta versie toegang</Label>
+                <p className="text-xs text-muted-foreground">Geef deze speler toegang tot de stable/beta toggle.</p>
+              </div>
+              <Switch checked={perms.can_use_beta} onCheckedChange={(v) => setPerms(p => ({ ...p, can_use_beta: v }))} />
             </div>
             <div className="pt-2">
               <Button onClick={savePermissions}><Shield className="h-4 w-4 mr-2" />Opslaan</Button>

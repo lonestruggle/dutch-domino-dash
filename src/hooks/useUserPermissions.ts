@@ -8,6 +8,7 @@ interface UserPermissions {
   can_chat: boolean;
   can_create_lobby: boolean;
   can_use_custom_backgrounds: boolean;
+  can_use_beta: boolean;
 }
 
 const DEFAULT_PERMISSIONS: UserPermissions = {
@@ -16,6 +17,7 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   can_chat: true,
   can_create_lobby: true,
   can_use_custom_backgrounds: true,
+  can_use_beta: false,
 };
 
 export const useUserPermissions = () => {
@@ -70,5 +72,6 @@ export const useUserPermissions = () => {
     canChat,
     canCreateLobby,
     canUseCustomBackgrounds,
+    canUseBeta: permissions.can_use_beta,
   };
 };
