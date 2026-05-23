@@ -1117,7 +1117,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               className="rounded bg-white/10 px-1 py-1 hover:bg-white/20"
               onClick={() => {
                 const id = Object.keys(gameState.dominoes)[0];
-                if (id) stonePhysics.nudge(id, -60, 0);
+                if (id) stonePhysics.nudge(id, -8, 0);
               }}
               title="Duw eerste steen naar links"
             >
@@ -1128,7 +1128,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               className="rounded bg-white/10 px-1 py-1 hover:bg-white/20"
               onClick={() => {
                 const id = Object.keys(gameState.dominoes)[0];
-                if (id) stonePhysics.nudge(id, 0, -60);
+                if (id) stonePhysics.nudge(id, 0, -8);
               }}
               title="Duw eerste steen naar boven"
             >
@@ -1139,7 +1139,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               className="rounded bg-white/10 px-1 py-1 hover:bg-white/20"
               onClick={() => {
                 const id = Object.keys(gameState.dominoes)[0];
-                if (id) stonePhysics.nudge(id, 0, 60);
+                if (id) stonePhysics.nudge(id, 0, 8);
               }}
               title="Duw eerste steen naar onderen"
             >
@@ -1150,7 +1150,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               className="rounded bg-white/10 px-1 py-1 hover:bg-white/20"
               onClick={() => {
                 const id = Object.keys(gameState.dominoes)[0];
-                if (id) stonePhysics.nudge(id, 60, 0);
+                if (id) stonePhysics.nudge(id, 8, 0);
               }}
               title="Duw eerste steen naar rechts"
             >
@@ -1158,8 +1158,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </button>
           </div>
           <div className="mt-1 text-[10px] opacity-60">
-            Duwt de eerste steen op het bord (bv. d0) — selecteer daarna een
-            steen uit je hand: de gele targets moeten meeschuiven.
+            Kleine duw van 8px per klik. Klik meerdere keren snel achter elkaar
+            in dezelfde richting → je ziet d1 letterlijk wegschuiven i.p.v.
+            dat d0 er dwars doorheen tunnelt.
           </div>
         </div>
         <div className="mt-1 border-t border-white/10 pt-1">
