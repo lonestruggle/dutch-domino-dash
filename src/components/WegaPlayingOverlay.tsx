@@ -3,6 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Coins } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Props {
   lobbyId: string;
@@ -21,6 +31,7 @@ interface Props {
 export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, currentPlayer, playerPosition, allPlayers, autoPassEnabled }) => {
   const { toast } = useToast();
   const [busy, setBusy] = React.useState(false);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
   const autoPass = !!autoPassEnabled;
 
   // Server schrijft lastPasserPosition + lastPasserAt zodra iemand past.
@@ -50,9 +61,7 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, curren
   const stake = Number(gameState?.wegaStake) || 10;
   const isMyTurn = currentPlayer === playerPosition;
 
-  const handlePass = async () => {
-    if (busy || !isMyTurn) return;
-    if (!confirm(`Pas? Je betaalt ${stake} coins aan de laatste plaatser (of meer bij openingsbonus).`)) return;
+  const doPass = async () => {
     setBusy(true);
     try {
       const { data, error } = await supabase.rpc('wega_pass' as any, { _lobby_id: lobbyId });
@@ -71,15 +80,31 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, curren
   };
 
   return (
+    <>
     <div className="fixed top-20 right-4 z-40 bg-black/80 backdrop-blur-sm border border-yellow-400/40 rounded-lg px-3 py-2 flex items-center gap-3 text-xs text-white shadow-lg">
       <span className="flex items-center gap-1 text-yellow-300 font-semibold">
         <Coins className="h-3.5 w-3.5" /> Wega — Inzet {stake}
       </span>
       {autoPass ? <span className="text-yellow-300/80">Auto-pas aan</span> : null}
-      <Button size="sm" variant="destructive" disabled={!isMyTurn || busy} onClick={handlePass} className="h-7 px-3 text-xs">
+      <Button size="sm" variant="destructive" disabled={!isMyTurn || busy} onClick={() => setConfirmOpen(true)} className="h-7 px-3 text-xs">
         Pas
       </Button>
     </div>
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Pas bevestigen</AlertDialogTitle>
+          <AlertDialogDescription>
+            Weet je zeker dat je wilt passen? Je betaalt {stake} coins aan de laatste plaatser (of meer bij openingsbonus).
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuleren</AlertDialogCancel>
+          <AlertDialogAction onClick={doPass} disabled={busy}>Pas</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
