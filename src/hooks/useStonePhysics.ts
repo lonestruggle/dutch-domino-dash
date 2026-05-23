@@ -31,6 +31,8 @@ interface PhysicsBody {
   orientation: 'horizontal' | 'vertical';
   /** Visuele hoogte boven de tafel in "lagen" (0 = op tafel, 1 = opgetild). */
   z: number;
+  /** Na droppen blijft een steen tijdelijk ghost totdat hij vrij ligt. */
+  ghostUntilClear: boolean;
 }
 
 interface OBB {
@@ -146,6 +148,7 @@ export function useStonePhysics(
           angle,
           orientation: d.orientation,
           z: 0,
+          ghostUntilClear: false,
         });
       } else {
         existing.baseCx = baseCx;
