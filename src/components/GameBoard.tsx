@@ -827,7 +827,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     globalGloveAlwaysVisible &&
     !showHardSlamHand &&
     !placeHandAnimation &&
-    legalMoves.length === 0;
+    legalMoves.length === 0 &&
+    // Niet over de geplaatste stenen blijven hangen — zodra er stenen op
+    // tafel liggen is de glove al "geparkeerd" via de drag-ghost flow.
+    Object.keys(gameState.dominoes).length === 0;
 
   // --- Drag & Drop helpers -------------------------------------------------
   const selectedDomino =
@@ -899,7 +902,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    setDragGhostPos({ x: rect.width / 2, y: rect.height / 2 });
+    // Spawn de ghost onder de glove (handschoen) zodat het lijkt alsof de
+    // hand de steen vasthoudt. Glove-positie wordt in % opgeslagen.
+    const gx = (currentPersistentGlovePos.x / 100) * rect.width;
+    const gy = (currentPersistentGlovePos.y / 100) * rect.height;
+    setDragGhostPos({ x: gx, y: gy });
     setHoverMoveKey(null);
   }, [gameState.selectedHandIndex, isMyTurn]);
 
@@ -1215,6 +1222,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 className="domino-tile-board pointer-events-none"
               />
             </div>
+            {/* Glove zit BOVEN de steen zodat het lijkt of de hand hem vasthoudt */}
+            {finalBaseGloveSrc && (
+              <div
+                className="absolute left-1/2 top-1/2 pointer-events-none"
+                style={{
+                  transform: 'translate(-30%, -70%)',
+                  zIndex: 2,
+                }}
+              >
+                <div className="domino-place-hand flex h-14 w-14 items-center justify-center">
+                  {renderAnimatedHand(settings.gloveScale || 1, persistentGloveSkinConfig)}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
