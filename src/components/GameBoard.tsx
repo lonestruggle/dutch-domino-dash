@@ -1096,6 +1096,61 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             Reset
           </button>
         </div>
+        <div className="mt-1 border-t border-white/10 pt-1">
+          <div className="mb-1 text-[10px] uppercase tracking-wide opacity-70">
+            Test: duw 1 steen
+          </div>
+          <div className="grid grid-cols-4 gap-1">
+            <button
+              type="button"
+              className="rounded bg-white/10 px-1 py-1 hover:bg-white/20"
+              onClick={() => {
+                const id = Object.keys(gameState.dominoes)[0];
+                if (id) stonePhysics.nudge(id, -60, 0);
+              }}
+              title="Duw eerste steen naar links"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              className="rounded bg-white/10 px-1 py-1 hover:bg-white/20"
+              onClick={() => {
+                const id = Object.keys(gameState.dominoes)[0];
+                if (id) stonePhysics.nudge(id, 0, -60);
+              }}
+              title="Duw eerste steen naar boven"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              className="rounded bg-white/10 px-1 py-1 hover:bg-white/20"
+              onClick={() => {
+                const id = Object.keys(gameState.dominoes)[0];
+                if (id) stonePhysics.nudge(id, 0, 60);
+              }}
+              title="Duw eerste steen naar onderen"
+            >
+              ↓
+            </button>
+            <button
+              type="button"
+              className="rounded bg-white/10 px-1 py-1 hover:bg-white/20"
+              onClick={() => {
+                const id = Object.keys(gameState.dominoes)[0];
+                if (id) stonePhysics.nudge(id, 60, 0);
+              }}
+              title="Duw eerste steen naar rechts"
+            >
+              →
+            </button>
+          </div>
+          <div className="mt-1 text-[10px] opacity-60">
+            Duwt de eerste steen op het bord (bv. d0) — selecteer daarna een
+            steen uit je hand: de gele targets moeten meeschuiven.
+          </div>
+        </div>
       </div>
     </div>
   );
