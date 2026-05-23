@@ -1162,6 +1162,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 isDouble={isDouble}
                 isInitialPlacement={isInitialPlacement}
                 disabled={!isMyTurn}
+                className={hoverMoveKey === `${end.x}-${end.y}-${index}` ? 'placement-target--hover' : undefined}
                 onClick={() => {
                   // STAP 2 — Anchor-based placement: seed de nieuwe steen
                   // met de huidige anker-offset zodat hij visueel naast de
