@@ -902,6 +902,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const isH = domino.orientation === 'horizontal';
             const w = isH ? GRID_CELL_SIZE * 2 : GRID_CELL_SIZE;
             const h = isH ? GRID_CELL_SIZE : GRID_CELL_SIZE * 2;
+            // 3D-DEPTH: opgetilde stenen worden iets groter en krijgen een
+            // diepere slagschaduw zodat duidelijk wordt dat ze boven de tafel
+            // hangen. Botsingen worden in de physics-laag al overgeslagen.
+            const lift = phys.z || 0;
+            const liftScale = 1 + Math.min(lift, 2) * 0.06;
+            const liftShadow =
+              lift > 0
+                ? `0 ${6 + lift * 10}px ${10 + lift * 14}px rgba(0,0,0,${Math.min(0.55, 0.25 + lift * 0.15)})`
+                : undefined;
 
             return (
               <div
@@ -910,8 +919,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 style={{
                   left: boardSize / 2 + domino.x * GRID_CELL_SIZE,
                   top: boardSize / 2 + domino.y * GRID_CELL_SIZE,
-                  transform: `translate3d(${phys.dx}px, ${phys.dy}px, 0)`,
+                  transform: `translate3d(${phys.dx}px, ${phys.dy}px, 0) scale(${liftScale})`,
                   willChange: physicsEnabled ? 'transform' : undefined,
+                  filter: liftShadow ? `drop-shadow(${liftShadow})` : undefined,
+                  zIndex: lift > 0 ? 50 + Math.round(lift * 10) : undefined,
                 }}
               >
                 <DominoTile
