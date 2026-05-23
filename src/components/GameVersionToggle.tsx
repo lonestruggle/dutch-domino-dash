@@ -1,6 +1,6 @@
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useGameVersion, type GameVersion } from '@/hooks/useGameVersion';
-import { useAppSettings } from '@/hooks/useAppSettings';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { cn } from '@/lib/utils';
 
 /**
@@ -11,11 +11,10 @@ import { cn } from '@/lib/utils';
 export const GameVersionToggle = () => {
   const { canAccessDevTools, loading } = useUserRoles();
   const { version, setVersion } = useGameVersion();
-  const { getSetting, loading: settingsLoading } = useAppSettings();
+  const { canUseBeta, loading: permsLoading } = useUserPermissions();
 
-  if (loading || settingsLoading) return null;
-  const betaForPlayers = getSetting('beta_available_to_players') === true;
-  if (!canAccessDevTools && !betaForPlayers) return null;
+  if (loading || permsLoading) return null;
+  if (!canAccessDevTools && !canUseBeta) return null;
 
   const choose = (v: GameVersion) => {
     if (v === version) return;

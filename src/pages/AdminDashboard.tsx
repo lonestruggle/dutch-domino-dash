@@ -1925,39 +1925,6 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
 
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t pt-3">
                     <div className="space-y-0.5">
-                      <Label className="text-base">Beta versie — Beschikbaar voor spelers</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Als aan: alle spelers zien de stable/beta toggle rechtsboven. Uit: alleen admin/dev/mods.
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant={getSetting('beta_available_to_players') === true ? 'default' : 'outline'}
-                      onClick={async () => {
-                        const currentValue = getSetting('beta_available_to_players') === true;
-                        const newValue = !currentValue;
-                        const result = await updateSetting('beta_available_to_players', newValue);
-                        if (result.success) {
-                          toast({
-                            title: 'Instelling bijgewerkt',
-                            description: `Beta is nu ${newValue ? 'beschikbaar voor alle spelers' : 'alleen voor staff'}`,
-                          });
-                        } else {
-                          toast({
-                            title: 'Fout',
-                            description: 'Kon instelling niet bijwerken',
-                            variant: 'destructive',
-                          });
-                        }
-                      }}
-                      disabled={settingsLoading}
-                    >
-                      {getSetting('beta_available_to_players') === true ? 'Ingeschakeld' : 'Uitgeschakeld'}
-                    </Button>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t pt-3">
-                    <div className="space-y-0.5">
                       <Label className="text-base">Wega — Bot claim-kans (0–1)</Label>
                       <p className="text-sm text-muted-foreground">
                         Kans dat een bot in de claim-fase een steen succesvol claimt. 1 = altijd, 0 = nooit.
