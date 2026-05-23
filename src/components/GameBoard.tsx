@@ -1205,7 +1205,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {/* Drag & drop ghost: volgt de cursor terwijl je een hand-steen sleept */}
         {selectedDomino && dragGhostPos && isMyTurn && (
           <div
-            className="absolute -translate-x-1/2 -translate-y-1/2 z-[160] select-none"
+            className="absolute -translate-x-1/2 -translate-y-1/2 z-[160] select-none animate-scale-in"
             style={{
               left: dragGhostPos.x,
               top: dragGhostPos.y,
@@ -1213,7 +1213,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               cursor: isDraggingHandGhost ? 'grabbing' : 'grab',
               opacity: isDraggingHandGhost ? 0.85 : 0.95,
               filter: hoverMoveKey ? 'drop-shadow(0 0 8px hsl(var(--accent)))' : 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))',
-              transition: isDraggingHandGhost ? 'none' : 'left 0.15s ease, top 0.15s ease',
+              transition: isDraggingHandGhost
+                ? 'none'
+                : 'left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease',
             }}
             onPointerDown={(e) => {
               e.preventDefault();
