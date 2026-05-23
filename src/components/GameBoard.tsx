@@ -1162,6 +1162,39 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             steen uit je hand: de gele targets moeten meeschuiven.
           </div>
         </div>
+        <div className="mt-1 border-t border-white/10 pt-1">
+          <div className="mb-1 text-[10px] uppercase tracking-wide opacity-70">
+            3D-Depth: til steen op
+          </div>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              className="flex-1 rounded bg-white/10 px-2 py-1 hover:bg-white/20"
+              onClick={() => {
+                const id = Object.keys(gameState.dominoes)[0];
+                if (id) stonePhysics.setLift(id, 1);
+              }}
+              title="Til de eerste steen op (z=1) — botst niet meer met andere"
+            >
+              Lift d0 ↑
+            </button>
+            <button
+              type="button"
+              className="flex-1 rounded bg-white/10 px-2 py-1 hover:bg-white/20"
+              onClick={() => {
+                const id = Object.keys(gameState.dominoes)[0];
+                if (id) stonePhysics.setLift(id, 0);
+              }}
+              title="Zet de eerste steen terug op tafel"
+            >
+              Drop d0 ↓
+            </button>
+          </div>
+          <div className="mt-1 text-[10px] opacity-60">
+            Til d0 op, duw hem dan met de pijlen door een andere steen — hij
+            mag er nu doorheen omdat hij op een andere laag zit.
+          </div>
+        </div>
       </div>
     </div>
   );
