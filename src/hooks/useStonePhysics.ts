@@ -31,6 +31,8 @@ interface PhysicsBody {
   orientation: 'horizontal' | 'vertical';
   /** Visuele hoogte boven de tafel in "lagen" (0 = op tafel, 1 = opgetild). */
   z: number;
+  /** Na droppen blijft een steen tijdelijk ghost totdat hij vrij ligt. */
+  ghostUntilClear: boolean;
 }
 
 interface OBB {
@@ -146,6 +148,7 @@ export function useStonePhysics(
           angle,
           orientation: d.orientation,
           z: 0,
+          ghostUntilClear: false,
         });
       } else {
         existing.baseCx = baseCx;
@@ -178,6 +181,7 @@ export function useStonePhysics(
           for (let j = i + 1; j < bodies.length; j++) {
             // 3D-DEPTH: stenen op verschillende lagen botsen niet.
             if (Math.abs(bodies[i].z - bodies[j].z) >= 0.5) continue;
+            if (bodies[i].ghostUntilClear || bodies[j].ghostUntilClear) continue;
             const mtv = satResolve(
               bodyOBB(bodies[i], gridCellSize),
               bodyOBB(bodies[j], gridCellSize),
@@ -189,6 +193,16 @@ export function useStonePhysics(
             bodies[j].cy += mtv.y * 0.5;
           }
         }
+      }
+
+      for (let i = 0; i < bodies.length; i++) {
+        const body = bodies[i];
+        if (!body.ghostUntilClear) continue;
+        const overlaps = bodies.some((other, j) => {
+          if (i === j || other.ghostUntilClear || Math.abs(body.z - other.z) >= 0.5) return false;
+          return Boolean(satResolve(bodyOBB(body, gridCellSize), bodyOBB(other, gridCellSize)));
+        });
+        if (!overlaps) body.ghostUntilClear = false;
       }
 
       // 3) Offsets schrijven
@@ -221,13 +235,20 @@ export function useStonePhysics(
         b.cx = b.baseCx;
         b.cy = b.baseCy;
         b.z = 0;
+        b.ghostUntilClear = false;
       }
       offsetsRef.current.clear();
       forceTick((t) => (t + 1) & 0xffff);
     },
     setLift: (id: string, z: number) => {
       const b = bodiesRef.current.get(id);
-      if (b) b.z = Math.max(0, z);
+      if (b) {
+        const nextZ = Math.max(0, z);
+        if (b.z > 0 && nextZ === 0) b.ghostUntilClear = true;
+        if (nextZ > 0) b.ghostUntilClear = true;
+        b.z = nextZ;
+        forceTick((t) => (t + 1) & 0xffff);
+      }
     },
     getLift: (id: string) => bodiesRef.current.get(id)?.z ?? 0,
   };
