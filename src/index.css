@@ -230,6 +230,12 @@
   .placement-target:hover {
     background: hsl(var(--selected-glow));
   }
+
+  .placement-target--hover {
+    background: hsl(var(--selected-glow)) !important;
+    box-shadow: 0 0 0 3px hsl(var(--accent)), 0 0 18px hsl(var(--accent) / 0.6);
+    transform: scale(1.04);
+  }
   
   .game-ui {
     background: hsl(var(--ui-bg));
