@@ -225,6 +225,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     { anchorStrength, enabled: physicsEnabled },
   );
 
+  // Debug: expose physics + domino-ids op window zodat je vanuit de console
+  // `stonePhysics.nudge(id, dx, dy)` kan aanroepen om een steen te verschuiven.
+  useEffect(() => {
+    (window as any).stonePhysics = stonePhysics;
+    (window as any).dominoIds = Object.keys(gameState.dominoes);
+  }, [stonePhysics, gameState.dominoes]);
+
 
   // Listen for live settings updates and reapply scaling
   useEffect(() => {
