@@ -991,6 +991,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const isInitialPlacement = Object.keys(gameState.dominoes).length === 0;
             const isWegaPlay = (gameState as GameState & { wegaPhase?: string }).wegaPhase === 'playing';
 
+            // STAP 2: Anchor-based placement. De target hangt aan een bestaande
+            // anker-steen (de buur in de tegenovergestelde richting van `fromDir`).
+            // We passen de visuele physics-offset van die anker toe, zodat het
+            // gele target meebeweegt als de anker verschoven is.
+            const anchorCellKey = (() => {
+              switch (end.fromDir) {
+                case 'N': return `${end.x},${end.y + 1}`;
+                case 'S': return `${end.x},${end.y - 1}`;
+                case 'W': return `${end.x + 1},${end.y}`;
+                case 'E': return `${end.x - 1},${end.y}`;
+                default: return null;
+              }
+            })();
+            const anchorId = anchorCellKey ? gameState.board[anchorCellKey]?.dominoId : undefined;
+            const anchorOffset = anchorId ? stonePhysics.getOffset(anchorId) : { dx: 0, dy: 0 };
+
             return (
               <PlacementTarget
                 key={`${end.x}-${end.y}-${index}`}
@@ -1009,6 +1025,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   // Position exactly on grid coordinates - like dominos, no centering
                   left: boardSize / 2 + x * GRID_CELL_SIZE,
                   top: boardSize / 2 + y * GRID_CELL_SIZE,
+                  transform: `translate3d(${anchorOffset.dx}px, ${anchorOffset.dy}px, 0)`,
                 }}
               />
             );
