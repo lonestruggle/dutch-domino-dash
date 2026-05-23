@@ -45,7 +45,7 @@ export const useUserPermissions = () => {
           setPermissions(DEFAULT_PERMISSIONS);
         } else {
           // If no permissions record exists, use defaults
-          setPermissions(data || DEFAULT_PERMISSIONS);
+          setPermissions({ ...DEFAULT_PERMISSIONS, ...(data as any || {}) });
         }
       } catch (error) {
         console.error('Error fetching user permissions:', error);
