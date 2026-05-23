@@ -914,9 +914,9 @@ export const useDominoGame = (localPlayerPosition?: number) => {
         ? [...(nextPlayerHands[localPlayerPosition] || prev.playerHand)]
         : (hasActorPosition ? [...prev.playerHand] : newActiveHand);
 
-      // If the drawn domino can be played, auto-select it for local player only
-      const actorIsLocal = !hasActorPosition || actorPosition === localPlayerPosition;
-      const selectedIndex = canPlay && actorIsLocal ? newActiveHand.length - 1 : prev.selectedHandIndex;
+      // Do NOT auto-select the drawn domino — the player must select it from the hand
+      void canPlay;
+      const selectedIndex = prev.selectedHandIndex;
       
       const newState = {
         ...prev,
@@ -986,9 +986,11 @@ export const useDominoGame = (localPlayerPosition?: number) => {
         ? [...(nextPlayerHands[localPlayerPosition] || prev.playerHand)]
         : (hasActorPosition ? [...prev.playerHand] : newActiveHand);
 
-      const actorIsLocal = !hasActorPosition || resolvedActorPosition === localPlayerPosition;
-      // If the drawn domino can be played, auto-select it for local player only
-      const selectedIndex = canPlay && actorIsLocal ? newActiveHand.length - 1 : prev.selectedHandIndex;
+      // Do NOT auto-select the drawn domino — the player must select it from the hand
+      void canPlay;
+      void hasActorPosition;
+      void resolvedActorPosition;
+      const selectedIndex = prev.selectedHandIndex;
       
       const newState = {
         ...prev,
