@@ -1048,8 +1048,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   }
                   onMoveExecute(move);
                 }}
-                ghostTile={isWegaPlay ? dominoData : undefined}
-                ghostFlipped={isWegaPlay ? move.flipped : undefined}
+                ghostTile={dominoData}
+                ghostFlipped={move.flipped}
                 style={{
                   // Position exactly on grid coordinates - like dominos, no centering
                   left: boardSize / 2 + x * GRID_CELL_SIZE,
