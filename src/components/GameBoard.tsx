@@ -917,7 +917,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const rect = containerRef.current.getBoundingClientRect();
       setDragGhostPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       const near = findNearestMoveAt(e.clientX, e.clientY);
-      setHoverMoveKey(near?.key ?? null);
+      setHoverMoveKey((prev) => {
+        const next = near?.key ?? null;
+        // Haptic feedback bij het binnenkomen van een legal target (mobiel)
+        if (next && next !== prev && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          try { (navigator as any).vibrate?.(8); } catch {}
+        }
+        return next;
+      });
     };
     const onUp = (e: PointerEvent) => {
       const near = findNearestMoveAt(e.clientX, e.clientY);
@@ -929,6 +936,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           stonePhysics.seedPlacementOffset(geom.x, geom.y, geom.anchorOffset.dx, geom.anchorOffset.dy);
         }
         onMoveExecute(move);
+      } else if (containerRef.current) {
+        // Geen legal target → ghost vliegt terug naar startpositie boven de hand
+        const rect = containerRef.current.getBoundingClientRect();
+        setDragGhostPos({ x: rect.width / 2, y: rect.height * 0.9 });
       }
     };
     window.addEventListener('pointermove', onMove);
