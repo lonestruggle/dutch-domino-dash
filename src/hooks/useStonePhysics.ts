@@ -235,13 +235,20 @@ export function useStonePhysics(
         b.cx = b.baseCx;
         b.cy = b.baseCy;
         b.z = 0;
+        b.ghostUntilClear = false;
       }
       offsetsRef.current.clear();
       forceTick((t) => (t + 1) & 0xffff);
     },
     setLift: (id: string, z: number) => {
       const b = bodiesRef.current.get(id);
-      if (b) b.z = Math.max(0, z);
+      if (b) {
+        const nextZ = Math.max(0, z);
+        if (b.z > 0 && nextZ === 0) b.ghostUntilClear = true;
+        if (nextZ > 0) b.ghostUntilClear = true;
+        b.z = nextZ;
+        forceTick((t) => (t + 1) & 0xffff);
+      }
     },
     getLift: (id: string) => bodiesRef.current.get(id)?.z ?? 0,
   };
