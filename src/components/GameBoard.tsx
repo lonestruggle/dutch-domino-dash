@@ -113,6 +113,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [physicsEnabled, setPhysicsEnabled] = useState(true);
   const [anchorStrength, setAnchorStrength] = useState(0);
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
+  const [physicsPanelOpen, setPhysicsPanelOpen] = useState(false);
   // ------------------------------------------------------------------------
 
   // --- Drag & Drop placement -----------------------------------------------
@@ -1254,10 +1255,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       {/* STAP 1 — Physics debug-panel (OBB/SAT). Tijdelijk, voor testen. */}
       <div
-        className="absolute top-2 right-2 z-[200] flex flex-col gap-1 rounded-md border border-white/20 bg-black/70 p-2 text-[11px] text-white shadow-lg backdrop-blur"
-        style={{ minWidth: 200 }}
+        className="absolute top-2 right-2 z-[200] flex flex-col gap-1 rounded-md border border-white/20 bg-black/70 p-2 text-[11px] text-white shadow-lg backdrop-blur max-w-[90vw] max-h-[80vh] overflow-y-auto"
+        style={{ width: physicsPanelOpen ? 'min(240px, 90vw)' : 'auto' }}
       >
-        <div className="font-semibold tracking-wide">Physics (OBB/SAT)</div>
+        <button
+          type="button"
+          className="flex items-center justify-between gap-2 font-semibold tracking-wide text-left"
+          onClick={() => setPhysicsPanelOpen((v) => !v)}
+        >
+          <span>Physics (OBB/SAT)</span>
+          <span className="opacity-60">{physicsPanelOpen ? '▾' : '▸'}</span>
+        </button>
+        {physicsPanelOpen && (<>
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -1397,6 +1406,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             mag er nu doorheen omdat hij op een andere laag zit.
           </div>
         </div>
+        </>)}
       </div>
     </div>
   );
