@@ -107,6 +107,14 @@ export interface StonePhysicsAPI {
   setLift: (id: string, z: number) => void;
   /** Z-waarde van een steen ophalen (0 als onbekend). */
   getLift: (id: string) => number;
+  /**
+   * Anchor-based placement: registreer een visuele start-offset voor een
+   * steen die nog niet bestaat, op basis van zijn grid-coördinaten.
+   * Zodra de body in de sync-effect aangemaakt wordt, start hij met die
+   * offset. Hierdoor landt een nieuwe steen visueel naast de (verschoven)
+   * anker-steen.
+   */
+  seedPlacementOffset: (gridX: number, gridY: number, dx: number, dy: number) => void;
 }
 
 export function useStonePhysics(
@@ -116,6 +124,10 @@ export function useStonePhysics(
 ): StonePhysicsAPI {
   const bodiesRef = useRef<Map<string, PhysicsBody>>(new Map());
   const offsetsRef = useRef<Map<string, { dx: number; dy: number; z: number }>>(
+    new Map(),
+  );
+  /** Pending seeds: key = `${gridX},${gridY}` → {dx, dy}. */
+  const pendingSeedsRef = useRef<Map<string, { dx: number; dy: number }>>(
     new Map(),
   );
   const [, forceTick] = useState(0);
@@ -140,9 +152,12 @@ export function useStonePhysics(
       const angle = ((d.rotation || 0) * Math.PI) / 180;
       const existing = m.get(id);
       if (!existing) {
+        const seedKey = `${d.x},${d.y}`;
+        const seed = pendingSeedsRef.current.get(seedKey);
+        if (seed) pendingSeedsRef.current.delete(seedKey);
         m.set(id, {
-          cx: baseCx,
-          cy: baseCy,
+          cx: baseCx + (seed?.dx ?? 0),
+          cy: baseCy + (seed?.dy ?? 0),
           baseCx,
           baseCy,
           angle,
@@ -238,6 +253,7 @@ export function useStonePhysics(
         b.ghostUntilClear = false;
       }
       offsetsRef.current.clear();
+      pendingSeedsRef.current.clear();
       forceTick((t) => (t + 1) & 0xffff);
     },
     setLift: (id: string, z: number) => {
@@ -251,5 +267,9 @@ export function useStonePhysics(
       }
     },
     getLift: (id: string) => bodiesRef.current.get(id)?.z ?? 0,
+    seedPlacementOffset: (gridX: number, gridY: number, dx: number, dy: number) => {
+      if (dx === 0 && dy === 0) return;
+      pendingSeedsRef.current.set(`${gridX},${gridY}`, { dx, dy });
+    },
   };
 }
