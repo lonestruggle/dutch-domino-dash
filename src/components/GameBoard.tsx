@@ -1184,6 +1184,39 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             );
           })}
         </div>
+
+        {/* Drag & drop ghost: volgt de cursor terwijl je een hand-steen sleept */}
+        {selectedDomino && dragGhostPos && isMyTurn && (
+          <div
+            className="absolute -translate-x-1/2 -translate-y-1/2 z-[160] select-none"
+            style={{
+              left: dragGhostPos.x,
+              top: dragGhostPos.y,
+              touchAction: 'none',
+              cursor: isDraggingHandGhost ? 'grabbing' : 'grab',
+              opacity: isDraggingHandGhost ? 0.85 : 0.95,
+              filter: hoverMoveKey ? 'drop-shadow(0 0 8px hsl(var(--accent)))' : 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))',
+              transition: isDraggingHandGhost ? 'none' : 'left 0.15s ease, top 0.15s ease',
+            }}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!containerRef.current) return;
+              const rect = containerRef.current.getBoundingClientRect();
+              setDragGhostPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+              setIsDraggingHandGhost(true);
+            }}
+          >
+            <div style={{ transform: `scale(${dynamicScale})`, transformOrigin: 'center' }}>
+              <DominoTile
+                data={selectedDomino}
+                orientation={ghostOrientation}
+                flipped={ghostFlipped}
+                className="domino-tile-board pointer-events-none"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* STAP 1 — Physics debug-panel (OBB/SAT). Tijdelijk, voor testen. */}
