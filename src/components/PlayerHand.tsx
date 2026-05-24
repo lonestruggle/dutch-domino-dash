@@ -265,9 +265,6 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   return (
     <div ref={containerRef} className={`game-ui ${isMobile ? "p-2" : "p-6"}`}>
       <div className="flex items-center justify-center gap-2 mb-2 relative">
-        <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm" : "text-lg"}`}>
-          Jouw Hand
-        </h2>
         {canUseGloveFeatures && (
           <>
             <button
