@@ -112,14 +112,82 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const baseGap = isMobile ? 2 : 12; // px
   const gapPx = Math.max(1, Math.round(baseGap * safeHandScale));
 
-  // Split hand into chunks of 7 (one glove per chunk, alternating mirrored)
+  // Each glove holds up to 7 slots. We assign each domino a STABLE (glove, slot)
+  // position so that when a stone is played, the others in that glove keep their
+  // place instead of shifting in from the next glove.
   const chunkSize = 7;
   const [selectedSlot, setSelectedSlot] = useState(0);
-  const chunks: { items: DominoData[]; startIndex: number }[] = [];
-  for (let i = 0; i < hand.length; i += chunkSize) {
-    chunks.push({ items: hand.slice(i, i + chunkSize), startIndex: i });
-  }
-  if (chunks.length === 0) chunks.push({ items: [], startIndex: 0 });
+  const COMPACT_THRESHOLD = 5;
+
+  // canonicalKey -> { glove, slot }
+  const assignmentsRef = useRef<Map<string, { glove: number; slot: number }>>(new Map());
+  // Bump to force a re-compact (used by the "Samenvoegen" button)
+  const [compactTick, setCompactTick] = useState(0);
+
+  const canonicalKey = (d: DominoData) =>
+    `${Math.min(d.value1, d.value2)}-${Math.max(d.value1, d.value2)}`;
+
+  // Build chunks based on stable assignments
+  const { chunks, indexByKey } = (() => {
+    const map = assignmentsRef.current;
+    const currentKeys = new Set(hand.map(canonicalKey));
+
+    // Drop assignments for dominoes no longer in hand
+    for (const k of Array.from(map.keys())) {
+      if (!currentKeys.has(k)) map.delete(k);
+    }
+
+    // Auto-compact when few stones remain, or when user clicked the compact button
+    if (hand.length <= COMPACT_THRESHOLD || compactTick > 0) {
+      map.clear();
+      hand.forEach((d, i) => {
+        map.set(canonicalKey(d), { glove: Math.floor(i / chunkSize), slot: i % chunkSize });
+      });
+      if (compactTick > 0) {
+        // consume the tick on next render
+        // (defer via microtask to avoid setState-in-render)
+        queueMicrotask(() => setCompactTick(0));
+      }
+    } else {
+      // Assign any new dominoes (e.g. drawn from boneyard) to the first free slot
+      const occupied = new Set<string>();
+      for (const { glove, slot } of map.values()) occupied.add(`${glove}:${slot}`);
+      for (const d of hand) {
+        const k = canonicalKey(d);
+        if (map.has(k)) continue;
+        let placed = false;
+        for (let g = 0; !placed; g++) {
+          for (let s = 0; s < chunkSize; s++) {
+            const tag = `${g}:${s}`;
+            if (!occupied.has(tag)) {
+              map.set(k, { glove: g, slot: s });
+              occupied.add(tag);
+              placed = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Build chunks (sparse -> array with possible nulls per slot)
+    const indexByKey = new Map<string, number>();
+    hand.forEach((d, i) => indexByKey.set(canonicalKey(d), i));
+
+    let maxGlove = 0;
+    for (const { glove } of map.values()) maxGlove = Math.max(maxGlove, glove);
+    const chunks: { items: (DominoData | null)[] }[] = [];
+    for (let g = 0; g <= maxGlove; g++) {
+      chunks.push({ items: new Array(chunkSize).fill(null) });
+    }
+    for (const d of hand) {
+      const pos = map.get(canonicalKey(d));
+      if (!pos) continue;
+      chunks[pos.glove].items[pos.slot] = d;
+    }
+    if (chunks.length === 0) chunks.push({ items: new Array(chunkSize).fill(null) });
+    return { chunks, indexByKey };
+  })();
 
   // Update hand domino scale CSS variables - force immediate update and listen for global changes
   useEffect(() => {
@@ -171,6 +239,16 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm" : "text-lg"}`}>
           Jouw Hand
         </h2>
+        {hand.length > COMPACT_THRESHOLD && chunks.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setCompactTick(t => t + 1)}
+            className="text-xs px-2 py-0.5 rounded border border-ui-border bg-ui-bg/60 hover:bg-ui-bg text-ui-text"
+            title="Stenen samenvoegen in zo min mogelijk handschoenen"
+          >
+            Samenvoegen
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setShowAligner(s => !s)}
@@ -226,7 +304,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               />
               {/* Elke steen krijgt zijn eigen sleuf-positie + rotatie */}
               {chunk.items.map((domino, i) => {
-                const index = chunk.startIndex + i;
+                if (!domino) return null;
+                const index = indexByKey.get(canonicalKey(domino)) ?? -1;
+                if (index < 0) return null;
                 const slot = slotsForChunk[i] ?? slotsForChunk[slotsForChunk.length - 1];
                 const isSelectedSlot = showAligner && i === selectedSlot && chunkIdx === 0;
                 return (
