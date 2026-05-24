@@ -196,7 +196,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
           const mirrored = chunkIdx % 2 === 1;
           const gloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
           const gloveHeight = gloveWidth * align.aspectRatio;
-          const slotsForChunk = mirrored && align.slotsMirrored ? align.slotsMirrored : align.slots;
+          const slotsForChunk = mirrored
+            ? (align.slotsMirrored ?? align.slots.map(s => ({
+                ...s,
+                xPct: 100 - s.xPct,
+                rotateDeg: -s.rotateDeg,
+              })).reverse())
+            : align.slots;
           return (
             <div
               key={`glove-chunk-${chunkIdx}`}
