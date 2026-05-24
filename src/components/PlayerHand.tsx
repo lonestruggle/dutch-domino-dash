@@ -201,7 +201,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 ...s,
                 xPct: 100 - s.xPct,
                 rotateDeg: -s.rotateDeg,
-              })).reverse())
+              })))
             : align.slots;
           return (
             <div
