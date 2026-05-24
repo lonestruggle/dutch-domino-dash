@@ -461,6 +461,80 @@ const inferPlacementSides = (
   return sides;
 };
 
+// Bouw de daadwerkelijke lineaire ketenvolgorde door over de buurrelaties op
+// het bord te lopen, in plaats van te vertrouwen op de plaatsingsvolgorde
+// (d0, d1, …). Als er een vertakking (spinner met >2 buren) of een gesloten
+// lus is, geven we null terug zodat "Fix stenen" netjes met een toast meldt
+// dat hij niet kan relayouten.
+const computeLinearChainOrder = (
+  state: GameState
+): Array<[string, GameState['dominoes'][string]]> | null => {
+  const entries = Object.entries(state.dominoes);
+  if (entries.length <= 1) return entries;
+
+  const cellsByDomino = new Map<string, Array<[number, number]>>();
+  Object.entries(state.board).forEach(([coord, cell]) => {
+    const [x, y] = coord.split(',').map(Number);
+    const arr = cellsByDomino.get(cell.dominoId) || [];
+    arr.push([x, y]);
+    cellsByDomino.set(cell.dominoId, arr);
+  });
+  for (const [id, dom] of entries) {
+    const existing = cellsByDomino.get(id);
+    if (existing && existing.length >= 2) continue;
+    const cells: Array<[number, number]> = dom.orientation === 'horizontal'
+      ? [[dom.x, dom.y], [dom.x + 1, dom.y]]
+      : [[dom.x, dom.y], [dom.x, dom.y + 1]];
+    cellsByDomino.set(id, cells);
+  }
+
+  // Adjacency: twee dominoes zijn buren als willekeurige cel van A
+  // orthogonaal grenst aan een cel van B (geen diagonalen).
+  const adjacency = new Map<string, Set<string>>();
+  const ids = entries.map(([id]) => id);
+  for (const id of ids) adjacency.set(id, new Set());
+  for (let i = 0; i < ids.length; i += 1) {
+    for (let j = i + 1; j < ids.length; j += 1) {
+      const a = cellsByDomino.get(ids[i]) || [];
+      const b = cellsByDomino.get(ids[j]) || [];
+      const touch = a.some(([ax, ay]) => b.some(([bx, by]) =>
+        Math.abs(ax - bx) + Math.abs(ay - by) === 1));
+      if (touch) {
+        adjacency.get(ids[i])!.add(ids[j]);
+        adjacency.get(ids[j])!.add(ids[i]);
+      }
+    }
+  }
+
+  // Vertakking → niet lineair relaybaar.
+  for (const [, neighbors] of adjacency) {
+    if (neighbors.size > 2) return null;
+  }
+
+  // Zoek een eindpunt (1 buur). Bij een gesloten lus bestaat dat niet.
+  const endpoint = ids.find((id) => (adjacency.get(id)?.size ?? 0) === 1)
+    ?? ids.find((id) => (adjacency.get(id)?.size ?? 0) === 0);
+  if (!endpoint) return null;
+
+  // Loop de keten af.
+  const order: string[] = [];
+  const visited = new Set<string>();
+  let prev: string | null = null;
+  let curr: string | null = endpoint;
+  while (curr && !visited.has(curr)) {
+    visited.add(curr);
+    order.push(curr);
+    const neighbors = Array.from(adjacency.get(curr) || []);
+    const nextId = neighbors.find((n) => n !== prev) ?? null;
+    prev = curr;
+    curr = nextId;
+  }
+  if (order.length !== ids.length) return null; // niet verbonden
+
+  const entryMap = new Map(entries);
+  return order.map((id) => [id, entryMap.get(id)!] as [string, GameState['dominoes'][string]]);
+};
+
 const applyForbiddenRulesForPlacement = (
   forbiddens: Record<string, boolean>,
   placement: ChainPlacement,
