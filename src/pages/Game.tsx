@@ -219,8 +219,8 @@ const createPlacementCandidate = (
   }
   if (direction === 'W') {
     const cells: Array<[number, number]> = [
-      [endpoint.x - 2, endpoint.y],
       [endpoint.x - 1, endpoint.y],
+      [endpoint.x - 2, endpoint.y],
     ];
     return {
       x: endpoint.x - 2,
@@ -249,8 +249,8 @@ const createPlacementCandidate = (
   }
 
   const cells: Array<[number, number]> = [
-    [endpoint.x, endpoint.y - 2],
     [endpoint.x, endpoint.y - 1],
+    [endpoint.x, endpoint.y - 2],
   ];
   return {
     x: endpoint.x,
@@ -629,46 +629,10 @@ const rebuildForbiddensFromPlacements = (
   placements: ChainPlacement[]
 ): Record<string, boolean> => {
   const rebuilt: Record<string, boolean> = {};
-  // Anker (eerste steen) heeft geen fromDir, maar er moeten wel forbiddens
-  // langs zijn lange zijden komen, anders kun je er na "Fix stenen" illegaal
-  // tegenaan plaatsen. De eerste steen ligt altijd horizontaal op (0,0)-(1,0).
-  if (placements.length > 0) {
-    const first = placements[0];
-    const [ax, ay] = [first.x, first.y];
-    if (first.orientation === 'horizontal') {
-      // bovenkant
-      rebuilt[`${ax - 1},${ay - 1}`] = true;
-      rebuilt[`${ax},${ay - 1}`] = true;
-      rebuilt[`${ax + 1},${ay - 1}`] = true;
-      rebuilt[`${ax + 2},${ay - 1}`] = true;
-      // onderkant
-      rebuilt[`${ax - 1},${ay + 1}`] = true;
-      rebuilt[`${ax},${ay + 1}`] = true;
-      rebuilt[`${ax + 1},${ay + 1}`] = true;
-      rebuilt[`${ax + 2},${ay + 1}`] = true;
-    } else {
-      // linkerkant
-      rebuilt[`${ax - 1},${ay - 1}`] = true;
-      rebuilt[`${ax - 1},${ay}`] = true;
-      rebuilt[`${ax - 1},${ay + 1}`] = true;
-      rebuilt[`${ax - 1},${ay + 2}`] = true;
-      // rechterkant
-      rebuilt[`${ax + 1},${ay - 1}`] = true;
-      rebuilt[`${ax + 1},${ay}`] = true;
-      rebuilt[`${ax + 1},${ay + 1}`] = true;
-      rebuilt[`${ax + 1},${ay + 2}`] = true;
-    }
-  }
   for (let index = 1; index < placements.length; index += 1) {
     const placement = placements[index];
     const [, domino] = orderedDominoEntries[index];
     applyForbiddenRulesForPlacement(rebuilt, placement, domino.data);
-  }
-  // Bezette cellen zijn nooit forbidden (anders blokkeert het regenerateOpenEnds-buurcheck onnodig).
-  for (const placement of placements) {
-    placement.cells.forEach(([cx, cy]) => {
-      delete rebuilt[`${cx},${cy}`];
-    });
   }
   return rebuilt;
 };
@@ -836,12 +800,7 @@ const relayoutTableState = (
   rotation: FixTableLayoutRotation,
   regenerateOpenEnds: (state: GameState) => OpenEnd[]
 ): GameState | null => {
-  // Loop de échte ruimtelijke keten af zodat opeenvolgende stenen ook
-  // werkelijk waardes laten matchen. Lukt dat niet (vertakking/spinner met
-  // 3+ buren of losse stenen), val terug op ID-volgorde — buildPlacement
-  // zal dan zelf null teruggeven als de waarden niet kloppen.
-  const linearOrder = computeLinearChainOrder(state);
-  const orderedDominoEntries = linearOrder ?? Object.entries(state.dominoes).sort(
+  const orderedDominoEntries = Object.entries(state.dominoes).sort(
     ([dominoA], [dominoB]) => {
       const indexA = parseDominoIndex(dominoA);
       const indexB = parseDominoIndex(dominoB);
