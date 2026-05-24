@@ -21,35 +21,52 @@ const getDominoKey = (domino: DominoData, index: number) =>
   `${Math.min(domino.value1, domino.value2)}-${Math.max(domino.value1, domino.value2)}-${index}`;
 
 // ===== Handschoen-uitlijning (instelbaar via UI, persistent in localStorage) =====
-interface GloveAlignment {
-  widthPerSlotMobile: number; // px per sleuf (mobile)
-  widthPerSlotDesktop: number; // px per sleuf (desktop)
-  paddingTop: number; // %
-  paddingBottom: number; // %
-  paddingLeft: number; // %
-  paddingRight: number; // %
-  gapExtra: number; // px extra tussen stenen
-  dominoScale: number; // extra schaal op stenen in handschoen
+// Elke sleuf in de handschoen krijgt zijn eigen positie/hoek zodat de
+// stenen exact in de doorzichtige (mogelijk gekantelde) sleuven vallen.
+interface SlotConfig {
+  xPct: number;      // horizontale positie binnen handschoen (% breedte)
+  yPct: number;      // verticale positie (% hoogte van handschoen-aspect)
+  rotateDeg: number; // rotatie van de steen
+  scale: number;     // schaal van de steen
 }
 
+interface GloveAlignment {
+  widthMobile: number;       // totale breedte handschoen (px) mobile
+  widthDesktop: number;      // totale breedte handschoen (px) desktop
+  aspectRatio: number;       // hoogte / breedte van de handschoen-container
+  slots: SlotConfig[];       // 7 sleuven
+  slotsMirrored?: SlotConfig[]; // optionele override voor gespiegelde handschoen
+}
+
+const DEFAULT_SLOTS: SlotConfig[] = [
+  { xPct: 12, yPct: 48, rotateDeg: -14, scale: 1 },
+  { xPct: 24, yPct: 44, rotateDeg: -8,  scale: 1 },
+  { xPct: 37, yPct: 42, rotateDeg: -3,  scale: 1 },
+  { xPct: 50, yPct: 42, rotateDeg: 0,   scale: 1 },
+  { xPct: 63, yPct: 42, rotateDeg: 3,   scale: 1 },
+  { xPct: 76, yPct: 44, rotateDeg: 8,   scale: 1 },
+  { xPct: 88, yPct: 48, rotateDeg: 14,  scale: 1 },
+];
+
 const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
-  widthPerSlotMobile: 44,
-  widthPerSlotDesktop: 64,
-  paddingTop: 22,
-  paddingBottom: 12,
-  paddingLeft: 4,
-  paddingRight: 4,
-  gapExtra: 0,
-  dominoScale: 1,
+  widthMobile: 340,
+  widthDesktop: 520,
+  aspectRatio: 0.55,
+  slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v1';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v2';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
     const raw = localStorage.getItem(GLOVE_ALIGN_KEY);
     if (!raw) return DEFAULT_GLOVE_ALIGN;
-    return { ...DEFAULT_GLOVE_ALIGN, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    const merged: GloveAlignment = { ...DEFAULT_GLOVE_ALIGN, ...parsed };
+    if (!Array.isArray(merged.slots) || merged.slots.length !== 7) {
+      merged.slots = DEFAULT_SLOTS;
+    }
+    return merged;
   } catch {
     return DEFAULT_GLOVE_ALIGN;
   }
