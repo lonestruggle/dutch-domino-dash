@@ -3,6 +3,7 @@ import { DominoTile } from './DominoTile';
 import { DominoData } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
 
 interface PlayerHandProps {
