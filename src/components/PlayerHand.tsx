@@ -47,7 +47,6 @@ const DEFAULT_SLOTS: SlotConfig[] = [
   { xPct: 68,    yPct: 114,   rotateDeg: 4.5,   scale: 1.9 },
   { xPct: 86,    yPct: 116.5, rotateDeg: 5,     scale: 1.9 },
   { xPct: 102.5, yPct: 120,   rotateDeg: 5,     scale: 1.9 },
-  { xPct: 120,   yPct: 120,   rotateDeg: 6,     scale: 1.9 },
 ];
 
 const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
@@ -57,7 +56,7 @@ const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
   slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v4';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v5';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
@@ -65,7 +64,7 @@ function loadGloveAlignment(): GloveAlignment {
     if (!raw) return DEFAULT_GLOVE_ALIGN;
     const parsed = JSON.parse(raw);
     const merged: GloveAlignment = { ...DEFAULT_GLOVE_ALIGN, ...parsed };
-    if (!Array.isArray(merged.slots) || merged.slots.length !== 7) {
+    if (!Array.isArray(merged.slots) || merged.slots.length !== 6) {
       merged.slots = DEFAULT_SLOTS;
     }
     return merged;
