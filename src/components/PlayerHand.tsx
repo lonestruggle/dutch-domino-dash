@@ -47,7 +47,6 @@ const DEFAULT_SLOTS: SlotConfig[] = [
   { xPct: 68,    yPct: 114,   rotateDeg: 4.5,   scale: 1.9 },
   { xPct: 86,    yPct: 116.5, rotateDeg: 5,     scale: 1.9 },
   { xPct: 102.5, yPct: 120,   rotateDeg: 5,     scale: 1.9 },
-  { xPct: 120,   yPct: 120,   rotateDeg: 6,     scale: 1.9 },
 ];
 
 const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
@@ -57,7 +56,7 @@ const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
   slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v4';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v5';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
@@ -65,7 +64,7 @@ function loadGloveAlignment(): GloveAlignment {
     if (!raw) return DEFAULT_GLOVE_ALIGN;
     const parsed = JSON.parse(raw);
     const merged: GloveAlignment = { ...DEFAULT_GLOVE_ALIGN, ...parsed };
-    if (!Array.isArray(merged.slots) || merged.slots.length !== 7) {
+    if (!Array.isArray(merged.slots) || merged.slots.length !== 6) {
       merged.slots = DEFAULT_SLOTS;
     }
     return merged;
@@ -114,10 +113,11 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const baseGap = isMobile ? 2 : 12; // px
   const gapPx = Math.max(1, Math.round(baseGap * safeHandScale));
 
-  // Each glove holds up to 7 slots. We assign each domino a STABLE (glove, slot)
+  // Each glove holds up to 6 slots. We assign each domino a STABLE (glove, slot)
   // position so that when a stone is played, the others in that glove keep their
-  // place instead of shifting in from the next glove.
-  const chunkSize = 7;
+  // place instead of shifting in from the next glove. Eerste 6 stenen vullen
+  // handschoen 1, daarna 6 in handschoen 2, en alles daarboven om-en-om.
+  const chunkSize = 6;
   const [selectedSlot, setSelectedSlot] = useState(0);
   const COMPACT_THRESHOLD = 5;
 
@@ -157,10 +157,20 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
     }
 
     // Auto-compact when enabled, when few stones remain, or when user clicked the compact button
+    const assignPos = (i: number): { glove: number; slot: number } => {
+      if (i < chunkSize * 2) {
+        // Eerst handschoen 1 vol (0..5), dan handschoen 2 (6..11).
+        return { glove: Math.floor(i / chunkSize), slot: i % chunkSize };
+      }
+      // Daarboven om en om toevoegen aan elke handschoen.
+      const over = i - chunkSize * 2;
+      return { glove: over % 2, slot: chunkSize + Math.floor(over / 2) };
+    };
+
     if (autoCompact || hand.length <= COMPACT_THRESHOLD || compactTick > 0) {
       map.clear();
       hand.forEach((d, i) => {
-        map.set(canonicalKey(d), { glove: Math.floor(i / chunkSize), slot: i % chunkSize });
+        map.set(canonicalKey(d), assignPos(i));
       });
       if (compactTick > 0) {
         // consume the tick on next render
@@ -175,15 +185,15 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         const k = canonicalKey(d);
         if (map.has(k)) continue;
         let placed = false;
-        for (let g = 0; !placed; g++) {
-          for (let s = 0; s < chunkSize; s++) {
-            const tag = `${g}:${s}`;
-            if (!occupied.has(tag)) {
-              map.set(k, { glove: g, slot: s });
-              occupied.add(tag);
-              placed = true;
-              break;
-            }
+        // Doorloop posities in dezelfde volgorde als assignPos:
+        // 0..5 = g0 s0..5, 6..11 = g1 s0..5, daarna om-en-om met s>=6.
+        for (let i = 0; !placed; i++) {
+          const pos = assignPos(i);
+          const tag = `${pos.glove}:${pos.slot}`;
+          if (!occupied.has(tag)) {
+            map.set(k, pos);
+            occupied.add(tag);
+            placed = true;
           }
         }
       }

@@ -325,11 +325,20 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
 
       if (error) {
         console.error('Error updating game state:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update game state",
-          variant: "destructive"
-        });
+        const msg = (error as any)?.message || '';
+        if (msg.includes('Game not found')) {
+          toast({
+            title: "Spel niet gevonden",
+            description: "Dit spel bestaat niet meer (mogelijk opgeruimd). Ga terug naar de lobby en start een nieuw spel.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: `Failed to update game state${msg ? `: ${msg}` : ''}`,
+            variant: "destructive"
+          });
+        }
       } else {
         console.log('✅ DATABASE UPDATE SUCCESS with turn advanced to:', nextPlayerTurn);
       }
