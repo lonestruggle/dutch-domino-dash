@@ -122,6 +122,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
 
   // Handschoen-/hand-instellingen zijn alleen voor admin/dev zichtbaar.
   const { canAccessDevTools } = useUserRoles();
+  const { canUseBeta } = useUserPermissions();
+  const canUseGloveFeatures = canAccessDevTools || canUseBeta;
 
   // Persoonlijke voorkeur: stenen automatisch naar elkaar toe schuiven na een zet.
   const AUTO_COMPACT_KEY = 'playerHand.autoCompact';
@@ -255,7 +257,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm" : "text-lg"}`}>
           Jouw Hand
         </h2>
-        {canAccessDevTools && (
+        {canUseGloveFeatures && (
           <>
             <button
               type="button"
@@ -275,6 +277,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 Samenvoegen
               </button>
             )}
+            {canAccessDevTools && (
             <button
               type="button"
               onClick={() => setShowAligner(s => !s)}
@@ -283,6 +286,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             >
               ⚙︎
             </button>
+            )}
           </>
         )}
       </div>
