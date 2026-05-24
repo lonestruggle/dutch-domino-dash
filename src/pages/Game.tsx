@@ -2793,7 +2793,7 @@ export default function Game() {
   ]);
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className={`min-h-screen relative ${gameVersion === 'beta' ? 'bg-transparent' : 'bg-background'}`}>
       {gameVersion === 'beta' && (
         <>
           <div
