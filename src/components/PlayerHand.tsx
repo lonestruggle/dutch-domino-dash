@@ -240,7 +240,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                   >
                     <DominoTile
                       data={domino}
-                      orientation={isDouble(domino) ? "vertical" : "horizontal"}
+                      orientation="vertical"
                       flipped={!!flippedTiles?.[index]}
                       selected={index === selectedIndex}
                       rotateX={settings.rotateX}
