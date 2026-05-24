@@ -191,7 +191,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         />
       )}
 
-      <div className="flex flex-col items-center" style={{ gap: `${gapPx}px` }}>
+      <div className="flex flex-row flex-wrap items-start justify-center" style={{ gap: `${gapPx}px` }}>
         {chunks.map((chunk, chunkIdx) => {
           const mirrored = chunkIdx % 2 === 1;
           const gloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
