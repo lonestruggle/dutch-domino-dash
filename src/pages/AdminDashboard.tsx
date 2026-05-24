@@ -1818,6 +1818,44 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
                         Opslaan
                       </Button>
                     </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        id="beta-bg-file-input"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const ext = file.name.split('.').pop() || 'png';
+                            const path = `beta-bg-${Date.now()}.${ext}`;
+                            const { error: upErr } = await supabase.storage
+                              .from('table-backgrounds')
+                              .upload(path, file, { upsert: false });
+                            if (upErr) throw upErr;
+                            const { data: { publicUrl } } = supabase.storage
+                              .from('table-backgrounds')
+                              .getPublicUrl(path);
+                            const result = await updateSetting('beta_page_background_url', publicUrl);
+                            if (!result.success) throw new Error('save failed');
+                            const urlEl = document.getElementById('beta-bg-url-input') as HTMLInputElement | null;
+                            if (urlEl) urlEl.value = publicUrl;
+                            toast({ title: 'Geüpload', description: 'Achtergrond opgeslagen' });
+                          } catch (err: any) {
+                            toast({ title: 'Upload mislukt', description: err?.message || 'Onbekende fout', variant: 'destructive' });
+                          } finally {
+                            (e.target as HTMLInputElement).value = '';
+                          }
+                        }}
+                      />
+                      {getSetting('beta_page_background_url') && (
+                        <img
+                          src={getSetting('beta_page_background_url')}
+                          alt="Voorbeeld"
+                          className="h-12 w-20 object-cover rounded border"
+                        />
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="space-y-0.5">
