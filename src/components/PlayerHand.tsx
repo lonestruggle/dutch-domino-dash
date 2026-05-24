@@ -40,11 +40,11 @@ interface GloveAlignment {
 
 const DEFAULT_SLOTS: SlotConfig[] = [
   { xPct: 12.5,  yPct: 102.5, rotateDeg: 6,     scale: 1.9 },
-  { xPct: 30.5,  yPct: 108.5, rotateDeg: -85,   scale: 1.9 },
-  { xPct: 48.5,  yPct: 110,   rotateDeg: 95,    scale: 1.9 },
+  { xPct: 30.5,  yPct: 108.5, rotateDeg: 5,     scale: 1.9 },
+  { xPct: 48.5,  yPct: 110,   rotateDeg: 5,     scale: 1.9 },
   { xPct: 68,    yPct: 114,   rotateDeg: 4.5,   scale: 1.9 },
-  { xPct: 86,    yPct: 116.5, rotateDeg: -83.5, scale: 1.9 },
-  { xPct: 102.5, yPct: 120,   rotateDeg: -84,   scale: 1.9 },
+  { xPct: 86,    yPct: 116.5, rotateDeg: 5,     scale: 1.9 },
+  { xPct: 102.5, yPct: 120,   rotateDeg: 5,     scale: 1.9 },
   { xPct: 120,   yPct: 120,   rotateDeg: 6,     scale: 1.9 },
 ];
 
@@ -55,7 +55,7 @@ const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
   slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v3';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v4';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
