@@ -110,8 +110,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               key={`glove-chunk-${chunkIdx}`}
               className="relative"
               style={{
-                // Width scales with number of slots in this chunk
-                width: `min(96vw, ${(isMobile ? 56 : 92) * chunkSize}px)`,
+                // Width scales with number of slots in this chunk (smaller glove)
+                width: `min(92vw, ${(isMobile ? 44 : 64) * chunkSize}px)`,
               }}
             >
               {/* Glove background */}
@@ -131,10 +131,10 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 className="relative flex justify-center items-end"
                 style={{
                   gap: `${gapPx}px`,
-                  paddingTop: '34%',
-                  paddingBottom: '18%',
-                  paddingLeft: '6%',
-                  paddingRight: '6%',
+                  paddingTop: '22%',
+                  paddingBottom: '12%',
+                  paddingLeft: '4%',
+                  paddingRight: '4%',
                   zIndex: 1,
                 }}
               >
