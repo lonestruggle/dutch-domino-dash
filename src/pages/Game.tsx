@@ -844,7 +844,28 @@ export default function Game() {
 
   // Versie-switch (stable = backup, beta = huidige physics-experimenten).
   // Default stable, alleen admin/dev kan wisselen via GameVersionToggle.
-  const { version: gameVersion } = useGameVersion();
+  const { version: gameVersion, setVersion: setGameVersion } = useGameVersion();
+
+  // Optie B: dwing de lobby-versie af. Als onze lokale versie afwijkt van
+  // de centraal in de lobby ingestelde versie, opslaan + harde reload.
+  useEffect(() => {
+    if (!gameId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('lobbies')
+        .select('game_version')
+        .eq('id', gameId)
+        .maybeSingle();
+      if (cancelled || error || !data) return;
+      const target = ((data as any).game_version ?? 'stable') as 'stable' | 'beta';
+      if (target !== gameVersion) {
+        setGameVersion(target);
+        setTimeout(() => window.location.reload(), 50);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [gameId, gameVersion, setGameVersion]);
 
   // Ref om Changa-detectie te markeren tussen pre- en post-move
   const changaRef = useRef(false);
