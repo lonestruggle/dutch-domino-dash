@@ -13,6 +13,9 @@ import { BackgroundSelector } from '@/components/BackgroundSelector';
 import { TableBackgroundSelector } from '@/components/TableBackgroundSelector';
 import { DominoSkinSelector } from '@/components/DominoSkinSelector';
 import { useLobbies } from '@/hooks/useLobbies';
+import { useGameVersion, type GameVersion } from '@/hooks/useGameVersion';
+import { useUserRoles } from '@/hooks/useUserRoles';
+import { AlertTriangle } from 'lucide-react';
 
 interface LobbyPlayer {
   id: string;
@@ -23,6 +26,7 @@ interface LobbyPlayer {
   is_bot?: boolean;
   bot_name?: string | null;
   coins?: number | null;
+  client_version?: string | null;
 }
 
 interface LobbyDetails {
@@ -34,6 +38,7 @@ interface LobbyDetails {
   players: LobbyPlayer[];
   game_mode?: 'classic' | 'wega_di_sen';
   wega_stake?: number;
+  game_version?: GameVersion;
 }
 
 export default function Lobby() {
@@ -43,6 +48,8 @@ export default function Lobby() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const { addBot, removeBot } = useLobbies();
+  const { version: localVersion, setVersion: setLocalVersion } = useGameVersion();
+  const { canAccessDevTools } = useUserRoles();
   const [lobby, setLobby] = useState<LobbyDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedBackground, setSelectedBackground] = useState<string>('domino-table-2');
