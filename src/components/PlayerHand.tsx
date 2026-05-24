@@ -44,6 +44,14 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const baseGap = isMobile ? 2 : 12; // px
   const gapPx = Math.max(1, Math.round(baseGap * safeHandScale));
 
+  // Split hand into chunks of 7 (one glove per chunk, alternating mirrored)
+  const chunkSize = 7;
+  const chunks: { items: DominoData[]; startIndex: number }[] = [];
+  for (let i = 0; i < hand.length; i += chunkSize) {
+    chunks.push({ items: hand.slice(i, i + chunkSize), startIndex: i });
+  }
+  if (chunks.length === 0) chunks.push({ items: [], startIndex: 0 });
+
   // Update hand domino scale CSS variables - force immediate update and listen for global changes
   useEffect(() => {
     const toSafeHandScale = (scale: number, dominoWidth: number) => {
@@ -93,30 +101,69 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
       <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm mb-2" : "text-lg mb-4"}`}>
         Jouw Hand
       </h2>
-      
-      <div
-        className={`flex flex-wrap justify-center min-h-[48px] ${isMobile ? "px-2" : "p-2"}`}
-        style={{ gap: `${gapPx}px` }}
-      >
-        {hand.map((domino, index) => (
-          <div
-            key={getDominoKey(domino, index)}
-            onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
-            className="relative"
-          >
-            <DominoTile
-              data={domino}
-              orientation={isDouble(domino) ? "vertical" : "horizontal"}
-              flipped={!!flippedTiles?.[index]}
-              selected={index === selectedIndex}
-              rotateX={settings.rotateX}
-              rotateY={settings.rotateY}
-              rotateZ={settings.rotateZ}
-              onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
-              className="relative transition-all duration-200 domino-tile-hand hover:z-20"
-            />
-          </div>
-        ))}
+
+      <div className="flex flex-col items-center" style={{ gap: `${gapPx}px` }}>
+        {chunks.map((chunk, chunkIdx) => {
+          const mirrored = chunkIdx % 2 === 1;
+          return (
+            <div
+              key={`glove-chunk-${chunkIdx}`}
+              className="relative"
+              style={{
+                // Width scales with number of slots in this chunk
+                width: `min(96vw, ${(isMobile ? 56 : 92) * chunkSize}px)`,
+              }}
+            >
+              {/* Glove background */}
+              <img
+                src="/glove-hand-holder.png"
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                className="absolute inset-0 w-full h-auto pointer-events-none select-none"
+                style={{
+                  transform: mirrored ? 'scaleX(-1)' : undefined,
+                  zIndex: 0,
+                }}
+              />
+              {/* Domino row positioned over the transparent slot zone of the glove */}
+              <div
+                className="relative flex justify-center items-end"
+                style={{
+                  gap: `${gapPx}px`,
+                  paddingTop: '34%',
+                  paddingBottom: '18%',
+                  paddingLeft: '6%',
+                  paddingRight: '6%',
+                  zIndex: 1,
+                }}
+              >
+                {chunk.items.map((domino, i) => {
+                  const index = chunk.startIndex + i;
+                  return (
+                    <div
+                      key={getDominoKey(domino, index)}
+                      onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
+                      className="relative"
+                    >
+                      <DominoTile
+                        data={domino}
+                        orientation={isDouble(domino) ? "vertical" : "horizontal"}
+                        flipped={!!flippedTiles?.[index]}
+                        selected={index === selectedIndex}
+                        rotateX={settings.rotateX}
+                        rotateY={settings.rotateY}
+                        rotateZ={settings.rotateZ}
+                        onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
+                        className="relative transition-all duration-200 domino-tile-hand hover:z-20"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
