@@ -836,7 +836,12 @@ const relayoutTableState = (
   rotation: FixTableLayoutRotation,
   regenerateOpenEnds: (state: GameState) => OpenEnd[]
 ): GameState | null => {
-  const orderedDominoEntries = Object.entries(state.dominoes).sort(
+  // Loop de échte ruimtelijke keten af zodat opeenvolgende stenen ook
+  // werkelijk waardes laten matchen. Lukt dat niet (vertakking/spinner met
+  // 3+ buren of losse stenen), val terug op ID-volgorde — buildPlacement
+  // zal dan zelf null teruggeven als de waarden niet kloppen.
+  const linearOrder = computeLinearChainOrder(state);
+  const orderedDominoEntries = linearOrder ?? Object.entries(state.dominoes).sort(
     ([dominoA], [dominoB]) => {
       const indexA = parseDominoIndex(dominoA);
       const indexB = parseDominoIndex(dominoB);
