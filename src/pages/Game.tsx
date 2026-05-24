@@ -219,8 +219,8 @@ const createPlacementCandidate = (
   }
   if (direction === 'W') {
     const cells: Array<[number, number]> = [
-      [endpoint.x - 1, endpoint.y],
       [endpoint.x - 2, endpoint.y],
+      [endpoint.x - 1, endpoint.y],
     ];
     return {
       x: endpoint.x - 2,
@@ -249,8 +249,8 @@ const createPlacementCandidate = (
   }
 
   const cells: Array<[number, number]> = [
-    [endpoint.x, endpoint.y - 1],
     [endpoint.x, endpoint.y - 2],
+    [endpoint.x, endpoint.y - 1],
   ];
   return {
     x: endpoint.x,
