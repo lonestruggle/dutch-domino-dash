@@ -120,6 +120,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const [selectedSlot, setSelectedSlot] = useState(0);
   const COMPACT_THRESHOLD = 5;
 
+  // Handschoen-/hand-instellingen zijn alleen voor admin/dev zichtbaar.
+  const { canAccessDevTools } = useUserRoles();
+
   // Persoonlijke voorkeur: stenen automatisch naar elkaar toe schuiven na een zet.
   const AUTO_COMPACT_KEY = 'playerHand.autoCompact';
   const [autoCompact, setAutoCompact] = useState<boolean>(() => {
