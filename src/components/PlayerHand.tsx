@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { DominoTile } from './DominoTile';
 import { DominoData } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -20,6 +20,41 @@ const isDouble = (data: DominoData) => data.value1 === data.value2;
 const getDominoKey = (domino: DominoData, index: number) => 
   `${Math.min(domino.value1, domino.value2)}-${Math.max(domino.value1, domino.value2)}-${index}`;
 
+// ===== Handschoen-uitlijning (instelbaar via UI, persistent in localStorage) =====
+interface GloveAlignment {
+  widthPerSlotMobile: number; // px per sleuf (mobile)
+  widthPerSlotDesktop: number; // px per sleuf (desktop)
+  paddingTop: number; // %
+  paddingBottom: number; // %
+  paddingLeft: number; // %
+  paddingRight: number; // %
+  gapExtra: number; // px extra tussen stenen
+  dominoScale: number; // extra schaal op stenen in handschoen
+}
+
+const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
+  widthPerSlotMobile: 44,
+  widthPerSlotDesktop: 64,
+  paddingTop: 22,
+  paddingBottom: 12,
+  paddingLeft: 4,
+  paddingRight: 4,
+  gapExtra: 0,
+  dominoScale: 1,
+};
+
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v1';
+
+function loadGloveAlignment(): GloveAlignment {
+  try {
+    const raw = localStorage.getItem(GLOVE_ALIGN_KEY);
+    if (!raw) return DEFAULT_GLOVE_ALIGN;
+    return { ...DEFAULT_GLOVE_ALIGN, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_GLOVE_ALIGN;
+  }
+}
+
 export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   hand,
   selectedIndex,
@@ -31,6 +66,22 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [align, setAlign] = useState<GloveAlignment>(() => loadGloveAlignment());
+  const [showAligner, setShowAligner] = useState(false);
+
+  const updateAlign = (patch: Partial<GloveAlignment>) => {
+    setAlign(prev => {
+      const next = { ...prev, ...patch };
+      try { localStorage.setItem(GLOVE_ALIGN_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const resetAlign = () => {
+    setAlign(DEFAULT_GLOVE_ALIGN);
+    try { localStorage.removeItem(GLOVE_ALIGN_KEY); } catch {}
+  };
+
   const safeHandScale = (() => {
     const requestedScale = Number.isFinite(settings.handDominoScale) ? settings.handDominoScale : 1;
     const dominoWidth = Number.isFinite(settings.dominoWidth) ? settings.dominoWidth : 80;
@@ -98,20 +149,41 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   
   return (
     <div ref={containerRef} className={`game-ui ${isMobile ? "p-2" : "p-6"}`}>
-      <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm mb-2" : "text-lg mb-4"}`}>
-        Jouw Hand
-      </h2>
+      <div className="flex items-center justify-center gap-2 mb-2 relative">
+        <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm" : "text-lg"}`}>
+          Jouw Hand
+        </h2>
+        <button
+          type="button"
+          onClick={() => setShowAligner(s => !s)}
+          className="text-xs px-2 py-0.5 rounded border border-ui-border bg-ui-bg/60 hover:bg-ui-bg text-ui-text"
+          title="Handschoen uitlijnen"
+        >
+          ⚙︎
+        </button>
+      </div>
+
+      {showAligner && (
+        <GloveAligner
+          align={align}
+          isMobile={isMobile}
+          onChange={updateAlign}
+          onReset={resetAlign}
+          onClose={() => setShowAligner(false)}
+        />
+      )}
 
       <div className="flex flex-col items-center" style={{ gap: `${gapPx}px` }}>
         {chunks.map((chunk, chunkIdx) => {
           const mirrored = chunkIdx % 2 === 1;
+          const perSlot = isMobile ? align.widthPerSlotMobile : align.widthPerSlotDesktop;
           return (
             <div
               key={`glove-chunk-${chunkIdx}`}
               className="relative"
               style={{
-                // Width scales with number of slots in this chunk (smaller glove)
-                width: `min(92vw, ${(isMobile ? 44 : 64) * chunkSize}px)`,
+                // Width scales with number of slots in this chunk (instelbaar)
+                width: `min(96vw, ${perSlot * chunkSize}px)`,
               }}
             >
               {/* Glove background */}
@@ -130,11 +202,11 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               <div
                 className="relative flex justify-center items-end"
                 style={{
-                  gap: `${gapPx}px`,
-                  paddingTop: '22%',
-                  paddingBottom: '12%',
-                  paddingLeft: '4%',
-                  paddingRight: '4%',
+                  gap: `${gapPx + align.gapExtra}px`,
+                  paddingTop: `${align.paddingTop}%`,
+                  paddingBottom: `${align.paddingBottom}%`,
+                  paddingLeft: `${align.paddingLeft}%`,
+                  paddingRight: `${align.paddingRight}%`,
                   zIndex: 1,
                 }}
               >
@@ -145,6 +217,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                       key={getDominoKey(domino, index)}
                       onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
                       className="relative"
+                      style={{ transform: align.dominoScale !== 1 ? `scale(${align.dominoScale})` : undefined, transformOrigin: 'bottom center' }}
                     >
                       <DominoTile
                         data={domino}
@@ -168,3 +241,65 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
     </div>
   );
 });
+
+// ===== Inline aligner panel =====
+interface GloveAlignerProps {
+  align: GloveAlignment;
+  isMobile: boolean;
+  onChange: (patch: Partial<GloveAlignment>) => void;
+  onReset: () => void;
+  onClose: () => void;
+}
+
+const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, onReset, onClose }) => {
+  const copyJSON = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(align, null, 2));
+      alert('Uitlijning gekopieerd naar klembord. Stuur deze aan Lovable om vast in te bouwen.');
+    } catch {
+      prompt('Kopieer onderstaande waarden:', JSON.stringify(align));
+    }
+  };
+
+  const Row: React.FC<{ label: string; value: number; min: number; max: number; step?: number; suffix?: string; onChange: (n: number) => void }> = ({ label, value, min, max, step = 1, suffix = '', onChange }) => (
+    <label className="flex items-center gap-2 text-xs text-ui-text">
+      <span className="w-36 shrink-0">{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="flex-1"
+      />
+      <span className="w-14 text-right tabular-nums">{value}{suffix}</span>
+    </label>
+  );
+
+  return (
+    <div className="mb-3 mx-auto max-w-md p-3 rounded-lg border border-ui-border bg-ui-bg/95 shadow-lg text-ui-text">
+      <div className="flex items-center justify-between mb-2">
+        <strong className="text-sm">Handschoen uitlijnen</strong>
+        <div className="flex gap-1">
+          <button type="button" onClick={onReset} className="text-xs px-2 py-0.5 rounded border border-ui-border hover:bg-black/5">Reset</button>
+          <button type="button" onClick={copyJSON} className="text-xs px-2 py-0.5 rounded border border-ui-border hover:bg-black/5">Kopieer</button>
+          <button type="button" onClick={onClose} className="text-xs px-2 py-0.5 rounded border border-ui-border hover:bg-black/5">Sluit</button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Row label={isMobile ? 'Breedte per sleuf (mobile)' : 'Breedte per sleuf (desktop)'}
+             value={isMobile ? align.widthPerSlotMobile : align.widthPerSlotDesktop}
+             min={20} max={140} step={1} suffix="px"
+             onChange={(n) => onChange(isMobile ? { widthPerSlotMobile: n } : { widthPerSlotDesktop: n })} />
+        <Row label="Padding boven" value={align.paddingTop} min={0} max={60} step={0.5} suffix="%" onChange={(n) => onChange({ paddingTop: n })} />
+        <Row label="Padding onder" value={align.paddingBottom} min={0} max={60} step={0.5} suffix="%" onChange={(n) => onChange({ paddingBottom: n })} />
+        <Row label="Padding links" value={align.paddingLeft} min={0} max={30} step={0.5} suffix="%" onChange={(n) => onChange({ paddingLeft: n })} />
+        <Row label="Padding rechts" value={align.paddingRight} min={0} max={30} step={0.5} suffix="%" onChange={(n) => onChange({ paddingRight: n })} />
+        <Row label="Extra gap" value={align.gapExtra} min={-10} max={30} step={1} suffix="px" onChange={(n) => onChange({ gapExtra: n })} />
+        <Row label="Steen schaal" value={align.dominoScale} min={0.4} max={1.6} step={0.02} onChange={(n) => onChange({ dominoScale: n })} />
+      </div>
+      <p className="mt-2 text-[10px] opacity-70">Waarden worden lokaal opgeslagen. Klik "Kopieer" en stuur ze aan mij zodat ik ze als standaard kan inbouwen.</p>
+    </div>
+  );
+};
