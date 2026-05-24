@@ -21,35 +21,52 @@ const getDominoKey = (domino: DominoData, index: number) =>
   `${Math.min(domino.value1, domino.value2)}-${Math.max(domino.value1, domino.value2)}-${index}`;
 
 // ===== Handschoen-uitlijning (instelbaar via UI, persistent in localStorage) =====
-interface GloveAlignment {
-  widthPerSlotMobile: number; // px per sleuf (mobile)
-  widthPerSlotDesktop: number; // px per sleuf (desktop)
-  paddingTop: number; // %
-  paddingBottom: number; // %
-  paddingLeft: number; // %
-  paddingRight: number; // %
-  gapExtra: number; // px extra tussen stenen
-  dominoScale: number; // extra schaal op stenen in handschoen
+// Elke sleuf in de handschoen krijgt zijn eigen positie/hoek zodat de
+// stenen exact in de doorzichtige (mogelijk gekantelde) sleuven vallen.
+interface SlotConfig {
+  xPct: number;      // horizontale positie binnen handschoen (% breedte)
+  yPct: number;      // verticale positie (% hoogte van handschoen-aspect)
+  rotateDeg: number; // rotatie van de steen
+  scale: number;     // schaal van de steen
 }
 
+interface GloveAlignment {
+  widthMobile: number;       // totale breedte handschoen (px) mobile
+  widthDesktop: number;      // totale breedte handschoen (px) desktop
+  aspectRatio: number;       // hoogte / breedte van de handschoen-container
+  slots: SlotConfig[];       // 7 sleuven
+  slotsMirrored?: SlotConfig[]; // optionele override voor gespiegelde handschoen
+}
+
+const DEFAULT_SLOTS: SlotConfig[] = [
+  { xPct: 12, yPct: 48, rotateDeg: -14, scale: 1 },
+  { xPct: 24, yPct: 44, rotateDeg: -8,  scale: 1 },
+  { xPct: 37, yPct: 42, rotateDeg: -3,  scale: 1 },
+  { xPct: 50, yPct: 42, rotateDeg: 0,   scale: 1 },
+  { xPct: 63, yPct: 42, rotateDeg: 3,   scale: 1 },
+  { xPct: 76, yPct: 44, rotateDeg: 8,   scale: 1 },
+  { xPct: 88, yPct: 48, rotateDeg: 14,  scale: 1 },
+];
+
 const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
-  widthPerSlotMobile: 44,
-  widthPerSlotDesktop: 64,
-  paddingTop: 22,
-  paddingBottom: 12,
-  paddingLeft: 4,
-  paddingRight: 4,
-  gapExtra: 0,
-  dominoScale: 1,
+  widthMobile: 340,
+  widthDesktop: 520,
+  aspectRatio: 0.55,
+  slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v1';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v2';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
     const raw = localStorage.getItem(GLOVE_ALIGN_KEY);
     if (!raw) return DEFAULT_GLOVE_ALIGN;
-    return { ...DEFAULT_GLOVE_ALIGN, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    const merged: GloveAlignment = { ...DEFAULT_GLOVE_ALIGN, ...parsed };
+    if (!Array.isArray(merged.slots) || merged.slots.length !== 7) {
+      merged.slots = DEFAULT_SLOTS;
+    }
+    return merged;
   } catch {
     return DEFAULT_GLOVE_ALIGN;
   }
@@ -97,6 +114,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
 
   // Split hand into chunks of 7 (one glove per chunk, alternating mirrored)
   const chunkSize = 7;
+  const [selectedSlot, setSelectedSlot] = useState(0);
   const chunks: { items: DominoData[]; startIndex: number }[] = [];
   for (let i = 0; i < hand.length; i += chunkSize) {
     chunks.push({ items: hand.slice(i, i + chunkSize), startIndex: i });
@@ -176,14 +194,16 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
       <div className="flex flex-col items-center" style={{ gap: `${gapPx}px` }}>
         {chunks.map((chunk, chunkIdx) => {
           const mirrored = chunkIdx % 2 === 1;
-          const perSlot = isMobile ? align.widthPerSlotMobile : align.widthPerSlotDesktop;
+          const gloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
+          const gloveHeight = gloveWidth * align.aspectRatio;
+          const slotsForChunk = mirrored && align.slotsMirrored ? align.slotsMirrored : align.slots;
           return (
             <div
               key={`glove-chunk-${chunkIdx}`}
               className="relative"
               style={{
-                // Width scales with number of slots in this chunk (instelbaar)
-                width: `min(96vw, ${perSlot * chunkSize}px)`,
+                width: `min(96vw, ${gloveWidth}px)`,
+                height: `${gloveHeight}px`,
               }}
             >
               {/* Glove background */}
@@ -198,42 +218,40 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                   zIndex: 0,
                 }}
               />
-              {/* Domino row positioned over the transparent slot zone of the glove */}
-              <div
-                className="relative flex justify-center items-end"
-                style={{
-                  gap: `${gapPx + align.gapExtra}px`,
-                  paddingTop: `${align.paddingTop}%`,
-                  paddingBottom: `${align.paddingBottom}%`,
-                  paddingLeft: `${align.paddingLeft}%`,
-                  paddingRight: `${align.paddingRight}%`,
-                  zIndex: 1,
-                }}
-              >
-                {chunk.items.map((domino, i) => {
-                  const index = chunk.startIndex + i;
-                  return (
-                    <div
-                      key={getDominoKey(domino, index)}
-                      onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
-                      className="relative"
-                      style={{ transform: align.dominoScale !== 1 ? `scale(${align.dominoScale})` : undefined, transformOrigin: 'bottom center' }}
-                    >
-                      <DominoTile
-                        data={domino}
-                        orientation={isDouble(domino) ? "vertical" : "horizontal"}
-                        flipped={!!flippedTiles?.[index]}
-                        selected={index === selectedIndex}
-                        rotateX={settings.rotateX}
-                        rotateY={settings.rotateY}
-                        rotateZ={settings.rotateZ}
-                        onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
-                        className="relative transition-all duration-200 domino-tile-hand hover:z-20"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+              {/* Elke steen krijgt zijn eigen sleuf-positie + rotatie */}
+              {chunk.items.map((domino, i) => {
+                const index = chunk.startIndex + i;
+                const slot = slotsForChunk[i] ?? slotsForChunk[slotsForChunk.length - 1];
+                const isSelectedSlot = showAligner && i === selectedSlot && chunkIdx === 0;
+                return (
+                  <div
+                    key={getDominoKey(domino, index)}
+                    onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
+                    onClick={() => { if (showAligner) setSelectedSlot(i); }}
+                    className="absolute"
+                    style={{
+                      left: `${slot.xPct}%`,
+                      top: `${slot.yPct}%`,
+                      transform: `translate(-50%, -50%) rotate(${slot.rotateDeg}deg) scale(${slot.scale})`,
+                      transformOrigin: 'center',
+                      zIndex: 1,
+                      outline: isSelectedSlot ? '2px dashed rgba(255,171,0,0.9)' : undefined,
+                    }}
+                  >
+                    <DominoTile
+                      data={domino}
+                      orientation={isDouble(domino) ? "vertical" : "horizontal"}
+                      flipped={!!flippedTiles?.[index]}
+                      selected={index === selectedIndex}
+                      rotateX={settings.rotateX}
+                      rotateY={settings.rotateY}
+                      rotateZ={settings.rotateZ}
+                      onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
+                      className="relative transition-all duration-200 domino-tile-hand hover:z-20"
+                    />
+                  </div>
+                );
+              })}
             </div>
           );
         })}
@@ -250,8 +268,13 @@ interface GloveAlignerProps {
   onReset: () => void;
   onClose: () => void;
 }
+interface GloveAlignerPropsExt extends GloveAlignerProps {
+  selectedSlot: number;
+  setSelectedSlot: (n: number) => void;
+}
 
 const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, onReset, onClose }) => {
+  const [slotIdx, setSlotIdx] = useState(0);
   const copyJSON = async () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(align, null, 2));
@@ -288,16 +311,39 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <Row label={isMobile ? 'Breedte per sleuf (mobile)' : 'Breedte per sleuf (desktop)'}
-             value={isMobile ? align.widthPerSlotMobile : align.widthPerSlotDesktop}
-             min={20} max={140} step={1} suffix="px"
-             onChange={(n) => onChange(isMobile ? { widthPerSlotMobile: n } : { widthPerSlotDesktop: n })} />
-        <Row label="Padding boven" value={align.paddingTop} min={0} max={60} step={0.5} suffix="%" onChange={(n) => onChange({ paddingTop: n })} />
-        <Row label="Padding onder" value={align.paddingBottom} min={0} max={60} step={0.5} suffix="%" onChange={(n) => onChange({ paddingBottom: n })} />
-        <Row label="Padding links" value={align.paddingLeft} min={0} max={30} step={0.5} suffix="%" onChange={(n) => onChange({ paddingLeft: n })} />
-        <Row label="Padding rechts" value={align.paddingRight} min={0} max={30} step={0.5} suffix="%" onChange={(n) => onChange({ paddingRight: n })} />
-        <Row label="Extra gap" value={align.gapExtra} min={-10} max={30} step={1} suffix="px" onChange={(n) => onChange({ gapExtra: n })} />
-        <Row label="Steen schaal" value={align.dominoScale} min={0.4} max={1.6} step={0.02} onChange={(n) => onChange({ dominoScale: n })} />
+        <Row label={isMobile ? 'Handschoen breedte (mobile)' : 'Handschoen breedte (desktop)'}
+             value={isMobile ? align.widthMobile : align.widthDesktop}
+             min={160} max={900} step={2} suffix="px"
+             onChange={(n) => onChange(isMobile ? { widthMobile: n } : { widthDesktop: n })} />
+        <Row label="Verhouding (h/b)" value={align.aspectRatio} min={0.2} max={1.2} step={0.01} onChange={(n) => onChange({ aspectRatio: n })} />
+
+        <div className="mt-2 pt-2 border-t border-ui-border/60">
+          <label className="flex items-center gap-2 text-xs mb-1">
+            <span className="w-36 shrink-0">Sleuf</span>
+            <select
+              value={slotIdx}
+              onChange={(e) => setSlotIdx(parseInt(e.target.value, 10))}
+              className="flex-1 text-xs px-1 py-0.5 rounded border border-ui-border bg-ui-bg"
+            >
+              {align.slots.map((_, i) => <option key={i} value={i}>Sleuf {i + 1}</option>)}
+            </select>
+          </label>
+          {(() => {
+            const s = align.slots[slotIdx];
+            const patchSlot = (patch: Partial<SlotConfig>) => {
+              const next = align.slots.map((cur, i) => i === slotIdx ? { ...cur, ...patch } : cur);
+              onChange({ slots: next });
+            };
+            return (
+              <>
+                <Row label="X (%)" value={s.xPct} min={0} max={100} step={0.5} suffix="%" onChange={(n) => patchSlot({ xPct: n })} />
+                <Row label="Y (%)" value={s.yPct} min={0} max={100} step={0.5} suffix="%" onChange={(n) => patchSlot({ yPct: n })} />
+                <Row label="Rotatie" value={s.rotateDeg} min={-45} max={45} step={0.5} suffix="°" onChange={(n) => patchSlot({ rotateDeg: n })} />
+                <Row label="Schaal" value={s.scale} min={0.3} max={1.8} step={0.02} onChange={(n) => patchSlot({ scale: n })} />
+              </>
+            );
+          })()}
+        </div>
       </div>
       <p className="mt-2 text-[10px] opacity-70">Waarden worden lokaal opgeslagen. Klik "Kopieer" en stuur ze aan mij zodat ik ze als standaard kan inbouwen.</p>
     </div>
