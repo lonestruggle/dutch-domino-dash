@@ -1791,6 +1791,34 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="flex flex-col gap-2 border-b pb-4">
+                    <Label className="text-base">Beta game-pagina achtergrond (URL)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Achtergrondafbeelding voor de beta game-pagina (zoals de lobby). Laat leeg voor standaard.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        defaultValue={getSetting('beta_page_background_url', '') || ''}
+                        placeholder="https://..."
+                        id="beta-bg-url-input"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          const el = document.getElementById('beta-bg-url-input') as HTMLInputElement | null;
+                          const value = (el?.value || '').trim();
+                          const result = await updateSetting('beta_page_background_url', value || null);
+                          if (result.success) {
+                            toast({ title: 'Bijgewerkt', description: 'Beta achtergrond opgeslagen' });
+                          } else {
+                            toast({ title: 'Fout', description: 'Kon niet opslaan', variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        Opslaan
+                      </Button>
+                    </div>
+                  </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="space-y-0.5">
                       <Label className="text-base">Single Player Modus</Label>
