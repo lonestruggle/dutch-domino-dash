@@ -119,6 +119,18 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const [selectedSlot, setSelectedSlot] = useState(0);
   const COMPACT_THRESHOLD = 5;
 
+  // Persoonlijke voorkeur: stenen automatisch naar elkaar toe schuiven na een zet.
+  const AUTO_COMPACT_KEY = 'playerHand.autoCompact';
+  const [autoCompact, setAutoCompact] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem(AUTO_COMPACT_KEY);
+      return raw === null ? true : raw === 'true';
+    } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(AUTO_COMPACT_KEY, String(autoCompact)); } catch {}
+  }, [autoCompact]);
+
   // canonicalKey -> { glove, slot }
   const assignmentsRef = useRef<Map<string, { glove: number; slot: number }>>(new Map());
   // Bump to force a re-compact (used by the "Samenvoegen" button)
@@ -137,8 +149,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
       if (!currentKeys.has(k)) map.delete(k);
     }
 
-    // Auto-compact when few stones remain, or when user clicked the compact button
-    if (hand.length <= COMPACT_THRESHOLD || compactTick > 0) {
+    // Auto-compact when enabled, when few stones remain, or when user clicked the compact button
+    if (autoCompact || hand.length <= COMPACT_THRESHOLD || compactTick > 0) {
       map.clear();
       hand.forEach((d, i) => {
         map.set(canonicalKey(d), { glove: Math.floor(i / chunkSize), slot: i % chunkSize });
@@ -239,7 +251,15 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm" : "text-lg"}`}>
           Jouw Hand
         </h2>
-        {hand.length > COMPACT_THRESHOLD && chunks.length > 1 && (
+        <button
+          type="button"
+          onClick={() => setAutoCompact(v => !v)}
+          className={`text-xs px-2 py-0.5 rounded border border-ui-border ${autoCompact ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg text-ui-text'}`}
+          title="Automatisch stenen samenvoegen na een zet"
+        >
+          Auto-samenvoegen: {autoCompact ? 'aan' : 'uit'}
+        </button>
+        {!autoCompact && hand.length > COMPACT_THRESHOLD && chunks.length > 1 && (
           <button
             type="button"
             onClick={() => setCompactTick(t => t + 1)}
