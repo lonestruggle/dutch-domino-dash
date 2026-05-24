@@ -119,6 +119,32 @@ export default function Lobby() {
     setLoading(false);
   };
 
+  // Schrijf onze lokale clientversie bij de lobby-speler-rij zodat anderen
+  // mismatches kunnen zien (optie A: waarschuwing).
+  useEffect(() => {
+    if (!lobby || !user) return;
+    const me = lobby.players.find((p) => p.user_id === user.id && !p.is_bot);
+    if (!me) return;
+    if (me.client_version === localVersion) return;
+    (async () => {
+      await supabase
+        .from('lobby_players')
+        .update({ client_version: localVersion } as any)
+        .eq('lobby_id', lobby.id)
+        .eq('user_id', user.id);
+    })();
+  }, [lobby, user, localVersion]);
+
+  // Forceer de lobby-versie (optie B: host bepaalt voor iedereen).
+  // Als onze lokale versie afwijkt: opslaan + harde reload zodat we de juiste
+  // bundel laden voordat het spel start.
+  useEffect(() => {
+    if (!lobby?.game_version) return;
+    if (lobby.game_version === localVersion) return;
+    setLocalVersion(lobby.game_version);
+    setTimeout(() => window.location.reload(), 50);
+  }, [lobby?.game_version, localVersion, setLocalVersion]);
+
   const startGame = async () => {
     if (!lobby || !user) return;
 
