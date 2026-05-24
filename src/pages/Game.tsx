@@ -2793,7 +2793,19 @@ export default function Game() {
   ]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {gameVersion === 'beta' && (
+        <>
+          <div
+            className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
+            style={{
+              backgroundImage: `url('${appSettings?.beta_page_background_url || '/lovable-uploads/07b47c70-696f-408c-9981-c04375940eea.png'}')`,
+            }}
+            aria-hidden="true"
+          />
+          <div className="pointer-events-none fixed inset-0 -z-10 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
+        </>
+      )}
       <GameVersionToggle />
       {/* Wega di sen overrides */}
       {(() => {

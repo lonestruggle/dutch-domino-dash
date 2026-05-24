@@ -265,9 +265,6 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   return (
     <div ref={containerRef} className={`game-ui ${isMobile ? "p-2" : "p-6"}`}>
       <div className="flex items-center justify-center gap-2 mb-2 relative">
-        <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm" : "text-lg"}`}>
-          Jouw Hand
-        </h2>
         {canUseGloveFeatures && (
           <>
             <button
@@ -312,7 +309,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         />
       )}
 
-      <div className="flex flex-row-reverse flex-wrap items-start justify-center" style={{ gap: `${gapPx}px` }}>
+      <div className="flex flex-row-reverse flex-wrap items-start justify-center -mt-20" style={{ gap: `${gapPx}px` }}>
         {chunks.map((chunk, chunkIdx) => {
           const mirrored = chunkIdx % 2 === 1;
           const gloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
