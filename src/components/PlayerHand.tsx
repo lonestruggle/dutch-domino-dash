@@ -3,6 +3,7 @@ import { DominoTile } from './DominoTile';
 import { DominoData } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
 
 interface PlayerHandProps {
@@ -118,6 +119,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const chunkSize = 7;
   const [selectedSlot, setSelectedSlot] = useState(0);
   const COMPACT_THRESHOLD = 5;
+
+  // Handschoen-/hand-instellingen zijn alleen voor admin/dev zichtbaar.
+  const { canAccessDevTools } = useUserRoles();
 
   // Persoonlijke voorkeur: stenen automatisch naar elkaar toe schuiven na een zet.
   const AUTO_COMPACT_KEY = 'playerHand.autoCompact';
@@ -251,32 +255,36 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm" : "text-lg"}`}>
           Jouw Hand
         </h2>
-        <button
-          type="button"
-          onClick={() => setAutoCompact(v => !v)}
-          className={`text-xs px-2 py-0.5 rounded border border-ui-border ${autoCompact ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg text-ui-text'}`}
-          title="Automatisch stenen samenvoegen na een zet"
-        >
-          Auto-samenvoegen: {autoCompact ? 'aan' : 'uit'}
-        </button>
-        {!autoCompact && hand.length > COMPACT_THRESHOLD && chunks.length > 1 && (
-          <button
-            type="button"
-            onClick={() => setCompactTick(t => t + 1)}
-            className="text-xs px-2 py-0.5 rounded border border-ui-border bg-ui-bg/60 hover:bg-ui-bg text-ui-text"
-            title="Stenen samenvoegen in zo min mogelijk handschoenen"
-          >
-            Samenvoegen
-          </button>
+        {canAccessDevTools && (
+          <>
+            <button
+              type="button"
+              onClick={() => setAutoCompact(v => !v)}
+              className={`text-xs px-2 py-0.5 rounded border border-ui-border ${autoCompact ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg text-ui-text'}`}
+              title="Automatisch stenen samenvoegen na een zet"
+            >
+              Auto-samenvoegen: {autoCompact ? 'aan' : 'uit'}
+            </button>
+            {!autoCompact && hand.length > COMPACT_THRESHOLD && chunks.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setCompactTick(t => t + 1)}
+                className="text-xs px-2 py-0.5 rounded border border-ui-border bg-ui-bg/60 hover:bg-ui-bg text-ui-text"
+                title="Stenen samenvoegen in zo min mogelijk handschoenen"
+              >
+                Samenvoegen
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowAligner(s => !s)}
+              className="text-xs px-2 py-0.5 rounded border border-ui-border bg-ui-bg/60 hover:bg-ui-bg text-ui-text"
+              title="Handschoen uitlijnen"
+            >
+              ⚙︎
+            </button>
+          </>
         )}
-        <button
-          type="button"
-          onClick={() => setShowAligner(s => !s)}
-          className="text-xs px-2 py-0.5 rounded border border-ui-border bg-ui-bg/60 hover:bg-ui-bg text-ui-text"
-          title="Handschoen uitlijnen"
-        >
-          ⚙︎
-        </button>
       </div>
 
       {showAligner && (

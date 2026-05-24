@@ -13,6 +13,9 @@ import { BackgroundSelector } from '@/components/BackgroundSelector';
 import { TableBackgroundSelector } from '@/components/TableBackgroundSelector';
 import { DominoSkinSelector } from '@/components/DominoSkinSelector';
 import { useLobbies } from '@/hooks/useLobbies';
+import { useGameVersion, type GameVersion } from '@/hooks/useGameVersion';
+import { useUserRoles } from '@/hooks/useUserRoles';
+import { AlertTriangle } from 'lucide-react';
 
 interface LobbyPlayer {
   id: string;
@@ -23,6 +26,7 @@ interface LobbyPlayer {
   is_bot?: boolean;
   bot_name?: string | null;
   coins?: number | null;
+  client_version?: string | null;
 }
 
 interface LobbyDetails {
@@ -34,6 +38,7 @@ interface LobbyDetails {
   players: LobbyPlayer[];
   game_mode?: 'classic' | 'wega_di_sen';
   wega_stake?: number;
+  game_version?: GameVersion;
 }
 
 export default function Lobby() {
@@ -43,6 +48,8 @@ export default function Lobby() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const { addBot, removeBot } = useLobbies();
+  const { version: localVersion, setVersion: setLocalVersion } = useGameVersion();
+  const { canAccessDevTools } = useUserRoles();
   const [lobby, setLobby] = useState<LobbyDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedBackground, setSelectedBackground] = useState<string>('domino-table-2');
@@ -111,6 +118,32 @@ export default function Lobby() {
     }
     setLoading(false);
   };
+
+  // Schrijf onze lokale clientversie bij de lobby-speler-rij zodat anderen
+  // mismatches kunnen zien (optie A: waarschuwing).
+  useEffect(() => {
+    if (!lobby || !user) return;
+    const me = lobby.players.find((p) => p.user_id === user.id && !p.is_bot);
+    if (!me) return;
+    if (me.client_version === localVersion) return;
+    (async () => {
+      await supabase
+        .from('lobby_players')
+        .update({ client_version: localVersion } as any)
+        .eq('lobby_id', lobby.id)
+        .eq('user_id', user.id);
+    })();
+  }, [lobby, user, localVersion]);
+
+  // Forceer de lobby-versie (optie B: host bepaalt voor iedereen).
+  // Als onze lokale versie afwijkt: opslaan + harde reload zodat we de juiste
+  // bundel laden voordat het spel start.
+  useEffect(() => {
+    if (!lobby?.game_version) return;
+    if (lobby.game_version === localVersion) return;
+    setLocalVersion(lobby.game_version);
+    setTimeout(() => window.location.reload(), 50);
+  }, [lobby?.game_version, localVersion, setLocalVersion]);
 
   const startGame = async () => {
     if (!lobby || !user) return;
@@ -502,6 +535,56 @@ export default function Lobby() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Versiebeheer + mismatch waarschuwing */}
+            {(() => {
+              const lobbyVer = (lobby.game_version ?? 'stable') as GameVersion;
+              const mismatched = lobby.players.filter(
+                (p) => !p.is_bot && p.user_id && p.client_version && p.client_version !== lobbyVer
+              );
+              return (
+                <div className="rounded-lg border border-white/20 p-3 bg-black/20 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="font-semibold">Spelversie:</span>
+                    {canAccessDevTools && isLobbyCreator ? (
+                      <Select
+                        value={lobbyVer}
+                        onValueChange={async (v) => {
+                          await supabase
+                            .from('lobbies')
+                            .update({ game_version: v } as any)
+                            .eq('id', lobby.id);
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-28 bg-white text-black border-white/70 [&>span]:text-black [&_svg]:text-black">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white text-black border-white/70">
+                          <SelectItem value="stable" className="text-black focus:bg-black/10 focus:text-black">stable</SelectItem>
+                          <SelectItem value="beta" className="text-black focus:bg-black/10 focus:text-black">beta</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="rounded bg-primary/30 px-2 py-0.5 text-xs">{lobbyVer}</span>
+                    )}
+                    <span className="text-xs text-white/60">jouw versie: {localVersion}</span>
+                  </div>
+                  {mismatched.length > 0 && (
+                    <div className="flex items-start gap-2 rounded border border-yellow-400/50 bg-yellow-500/10 p-2 text-xs text-yellow-100">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                      <div>
+                        Verschillende spelversies gedetecteerd. De volgende spelers draaien een andere versie en zullen automatisch herladen:
+                        <ul className="mt-1 list-disc list-inside">
+                          {mismatched.map((p) => (
+                            <li key={p.id}>{p.username} ({p.client_version})</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="space-y-2">
               {playerSlots.map(({ position, player }) => (
                 <div
