@@ -318,6 +318,39 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
         <Row label="Verhouding (h/b)" value={align.aspectRatio} min={0.2} max={1.2} step={0.01} onChange={(n) => onChange({ aspectRatio: n })} />
 
         <div className="mt-2 pt-2 border-t border-ui-border/60">
+          <div className="flex gap-1 mb-2 flex-wrap">
+            <button
+              type="button"
+              className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+              title="Gebruikt sleuf 1 als basis: spreidt X gelijkmatig, kopieert Y/Schaal, en waaiert rotatie"
+              onClick={() => {
+                const base = align.slots[0];
+                const N = align.slots.length; // 7
+                // Spread X across the glove, slight arc on Y, fan rotation around base.
+                const next: SlotConfig[] = Array.from({ length: N }, (_, i) => {
+                  const t = N === 1 ? 0.5 : i / (N - 1); // 0..1
+                  const xPct = 8 + t * 84; // 8% .. 92%
+                  const arc = Math.sin(t * Math.PI); // 0 at ends, 1 in middle
+                  const yPct = base.yPct - arc * 6;  // lichte boog omhoog
+                  // rotation fans from -span..+span, slot1 keeps its own rotation as center bias
+                  const span = 22;
+                  const rotateDeg = (t - 0.5) * 2 * span;
+                  return { xPct, yPct, rotateDeg, scale: base.scale };
+                });
+                onChange({ slots: next });
+              }}
+            >Spreid vanaf sleuf 1</button>
+            <button
+              type="button"
+              className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+              title="Kopieer Y en schaal van sleuf 1 naar alle sleuven (X en rotatie blijven)"
+              onClick={() => {
+                const base = align.slots[0];
+                const next = align.slots.map((s) => ({ ...s, yPct: base.yPct, scale: base.scale }));
+                onChange({ slots: next });
+              }}
+            >Y+Schaal van sleuf 1 → alle</button>
+          </div>
           <label className="flex items-center gap-2 text-xs mb-1">
             <span className="w-36 shrink-0">Sleuf</span>
             <select
@@ -336,10 +369,10 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
             };
             return (
               <>
-                <Row label="X (%)" value={s.xPct} min={0} max={100} step={0.5} suffix="%" onChange={(n) => patchSlot({ xPct: n })} />
-                <Row label="Y (%)" value={s.yPct} min={0} max={100} step={0.5} suffix="%" onChange={(n) => patchSlot({ yPct: n })} />
-                <Row label="Rotatie" value={s.rotateDeg} min={-45} max={45} step={0.5} suffix="°" onChange={(n) => patchSlot({ rotateDeg: n })} />
-                <Row label="Schaal" value={s.scale} min={0.3} max={1.8} step={0.02} onChange={(n) => patchSlot({ scale: n })} />
+                <Row label="X (%)" value={s.xPct} min={-20} max={120} step={0.5} suffix="%" onChange={(n) => patchSlot({ xPct: n })} />
+                <Row label="Y (%)" value={s.yPct} min={-20} max={120} step={0.5} suffix="%" onChange={(n) => patchSlot({ yPct: n })} />
+                <Row label="Rotatie" value={s.rotateDeg} min={-180} max={180} step={0.5} suffix="°" onChange={(n) => patchSlot({ rotateDeg: n })} />
+                <Row label="Schaal" value={s.scale} min={0.3} max={4} step={0.02} onChange={(n) => patchSlot({ scale: n })} />
               </>
             );
           })()}
