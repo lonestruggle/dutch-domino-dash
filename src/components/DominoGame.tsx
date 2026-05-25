@@ -436,7 +436,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const hardSlamPhaseMs = activeHardSlamProfile ? Math.max(0, Date.now() - activeHardSlamProfile.startedAtMs) : 0;
 
   return (
-    <div className="min-h-screen bg-background p-2 md:p-4">
+    <div className="min-h-screen bg-transparent p-2 md:p-4">
       <div className="max-w-6xl mx-auto space-y-3 md:space-y-6">
         {/* Top Navigation - Always visible */}
         <Card className="p-3 md:p-4">

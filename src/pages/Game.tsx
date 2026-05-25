@@ -2838,7 +2838,7 @@ export default function Game() {
           syncState,
           gameData: {
             ...(syncState.gameData || { background_choice: null }),
-            table_background_url: (syncState.gameData as any)?.table_background_url || betaPageBackgroundUrl,
+            table_background_url: (syncState.gameData as any)?.table_background_url || null,
           },
           wegaFlipMap: isWegaPlay ? wegaFlipMap : undefined,
           flipWegaTile: isWegaPlay ? flipWegaTile : undefined,
