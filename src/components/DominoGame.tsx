@@ -424,7 +424,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   };
 
   const canInspectBotHands = isAdmin || isDev;
-  const showDevLockstepInfo = canInspectBotHands;
+  const [devConsoleVisible, setDevConsoleVisible] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('devConsoleVisible') === 'true';
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('devConsoleVisible', String(devConsoleVisible));
+  }, [devConsoleVisible]);
+  const showDevLockstepInfo = canInspectBotHands && devConsoleVisible;
   const adminBoneyardFaceUp = isAdmin && Boolean(getSetting('admin_boneyard_face_up', false));
   const visibleBotHandPlayer = visibleBotHandPosition !== null
     ? syncState?.allPlayers?.find((p: any) => p.position === visibleBotHandPosition)
@@ -468,6 +476,17 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               >
                 {isMobile ? "Nieuw Spel" : startingNewGame ? "Starten..." : "Start New Game"}
               </Button>
+              {canInspectBotHands && (
+                <Button
+                  variant={devConsoleVisible ? "default" : "outline"}
+                  size={isMobile ? "sm" : "default"}
+                  onClick={() => setDevConsoleVisible(v => !v)}
+                  title={devConsoleVisible ? "Debug console verbergen" : "Debug console tonen"}
+                  className="p-2"
+                >
+                  <Eye className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
+                </Button>
+              )}
               {!isMobile && (
                 <Button
                   variant="ghost"
