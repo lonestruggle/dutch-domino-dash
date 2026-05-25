@@ -341,10 +341,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 rotateDeg: -s.rotateDeg,
               })))
             : align.slots;
-          const slotsForChunk = baseSlotsForChunk.map(s => ({
-            ...s,
-            xPct: Math.min(92, Math.max(8, s.xPct)),
-          }));
+          const slotsForChunk = baseSlotsForChunk;
           const footprint = getHorizontalFootprint(slotsForChunk, gloveWidth);
           return (
             <div
