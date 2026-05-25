@@ -113,6 +113,30 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const baseGap = isMobile ? 12 : 40; // px - extra ruimte zodat overhangende stenen niet over de buurman heen vallen
   const gapPx = Math.max(1, Math.round(baseGap * safeHandScale));
 
+  const getHorizontalFootprint = (slots: SlotConfig[], gloveWidth: number) => {
+    const dominoBaseWidth = Number.isFinite(settings.dominoWidth) ? settings.dominoWidth : 80;
+    const tileWidth = dominoBaseWidth / 2;
+    const tileHeight = dominoBaseWidth;
+    const rotateZ = Number.isFinite(settings.rotateZ) ? settings.rotateZ : 0;
+    const buffer = isMobile ? 10 : 14;
+
+    return slots.reduce(
+      (acc, slot) => {
+        const rotation = ((slot.rotateDeg + rotateZ) * Math.PI) / 180;
+        const horizontalSpan =
+          (Math.abs(tileWidth * Math.cos(rotation)) + Math.abs(tileHeight * Math.sin(rotation))) * slot.scale;
+        const halfSpan = horizontalSpan / 2 + buffer;
+        const centerX = (slot.xPct / 100) * gloveWidth;
+
+        return {
+          left: Math.max(acc.left, halfSpan - centerX),
+          right: Math.max(acc.right, centerX + halfSpan - gloveWidth),
+        };
+      },
+      { left: 0, right: 0 }
+    );
+  };
+
   // Each glove holds up to 6 slots. We assign each domino a STABLE (glove, slot)
   // position so that when a stone is played, the others in that glove keep their
   // place instead of shifting in from the next glove. Eerste 6 stenen vullen
@@ -310,20 +334,24 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
           const mirrored = chunkIdx % 2 === 1;
           const gloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
           const gloveHeight = gloveWidth * align.aspectRatio;
-          const slotsForChunk = mirrored
+          const baseSlotsForChunk = mirrored
             ? (align.slotsMirrored ?? align.slots.map(s => ({
                 ...s,
                 xPct: 100 - s.xPct,
                 rotateDeg: -s.rotateDeg,
               })))
             : align.slots;
+          const slotsForChunk = baseSlotsForChunk;
+          const footprint = getHorizontalFootprint(slotsForChunk, gloveWidth);
           return (
             <div
               key={`glove-chunk-${chunkIdx}`}
               className="relative"
               style={{
-                width: `min(96vw, ${gloveWidth}px)`,
+                width: `${gloveWidth}px`,
                 height: `${gloveHeight}px`,
+                marginLeft: `${Math.ceil(footprint.left)}px`,
+                marginRight: `${Math.ceil(footprint.right)}px`,
               }}
             >
               {/* Glove background */}
