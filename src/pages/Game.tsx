@@ -2479,6 +2479,10 @@ export default function Game() {
 
   // Auto-pas: globale app-instelling, alleen admin kan toggelen
   const autoPassEnabled = appSettings?.wega_auto_pass === true;
+  const betaPageBackgroundUrl = String(
+    appSettings?.beta_page_background_url || '/lovable-uploads/07b47c70-696f-408c-9981-c04375940eea.png'
+  ).trim();
+  const hasGamePageBackground = Boolean(betaPageBackgroundUrl);
   const autoPassFiredRef = useRef<string>('');
   useEffect(() => {
     // Reset fingerprint zodra het niet meer mijn beurt is, zodat een nieuwe beurt opnieuw beoordeeld wordt
@@ -2793,13 +2797,13 @@ export default function Game() {
   ]);
 
   return (
-    <div className={`min-h-screen relative isolate ${gameVersion === 'beta' ? 'bg-transparent' : 'bg-background'}`}>
-      {gameVersion === 'beta' && (
+    <div className={`min-h-screen relative isolate ${hasGamePageBackground ? 'bg-transparent' : 'bg-background'}`}>
+      {hasGamePageBackground && (
         <>
           <div
             className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center"
             style={{
-              backgroundImage: `url('${appSettings?.beta_page_background_url || '/lovable-uploads/07b47c70-696f-408c-9981-c04375940eea.png'}')`,
+              backgroundImage: `url('${betaPageBackgroundUrl}')`,
             }}
             aria-hidden="true"
           />
@@ -2832,7 +2836,10 @@ export default function Game() {
           hardSlam: wrappedHardSlam,
           botDebugInfo,
           syncState,
-          gameData: syncState.gameData || { background_choice: null },
+          gameData: {
+            ...(syncState.gameData || { background_choice: null }),
+            table_background_url: (syncState.gameData as any)?.table_background_url || betaPageBackgroundUrl,
+          },
           wegaFlipMap: isWegaPlay ? wegaFlipMap : undefined,
           flipWegaTile: isWegaPlay ? flipWegaTile : undefined,
           selectHandDomino: isWegaPlay ? wegaSelectHandDomino : gameHook.selectHandDomino,
