@@ -476,6 +476,17 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               >
                 {isMobile ? "Nieuw Spel" : startingNewGame ? "Starten..." : "Start New Game"}
               </Button>
+              {canInspectBotHands && (
+                <Button
+                  variant={devConsoleVisible ? "default" : "outline"}
+                  size={isMobile ? "sm" : "default"}
+                  onClick={() => setDevConsoleVisible(v => !v)}
+                  title={devConsoleVisible ? "Debug console verbergen" : "Debug console tonen"}
+                  className="p-2"
+                >
+                  <Eye className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
+                </Button>
+              )}
               {!isMobile && (
                 <Button
                   variant="ghost"
