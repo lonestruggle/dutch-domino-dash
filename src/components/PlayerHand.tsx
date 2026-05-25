@@ -334,20 +334,27 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
           const mirrored = chunkIdx % 2 === 1;
           const gloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
           const gloveHeight = gloveWidth * align.aspectRatio;
-          const slotsForChunk = mirrored
+          const baseSlotsForChunk = mirrored
             ? (align.slotsMirrored ?? align.slots.map(s => ({
                 ...s,
                 xPct: 100 - s.xPct,
                 rotateDeg: -s.rotateDeg,
               })))
             : align.slots;
+          const slotsForChunk = baseSlotsForChunk.map(s => ({
+            ...s,
+            xPct: Math.min(92, Math.max(8, s.xPct)),
+          }));
+          const footprint = getHorizontalFootprint(slotsForChunk, gloveWidth);
           return (
             <div
               key={`glove-chunk-${chunkIdx}`}
               className="relative"
               style={{
-                width: `min(96vw, ${gloveWidth}px)`,
+                width: `${gloveWidth}px`,
                 height: `${gloveHeight}px`,
+                marginLeft: `${Math.ceil(footprint.left)}px`,
+                marginRight: `${Math.ceil(footprint.right)}px`,
               }}
             >
               {/* Glove background */}
