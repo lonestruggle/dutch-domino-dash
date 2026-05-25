@@ -158,13 +158,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
 
     // Auto-compact when enabled, when few stones remain, or when user clicked the compact button
     const assignPos = (i: number): { glove: number; slot: number } => {
-      if (i < chunkSize * 2) {
-        // Eerst handschoen 1 vol (0..5), dan handschoen 2 (6..11).
-        return { glove: Math.floor(i / chunkSize), slot: i % chunkSize };
-      }
-      // Daarboven om en om toevoegen aan elke handschoen.
-      const over = i - chunkSize * 2;
-      return { glove: over % 2, slot: chunkSize + Math.floor(over / 2) };
+      // Elke handschoen heeft `chunkSize` sleuven. Bij overschrijding wordt
+      // een nieuwe handschoen toegevoegd zodat stenen niet op elkaar stapelen.
+      return { glove: Math.floor(i / chunkSize), slot: i % chunkSize };
     };
 
     if (autoCompact || hand.length <= COMPACT_THRESHOLD || compactTick > 0) {
