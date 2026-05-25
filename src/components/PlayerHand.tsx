@@ -110,7 +110,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   })();
 
   // Dynamische gap op basis van handDominoScale
-  const baseGap = isMobile ? 2 : 12; // px
+  const baseGap = isMobile ? 12 : 40; // px - extra ruimte zodat overhangende stenen niet over de buurman heen vallen
   const gapPx = Math.max(1, Math.round(baseGap * safeHandScale));
 
   // Each glove holds up to 6 slots. We assign each domino a STABLE (glove, slot)
