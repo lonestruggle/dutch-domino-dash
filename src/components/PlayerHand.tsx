@@ -263,7 +263,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   }, [isMobile, settings.dominoWidth, settings.handDominoScale]);
   
   return (
-    <div ref={containerRef} className={`game-ui ${isMobile ? "p-2" : "p-6"}`}>
+    <div ref={containerRef} className={`game-ui relative ${isMobile ? "p-2" : "p-6"}`}>
       <div className="absolute top-2 right-2 flex items-center gap-2 z-20">
         {canUseGloveFeatures && (
           <>
