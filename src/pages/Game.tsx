@@ -2836,7 +2836,10 @@ export default function Game() {
           hardSlam: wrappedHardSlam,
           botDebugInfo,
           syncState,
-          gameData: syncState.gameData || { background_choice: null },
+          gameData: {
+            ...(syncState.gameData || { background_choice: null }),
+            table_background_url: (syncState.gameData as any)?.table_background_url || betaPageBackgroundUrl,
+          },
           wegaFlipMap: isWegaPlay ? wegaFlipMap : undefined,
           flipWegaTile: isWegaPlay ? flipWegaTile : undefined,
           selectHandDomino: isWegaPlay ? wegaSelectHandDomino : gameHook.selectHandDomino,
