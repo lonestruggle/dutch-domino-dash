@@ -2793,19 +2793,20 @@ export default function Game() {
   ]);
 
   return (
-    <div className={`min-h-screen relative ${gameVersion === 'beta' ? 'bg-transparent' : 'bg-background'}`}>
+    <div className={`min-h-screen relative isolate ${gameVersion === 'beta' ? 'bg-transparent' : 'bg-background'}`}>
       {gameVersion === 'beta' && (
         <>
           <div
-            className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
+            className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center"
             style={{
               backgroundImage: `url('${appSettings?.beta_page_background_url || '/lovable-uploads/07b47c70-696f-408c-9981-c04375940eea.png'}')`,
             }}
             aria-hidden="true"
           />
-          <div className="pointer-events-none fixed inset-0 -z-10 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
+          <div className="pointer-events-none fixed inset-0 z-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
         </>
       )}
+      <div className="relative z-10">
       <GameVersionToggle />
       {/* Wega di sen overrides */}
       {(() => {
@@ -2862,6 +2863,7 @@ export default function Game() {
         allPlayers={syncState.allPlayers}
         autoPassEnabled={autoPassEnabled}
       />
+      </div>
     </div>
   );
 }
