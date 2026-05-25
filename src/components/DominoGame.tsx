@@ -78,6 +78,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   const [startingNewGame, setStartingNewGame] = useState(false);
   const [confirmNewGameOpen, setConfirmNewGameOpen] = useState(false);
+  const [devConsoleVisible, setDevConsoleVisible] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('devConsoleVisible') === 'true';
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('devConsoleVisible', String(devConsoleVisible));
+  }, [devConsoleVisible]);
   const { toast } = useToast();
 
   const actuallyStartNewGame = async () => {
@@ -424,14 +432,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   };
 
   const canInspectBotHands = isAdmin || isDev;
-  const [devConsoleVisible, setDevConsoleVisible] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem('devConsoleVisible') === 'true';
-  });
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem('devConsoleVisible', String(devConsoleVisible));
-  }, [devConsoleVisible]);
   const showDevLockstepInfo = canInspectBotHands && devConsoleVisible;
   const adminBoneyardFaceUp = isAdmin && Boolean(getSetting('admin_boneyard_face_up', false));
   const visibleBotHandPlayer = visibleBotHandPosition !== null
