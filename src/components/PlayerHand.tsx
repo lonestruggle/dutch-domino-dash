@@ -86,6 +86,23 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const containerRef = useRef<HTMLDivElement>(null);
   const [align, setAlign] = useState<GloveAlignment>(() => loadGloveAlignment());
   const [showAligner, setShowAligner] = useState(false);
+  const [containerWidth, setContainerWidth] = useState<number>(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 360
+  );
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const update = () => setContainerWidth(el.clientWidth || window.innerWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener('resize', update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, []);
 
   const updateAlign = (patch: Partial<GloveAlignment>) => {
     setAlign(prev => {
@@ -332,7 +349,12 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
       <div className="flex flex-row-reverse flex-wrap items-start justify-center -mt-20" style={{ gap: `${gapPx}px` }}>
         {chunks.map((chunk, chunkIdx) => {
           const mirrored = chunkIdx % 2 === 1;
-          const gloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
+          const desiredGloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
+          // Schaal de handschoen mee als het scherm smaller is dan de gewenste breedte.
+          const horizontalPadding = isMobile ? 16 : 48;
+          const availableWidth = Math.max(120, containerWidth - horizontalPadding);
+          const fitScale = Math.min(1, availableWidth / desiredGloveWidth);
+          const gloveWidth = desiredGloveWidth * fitScale;
           const gloveHeight = gloveWidth * align.aspectRatio;
           const baseSlotsForChunk = mirrored
             ? (align.slotsMirrored ?? align.slots.map(s => ({
@@ -341,7 +363,10 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 rotateDeg: -s.rotateDeg,
               })))
             : align.slots;
-          const slotsForChunk = baseSlotsForChunk;
+          // Schaal de stenen mee zodat ze in de gekrompen handschoen passen.
+          const slotsForChunk = fitScale === 1
+            ? baseSlotsForChunk
+            : baseSlotsForChunk.map(s => ({ ...s, scale: s.scale * fitScale }));
           const footprint = getHorizontalFootprint(slotsForChunk, gloveWidth);
           return (
             <div
