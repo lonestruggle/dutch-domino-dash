@@ -346,14 +346,19 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         />
       )}
 
-      <div className="flex flex-row-reverse flex-wrap items-start justify-center -mt-20" style={{ gap: `${gapPx}px` }}>
+      <div className="flex flex-row-reverse flex-nowrap items-start justify-center -mt-20" style={{ gap: `${gapPx}px` }}>
         {chunks.map((chunk, chunkIdx) => {
           const mirrored = chunkIdx % 2 === 1;
           const desiredGloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
-          // Schaal de handschoen mee als het scherm smaller is dan de gewenste breedte.
+          // Schaal de handschoen mee als het scherm smaller is dan de gewenste breedte,
+          // en deel de beschikbare breedte door het aantal handschoenen zodat ze
+          // naast elkaar passen i.p.v. onder elkaar te wrappen.
           const horizontalPadding = isMobile ? 16 : 48;
-          const availableWidth = Math.max(120, containerWidth - horizontalPadding);
-          const fitScale = Math.min(1, availableWidth / desiredGloveWidth);
+          const gloveCount = Math.max(1, chunks.length);
+          const totalGaps = gapPx * (gloveCount - 1);
+          const availableWidth = Math.max(120, containerWidth - horizontalPadding - totalGaps);
+          const perGloveWidth = availableWidth / gloveCount;
+          const fitScale = Math.min(1, perGloveWidth / desiredGloveWidth);
           const gloveWidth = desiredGloveWidth * fitScale;
           const gloveHeight = gloveWidth * align.aspectRatio;
           const baseSlotsForChunk = mirrored
