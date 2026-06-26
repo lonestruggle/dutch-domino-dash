@@ -420,7 +420,11 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                       style={{
                         left: `${slot.xPct}%`,
                         top: `${slot.yPct}%`,
-                        transform: `translate(-50%, -50%) rotate(${slot.rotateDeg}deg) scale(${slot.scale * safeHandScale})`,
+                        // BELANGRIJK: geen safeHandScale meer hier — anders zouden
+                        // de stenen uit hun sleuf "drijven" zodra de globale
+                        // hand-schaal verandert. De buitenste wrapper schaalt de
+                        // hele handschoen + stenen als één geheel.
+                        transform: `translate(-50%, -50%) rotate(${slot.rotateDeg}deg) scale(${slot.scale})`,
                         transformOrigin: 'center',
                         zIndex: 1,
                         outline: isSelectedSlot ? '2px dashed rgba(255,171,0,0.9)' : undefined,
