@@ -468,6 +468,24 @@ interface GloveAlignerPropsExt extends GloveAlignerProps {
 
 const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, onReset, onClose }) => {
   const [slotIdx, setSlotIdx] = useState(0);
+  const [side, setSide] = useState<'left' | 'right'>('left');
+
+  // Welke slots-array bewerken we?
+  const activeSlots: SlotConfig[] = side === 'left'
+    ? align.slots
+    : (align.slotsMirrored ?? align.slots.map(s => ({
+        ...s,
+        xPct: 100 - s.xPct,
+        rotateDeg: -s.rotateDeg,
+      })));
+
+  const writeSlots = (next: SlotConfig[]) => {
+    if (side === 'left') onChange({ slots: next });
+    else onChange({ slotsMirrored: next });
+  };
+
+  const resetMirroredToAuto = () => onChange({ slotsMirrored: undefined });
+
   const copyJSON = async () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(align, null, 2));
@@ -511,14 +529,34 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
         <Row label="Verhouding (h/b)" value={align.aspectRatio} min={0.2} max={1.2} step={0.01} onChange={(n) => onChange({ aspectRatio: n })} />
 
         <div className="mt-2 pt-2 border-t border-ui-border/60">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs w-36 shrink-0">Handschoen</span>
+            <div className="flex gap-1">
+              <button type="button"
+                onClick={() => setSide('left')}
+                className={`text-[11px] px-2 py-0.5 rounded border border-ui-border ${side==='left' ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg'}`}
+              >Links</button>
+              <button type="button"
+                onClick={() => setSide('right')}
+                className={`text-[11px] px-2 py-0.5 rounded border border-ui-border ${side==='right' ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg'}`}
+              >Rechts (gespiegeld)</button>
+              {side === 'right' && align.slotsMirrored && (
+                <button type="button"
+                  onClick={resetMirroredToAuto}
+                  className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+                  title="Verwijder eigen rechter-uitlijning, gebruik automatische spiegeling van links"
+                >Auto-spiegel</button>
+              )}
+            </div>
+          </div>
           <div className="flex gap-1 mb-2 flex-wrap">
             <button
               type="button"
               className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
               title="Gebruikt sleuf 1 als basis: spreidt X gelijkmatig, kopieert Y/Schaal, en waaiert rotatie"
               onClick={() => {
-                const base = align.slots[0];
-                const N = align.slots.length; // 7
+                const base = activeSlots[0];
+                const N = activeSlots.length;
                 // Spread X across the glove, slight arc on Y, fan rotation around base.
                 const next: SlotConfig[] = Array.from({ length: N }, (_, i) => {
                   const t = N === 1 ? 0.5 : i / (N - 1); // 0..1
@@ -530,7 +568,7 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
                   const rotateDeg = (t - 0.5) * 2 * span;
                   return { xPct, yPct, rotateDeg, scale: base.scale };
                 });
-                onChange({ slots: next });
+                writeSlots(next);
               }}
             >Spreid vanaf sleuf 1</button>
             <button
@@ -538,9 +576,9 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
               className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
               title="Kopieer Y en schaal van sleuf 1 naar alle sleuven (X en rotatie blijven)"
               onClick={() => {
-                const base = align.slots[0];
-                const next = align.slots.map((s) => ({ ...s, yPct: base.yPct, scale: base.scale }));
-                onChange({ slots: next });
+                const base = activeSlots[0];
+                const next = activeSlots.map((s) => ({ ...s, yPct: base.yPct, scale: base.scale }));
+                writeSlots(next);
               }}
             >Y+Schaal van sleuf 1 → alle</button>
           </div>
@@ -551,14 +589,14 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
               onChange={(e) => setSlotIdx(parseInt(e.target.value, 10))}
               className="flex-1 text-xs px-1 py-0.5 rounded border border-ui-border bg-ui-bg"
             >
-              {align.slots.map((_, i) => <option key={i} value={i}>Sleuf {i + 1}</option>)}
+              {activeSlots.map((_, i) => <option key={i} value={i}>Sleuf {i + 1}</option>)}
             </select>
           </label>
           {(() => {
-            const s = align.slots[slotIdx];
+            const s = activeSlots[slotIdx];
             const patchSlot = (patch: Partial<SlotConfig>) => {
-              const next = align.slots.map((cur, i) => i === slotIdx ? { ...cur, ...patch } : cur);
-              onChange({ slots: next });
+              const next = activeSlots.map((cur, i) => i === slotIdx ? { ...cur, ...patch } : cur);
+              writeSlots(next);
             };
             return (
               <>
