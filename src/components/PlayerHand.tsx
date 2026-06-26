@@ -350,17 +350,15 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         {chunks.map((chunk, chunkIdx) => {
           const mirrored = chunkIdx % 2 === 1;
           const desiredGloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
-          // Schaal de handschoen mee als het scherm smaller is dan de gewenste breedte,
-          // en deel de beschikbare breedte door het aantal handschoenen zodat ze
-          // naast elkaar passen i.p.v. onder elkaar te wrappen.
+          const desiredGloveHeight = desiredGloveWidth * align.aspectRatio;
+          // Bouw eerst één vaste handschoen+stenen-groep op volledige grootte.
+          // Daarna schalen we de complete groep in één keer, zodat de stenen
+          // exact vast blijven zitten op hun sleuf in de handschoen.
           const horizontalPadding = isMobile ? 16 : 48;
           const gloveCount = Math.max(1, chunks.length);
           const totalGaps = gapPx * (gloveCount - 1);
           const availableWidth = Math.max(120, containerWidth - horizontalPadding - totalGaps);
           const perGloveWidth = availableWidth / gloveCount;
-          const fitScale = Math.min(1, perGloveWidth / desiredGloveWidth);
-          const gloveWidth = desiredGloveWidth * fitScale;
-          const gloveHeight = gloveWidth * align.aspectRatio;
           const baseSlotsForChunk = mirrored
             ? (align.slotsMirrored ?? align.slots.map(s => ({
                 ...s,
@@ -368,70 +366,78 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 rotateDeg: -s.rotateDeg,
               })))
             : align.slots;
-          // Schaal de stenen mee zodat ze in de gekrompen handschoen passen.
-          const slotsForChunk = fitScale === 1
-            ? baseSlotsForChunk
-            : baseSlotsForChunk.map(s => ({ ...s, scale: s.scale * fitScale }));
-          const footprint = getHorizontalFootprint(slotsForChunk, gloveWidth);
+          const slotsForChunk = baseSlotsForChunk;
+          const footprint = getHorizontalFootprint(slotsForChunk, desiredGloveWidth);
+          const desiredTotalWidth = desiredGloveWidth + footprint.left + footprint.right;
+          const fitScale = Math.min(1, perGloveWidth / Math.max(1, desiredTotalWidth));
           return (
             <div
               key={`glove-chunk-${chunkIdx}`}
               className="relative"
               style={{
-                width: `${gloveWidth}px`,
-                height: `${gloveHeight}px`,
-                marginLeft: `${Math.ceil(footprint.left)}px`,
-                marginRight: `${Math.ceil(footprint.right)}px`,
+                width: `${desiredGloveWidth * fitScale}px`,
+                height: `${desiredGloveHeight * fitScale}px`,
+                marginLeft: `${Math.ceil(footprint.left * fitScale)}px`,
+                marginRight: `${Math.ceil(footprint.right * fitScale)}px`,
               }}
             >
-              {/* Glove background */}
-              <img
-                src="/glove-hand-holder.png"
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                className="absolute inset-0 w-full h-auto pointer-events-none select-none"
+              <div
+                className="absolute left-0 top-0 origin-top-left"
                 style={{
-                  transform: mirrored ? 'scaleX(-1)' : undefined,
-                  zIndex: 0,
+                  width: `${desiredGloveWidth}px`,
+                  height: `${desiredGloveHeight}px`,
+                  transform: `scale(${fitScale})`,
                 }}
-              />
-              {/* Elke steen krijgt zijn eigen sleuf-positie + rotatie */}
-              {chunk.items.map((domino, i) => {
-                if (!domino) return null;
-                const index = indexByKey.get(canonicalKey(domino)) ?? -1;
-                if (index < 0) return null;
-                const slot = slotsForChunk[i] ?? slotsForChunk[slotsForChunk.length - 1];
-                const isSelectedSlot = showAligner && i === selectedSlot && chunkIdx === 0;
-                return (
-                  <div
-                    key={getDominoKey(domino, index)}
-                    onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
-                    onClick={() => { if (showAligner) setSelectedSlot(i); }}
-                    className="absolute"
-                    style={{
-                      left: `${slot.xPct}%`,
-                      top: `${slot.yPct}%`,
-                      transform: `translate(-50%, -50%) rotate(${slot.rotateDeg}deg) scale(${slot.scale})`,
-                      transformOrigin: 'center',
-                      zIndex: 1,
-                      outline: isSelectedSlot ? '2px dashed rgba(255,171,0,0.9)' : undefined,
-                    }}
-                  >
-                    <DominoTile
-                      data={domino}
-                      orientation="vertical"
-                      flipped={!!flippedTiles?.[index]}
-                      selected={index === selectedIndex}
-                      rotateX={settings.rotateX}
-                      rotateY={settings.rotateY}
-                      rotateZ={settings.rotateZ}
-                      onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
-                      className="relative transition-all duration-200 domino-tile-hand hover:z-20"
-                    />
-                  </div>
-                );
-              })}
+              >
+                {/* Glove background */}
+                <img
+                  src="/glove-hand-holder.png"
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+                  style={{
+                    transform: mirrored ? 'scaleX(-1)' : undefined,
+                    zIndex: 0,
+                  }}
+                />
+                {/* Elke steen zit vast op zijn sleuf; de buitenlaag schaalt alles samen. */}
+                {chunk.items.map((domino, i) => {
+                  if (!domino) return null;
+                  const index = indexByKey.get(canonicalKey(domino)) ?? -1;
+                  if (index < 0) return null;
+                  const slot = slotsForChunk[i] ?? slotsForChunk[slotsForChunk.length - 1];
+                  const isSelectedSlot = showAligner && i === selectedSlot && chunkIdx === 0;
+                  return (
+                    <div
+                      key={getDominoKey(domino, index)}
+                      onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
+                      onClick={() => { if (showAligner) setSelectedSlot(i); }}
+                      className="absolute"
+                      style={{
+                        left: `${slot.xPct}%`,
+                        top: `${slot.yPct}%`,
+                        transform: `translate(-50%, -50%) rotate(${slot.rotateDeg}deg) scale(${slot.scale * safeHandScale})`,
+                        transformOrigin: 'center',
+                        zIndex: 1,
+                        outline: isSelectedSlot ? '2px dashed rgba(255,171,0,0.9)' : undefined,
+                      }}
+                    >
+                      <DominoTile
+                        data={domino}
+                        orientation="vertical"
+                        flipped={!!flippedTiles?.[index]}
+                        selected={index === selectedIndex}
+                        rotateX={settings.rotateX}
+                        rotateY={settings.rotateY}
+                        rotateZ={settings.rotateZ}
+                        onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
+                        className="relative transition-all duration-200 domino-tile-hand-locked hover:z-20"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
