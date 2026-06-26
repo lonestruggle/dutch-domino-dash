@@ -1025,24 +1025,13 @@ export default function Game() {
     if (syncState.gameState && !syncState.isLoading) {
       // Behoud lokale UI-state (zoals selectedHandIndex) zodat realtime updates
       // niet jouw selectie wissen tijdens je beurt (belangrijk in Wega di sen).
-      setGameState((prev) => {
-        const selectedHandIndex =
+      setGameState((prev) => ({
+        ...syncState.gameState,
+        selectedHandIndex:
           prev?.selectedHandIndex !== undefined && prev?.selectedHandIndex !== null
             ? prev.selectedHandIndex
-            : (syncState.gameState as any)?.selectedHandIndex ?? null;
-        const nextState = {
-          ...syncState.gameState,
-          selectedHandIndex,
-        } as typeof prev;
-
-        // Als de gesynchroniseerde state inhoudelijk gelijk blijft, geef dezelfde
-        // referentie terug. Dit voorkomt een update-loop wanneer syncState.gameState
-        // per render een nieuwe object-referentie krijgt.
-        try {
-          if (prev && JSON.stringify(prev) === JSON.stringify(nextState)) return prev;
-        } catch {}
-        return nextState;
-      });
+            : (syncState.gameState as any)?.selectedHandIndex ?? null,
+      }));
     }
   }, [syncState.gameState, syncState.isLoading, setGameState]);
 
