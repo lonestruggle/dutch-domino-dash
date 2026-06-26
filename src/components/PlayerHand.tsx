@@ -41,22 +41,25 @@ interface GloveAlignment {
 }
 
 const DEFAULT_SLOTS: SlotConfig[] = [
-  { xPct: 12.5,  yPct: 102.5, rotateDeg: 6,     scale: 1.9 },
-  { xPct: 30.5,  yPct: 108.5, rotateDeg: 5,     scale: 1.9 },
-  { xPct: 48.5,  yPct: 110,   rotateDeg: 5,     scale: 1.9 },
-  { xPct: 68,    yPct: 114,   rotateDeg: 4.5,   scale: 1.9 },
-  { xPct: 86,    yPct: 116.5, rotateDeg: 5,     scale: 1.9 },
-  { xPct: 102.5, yPct: 120,   rotateDeg: 5,     scale: 1.9 },
+  // Posities zijn % van de handschoen-container (zelfde aspect als de PNG).
+  // De 6 sleuven liggen in de onderhelft van het beeld, ongeveer 12%..87% breed,
+  // verticaal gecentreerd op ~58% (midden van het doorzichtige bakje).
+  { xPct: 12,  yPct: 58, rotateDeg: 0, scale: 1.15 },
+  { xPct: 27,  yPct: 58, rotateDeg: 0, scale: 1.15 },
+  { xPct: 42,  yPct: 58, rotateDeg: 0, scale: 1.15 },
+  { xPct: 57,  yPct: 58, rotateDeg: 0, scale: 1.15 },
+  { xPct: 72,  yPct: 58, rotateDeg: 0, scale: 1.15 },
+  { xPct: 87,  yPct: 58, rotateDeg: 0, scale: 1.15 },
 ];
 
 const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
-  widthMobile: 340,
+  widthMobile: 300,
   widthDesktop: 210,
   aspectRatio: 0.67,
   slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v6';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v7';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
