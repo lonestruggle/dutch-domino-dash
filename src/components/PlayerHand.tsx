@@ -359,7 +359,6 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
           const totalGaps = gapPx * (gloveCount - 1);
           const availableWidth = Math.max(120, containerWidth - horizontalPadding - totalGaps);
           const perGloveWidth = availableWidth / gloveCount;
-          const fitScale = Math.min(1, perGloveWidth / desiredGloveWidth);
           const baseSlotsForChunk = mirrored
             ? (align.slotsMirrored ?? align.slots.map(s => ({
                 ...s,
@@ -369,6 +368,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             : align.slots;
           const slotsForChunk = baseSlotsForChunk;
           const footprint = getHorizontalFootprint(slotsForChunk, desiredGloveWidth);
+          const desiredTotalWidth = desiredGloveWidth + footprint.left + footprint.right;
+          const fitScale = Math.min(1, perGloveWidth / Math.max(1, desiredTotalWidth));
           return (
             <div
               key={`glove-chunk-${chunkIdx}`}
