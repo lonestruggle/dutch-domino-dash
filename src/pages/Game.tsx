@@ -1525,10 +1525,23 @@ export default function Game() {
         .stonePhysics?.resetAll();
     } catch { /* physics niet beschikbaar */ }
 
-    toast({
-      title: 'Stenen gefixt',
-      description: `Vorm: ${getFixLayoutLabel(chosenRotation)}`,
-    });
+    const lShape = analyzeLShapeFromChain(relaidState);
+    if (lShape.isL) {
+      toast({
+        title: '✅ L-vorm bereikt',
+        description: `Benen: ${lShape.firstLegLength} + ${lShape.secondLegLength} stenen.`,
+      });
+    } else if (lShape.turnCount === 0) {
+      toast({
+        title: 'Stenen gefixt (rechte lijn)',
+        description: 'Nog geen L-vorm — voeg een bocht toe door verder te leggen.',
+      });
+    } else {
+      toast({
+        title: 'Stenen gefixt',
+        description: `Nog geen zuivere L (${lShape.turnCount} bochten). Doel: exact één hoek met minimaal 2 stenen per been.`,
+      });
+    }
     return chosenRotation;
   }, [
     gameHook.regenerateOpenEnds,
