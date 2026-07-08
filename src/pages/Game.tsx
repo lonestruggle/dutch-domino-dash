@@ -546,7 +546,7 @@ const computeValueChainOrder = (
     if (!adjacency.has(value1)) adjacency.set(value1, []);
     if (!adjacency.has(value2)) adjacency.set(value2, []);
     adjacency.get(value1)!.push(edgeIndex);
-    if (value2 !== value1) adjacency.get(value2)!.push(edgeIndex);
+    adjacency.get(value2)!.push(edgeIndex);
   });
 
   const oddVertices = Array.from(adjacency.entries())
