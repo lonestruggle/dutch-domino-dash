@@ -375,6 +375,16 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               ⚙︎
             </button>
             )}
+            {canAccessDevTools && showAligner && (
+              <button
+                type="button"
+                onClick={() => setDragMode(d => !d)}
+                className={`text-xs px-2 py-0.5 rounded border border-ui-border ${dragMode ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg text-ui-text'}`}
+                title="Sleep sleuven direct op de handschoen. Shift+sleep = draaien. Dubbelklik = reset sleuf."
+              >
+                {dragMode ? '✋ Sleep aan' : '✋ Sleep'}
+              </button>
+            )}
           </>
         )}
       </div>
