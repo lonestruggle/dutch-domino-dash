@@ -342,13 +342,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   
   return (
     <div ref={containerRef} className={`relative ${isMobile ? "p-2" : "p-6"}`}>
-      <div className="absolute top-1 left-1 flex flex-wrap items-center gap-1 z-[95] p-1 rounded-md bg-ui-bg/95 border border-ui-border shadow-md backdrop-blur-sm">
+      <div className="relative flex flex-wrap items-center gap-1 z-[95] p-1 mb-1 rounded-md bg-white border border-ui-border shadow-md">
         {canUseGloveFeatures && (
           <>
             <button
               type="button"
               onClick={() => setAutoCompact(v => !v)}
-              className={`text-xs px-2 py-0.5 rounded border border-ui-border ${autoCompact ? 'bg-accent text-accent-foreground' : 'bg-ui-bg hover:bg-ui-bg text-ui-text'}`}
+              className={`text-xs px-2 py-0.5 rounded border border-ui-border ${autoCompact ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
               title="Automatisch stenen samenvoegen na een zet"
             >
               Auto-samenvoegen: {autoCompact ? 'aan' : 'uit'}
@@ -357,7 +357,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               <button
                 type="button"
                 onClick={() => setCompactTick(t => t + 1)}
-                className="text-xs px-2 py-0.5 rounded border border-ui-border bg-ui-bg hover:bg-accent/20 text-ui-text"
+                className="text-xs px-2 py-0.5 rounded border border-ui-border bg-white hover:bg-gray-100 text-gray-900"
                 title="Stenen samenvoegen in zo min mogelijk handschoenen"
               >
                 Samenvoegen
@@ -367,7 +367,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             <button
               type="button"
               onClick={() => setShowAligner(s => !s)}
-              className="text-xs px-2 py-0.5 rounded border border-ui-border bg-ui-bg hover:bg-accent/20 text-ui-text"
+              className="text-xs px-2 py-0.5 rounded border border-ui-border bg-white hover:bg-gray-100 text-gray-900"
               title="Handschoen uitlijnen"
             >
               ⚙︎
@@ -377,7 +377,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               <button
                 type="button"
                 onClick={() => setDragMode(d => !d)}
-                className={`text-xs px-2 py-0.5 rounded border border-ui-border ${dragMode ? 'bg-accent text-accent-foreground' : 'bg-ui-bg hover:bg-accent/20 text-ui-text'}`}
+                className={`text-xs px-2 py-0.5 rounded border border-ui-border ${dragMode ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
                 title="Sleep sleuven direct op de handschoen. Shift+sleep = draaien. Dubbelklik = reset sleuf."
               >
                 {dragMode ? '✋ Sleep aan' : '✋ Sleep'}
@@ -387,7 +387,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               <button
                 type="button"
                 onClick={() => setCalibrateStep(s => (s === null ? 0 : null))}
-                className={`text-xs px-2 py-0.5 rounded border border-ui-border ${calibrateStep !== null ? 'bg-accent text-accent-foreground' : 'bg-ui-bg hover:bg-accent/20 text-ui-text'}`}
+                className={`text-xs px-2 py-0.5 rounded border border-ui-border ${calibrateStep !== null ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
                 title="Klik één voor één op elke sleuf in de handschoen. Klaar in 6 kliks."
               >
                 {calibrateStep !== null ? `🎯 Klik sleuf ${calibrateStep + 1}/6` : '🎯 Klik-kalibratie'}
@@ -407,7 +407,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         />
       )}
 
-      <div className={`relative z-0 flex flex-row-reverse flex-nowrap items-start justify-center ${showAligner ? 'mt-4' : '-mt-20'}`} style={{ gap: `${gapPx}px` }}>
+      <div className={`relative z-0 flex flex-row-reverse flex-nowrap items-start justify-center ${showAligner ? 'mt-4' : 'mt-0'}`} style={{ gap: `${gapPx}px` }}>
         {chunks.map((chunk, chunkIdx) => {
           const mirrored = chunkIdx % 2 === 1;
           const desiredGloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
