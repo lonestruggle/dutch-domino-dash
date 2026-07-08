@@ -203,7 +203,6 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   // place instead of shifting in from the next glove. Eerste 6 stenen vullen
   // handschoen 1, daarna 6 in handschoen 2, en alles daarboven om-en-om.
   const chunkSize = 6;
-  const [selectedSlot, setSelectedSlot] = useState(0);
   const COMPACT_THRESHOLD = 5;
 
   // Handschoen-/hand-instellingen zijn alleen voor admin/dev zichtbaar.
@@ -476,7 +475,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                     <div
                       key={getDominoKey(domino, index)}
                       onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
-                      onClick={() => { if (showAligner) setSelectedSlot(i); }}
+                      onClick={undefined}
                       onPointerDown={(e) => {
                         if (!showAligner || !dragMode) return;
                         e.preventDefault();
@@ -556,9 +555,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                         orientation="vertical"
                         flipped={!!flippedTiles?.[index]}
                         selected={index === selectedIndex}
-                        rotateX={settings.rotateX}
-                        rotateY={settings.rotateY}
-                        rotateZ={settings.rotateZ}
+                        rotateX={0}
+                        rotateY={0}
+                        rotateZ={0}
                         onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
                         className="relative transition-all duration-200 domino-tile-hand-locked hover:z-20"
                       />
@@ -604,11 +603,6 @@ interface GloveAlignerProps {
   onReset: () => void;
   onClose: () => void;
 }
-interface GloveAlignerPropsExt extends GloveAlignerProps {
-  selectedSlot: number;
-  setSelectedSlot: (n: number) => void;
-}
-
 const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, onReset, onClose }) => {
   const [slotIdx, setSlotIdx] = useState(0);
   const [side, setSide] = useState<'left' | 'right'>('left');
@@ -655,7 +649,7 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
   );
 
   return (
-    <div className="mb-3 mx-auto max-w-md p-3 rounded-lg border border-ui-border bg-ui-bg/95 shadow-lg text-ui-text">
+    <div className="relative z-[80] mb-3 mx-auto max-w-md p-3 rounded-lg border border-ui-border bg-ui-bg/95 shadow-lg text-ui-text">
       <div className="flex items-center justify-between mb-2">
         <strong className="text-sm">Handschoen uitlijnen</strong>
         <div className="flex gap-1">
@@ -728,23 +722,17 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
               type="button"
               className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
               title="5 stenen in het bakje + 1 los ernaast (past op glove-hand-holder.png)"
-              onClick={() => writeSlots([
-                { xPct:  9, yPct: 56, rotateDeg: 0, scale: activeSlots[0].scale },
-                { xPct: 26, yPct: 58, rotateDeg: 0, scale: activeSlots[0].scale },
-                { xPct: 43, yPct: 60, rotateDeg: 0, scale: activeSlots[0].scale },
-                { xPct: 60, yPct: 60, rotateDeg: 0, scale: activeSlots[0].scale },
-                { xPct: 77, yPct: 58, rotateDeg: 0, scale: activeSlots[0].scale },
-                { xPct: 96, yPct: 45, rotateDeg: 0, scale: activeSlots[0].scale },
-              ])}
+              onClick={() => writeSlots(DEFAULT_SLOTS.map(s => ({ ...s })))}
             >Preset: 5+1 los</button>
             <button
               type="button"
               className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
               title="6 stenen strak naast elkaar in het bakje"
               onClick={() => {
-                const s = activeSlots[0].scale;
+                const s = activeSlots[0].scale || 1.55;
+                const r = activeSlots[0].rotateDeg || -15;
                 const next: SlotConfig[] = Array.from({ length: 6 }, (_, i) => ({
-                  xPct: 10 + (i * 80) / 5, yPct: 58, rotateDeg: 0, scale: s,
+                  xPct: 13.5 + (i * 82.5) / 5, yPct: 59.5, rotateDeg: r, scale: s,
                 }));
                 writeSlots(next);
               }}
