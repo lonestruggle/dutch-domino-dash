@@ -89,9 +89,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const containerRef = useRef<HTMLDivElement>(null);
   const [align, setAlign] = useState<GloveAlignment>(() => loadGloveAlignment());
   const [showAligner, setShowAligner] = useState(false);
+  const [dragMode, setDragMode] = useState(false);
   const [containerWidth, setContainerWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 360
   );
+
+  // Refs per handschoen-container zodat we tijdens slepen de rect kunnen uitlezen.
+  const gloveRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -114,6 +118,42 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
       return next;
     });
   };
+
+  // Schrijf één sleuf weg naar de juiste zijde (links = slots, rechts = slotsMirrored).
+  const writeSlot = (mirrored: boolean, slotIndex: number, patch: Partial<SlotConfig>) => {
+    setAlign(prev => {
+      const baseArr = mirrored
+        ? (prev.slotsMirrored ?? prev.slots.map(s => ({
+            ...s, xPct: 100 - s.xPct, rotateDeg: -s.rotateDeg,
+          })))
+        : prev.slots;
+      const nextArr = baseArr.map((s, i) => i === slotIndex ? { ...s, ...patch } : s);
+      const next: GloveAlignment = mirrored
+        ? { ...prev, slotsMirrored: nextArr }
+        : { ...prev, slots: nextArr };
+      try { localStorage.setItem(GLOVE_ALIGN_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const resetOneSlot = (mirrored: boolean, slotIndex: number) => {
+    const def = DEFAULT_SLOTS[slotIndex] ?? DEFAULT_SLOTS[0];
+    const patch = mirrored
+      ? { xPct: 100 - def.xPct, yPct: def.yPct, rotateDeg: -def.rotateDeg, scale: def.scale }
+      : { ...def };
+    writeSlot(mirrored, slotIndex, patch);
+  };
+
+  // Actieve drag-sessie
+  const dragRef = useRef<null | {
+    pointerId: number;
+    chunkIdx: number;
+    mirrored: boolean;
+    slotIndex: number;
+    mode: 'move' | 'rotate';
+    startRotate: number;
+    startAngle: number;
+  }>(null);
 
   const resetAlign = () => {
     setAlign(DEFAULT_GLOVE_ALIGN);
@@ -335,6 +375,16 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               ⚙︎
             </button>
             )}
+            {canAccessDevTools && showAligner && (
+              <button
+                type="button"
+                onClick={() => setDragMode(d => !d)}
+                className={`text-xs px-2 py-0.5 rounded border border-ui-border ${dragMode ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg text-ui-text'}`}
+                title="Sleep sleuven direct op de handschoen. Shift+sleep = draaien. Dubbelklik = reset sleuf."
+              >
+                {dragMode ? '✋ Sleep aan' : '✋ Sleep'}
+              </button>
+            )}
           </>
         )}
       </div>
@@ -386,6 +436,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             >
               <div
                 className="absolute left-0 top-0 origin-top-left"
+                ref={(el) => { gloveRefs.current.set(chunkIdx, el); }}
                 style={{
                   width: `${desiredGloveWidth}px`,
                   height: `${desiredGloveHeight}px`,
@@ -416,6 +467,64 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                       key={getDominoKey(domino, index)}
                       onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
                       onClick={() => { if (showAligner) setSelectedSlot(i); }}
+                      onPointerDown={(e) => {
+                        if (!showAligner || !dragMode) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const glove = gloveRefs.current.get(chunkIdx);
+                        if (!glove) return;
+                        const rect = glove.getBoundingClientRect();
+                        const cx = rect.left + (slot.xPct / 100) * rect.width;
+                        const cy = rect.top + (slot.yPct / 100) * rect.height;
+                        const isRotate = e.shiftKey;
+                        dragRef.current = {
+                          pointerId: e.pointerId,
+                          chunkIdx,
+                          mirrored,
+                          slotIndex: i,
+                          mode: isRotate ? 'rotate' : 'move',
+                          startRotate: slot.rotateDeg,
+                          startAngle: Math.atan2(e.clientY - cy, e.clientX - cx),
+                        };
+                        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                      }}
+                      onPointerMove={(e) => {
+                        const d = dragRef.current;
+                        if (!d || d.pointerId !== e.pointerId) return;
+                        const glove = gloveRefs.current.get(d.chunkIdx);
+                        if (!glove) return;
+                        const rect = glove.getBoundingClientRect();
+                        if (d.mode === 'move') {
+                          const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+                          const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+                          const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+                          writeSlot(d.mirrored, d.slotIndex, {
+                            xPct: Math.round(clamp(xPct, -20, 120) * 10) / 10,
+                            yPct: Math.round(clamp(yPct, -20, 120) * 10) / 10,
+                          });
+                        } else {
+                          const cx = rect.left + (slot.xPct / 100) * rect.width;
+                          const cy = rect.top + (slot.yPct / 100) * rect.height;
+                          const ang = Math.atan2(e.clientY - cy, e.clientX - cx);
+                          const delta = ((ang - d.startAngle) * 180) / Math.PI;
+                          let next = d.startRotate + delta;
+                          if (next > 180) next -= 360;
+                          if (next < -180) next += 360;
+                          writeSlot(d.mirrored, d.slotIndex, { rotateDeg: Math.round(next * 10) / 10 });
+                        }
+                      }}
+                      onPointerUp={(e) => {
+                        const d = dragRef.current;
+                        if (!d || d.pointerId !== e.pointerId) return;
+                        try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+                        dragRef.current = null;
+                      }}
+                      onDoubleClickCapture={(e) => {
+                        if (!showAligner || !dragMode) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        resetOneSlot(mirrored, i);
+                      }}
                       className="absolute"
                       style={{
                         left: `${slot.xPct}%`,
@@ -428,6 +537,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                         transformOrigin: 'center',
                         zIndex: 1,
                         outline: isSelectedSlot ? '2px dashed rgba(255,171,0,0.9)' : undefined,
+                        cursor: (showAligner && dragMode) ? 'grab' : undefined,
+                        touchAction: (showAligner && dragMode) ? 'none' : undefined,
                       }}
                     >
                       <DominoTile
