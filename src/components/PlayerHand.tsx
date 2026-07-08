@@ -343,13 +343,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   
   return (
     <div ref={containerRef} className={`relative ${isMobile ? "p-2" : "p-6"}`}>
-      <div className="relative flex flex-wrap items-center gap-1 z-[95] p-1 mb-1 rounded-md bg-white border border-ui-border shadow-md">
-        {canUseGloveFeatures && (
-          <>
+      {(() => {
+        const toolbar = canUseGloveFeatures ? (
+          <div className="flex flex-wrap items-center gap-1">
             <button
               type="button"
               onClick={() => setAutoCompact(v => !v)}
-              className={`text-xs px-2 py-0.5 rounded border border-ui-border ${autoCompact ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
+              className={`text-xs px-2 py-1 rounded border border-ui-border ${autoCompact ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
               title="Automatisch stenen samenvoegen na een zet"
             >
               Auto-samenvoegen: {autoCompact ? 'aan' : 'uit'}
@@ -358,7 +358,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               <button
                 type="button"
                 onClick={() => setCompactTick(t => t + 1)}
-                className="text-xs px-2 py-0.5 rounded border border-ui-border bg-white hover:bg-gray-100 text-gray-900"
+                className="text-xs px-2 py-1 rounded border border-ui-border bg-white hover:bg-gray-100 text-gray-900"
                 title="Stenen samenvoegen in zo min mogelijk handschoenen"
               >
                 Samenvoegen
@@ -368,7 +368,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             <button
               type="button"
               onClick={() => setShowAligner(s => !s)}
-              className="text-xs px-2 py-0.5 rounded border border-ui-border bg-white hover:bg-gray-100 text-gray-900"
+              className="text-xs px-2 py-1 rounded border border-ui-border bg-white hover:bg-gray-100 text-gray-900"
               title="Handschoen uitlijnen"
             >
               ⚙︎
@@ -378,7 +378,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               <button
                 type="button"
                 onClick={() => setDragMode(d => !d)}
-                className={`text-xs px-2 py-0.5 rounded border border-ui-border ${dragMode ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
+                className={`text-xs px-2 py-1 rounded border border-ui-border ${dragMode ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
                 title="Sleep sleuven direct op de handschoen. Shift+sleep = draaien. Dubbelklik = reset sleuf."
               >
                 {dragMode ? '✋ Sleep aan' : '✋ Sleep'}
@@ -388,15 +388,20 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               <button
                 type="button"
                 onClick={() => setCalibrateStep(s => (s === null ? 0 : null))}
-                className={`text-xs px-2 py-0.5 rounded border border-ui-border ${calibrateStep !== null ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
+                className={`text-xs px-2 py-1 rounded border border-ui-border ${calibrateStep !== null ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
                 title="Klik één voor één op elke sleuf in de handschoen. Klaar in 6 kliks."
               >
                 {calibrateStep !== null ? `🎯 Klik sleuf ${calibrateStep + 1}/6` : '🎯 Klik-kalibratie'}
               </button>
             )}
-          </>
-        )}
-      </div>
+          </div>
+        ) : null;
+        if (!toolbar) return null;
+        const slot = typeof document !== 'undefined' ? document.getElementById('playerhand-toolbar-slot') : null;
+        return slot ? createPortal(toolbar, slot) : (
+          <div className="relative z-[95] mb-1 p-1 rounded-md bg-white border border-ui-border shadow-md">{toolbar}</div>
+        );
+      })()}
 
       {showAligner && (
         <GloveAligner
