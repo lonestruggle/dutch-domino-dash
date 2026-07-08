@@ -404,8 +404,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
           </div>
         ) : null;
         if (!toolbar) return null;
-        const slot = typeof document !== 'undefined' ? document.getElementById('playerhand-toolbar-slot') : null;
-        return slot ? createPortal(toolbar, slot) : (
+        return toolbarSlot ? createPortal(toolbar, toolbarSlot) : (
           <div className="relative z-[95] mb-1 p-1 rounded-md bg-white border border-ui-border shadow-md">{toolbar}</div>
         );
       })()}
