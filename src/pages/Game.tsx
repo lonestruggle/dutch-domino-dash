@@ -717,21 +717,18 @@ const buildPlacementWithTwoEnds = (
   const firstValues: [number, number] = firstFlipped
     ? [firstDomino.data.value2, firstDomino.data.value1]
     : [firstDomino.data.value1, firstDomino.data.value2];
-  // Dubbele stenen worden dwars gelegd (vertical) t.o.v. de horizontale
-  // basisketen; niet-dubbele stenen blijven horizontaal.
-  const isFirstDouble = firstDomino.data.value1 === firstDomino.data.value2;
-  const firstOrientation: 'horizontal' | 'vertical' = isFirstDouble ? 'vertical' : 'horizontal';
-  const firstCells: Array<[number, number]> = isFirstDouble
-    ? [[0, 0], [0, 1]]
-    : [[0, 0], [1, 0]];
+  // Basis-anker altijd horizontaal (net als de stable versie); doubles
+  // verderop in de keten worden altijd dwars t.o.v. de vorige steen
+  // geplaatst via de candidate-filter in tryPlaceRecursive.
+  const firstCells: Array<[number, number]> = [[0, 0], [1, 0]];
   const firstPlacement: ChainPlacement = {
     x: 0,
     y: 0,
-    orientation: firstOrientation,
+    orientation: 'horizontal',
     flipped: firstFlipped,
     values: firstValues,
     cells: firstCells,
-    endpointCell: isFirstDouble ? [0, 1] : [1, 0],
+    endpointCell: [1, 0],
     endpointValue: firstValues[1],
     fromDir: null,
   };
@@ -778,7 +775,8 @@ const buildPlacementWithTwoEnds = (
 
     for (const openEnd of openEndsToTry) {
       for (const direction of directionAttempts) {
-        const candidates = (domino.data.value1 === domino.data.value2)
+        const isDoubleStone = domino.data.value1 === domino.data.value2;
+        let candidates = isDoubleStone
           ? createDoublePlacementCandidates(
               { x: openEnd.endpointCell[0], y: openEnd.endpointCell[1] },
               direction
@@ -789,6 +787,20 @@ const buildPlacementWithTwoEnds = (
                 direction
               ),
             ];
+
+        // Klassieke regel (stable-versie): dubbels liggen altijd DWARS
+        // op de speelrichting → dus loodrecht op de vorige steen. We
+        // filteren candidates die dezelfde oriëntatie hebben als hun
+        // aanleg-anker. Anchor-oriëntatie leiden we af uit de
+        // openEnd.anchorCells.
+        if (isDoubleStone && openEnd.anchorCells.length >= 2) {
+          const [a, b] = openEnd.anchorCells;
+          const anchorOrientation: 'horizontal' | 'vertical' =
+            a[1] === b[1] ? 'horizontal' : 'vertical';
+          const perpendicular = anchorOrientation === 'horizontal' ? 'vertical' : 'horizontal';
+          const filtered = candidates.filter((c) => c.orientation === perpendicular);
+          if (filtered.length > 0) candidates = filtered;
+        }
 
         for (const candidate of candidates) {
           const overlapsExisting = candidate.cells.some(([x, y]) => occupiedByCell.has(`${x},${y}`));
@@ -855,14 +867,14 @@ const buildPlacementWithTwoEnds = (
       requiredValue: firstValues[0],
       anchorCells: firstCells,
       side: 'left',
-      outwardDir: isFirstDouble ? 'N' : 'W',
+      outwardDir: 'W',
     },
     {
-      endpointCell: isFirstDouble ? [0, 1] : [1, 0],
+      endpointCell: [1, 0],
       requiredValue: firstValues[1],
       anchorCells: firstCells,
       side: 'right',
-      outwardDir: isFirstDouble ? 'S' : 'E',
+      outwardDir: 'E',
     },
   ];
 
@@ -959,6 +971,53 @@ const relayoutTableState = (
     ...tempState,
     openEnds: regenerateOpenEnds(tempState),
   };
+};
+
+/**
+ * Analyseer een keten van placements en bepaal of hij een L-vorm heeft:
+ * exact één richtingswissel, beide benen ≥ 2 stenen. Retourneert ook
+ * de lengte van elk been zodat de toast dat kan tonen.
+ */
+const analyzeLShapeFromChain = (
+  state: GameState
+): { isL: boolean; firstLegLength: number; secondLegLength: number; turnCount: number } => {
+  const linearOrder = computeLinearChainOrder(state);
+  if (!linearOrder || linearOrder.length < 3) {
+    return { isL: false, firstLegLength: linearOrder?.length ?? 0, secondLegLength: 0, turnCount: 0 };
+  }
+
+  // Bepaal richting tussen opeenvolgende stenen a.d.h.v. hun middelpunten.
+  const centerOf = (dom: GameState['dominoes'][string]): [number, number] => {
+    if (dom.orientation === 'horizontal') return [dom.x + 0.5, dom.y];
+    return [dom.x, dom.y + 0.5];
+  };
+  const dirBetween = (a: [number, number], b: [number, number]): 'H' | 'V' => {
+    return Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]) ? 'H' : 'V';
+  };
+
+  const axes: Array<'H' | 'V'> = [];
+  for (let i = 1; i < linearOrder.length; i += 1) {
+    axes.push(dirBetween(centerOf(linearOrder[i - 1][1]), centerOf(linearOrder[i][1])));
+  }
+
+  let turnCount = 0;
+  let firstLegLength = 1;
+  let secondLegLength = 0;
+  const firstAxis = axes[0];
+  for (let i = 0; i < axes.length; i += 1) {
+    if (axes[i] !== firstAxis) { turnCount += 1; break; }
+    firstLegLength += 1;
+  }
+  if (turnCount > 0) {
+    secondLegLength = linearOrder.length - firstLegLength + 1;
+    // Check dat er hierna geen extra wissels zijn.
+    for (let i = firstLegLength - 1 + 1; i < axes.length; i += 1) {
+      if (axes[i] === firstAxis) { turnCount += 1; }
+    }
+  }
+
+  const isL = turnCount === 1 && firstLegLength >= 2 && secondLegLength >= 2;
+  return { isL, firstLegLength, secondLegLength, turnCount };
 };
 
 export default function Game() {
@@ -1466,10 +1525,23 @@ export default function Game() {
         .stonePhysics?.resetAll();
     } catch { /* physics niet beschikbaar */ }
 
-    toast({
-      title: 'Stenen gefixt',
-      description: `Vorm: ${getFixLayoutLabel(chosenRotation)}`,
-    });
+    const lShape = analyzeLShapeFromChain(relaidState);
+    if (lShape.isL) {
+      toast({
+        title: '✅ L-vorm bereikt',
+        description: `Benen: ${lShape.firstLegLength} + ${lShape.secondLegLength} stenen.`,
+      });
+    } else if (lShape.turnCount === 0) {
+      toast({
+        title: 'Stenen gefixt (rechte lijn)',
+        description: 'Nog geen L-vorm — voeg een bocht toe door verder te leggen.',
+      });
+    } else {
+      toast({
+        title: 'Stenen gefixt',
+        description: `Nog geen zuivere L (${lShape.turnCount} bochten). Doel: exact één hoek met minimaal 2 stenen per been.`,
+      });
+    }
     return chosenRotation;
   }, [
     gameHook.regenerateOpenEnds,
