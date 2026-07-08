@@ -1444,6 +1444,13 @@ export default function Game() {
     updateGameState(consolidatedState, syncState.currentPlayer);
     moveAnimationLockUntilRef.current = Date.now() + 320;
 
+    // Reset alle physics-offsets zodat stenen direct op hun grid-anker
+    // starten en meteen tegen elkaar aanliggen (contact-snap).
+    try {
+      (window as unknown as { stonePhysics?: { resetAll: () => void } })
+        .stonePhysics?.resetAll();
+    } catch { /* physics niet beschikbaar */ }
+
     toast({
       title: 'Stenen gefixt',
       description: `Vorm: ${getFixLayoutLabel(chosenRotation)}`,

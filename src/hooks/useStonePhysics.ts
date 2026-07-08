@@ -48,11 +48,15 @@ function bodyOBB(b: PhysicsBody, cell: number): OBB {
   const isH = b.orientation === 'horizontal';
   const w = isH ? cell * 2 : cell;
   const h = isH ? cell : cell * 2;
+  // Contact-tolerance: bij kleine rotaties (Fix stenen wobble ±2°) mogen
+  // corners minimaal overlappen zonder dat SAT ze uit elkaar duwt, zodat
+  // stenen langs de aanlegzijde tegen elkaar blijven kleven.
+  const tol = Math.min(2.5, cell * 0.06);
   return {
     cx: b.cx,
     cy: b.cy,
-    hw: w / 2,
-    hh: h / 2,
+    hw: w / 2 - tol,
+    hh: h / 2 - tol,
     cos: Math.cos(b.angle),
     sin: Math.sin(b.angle),
   };
