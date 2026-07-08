@@ -757,6 +757,83 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
               }}
             >Preset: boog</button>
           </div>
+          <div className="mt-2 pt-2 border-t border-ui-border/60">
+            <div className="text-xs font-semibold mb-1">Alle sleuven samen aanpassen</div>
+            <div className="flex flex-wrap gap-1 mb-2">
+              {[
+                { label: 'X −1%', patch: { dx: -1 } },
+                { label: 'X +1%', patch: { dx: +1 } },
+                { label: 'Y −1%', patch: { dy: -1 } },
+                { label: 'Y +1%', patch: { dy: +1 } },
+                { label: 'Rot −5°', patch: { dr: -5 } },
+                { label: 'Rot +5°', patch: { dr: +5 } },
+                { label: 'Rot −1°', patch: { dr: -1 } },
+                { label: 'Rot +1°', patch: { dr: +1 } },
+                { label: 'Schaal −', patch: { ds: -0.05 } },
+                { label: 'Schaal +', patch: { ds: +0.05 } },
+              ].map((b) => (
+                <button
+                  key={b.label}
+                  type="button"
+                  className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+                  onClick={() => {
+                    const { dx = 0, dy = 0, dr = 0, ds = 0 } = b.patch as any;
+                    const next = activeSlots.map((s) => ({
+                      xPct: Math.round((s.xPct + dx) * 10) / 10,
+                      yPct: Math.round((s.yPct + dy) * 10) / 10,
+                      rotateDeg: Math.round((s.rotateDeg + dr) * 10) / 10,
+                      scale: Math.max(0.1, Math.round((s.scale + ds) * 100) / 100),
+                    }));
+                    writeSlots(next);
+                  }}
+                >{b.label}</button>
+              ))}
+              <button
+                type="button"
+                className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+                title="Draai de rotatie van alle sleuven om (bijv. -15° → +15°)"
+                onClick={() => {
+                  const next = activeSlots.map((s) => ({ ...s, rotateDeg: -s.rotateDeg }));
+                  writeSlots(next);
+                }}
+              >Rotatie omkeren</button>
+            </div>
+            <Row
+              label="Rotatie (alle)"
+              value={activeSlots[0]?.rotateDeg ?? 0}
+              min={-180} max={180} step={0.5} suffix="°"
+              onChange={(n) => {
+                const base = activeSlots[0]?.rotateDeg ?? 0;
+                const delta = n - base;
+                const next = activeSlots.map((s) => ({
+                  ...s, rotateDeg: Math.round((s.rotateDeg + delta) * 10) / 10,
+                }));
+                writeSlots(next);
+              }}
+            />
+            <Row
+              label="Schaal (alle)"
+              value={activeSlots[0]?.scale ?? 1}
+              min={0.3} max={4} step={0.02}
+              onChange={(n) => {
+                const next = activeSlots.map((s) => ({ ...s, scale: n }));
+                writeSlots(next);
+              }}
+            />
+            <Row
+              label="Y offset (alle)"
+              value={activeSlots[0]?.yPct ?? 0}
+              min={-20} max={120} step={0.5} suffix="%"
+              onChange={(n) => {
+                const base = activeSlots[0]?.yPct ?? 0;
+                const delta = n - base;
+                const next = activeSlots.map((s) => ({
+                  ...s, yPct: Math.round((s.yPct + delta) * 10) / 10,
+                }));
+                writeSlots(next);
+              }}
+            />
+          </div>
           <label className="flex items-center gap-2 text-xs mb-1">
             <span className="w-36 shrink-0">Sleuf</span>
             <select
