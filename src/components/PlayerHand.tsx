@@ -579,8 +579,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                     }}
                   >
                     <div
-                      className="absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-ui-text/70 text-ui-bg text-xs font-semibold"
-                      style={{ top: 4 }}
+                      className="absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs font-semibold"
+                      style={{ top: 4, background: 'hsl(var(--ui-text) / 0.7)', color: 'hsl(var(--ui-bg))' }}
                     >
                       Klik op sleuf {calibrateStep + 1} van 6
                     </div>
