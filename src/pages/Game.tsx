@@ -717,21 +717,18 @@ const buildPlacementWithTwoEnds = (
   const firstValues: [number, number] = firstFlipped
     ? [firstDomino.data.value2, firstDomino.data.value1]
     : [firstDomino.data.value1, firstDomino.data.value2];
-  // Dubbele stenen worden dwars gelegd (vertical) t.o.v. de horizontale
-  // basisketen; niet-dubbele stenen blijven horizontaal.
-  const isFirstDouble = firstDomino.data.value1 === firstDomino.data.value2;
-  const firstOrientation: 'horizontal' | 'vertical' = isFirstDouble ? 'vertical' : 'horizontal';
-  const firstCells: Array<[number, number]> = isFirstDouble
-    ? [[0, 0], [0, 1]]
-    : [[0, 0], [1, 0]];
+  // Basis-anker altijd horizontaal (net als de stable versie); doubles
+  // verderop in de keten worden altijd dwars t.o.v. de vorige steen
+  // geplaatst via de candidate-filter in tryPlaceRecursive.
+  const firstCells: Array<[number, number]> = [[0, 0], [1, 0]];
   const firstPlacement: ChainPlacement = {
     x: 0,
     y: 0,
-    orientation: firstOrientation,
+    orientation: 'horizontal',
     flipped: firstFlipped,
     values: firstValues,
     cells: firstCells,
-    endpointCell: isFirstDouble ? [0, 1] : [1, 0],
+    endpointCell: [1, 0],
     endpointValue: firstValues[1],
     fromDir: null,
   };
@@ -855,14 +852,14 @@ const buildPlacementWithTwoEnds = (
       requiredValue: firstValues[0],
       anchorCells: firstCells,
       side: 'left',
-      outwardDir: isFirstDouble ? 'N' : 'W',
+      outwardDir: 'W',
     },
     {
-      endpointCell: isFirstDouble ? [0, 1] : [1, 0],
+      endpointCell: [1, 0],
       requiredValue: firstValues[1],
       anchorCells: firstCells,
       side: 'right',
-      outwardDir: isFirstDouble ? 'S' : 'E',
+      outwardDir: 'E',
     },
   ];
 
