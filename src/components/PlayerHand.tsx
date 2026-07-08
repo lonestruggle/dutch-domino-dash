@@ -86,6 +86,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [toolbarSlot, setToolbarSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const find = () => setToolbarSlot(document.getElementById('playerhand-toolbar-slot'));
+    find();
+    const id = window.setTimeout(find, 0);
+    return () => window.clearTimeout(id);
+  });
   const [align, setAlign] = useState<GloveAlignment>(() => loadGloveAlignment());
   const [showAligner, setShowAligner] = useState(false);
   const [dragMode, setDragMode] = useState(false);
