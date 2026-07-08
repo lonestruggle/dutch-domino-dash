@@ -821,21 +821,19 @@ const relayoutTableState = (
 
   orderedDominoEntries.forEach(([dominoId, domino], index) => {
     const placement = placements[index];
-    // Kleine deterministische rotatie-offset zodat de ketting natuurlijk oogt
-    // (stenen blijven raster-aansluitend, maar krijgen elk een subtiele draai).
-    // Startsteen (index 0) blijft recht om te herkennen als opening.
-    const idxNum = parseDominoIndex(dominoId);
-    const seed = Number.isFinite(idxNum) ? idxNum : index;
-    const wobble = index === 0 ? 0 : (((seed * 2654435761) >>> 0) % 100) / 100; // 0..1
-    const rotationOffset = index === 0 ? 0 : (wobble - 0.5) * 4; // ±2° (subtiel zodat stenen tegen elkaar blijven)
+    // Geen rotation-offset op de gameState zelf: dat wordt door de physics-laag
+    // gebruikt om OBB-collisions op te lossen, waardoor stenen visueel uit elkaar
+    // geduwd worden (de "ankerpunten" schuiven op). De subtiele wobble komt uit
+    // de CSS `--individual-angle` variabele in DominoTile, die puur visueel is
+    // en de physics-anker niet raakt.
     const relaidDomino = {
       ...domino,
       x: placement.x,
       y: placement.y,
       orientation: placement.orientation,
       flipped: placement.flipped,
-      rotation: rotationOffset,
-      rotationZ: rotationOffset,
+      rotation: 0,
+      rotationZ: 0,
       rotationX: 0,
       rotationY: 0,
     };
