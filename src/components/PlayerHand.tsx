@@ -565,6 +565,28 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                     </div>
                   );
                 })}
+                {calibrateStep !== null && chunkIdx === 0 && (
+                  <div
+                    className="absolute inset-0"
+                    style={{ zIndex: 50, cursor: 'crosshair', background: 'rgba(255,171,0,0.08)' }}
+                    onClick={(e) => {
+                      const glove = gloveRefs.current.get(0);
+                      if (!glove) return;
+                      const rect = glove.getBoundingClientRect();
+                      const xPct = Math.round(((e.clientX - rect.left) / rect.width) * 1000) / 10;
+                      const yPct = Math.round(((e.clientY - rect.top) / rect.height) * 1000) / 10;
+                      writeSlot(false, calibrateStep, { xPct, yPct });
+                      setCalibrateStep(prev => (prev === null ? null : (prev + 1 >= 6 ? null : prev + 1)));
+                    }}
+                  >
+                    <div
+                      className="absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-black/70 text-white text-xs font-semibold"
+                      style={{ top: 4 }}
+                    >
+                      Klik op sleuf {calibrateStep + 1} van 6
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           );
