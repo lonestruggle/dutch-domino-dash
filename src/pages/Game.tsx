@@ -717,15 +717,21 @@ const buildPlacementWithTwoEnds = (
   const firstValues: [number, number] = firstFlipped
     ? [firstDomino.data.value2, firstDomino.data.value1]
     : [firstDomino.data.value1, firstDomino.data.value2];
-  const firstCells: Array<[number, number]> = [[0, 0], [1, 0]];
+  // Dubbele stenen worden dwars gelegd (vertical) t.o.v. de horizontale
+  // basisketen; niet-dubbele stenen blijven horizontaal.
+  const isFirstDouble = firstDomino.data.value1 === firstDomino.data.value2;
+  const firstOrientation: 'horizontal' | 'vertical' = isFirstDouble ? 'vertical' : 'horizontal';
+  const firstCells: Array<[number, number]> = isFirstDouble
+    ? [[0, 0], [0, 1]]
+    : [[0, 0], [1, 0]];
   const firstPlacement: ChainPlacement = {
     x: 0,
     y: 0,
-    orientation: 'horizontal',
+    orientation: firstOrientation,
     flipped: firstFlipped,
     values: firstValues,
     cells: firstCells,
-    endpointCell: [1, 0],
+    endpointCell: isFirstDouble ? [0, 1] : [1, 0],
     endpointValue: firstValues[1],
     fromDir: null,
   };
@@ -849,14 +855,14 @@ const buildPlacementWithTwoEnds = (
       requiredValue: firstValues[0],
       anchorCells: firstCells,
       side: 'left',
-      outwardDir: 'W',
+      outwardDir: isFirstDouble ? 'N' : 'W',
     },
     {
-      endpointCell: [1, 0],
+      endpointCell: isFirstDouble ? [0, 1] : [1, 0],
       requiredValue: firstValues[1],
       anchorCells: firstCells,
       side: 'right',
-      outwardDir: 'E',
+      outwardDir: isFirstDouble ? 'S' : 'E',
     },
   ];
 
