@@ -7,6 +7,7 @@ import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface PlayerHandProps {
   hand: DominoData[];
@@ -256,6 +257,31 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
     }
     return { chunks, indexByKey };
   })();
+
+  // ===== Verificatie: handvolgorde moet exact overeenkomen met gameState =====
+  // Na elke zet, trek of Fix stenen bewaken we of de tegels in dezelfde
+  // relatieve volgorde blijven staan. Als een tegel plots verplaatst is (die
+  // niet is weggehaald), tonen we een zichtbare toast zodat we het direct zien.
+  const prevHandSigRef = useRef<string[]>([]);
+  useEffect(() => {
+    const currentSig = hand.map(canonicalKey);
+    const prev = prevHandSigRef.current;
+    // Alleen controleren op tegels die in beide handen voorkomen.
+    const kept = prev.filter(k => currentSig.includes(k));
+    const keptInCurrentOrder = currentSig.filter(k => prev.includes(k));
+    const shuffled = kept.length > 0 && kept.join('|') !== keptInCurrentOrder.join('|');
+    if (prev.length > 0) {
+      if (shuffled) {
+        toast.error(`⚠️ Handvolgorde afwijkend (${hand.length} stenen)`, {
+          description: `verwacht: ${kept.join(', ')} — nu: ${keptInCurrentOrder.join(', ')}`,
+          duration: 4000,
+        });
+      } else if (currentSig.length !== prev.length) {
+        toast.success(`✅ Hand OK (${hand.length} stenen)`, { duration: 1500 });
+      }
+    }
+    prevHandSigRef.current = currentSig;
+  }, [hand]);
 
   // Update hand domino scale CSS variables - force immediate update and listen for global changes
   useEffect(() => {
