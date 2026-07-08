@@ -41,15 +41,14 @@ interface GloveAlignment {
 }
 
 const DEFAULT_SLOTS: SlotConfig[] = [
-  // Posities zijn % van de handschoen-container (zelfde aspect als de PNG).
-  // De 6 sleuven liggen in de onderhelft van het beeld, ongeveer 12%..87% breed,
-  // verticaal gecentreerd op ~58% (midden van het doorzichtige bakje).
-  { xPct: 12,  yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 27,  yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 42,  yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 57,  yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 72,  yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 87,  yPct: 58, rotateDeg: 0, scale: 1.15 },
+  // Vastgezet op basis van glove-hand-holder.png (5 sleuven in het bakje,
+  // 6e steen ligt ernaast op de vingertoppen).
+  { xPct:  9, yPct: 56, rotateDeg: 0, scale: 1.15 },
+  { xPct: 26, yPct: 58, rotateDeg: 0, scale: 1.15 },
+  { xPct: 43, yPct: 60, rotateDeg: 0, scale: 1.15 },
+  { xPct: 60, yPct: 60, rotateDeg: 0, scale: 1.15 },
+  { xPct: 77, yPct: 58, rotateDeg: 0, scale: 1.15 },
+  { xPct: 96, yPct: 45, rotateDeg: 0, scale: 1.15 },
 ];
 
 const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
@@ -59,7 +58,7 @@ const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
   slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v7';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v8';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
