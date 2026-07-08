@@ -775,7 +775,8 @@ const buildPlacementWithTwoEnds = (
 
     for (const openEnd of openEndsToTry) {
       for (const direction of directionAttempts) {
-        const candidates = (domino.data.value1 === domino.data.value2)
+        const isDoubleStone = domino.data.value1 === domino.data.value2;
+        let candidates = isDoubleStone
           ? createDoublePlacementCandidates(
               { x: openEnd.endpointCell[0], y: openEnd.endpointCell[1] },
               direction
@@ -786,6 +787,20 @@ const buildPlacementWithTwoEnds = (
                 direction
               ),
             ];
+
+        // Klassieke regel (stable-versie): dubbels liggen altijd DWARS
+        // op de speelrichting → dus loodrecht op de vorige steen. We
+        // filteren candidates die dezelfde oriëntatie hebben als hun
+        // aanleg-anker. Anchor-oriëntatie leiden we af uit de
+        // openEnd.anchorCells.
+        if (isDoubleStone && openEnd.anchorCells.length >= 2) {
+          const [a, b] = openEnd.anchorCells;
+          const anchorOrientation: 'horizontal' | 'vertical' =
+            a[1] === b[1] ? 'horizontal' : 'vertical';
+          const perpendicular = anchorOrientation === 'horizontal' ? 'vertical' : 'horizontal';
+          const filtered = candidates.filter((c) => c.orientation === perpendicular);
+          if (filtered.length > 0) candidates = filtered;
+        }
 
         for (const candidate of candidates) {
           const overlapsExisting = candidate.cells.some(([x, y]) => occupiedByCell.has(`${x},${y}`));
