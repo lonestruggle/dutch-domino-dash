@@ -385,6 +385,16 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 {dragMode ? '✋ Sleep aan' : '✋ Sleep'}
               </button>
             )}
+            {canAccessDevTools && showAligner && (
+              <button
+                type="button"
+                onClick={() => setCalibrateStep(s => (s === null ? 0 : null))}
+                className={`text-xs px-2 py-0.5 rounded border border-ui-border ${calibrateStep !== null ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg text-ui-text'}`}
+                title="Klik één voor één op elke sleuf in de handschoen. Klaar in 6 kliks."
+              >
+                {calibrateStep !== null ? `🎯 Klik sleuf ${calibrateStep + 1}/6` : '🎯 Klik-kalibratie'}
+              </button>
+            )}
           </>
         )}
       </div>
