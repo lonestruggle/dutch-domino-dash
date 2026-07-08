@@ -41,15 +41,14 @@ interface GloveAlignment {
 }
 
 const DEFAULT_SLOTS: SlotConfig[] = [
-  // Posities zijn % van de handschoen-container (zelfde aspect als de PNG).
-  // De 6 sleuven liggen in de onderhelft van het beeld, ongeveer 12%..87% breed,
-  // verticaal gecentreerd op ~58% (midden van het doorzichtige bakje).
-  { xPct: 12,  yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 27,  yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 42,  yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 57,  yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 72,  yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 87,  yPct: 58, rotateDeg: 0, scale: 1.15 },
+  // Vastgezet op basis van glove-hand-holder.png (5 sleuven in het bakje,
+  // 6e steen ligt ernaast op de vingertoppen).
+  { xPct:  9, yPct: 56, rotateDeg: 0, scale: 1.15 },
+  { xPct: 26, yPct: 58, rotateDeg: 0, scale: 1.15 },
+  { xPct: 43, yPct: 60, rotateDeg: 0, scale: 1.15 },
+  { xPct: 60, yPct: 60, rotateDeg: 0, scale: 1.15 },
+  { xPct: 77, yPct: 58, rotateDeg: 0, scale: 1.15 },
+  { xPct: 96, yPct: 45, rotateDeg: 0, scale: 1.15 },
 ];
 
 const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
@@ -59,7 +58,7 @@ const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
   slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v7';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v8';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
@@ -90,6 +89,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const [align, setAlign] = useState<GloveAlignment>(() => loadGloveAlignment());
   const [showAligner, setShowAligner] = useState(false);
   const [dragMode, setDragMode] = useState(false);
+  const [calibrateStep, setCalibrateStep] = useState<number | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 360
   );
@@ -385,6 +385,16 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 {dragMode ? '✋ Sleep aan' : '✋ Sleep'}
               </button>
             )}
+            {canAccessDevTools && showAligner && (
+              <button
+                type="button"
+                onClick={() => setCalibrateStep(s => (s === null ? 0 : null))}
+                className={`text-xs px-2 py-0.5 rounded border border-ui-border ${calibrateStep !== null ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg text-ui-text'}`}
+                title="Klik één voor één op elke sleuf in de handschoen. Klaar in 6 kliks."
+              >
+                {calibrateStep !== null ? `🎯 Klik sleuf ${calibrateStep + 1}/6` : '🎯 Klik-kalibratie'}
+              </button>
+            )}
           </>
         )}
       </div>
@@ -555,6 +565,28 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                     </div>
                   );
                 })}
+                {calibrateStep !== null && chunkIdx === 0 && (
+                  <div
+                    className="absolute inset-0"
+                    style={{ zIndex: 50, cursor: 'crosshair', background: 'rgba(255,171,0,0.08)' }}
+                    onClick={(e) => {
+                      const glove = gloveRefs.current.get(0);
+                      if (!glove) return;
+                      const rect = glove.getBoundingClientRect();
+                      const xPct = Math.round(((e.clientX - rect.left) / rect.width) * 1000) / 10;
+                      const yPct = Math.round(((e.clientY - rect.top) / rect.height) * 1000) / 10;
+                      writeSlot(false, calibrateStep, { xPct, yPct });
+                      setCalibrateStep(prev => (prev === null ? null : (prev + 1 >= 6 ? null : prev + 1)));
+                    }}
+                  >
+                    <div
+                      className="absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-black/70 text-white text-xs font-semibold"
+                      style={{ top: 4 }}
+                    >
+                      Klik op sleuf {calibrateStep + 1} van 6
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -692,6 +724,50 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
                 writeSlots(next);
               }}
             >Y+Schaal van sleuf 1 → alle</button>
+            <button
+              type="button"
+              className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+              title="5 stenen in het bakje + 1 los ernaast (past op glove-hand-holder.png)"
+              onClick={() => writeSlots([
+                { xPct:  9, yPct: 56, rotateDeg: 0, scale: activeSlots[0].scale },
+                { xPct: 26, yPct: 58, rotateDeg: 0, scale: activeSlots[0].scale },
+                { xPct: 43, yPct: 60, rotateDeg: 0, scale: activeSlots[0].scale },
+                { xPct: 60, yPct: 60, rotateDeg: 0, scale: activeSlots[0].scale },
+                { xPct: 77, yPct: 58, rotateDeg: 0, scale: activeSlots[0].scale },
+                { xPct: 96, yPct: 45, rotateDeg: 0, scale: activeSlots[0].scale },
+              ])}
+            >Preset: 5+1 los</button>
+            <button
+              type="button"
+              className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+              title="6 stenen strak naast elkaar in het bakje"
+              onClick={() => {
+                const s = activeSlots[0].scale;
+                const next: SlotConfig[] = Array.from({ length: 6 }, (_, i) => ({
+                  xPct: 10 + (i * 80) / 5, yPct: 58, rotateDeg: 0, scale: s,
+                }));
+                writeSlots(next);
+              }}
+            >Preset: 6 strak</button>
+            <button
+              type="button"
+              className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+              title="6 stenen als lichte waaier/boog"
+              onClick={() => {
+                const s = activeSlots[0].scale;
+                const next: SlotConfig[] = Array.from({ length: 6 }, (_, i) => {
+                  const t = i / 5;
+                  const arc = Math.sin(t * Math.PI);
+                  return {
+                    xPct: 10 + t * 80,
+                    yPct: 60 - arc * 8,
+                    rotateDeg: (t - 0.5) * 2 * 18,
+                    scale: s,
+                  };
+                });
+                writeSlots(next);
+              }}
+            >Preset: boog</button>
           </div>
           <label className="flex items-center gap-2 text-xs mb-1">
             <span className="w-36 shrink-0">Sleuf</span>
