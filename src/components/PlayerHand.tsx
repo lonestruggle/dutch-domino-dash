@@ -228,79 +228,32 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
     try { localStorage.setItem(AUTO_COMPACT_KEY, String(autoCompact)); } catch {}
   }, [autoCompact]);
 
-  // canonicalKey -> { glove, slot }
-  const assignmentsRef = useRef<Map<string, { glove: number; slot: number }>>(new Map());
-  // Bump to force a re-compact (used by the "Samenvoegen" button)
+  // Bump to force a re-compact (used by the "Samenvoegen" button). Kept for
+  // UI compatibility; ordering nu altijd 1:1 uit `hand` zoals in de stable.
   const [compactTick, setCompactTick] = useState(0);
+  void compactTick;
 
   const canonicalKey = (d: DominoData) =>
     `${Math.min(d.value1, d.value2)}-${Math.max(d.value1, d.value2)}`;
 
-  // Build chunks based on stable assignments
+  // Volg exact de volgorde van `hand` (zoals stable-versie). Splits alleen in
+  // groepen van `chunkSize` zodat er meerdere handschoenen naast elkaar staan
+  // bij >6 stenen. Zo blijft de volgorde na "Fix stenen" of trekken uit de
+  // boneyard identiek aan wat de game-state doorgeeft.
   const { chunks, indexByKey } = (() => {
-    const map = assignmentsRef.current;
-    const currentKeys = new Set(hand.map(canonicalKey));
-
-    // Drop assignments for dominoes no longer in hand
-    for (const k of Array.from(map.keys())) {
-      if (!currentKeys.has(k)) map.delete(k);
-    }
-
-    // Auto-compact when enabled, when few stones remain, or when user clicked the compact button
-    const assignPos = (i: number): { glove: number; slot: number } => {
-      // Elke handschoen heeft `chunkSize` sleuven. Bij overschrijding wordt
-      // een nieuwe handschoen toegevoegd zodat stenen niet op elkaar stapelen.
-      return { glove: Math.floor(i / chunkSize), slot: i % chunkSize };
-    };
-
-    if (autoCompact || hand.length <= COMPACT_THRESHOLD || compactTick > 0) {
-      map.clear();
-      hand.forEach((d, i) => {
-        map.set(canonicalKey(d), assignPos(i));
-      });
-      if (compactTick > 0) {
-        // consume the tick on next render
-        // (defer via microtask to avoid setState-in-render)
-        queueMicrotask(() => setCompactTick(0));
-      }
-    } else {
-      // Assign any new dominoes (e.g. drawn from boneyard) to the first free slot
-      const occupied = new Set<string>();
-      for (const { glove, slot } of map.values()) occupied.add(`${glove}:${slot}`);
-      for (const d of hand) {
-        const k = canonicalKey(d);
-        if (map.has(k)) continue;
-        let placed = false;
-        // Doorloop posities in dezelfde volgorde als assignPos:
-        // 0..5 = g0 s0..5, 6..11 = g1 s0..5, daarna om-en-om met s>=6.
-        for (let i = 0; !placed; i++) {
-          const pos = assignPos(i);
-          const tag = `${pos.glove}:${pos.slot}`;
-          if (!occupied.has(tag)) {
-            map.set(k, pos);
-            occupied.add(tag);
-            placed = true;
-          }
-        }
-      }
-    }
-
-    // Build chunks (sparse -> array with possible nulls per slot)
     const indexByKey = new Map<string, number>();
     hand.forEach((d, i) => indexByKey.set(canonicalKey(d), i));
-
-    let maxGlove = 0;
-    for (const { glove } of map.values()) maxGlove = Math.max(maxGlove, glove);
     const chunks: { items: (DominoData | null)[] }[] = [];
-    for (let g = 0; g <= maxGlove; g++) {
+    if (hand.length === 0) {
       chunks.push({ items: new Array(chunkSize).fill(null) });
+    } else {
+      for (let i = 0; i < hand.length; i += chunkSize) {
+        const slice = hand.slice(i, i + chunkSize);
+        const items: (DominoData | null)[] = new Array(chunkSize).fill(null);
+        slice.forEach((d, j) => { items[j] = d; });
+        chunks.push({ items });
+      }
     }
-    for (const d of hand) {
-      const pos = map.get(canonicalKey(d));
-      if (!pos) continue;
-      chunks[pos.glove].items[pos.slot] = d;
-    }
-    if (chunks.length === 0) chunks.push({ items: new Array(chunkSize).fill(null) });
     return { chunks, indexByKey };
   })();
 
