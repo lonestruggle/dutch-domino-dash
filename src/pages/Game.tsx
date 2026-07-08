@@ -973,6 +973,53 @@ const relayoutTableState = (
   };
 };
 
+/**
+ * Analyseer een keten van placements en bepaal of hij een L-vorm heeft:
+ * exact één richtingswissel, beide benen ≥ 2 stenen. Retourneert ook
+ * de lengte van elk been zodat de toast dat kan tonen.
+ */
+const analyzeLShapeFromChain = (
+  state: GameState
+): { isL: boolean; firstLegLength: number; secondLegLength: number; turnCount: number } => {
+  const linearOrder = computeLinearChainOrder(state);
+  if (!linearOrder || linearOrder.length < 3) {
+    return { isL: false, firstLegLength: linearOrder?.length ?? 0, secondLegLength: 0, turnCount: 0 };
+  }
+
+  // Bepaal richting tussen opeenvolgende stenen a.d.h.v. hun middelpunten.
+  const centerOf = (dom: GameState['dominoes'][string]): [number, number] => {
+    if (dom.orientation === 'horizontal') return [dom.x + 0.5, dom.y];
+    return [dom.x, dom.y + 0.5];
+  };
+  const dirBetween = (a: [number, number], b: [number, number]): 'H' | 'V' => {
+    return Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]) ? 'H' : 'V';
+  };
+
+  const axes: Array<'H' | 'V'> = [];
+  for (let i = 1; i < linearOrder.length; i += 1) {
+    axes.push(dirBetween(centerOf(linearOrder[i - 1][1]), centerOf(linearOrder[i][1])));
+  }
+
+  let turnCount = 0;
+  let firstLegLength = 1;
+  let secondLegLength = 0;
+  const firstAxis = axes[0];
+  for (let i = 0; i < axes.length; i += 1) {
+    if (axes[i] !== firstAxis) { turnCount += 1; break; }
+    firstLegLength += 1;
+  }
+  if (turnCount > 0) {
+    secondLegLength = linearOrder.length - firstLegLength + 1;
+    // Check dat er hierna geen extra wissels zijn.
+    for (let i = firstLegLength - 1 + 1; i < axes.length; i += 1) {
+      if (axes[i] === firstAxis) { turnCount += 1; }
+    }
+  }
+
+  const isL = turnCount === 1 && firstLegLength >= 2 && secondLegLength >= 2;
+  return { isL, firstLegLength, secondLegLength, turnCount };
+};
+
 export default function Game() {
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
