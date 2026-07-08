@@ -436,6 +436,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
             >
               <div
                 className="absolute left-0 top-0 origin-top-left"
+                ref={(el) => { gloveRefs.current.set(chunkIdx, el); }}
                 style={{
                   width: `${desiredGloveWidth}px`,
                   height: `${desiredGloveHeight}px`,
