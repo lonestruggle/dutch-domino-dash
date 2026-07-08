@@ -89,6 +89,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const [align, setAlign] = useState<GloveAlignment>(() => loadGloveAlignment());
   const [showAligner, setShowAligner] = useState(false);
   const [dragMode, setDragMode] = useState(false);
+  const [calibrateStep, setCalibrateStep] = useState<number | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 360
   );
