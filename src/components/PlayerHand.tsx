@@ -467,6 +467,64 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                       key={getDominoKey(domino, index)}
                       onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
                       onClick={() => { if (showAligner) setSelectedSlot(i); }}
+                      onPointerDown={(e) => {
+                        if (!showAligner || !dragMode) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const glove = gloveRefs.current.get(chunkIdx);
+                        if (!glove) return;
+                        const rect = glove.getBoundingClientRect();
+                        const cx = rect.left + (slot.xPct / 100) * rect.width;
+                        const cy = rect.top + (slot.yPct / 100) * rect.height;
+                        const isRotate = e.shiftKey;
+                        dragRef.current = {
+                          pointerId: e.pointerId,
+                          chunkIdx,
+                          mirrored,
+                          slotIndex: i,
+                          mode: isRotate ? 'rotate' : 'move',
+                          startRotate: slot.rotateDeg,
+                          startAngle: Math.atan2(e.clientY - cy, e.clientX - cx),
+                        };
+                        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                      }}
+                      onPointerMove={(e) => {
+                        const d = dragRef.current;
+                        if (!d || d.pointerId !== e.pointerId) return;
+                        const glove = gloveRefs.current.get(d.chunkIdx);
+                        if (!glove) return;
+                        const rect = glove.getBoundingClientRect();
+                        if (d.mode === 'move') {
+                          const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+                          const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+                          const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+                          writeSlot(d.mirrored, d.slotIndex, {
+                            xPct: Math.round(clamp(xPct, -20, 120) * 10) / 10,
+                            yPct: Math.round(clamp(yPct, -20, 120) * 10) / 10,
+                          });
+                        } else {
+                          const cx = rect.left + (slot.xPct / 100) * rect.width;
+                          const cy = rect.top + (slot.yPct / 100) * rect.height;
+                          const ang = Math.atan2(e.clientY - cy, e.clientX - cx);
+                          const delta = ((ang - d.startAngle) * 180) / Math.PI;
+                          let next = d.startRotate + delta;
+                          if (next > 180) next -= 360;
+                          if (next < -180) next += 360;
+                          writeSlot(d.mirrored, d.slotIndex, { rotateDeg: Math.round(next * 10) / 10 });
+                        }
+                      }}
+                      onPointerUp={(e) => {
+                        const d = dragRef.current;
+                        if (!d || d.pointerId !== e.pointerId) return;
+                        try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+                        dragRef.current = null;
+                      }}
+                      onDoubleClickCapture={(e) => {
+                        if (!showAligner || !dragMode) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        resetOneSlot(mirrored, i);
+                      }}
                       className="absolute"
                       style={{
                         left: `${slot.xPct}%`,
@@ -479,6 +537,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                         transformOrigin: 'center',
                         zIndex: 1,
                         outline: isSelectedSlot ? '2px dashed rgba(255,171,0,0.9)' : undefined,
+                        cursor: (showAligner && dragMode) ? 'grab' : undefined,
+                        touchAction: (showAligner && dragMode) ? 'none' : undefined,
                       }}
                     >
                       <DominoTile
