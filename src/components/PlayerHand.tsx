@@ -51,13 +51,13 @@ const DEFAULT_SLOTS: SlotConfig[] = [
 ];
 
 const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
-  widthMobile: 300,
+  widthMobile: 210,
   widthDesktop: 210,
   aspectRatio: 0.67,
   slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v11';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v12';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
