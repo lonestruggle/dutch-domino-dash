@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { DominoTile } from './DominoTile';
 import { DominoData } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
