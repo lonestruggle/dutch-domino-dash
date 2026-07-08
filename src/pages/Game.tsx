@@ -111,7 +111,9 @@ const getOpenEndAnchorKey = (end: OpenEnd): string | null => {
 type FixTableLayoutRotation = 'l-0' | 'l-90' | 'l-180' | 'l-270';
 type LayoutDirection = 'N' | 'S' | 'E' | 'W';
 
-const FIX_TABLE_LAYOUT_SEQUENCE: FixTableLayoutRotation[] = ['l-0', 'l-90', 'l-180', 'l-270'];
+// Alleen l-180 wordt gebruikt: geeft het meest consistente L-resultaat
+// met dubbele stenen dwars op de keten.
+const FIX_TABLE_LAYOUT_SEQUENCE: FixTableLayoutRotation[] = ['l-180'];
 
 const getFixLayoutLabel = (rotation: FixTableLayoutRotation): string => {
   switch (rotation) {
