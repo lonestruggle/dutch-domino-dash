@@ -814,7 +814,12 @@ const buildPlacementWithTwoEnds = (
           );
           if (!valueResolution) continue;
 
-          if (hasIllegalSideContact(candidate.cells, [openEnd.endpointCell], occupiedByCell)) continue;
+          // Sta contact met de VOLLEDIGE vorige steen toe (niet alleen de
+          // endpoint-cel). Dat is precies wat stable via de board-lookup
+          // impliciet doet, en het is essentieel voor:
+          //  - dwars geplaatste dubbels (tweede cel is legitieme buur)
+          //  - de L-bocht (diagonaal van de anker-steen mag geraakt worden)
+          if (hasIllegalSideContact(candidate.cells, openEnd.anchorCells, occupiedByCell)) continue;
 
           const endpointValue = valueResolution.values[candidate.outerIndex];
           const placement: ChainPlacement = {
