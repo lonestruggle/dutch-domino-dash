@@ -41,14 +41,15 @@ interface GloveAlignment {
 }
 
 const DEFAULT_SLOTS: SlotConfig[] = [
-  // Vastgezet op basis van glove-hand-holder.png (5 sleuven in het bakje,
-  // 6e steen ligt ernaast op de vingertoppen).
-  { xPct:  9, yPct: 56, rotateDeg: 0, scale: 1.15 },
-  { xPct: 26, yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 43, yPct: 60, rotateDeg: 0, scale: 1.15 },
-  { xPct: 60, yPct: 60, rotateDeg: 0, scale: 1.15 },
-  { xPct: 77, yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 96, yPct: 45, rotateDeg: 0, scale: 1.15 },
+  // Vastgezet op basis van glove-hand-holder.png: 5 stenen vallen over de
+  // doorzichtige sleuven, de 6e ligt er strak naast. Rotatie/schaal zijn zo
+  // gekozen dat de transparante voorbeeldstenen grotendeels worden afgedekt.
+  { xPct: 13.5, yPct: 60.5, rotateDeg: -15, scale: 1.55 },
+  { xPct: 31.0, yPct: 59.2, rotateDeg: -15, scale: 1.55 },
+  { xPct: 48.8, yPct: 58.8, rotateDeg: -15, scale: 1.55 },
+  { xPct: 66.8, yPct: 59.2, rotateDeg: -15, scale: 1.55 },
+  { xPct: 84.3, yPct: 60.2, rotateDeg: -15, scale: 1.55 },
+  { xPct: 96.0, yPct: 58.5, rotateDeg: -15, scale: 1.55 },
 ];
 
 const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
@@ -58,7 +59,7 @@ const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
   slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v8';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v9';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
@@ -344,7 +345,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   
   return (
     <div ref={containerRef} className={`relative ${isMobile ? "p-2" : "p-6"}`}>
-      <div className="absolute top-2 right-2 flex items-center gap-2 z-20">
+      <div className="absolute top-2 right-2 flex items-center gap-2 z-[90]">
         {canUseGloveFeatures && (
           <>
             <button
@@ -409,7 +410,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         />
       )}
 
-      <div className="flex flex-row-reverse flex-nowrap items-start justify-center -mt-20" style={{ gap: `${gapPx}px` }}>
+      <div className={`relative z-0 flex flex-row-reverse flex-nowrap items-start justify-center ${showAligner ? 'mt-4' : '-mt-20'}`} style={{ gap: `${gapPx}px` }}>
         {chunks.map((chunk, chunkIdx) => {
           const mirrored = chunkIdx % 2 === 1;
           const desiredGloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
@@ -471,7 +472,6 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                   const index = indexByKey.get(canonicalKey(domino)) ?? -1;
                   if (index < 0) return null;
                   const slot = slotsForChunk[i] ?? slotsForChunk[slotsForChunk.length - 1];
-                  const isSelectedSlot = showAligner && i === selectedSlot && chunkIdx === 0;
                   return (
                     <div
                       key={getDominoKey(domino, index)}
@@ -546,7 +546,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                         transform: `translate(-50%, -50%) rotate(${slot.rotateDeg}deg) scale(${slot.scale})`,
                         transformOrigin: 'center',
                         zIndex: 1,
-                        outline: isSelectedSlot ? '2px dashed rgba(255,171,0,0.9)' : undefined,
+                        outline: undefined,
                         cursor: (showAligner && dragMode) ? 'grab' : undefined,
                         touchAction: (showAligner && dragMode) ? 'none' : undefined,
                       }}
@@ -568,7 +568,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 {calibrateStep !== null && chunkIdx === 0 && (
                   <div
                     className="absolute inset-0"
-                    style={{ zIndex: 50, cursor: 'crosshair', background: 'rgba(255,171,0,0.08)' }}
+                    style={{ zIndex: 50, cursor: 'crosshair', background: 'hsl(var(--accent) / 0.08)' }}
                     onClick={(e) => {
                       const glove = gloveRefs.current.get(0);
                       if (!glove) return;
@@ -580,7 +580,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                     }}
                   >
                     <div
-                      className="absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-black/70 text-white text-xs font-semibold"
+                      className="absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-ui-text/70 text-ui-bg text-xs font-semibold"
                       style={{ top: 4 }}
                     >
                       Klik op sleuf {calibrateStep + 1} van 6
