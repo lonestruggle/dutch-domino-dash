@@ -821,12 +821,23 @@ const relayoutTableState = (
 
   orderedDominoEntries.forEach(([dominoId, domino], index) => {
     const placement = placements[index];
+    // Kleine deterministische rotatie-offset zodat de ketting natuurlijk oogt
+    // (stenen blijven raster-aansluitend, maar krijgen elk een subtiele draai).
+    // Startsteen (index 0) blijft recht om te herkennen als opening.
+    const idxNum = parseDominoIndex(dominoId);
+    const seed = Number.isFinite(idxNum) ? idxNum : index;
+    const wobble = index === 0 ? 0 : (((seed * 2654435761) >>> 0) % 100) / 100; // 0..1
+    const rotationOffset = index === 0 ? 0 : (wobble - 0.5) * 8; // ±4°
     const relaidDomino = {
       ...domino,
       x: placement.x,
       y: placement.y,
       orientation: placement.orientation,
       flipped: placement.flipped,
+      rotation: rotationOffset,
+      rotationZ: rotationOffset,
+      rotationX: 0,
+      rotationY: 0,
     };
     newDominoes[dominoId] = relaidDomino;
 
