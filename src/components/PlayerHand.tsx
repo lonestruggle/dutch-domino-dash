@@ -724,6 +724,50 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
                 writeSlots(next);
               }}
             >Y+Schaal van sleuf 1 → alle</button>
+            <button
+              type="button"
+              className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+              title="5 stenen in het bakje + 1 los ernaast (past op glove-hand-holder.png)"
+              onClick={() => writeSlots([
+                { xPct:  9, yPct: 56, rotateDeg: 0, scale: activeSlots[0].scale },
+                { xPct: 26, yPct: 58, rotateDeg: 0, scale: activeSlots[0].scale },
+                { xPct: 43, yPct: 60, rotateDeg: 0, scale: activeSlots[0].scale },
+                { xPct: 60, yPct: 60, rotateDeg: 0, scale: activeSlots[0].scale },
+                { xPct: 77, yPct: 58, rotateDeg: 0, scale: activeSlots[0].scale },
+                { xPct: 96, yPct: 45, rotateDeg: 0, scale: activeSlots[0].scale },
+              ])}
+            >Preset: 5+1 los</button>
+            <button
+              type="button"
+              className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+              title="6 stenen strak naast elkaar in het bakje"
+              onClick={() => {
+                const s = activeSlots[0].scale;
+                const next: SlotConfig[] = Array.from({ length: 6 }, (_, i) => ({
+                  xPct: 10 + (i * 80) / 5, yPct: 58, rotateDeg: 0, scale: s,
+                }));
+                writeSlots(next);
+              }}
+            >Preset: 6 strak</button>
+            <button
+              type="button"
+              className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
+              title="6 stenen als lichte waaier/boog"
+              onClick={() => {
+                const s = activeSlots[0].scale;
+                const next: SlotConfig[] = Array.from({ length: 6 }, (_, i) => {
+                  const t = i / 5;
+                  const arc = Math.sin(t * Math.PI);
+                  return {
+                    xPct: 10 + t * 80,
+                    yPct: 60 - arc * 8,
+                    rotateDeg: (t - 0.5) * 2 * 18,
+                    scale: s,
+                  };
+                });
+                writeSlots(next);
+              }}
+            >Preset: boog</button>
           </div>
           <label className="flex items-center gap-2 text-xs mb-1">
             <span className="w-36 shrink-0">Sleuf</span>
