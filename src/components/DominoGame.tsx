@@ -685,6 +685,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
         {/* Game Actions */}
         <Card className={isMobile ? "p-3" : "p-4"}>
+          <div id="playerhand-toolbar-slot" className="flex flex-wrap items-center gap-1 mb-2 empty:hidden" />
           {isMobile ? (
             /* Mobile Actions - Compact Layout */
             <div className="space-y-3">
