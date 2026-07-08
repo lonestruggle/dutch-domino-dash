@@ -890,7 +890,14 @@ const relayoutTableState = (
 
   const spatialDominoEntries = computeLinearChainOrder(state);
   const spatialAttempt = spatialDominoEntries
-    ? tryBuild(spatialDominoEntries, inferPlacementSides(state, spatialDominoEntries))
+    ? tryBuild(
+        spatialDominoEntries,
+        // Bij een al lineair uitgerekende keten hoeft de builder niet
+        // vastgepind te worden op left/right — hij kan per steen het
+        // enige passende open eind kiezen. Zo blokkeert de heuristiek
+        // niet wanneer d0 aan de "andere" kant van d1 landt.
+        new Array(spatialDominoEntries.length).fill('any')
+      )
     : null;
   const chronologicalAttempt = tryBuild(
     chronologicalDominoEntries,
