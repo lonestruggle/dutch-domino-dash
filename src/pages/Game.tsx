@@ -342,13 +342,13 @@ const resolveValuesByInnerMatch = (
 
 const hasIllegalSideContact = (
   candidateCells: Array<[number, number]>,
-  anchorCells: Array<[number, number]>,
+  allowedAnchorCells: Array<[number, number]>,
   occupiedByCell: Map<string, string>
 ): boolean => {
   const placementCellSet = new Set(candidateCells.map(([x, y]) => `${x},${y}`));
   const allowedContactSet = new Set<string>([
     ...placementCellSet,
-    ...anchorCells.map(([x, y]) => `${x},${y}`),
+    ...allowedAnchorCells.map(([x, y]) => `${x},${y}`),
   ]);
 
   return candidateCells.some(([cx, cy]) => {
@@ -533,6 +533,72 @@ const computeLinearChainOrder = (
 
   const entryMap = new Map(entries);
   return order.map((id) => [id, entryMap.get(id)!] as [string, GameState['dominoes'][string]]);
+};
+
+const computeValueChainOrder = (
+  entries: Array<[string, GameState['dominoes'][string]]>
+): Array<[string, GameState['dominoes'][string]]> | null => {
+  if (entries.length <= 1) return entries;
+
+  const adjacency = new Map<number, number[]>();
+  entries.forEach(([, domino], edgeIndex) => {
+    const { value1, value2 } = domino.data;
+    if (!adjacency.has(value1)) adjacency.set(value1, []);
+    if (!adjacency.has(value2)) adjacency.set(value2, []);
+    adjacency.get(value1)!.push(edgeIndex);
+    adjacency.get(value2)!.push(edgeIndex);
+  });
+
+  const oddVertices = Array.from(adjacency.entries())
+    .filter(([, edgeIndexes]) => edgeIndexes.length % 2 === 1)
+    .map(([value]) => value);
+  if (oddVertices.length !== 0 && oddVertices.length !== 2) return null;
+
+  const startValue = oddVertices[0] ?? entries[0][1].data.value1;
+  const used = new Set<number>();
+  const orderedEdgeIndexes: number[] = [];
+
+  const walk = (value: number): void => {
+    const edgeIndexes = adjacency.get(value) || [];
+    for (const edgeIndex of edgeIndexes) {
+      if (used.has(edgeIndex)) continue;
+      used.add(edgeIndex);
+      const [, domino] = entries[edgeIndex];
+      const nextValue = domino.data.value1 === value ? domino.data.value2 : domino.data.value1;
+      walk(nextValue);
+      orderedEdgeIndexes.push(edgeIndex);
+    }
+  };
+
+  walk(startValue);
+  if (used.size !== entries.length) return null;
+
+  return orderedEdgeIndexes.reverse().map((edgeIndex) => entries[edgeIndex]);
+};
+
+const validatePlacementConnections = (
+  placements: ChainPlacement[],
+  orderedDominoEntries: Array<[string, GameState['dominoes'][string]]>
+): boolean => {
+  const cellMap = new Map<string, { dominoId: string; value: number }>();
+  placements.forEach((placement, placementIndex) => {
+    const [dominoId] = orderedDominoEntries[placementIndex];
+    placement.cells.forEach(([x, y], cellIndex) => {
+      cellMap.set(`${x},${y}`, { dominoId, value: placement.values[cellIndex] });
+    });
+  });
+
+  for (const [coord, cell] of cellMap.entries()) {
+    const [x, y] = coord.split(',').map(Number);
+    const neighbors: Array<[number, number]> = [[x + 1, y], [x, y + 1]];
+    for (const [nx, ny] of neighbors) {
+      const neighbor = cellMap.get(`${nx},${ny}`);
+      if (!neighbor || neighbor.dominoId === cell.dominoId) continue;
+      if (neighbor.value !== cell.value) return false;
+    }
+  }
+
+  return true;
 };
 
 const applyForbiddenRulesForPlacement = (
@@ -728,7 +794,7 @@ const buildPlacementWithTwoEnds = (
           );
           if (!valueResolution) continue;
 
-          if (hasIllegalSideContact(candidate.cells, openEnd.anchorCells, occupiedByCell)) continue;
+          if (hasIllegalSideContact(candidate.cells, [openEnd.endpointCell], occupiedByCell)) continue;
 
           const endpointValue = valueResolution.values[candidate.outerIndex];
           const placement: ChainPlacement = {
@@ -800,7 +866,7 @@ const relayoutTableState = (
   rotation: FixTableLayoutRotation,
   regenerateOpenEnds: (state: GameState) => OpenEnd[]
 ): GameState | null => {
-  const orderedDominoEntries = Object.entries(state.dominoes).sort(
+  const chronologicalDominoEntries = Object.entries(state.dominoes).sort(
     ([dominoA], [dominoB]) => {
       const indexA = parseDominoIndex(dominoA);
       const indexB = parseDominoIndex(dominoB);
@@ -808,32 +874,53 @@ const relayoutTableState = (
       return dominoA.localeCompare(dominoB);
     }
   );
-  if (orderedDominoEntries.length < 2) return null;
+  if (chronologicalDominoEntries.length < 2) return null;
 
-  const directions = generateDirectionsForLayout(rotation, orderedDominoEntries.length);
-  const placementSides = inferPlacementSides(state, orderedDominoEntries);
-  const firstTry = buildPlacementWithTwoEnds(orderedDominoEntries, directions, false, placementSides);
-  const placements = firstTry ?? buildPlacementWithTwoEnds(orderedDominoEntries, directions, true, placementSides);
-  if (!placements || placements.length !== orderedDominoEntries.length) return null;
+  const tryBuild = (
+    orderedDominoEntries: Array<[string, GameState['dominoes'][string]]>,
+    placementSides: FixPlacementSide[]
+  ): { orderedDominoEntries: Array<[string, GameState['dominoes'][string]]>; placements: ChainPlacement[] } | null => {
+    const directions = generateDirectionsForLayout(rotation, orderedDominoEntries.length);
+    const firstTry = buildPlacementWithTwoEnds(orderedDominoEntries, directions, false, placementSides);
+    const placements = firstTry ?? buildPlacementWithTwoEnds(orderedDominoEntries, directions, true, placementSides);
+    if (!placements || placements.length !== orderedDominoEntries.length) return null;
+    if (!validatePlacementConnections(placements, orderedDominoEntries)) return null;
+    return { orderedDominoEntries, placements };
+  };
+
+  const spatialDominoEntries = computeLinearChainOrder(state);
+  const spatialAttempt = spatialDominoEntries
+    ? tryBuild(spatialDominoEntries, inferPlacementSides(state, spatialDominoEntries))
+    : null;
+  const chronologicalAttempt = tryBuild(
+    chronologicalDominoEntries,
+    inferPlacementSides(state, chronologicalDominoEntries)
+  );
+  const valueChainEntries = computeValueChainOrder(chronologicalDominoEntries);
+  const valueChainAttempt = valueChainEntries
+    ? tryBuild(valueChainEntries, new Array(valueChainEntries.length).fill('right'))
+    : null;
+  const layoutAttempt = spatialAttempt ?? chronologicalAttempt ?? valueChainAttempt;
+  if (!layoutAttempt) return null;
+
+  const { orderedDominoEntries, placements } = layoutAttempt;
 
   const newDominoes = { ...state.dominoes };
   const newBoard: Record<string, { dominoId: string; value: number }> = {};
 
   orderedDominoEntries.forEach(([dominoId, domino], index) => {
     const placement = placements[index];
-    // Geen rotation-offset op de gameState zelf: dat wordt door de physics-laag
-    // gebruikt om OBB-collisions op te lossen, waardoor stenen visueel uit elkaar
-    // geduwd worden (de "ankerpunten" schuiven op). De subtiele wobble komt uit
-    // de CSS `--individual-angle` variabele in DominoTile, die puur visueel is
-    // en de physics-anker niet raakt.
+    const seed = parseDominoIndex(dominoId) + 1;
+    const wobble = (((seed * 2654435761) >>> 0) % 100) / 100;
+    const rotationOffset = index === 0 ? 0 : (wobble - 0.5) * 4;
     const relaidDomino = {
       ...domino,
       x: placement.x,
       y: placement.y,
       orientation: placement.orientation,
       flipped: placement.flipped,
-      rotation: 0,
-      rotationZ: 0,
+      rotation: rotationOffset,
+      rotationZ: rotationOffset,
       rotationX: 0,
       rotationY: 0,
     };
