@@ -41,14 +41,15 @@ interface GloveAlignment {
 }
 
 const DEFAULT_SLOTS: SlotConfig[] = [
-  // Vastgezet op basis van glove-hand-holder.png (5 sleuven in het bakje,
-  // 6e steen ligt ernaast op de vingertoppen).
-  { xPct:  9, yPct: 56, rotateDeg: 0, scale: 1.15 },
-  { xPct: 26, yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 43, yPct: 60, rotateDeg: 0, scale: 1.15 },
-  { xPct: 60, yPct: 60, rotateDeg: 0, scale: 1.15 },
-  { xPct: 77, yPct: 58, rotateDeg: 0, scale: 1.15 },
-  { xPct: 96, yPct: 45, rotateDeg: 0, scale: 1.15 },
+  // Vastgezet op basis van glove-hand-holder.png: 5 stenen vallen over de
+  // doorzichtige sleuven, de 6e ligt er strak naast. Rotatie/schaal zijn zo
+  // gekozen dat de transparante voorbeeldstenen grotendeels worden afgedekt.
+  { xPct: 13.5, yPct: 60.5, rotateDeg: -15, scale: 1.55 },
+  { xPct: 31.0, yPct: 59.2, rotateDeg: -15, scale: 1.55 },
+  { xPct: 48.8, yPct: 58.8, rotateDeg: -15, scale: 1.55 },
+  { xPct: 66.8, yPct: 59.2, rotateDeg: -15, scale: 1.55 },
+  { xPct: 84.3, yPct: 60.2, rotateDeg: -15, scale: 1.55 },
+  { xPct: 96.0, yPct: 58.5, rotateDeg: -15, scale: 1.55 },
 ];
 
 const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
@@ -58,7 +59,7 @@ const DEFAULT_GLOVE_ALIGN: GloveAlignment = {
   slots: DEFAULT_SLOTS,
 };
 
-const GLOVE_ALIGN_KEY = 'gloveAlignment.v8';
+const GLOVE_ALIGN_KEY = 'gloveAlignment.v9';
 
 function loadGloveAlignment(): GloveAlignment {
   try {
@@ -202,7 +203,6 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   // place instead of shifting in from the next glove. Eerste 6 stenen vullen
   // handschoen 1, daarna 6 in handschoen 2, en alles daarboven om-en-om.
   const chunkSize = 6;
-  const [selectedSlot, setSelectedSlot] = useState(0);
   const COMPACT_THRESHOLD = 5;
 
   // Handschoen-/hand-instellingen zijn alleen voor admin/dev zichtbaar.
@@ -344,7 +344,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   
   return (
     <div ref={containerRef} className={`relative ${isMobile ? "p-2" : "p-6"}`}>
-      <div className="absolute top-2 right-2 flex items-center gap-2 z-20">
+      <div className="absolute top-2 right-2 flex items-center gap-2 z-[90]">
         {canUseGloveFeatures && (
           <>
             <button
@@ -409,7 +409,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
         />
       )}
 
-      <div className="flex flex-row-reverse flex-nowrap items-start justify-center -mt-20" style={{ gap: `${gapPx}px` }}>
+      <div className={`relative z-0 flex flex-row-reverse flex-nowrap items-start justify-center ${showAligner ? 'mt-4' : '-mt-20'}`} style={{ gap: `${gapPx}px` }}>
         {chunks.map((chunk, chunkIdx) => {
           const mirrored = chunkIdx % 2 === 1;
           const desiredGloveWidth = isMobile ? align.widthMobile : align.widthDesktop;
@@ -471,12 +471,11 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                   const index = indexByKey.get(canonicalKey(domino)) ?? -1;
                   if (index < 0) return null;
                   const slot = slotsForChunk[i] ?? slotsForChunk[slotsForChunk.length - 1];
-                  const isSelectedSlot = showAligner && i === selectedSlot && chunkIdx === 0;
                   return (
                     <div
                       key={getDominoKey(domino, index)}
                       onDoubleClick={onTileDoubleClick ? (e) => { e.stopPropagation(); onTileDoubleClick(index); } : undefined}
-                      onClick={() => { if (showAligner) setSelectedSlot(i); }}
+                      onClick={undefined}
                       onPointerDown={(e) => {
                         if (!showAligner || !dragMode) return;
                         e.preventDefault();
@@ -546,7 +545,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                         transform: `translate(-50%, -50%) rotate(${slot.rotateDeg}deg) scale(${slot.scale})`,
                         transformOrigin: 'center',
                         zIndex: 1,
-                        outline: isSelectedSlot ? '2px dashed rgba(255,171,0,0.9)' : undefined,
+                        outline: undefined,
                         cursor: (showAligner && dragMode) ? 'grab' : undefined,
                         touchAction: (showAligner && dragMode) ? 'none' : undefined,
                       }}
@@ -556,9 +555,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                         orientation="vertical"
                         flipped={!!flippedTiles?.[index]}
                         selected={index === selectedIndex}
-                        rotateX={settings.rotateX}
-                        rotateY={settings.rotateY}
-                        rotateZ={settings.rotateZ}
+                        rotateX={0}
+                        rotateY={0}
+                        rotateZ={0}
                         onClick={isMyTurn ? () => onDominoSelect(index) : undefined}
                         className="relative transition-all duration-200 domino-tile-hand-locked hover:z-20"
                       />
@@ -568,7 +567,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 {calibrateStep !== null && chunkIdx === 0 && (
                   <div
                     className="absolute inset-0"
-                    style={{ zIndex: 50, cursor: 'crosshair', background: 'rgba(255,171,0,0.08)' }}
+                    style={{ zIndex: 50, cursor: 'crosshair', background: 'hsl(var(--accent) / 0.08)' }}
                     onClick={(e) => {
                       const glove = gloveRefs.current.get(0);
                       if (!glove) return;
@@ -580,8 +579,8 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                     }}
                   >
                     <div
-                      className="absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-black/70 text-white text-xs font-semibold"
-                      style={{ top: 4 }}
+                      className="absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs font-semibold"
+                      style={{ top: 4, background: 'hsl(var(--ui-text) / 0.7)', color: 'hsl(var(--ui-bg))' }}
                     >
                       Klik op sleuf {calibrateStep + 1} van 6
                     </div>
@@ -604,11 +603,6 @@ interface GloveAlignerProps {
   onReset: () => void;
   onClose: () => void;
 }
-interface GloveAlignerPropsExt extends GloveAlignerProps {
-  selectedSlot: number;
-  setSelectedSlot: (n: number) => void;
-}
-
 const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, onReset, onClose }) => {
   const [slotIdx, setSlotIdx] = useState(0);
   const [side, setSide] = useState<'left' | 'right'>('left');
@@ -655,7 +649,7 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
   );
 
   return (
-    <div className="mb-3 mx-auto max-w-md p-3 rounded-lg border border-ui-border bg-ui-bg/95 shadow-lg text-ui-text">
+    <div className="relative z-[80] mb-3 mx-auto max-w-md p-3 rounded-lg border border-ui-border bg-ui-bg/95 shadow-lg text-ui-text">
       <div className="flex items-center justify-between mb-2">
         <strong className="text-sm">Handschoen uitlijnen</strong>
         <div className="flex gap-1">
@@ -728,23 +722,17 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
               type="button"
               className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
               title="5 stenen in het bakje + 1 los ernaast (past op glove-hand-holder.png)"
-              onClick={() => writeSlots([
-                { xPct:  9, yPct: 56, rotateDeg: 0, scale: activeSlots[0].scale },
-                { xPct: 26, yPct: 58, rotateDeg: 0, scale: activeSlots[0].scale },
-                { xPct: 43, yPct: 60, rotateDeg: 0, scale: activeSlots[0].scale },
-                { xPct: 60, yPct: 60, rotateDeg: 0, scale: activeSlots[0].scale },
-                { xPct: 77, yPct: 58, rotateDeg: 0, scale: activeSlots[0].scale },
-                { xPct: 96, yPct: 45, rotateDeg: 0, scale: activeSlots[0].scale },
-              ])}
+              onClick={() => writeSlots(DEFAULT_SLOTS.map(s => ({ ...s })))}
             >Preset: 5+1 los</button>
             <button
               type="button"
               className="text-[11px] px-2 py-0.5 rounded border border-ui-border hover:bg-black/5"
               title="6 stenen strak naast elkaar in het bakje"
               onClick={() => {
-                const s = activeSlots[0].scale;
+                const s = activeSlots[0].scale || 1.55;
+                const r = activeSlots[0].rotateDeg || -15;
                 const next: SlotConfig[] = Array.from({ length: 6 }, (_, i) => ({
-                  xPct: 10 + (i * 80) / 5, yPct: 58, rotateDeg: 0, scale: s,
+                  xPct: 13.5 + (i * 82.5) / 5, yPct: 59.5, rotateDeg: r, scale: s,
                 }));
                 writeSlots(next);
               }}
