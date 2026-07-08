@@ -89,9 +89,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   const containerRef = useRef<HTMLDivElement>(null);
   const [align, setAlign] = useState<GloveAlignment>(() => loadGloveAlignment());
   const [showAligner, setShowAligner] = useState(false);
+  const [dragMode, setDragMode] = useState(false);
   const [containerWidth, setContainerWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 360
   );
+
+  // Refs per handschoen-container zodat we tijdens slepen de rect kunnen uitlezen.
+  const gloveRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -114,6 +118,42 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
       return next;
     });
   };
+
+  // Schrijf één sleuf weg naar de juiste zijde (links = slots, rechts = slotsMirrored).
+  const writeSlot = (mirrored: boolean, slotIndex: number, patch: Partial<SlotConfig>) => {
+    setAlign(prev => {
+      const baseArr = mirrored
+        ? (prev.slotsMirrored ?? prev.slots.map(s => ({
+            ...s, xPct: 100 - s.xPct, rotateDeg: -s.rotateDeg,
+          })))
+        : prev.slots;
+      const nextArr = baseArr.map((s, i) => i === slotIndex ? { ...s, ...patch } : s);
+      const next: GloveAlignment = mirrored
+        ? { ...prev, slotsMirrored: nextArr }
+        : { ...prev, slots: nextArr };
+      try { localStorage.setItem(GLOVE_ALIGN_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const resetOneSlot = (mirrored: boolean, slotIndex: number) => {
+    const def = DEFAULT_SLOTS[slotIndex] ?? DEFAULT_SLOTS[0];
+    const patch = mirrored
+      ? { xPct: 100 - def.xPct, yPct: def.yPct, rotateDeg: -def.rotateDeg, scale: def.scale }
+      : { ...def };
+    writeSlot(mirrored, slotIndex, patch);
+  };
+
+  // Actieve drag-sessie
+  const dragRef = useRef<null | {
+    pointerId: number;
+    chunkIdx: number;
+    mirrored: boolean;
+    slotIndex: number;
+    mode: 'move' | 'rotate';
+    startRotate: number;
+    startAngle: number;
+  }>(null);
 
   const resetAlign = () => {
     setAlign(DEFAULT_GLOVE_ALIGN);
