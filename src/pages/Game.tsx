@@ -19,6 +19,7 @@ import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile }
 import { WegaPhaseOverlay } from '@/components/WegaPhaseOverlay';
 import { WegaPlayingOverlay } from '@/components/WegaPlayingOverlay';
 import { logGameEvent } from '@/lib/gameLogger';
+import { stableRelayoutTableState } from '@/lib/stableRelayout';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
 
@@ -1507,7 +1508,21 @@ export default function Game() {
         (nextFixLayoutIndexRef.current + 1) % FIX_TABLE_LAYOUT_SEQUENCE.length;
     }
 
-    const relaidState = relayoutTableState(gameState, chosenRotation, gameHook.regenerateOpenEnds);
+    // Primair: gebruik pure stable-plaatsingslogica (dezelfde regels waarmee
+    // de speler live stenen legt in stable). Fallback: oude L-builder.
+    const spatialOrder = computeLinearChainOrder(gameState);
+    const chronologicalOrder = Object.entries(gameState.dominoes).sort(
+      ([a], [b]) => {
+        const ia = parseDominoIndex(a);
+        const ib = parseDominoIndex(b);
+        if (ia !== ib) return ia - ib;
+        return a.localeCompare(b);
+      }
+    );
+    const orderForStable = spatialOrder ?? chronologicalOrder;
+    const stableRelaid = stableRelayoutTableState(gameState, orderForStable);
+    const relaidState = stableRelaid
+      ?? relayoutTableState(gameState, chosenRotation, gameHook.regenerateOpenEnds);
     if (!relaidState) {
       toast({
         title: 'Fix mislukt',
