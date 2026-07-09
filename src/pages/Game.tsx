@@ -19,6 +19,7 @@ import type { DominoData, GameState, LegalMove, OpenEnd, ShakeAnimationProfile }
 import { WegaPhaseOverlay } from '@/components/WegaPhaseOverlay';
 import { WegaPlayingOverlay } from '@/components/WegaPlayingOverlay';
 import { logGameEvent } from '@/lib/gameLogger';
+import { stableRelayoutTableState } from '@/lib/stableRelayout';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
 
