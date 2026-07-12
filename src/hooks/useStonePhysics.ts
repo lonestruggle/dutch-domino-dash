@@ -27,7 +27,11 @@ interface PhysicsBody {
   cy: number;
   baseCx: number;
   baseCy: number;
+  targetCx: number;
+  targetCy: number;
   angle: number; // radians
+  baseAngle: number;
+  targetAngle: number;
   orientation: 'horizontal' | 'vertical';
   /** Visuele hoogte boven de tafel in "lagen" (0 = op tafel, 1 = opgetild). */
   z: number;
@@ -101,9 +105,11 @@ export interface UseStonePhysicsOptions {
 }
 
 export interface StonePhysicsAPI {
-  getOffset: (id: string) => { dx: number; dy: number; z: number };
+  getOffset: (id: string) => { dx: number; dy: number; z: number; angleDeg: number };
   /** Geeft een steen een directe visuele duw (in px). Handig voor testen. */
   nudge: (id: string, dx: number, dy: number) => void;
+  /** CanvasDemo Hard Slam: verplaats óók het doelpunt, zodat stenen blijven liggen waar ze landen. */
+  scatter: (id: string, dx: number, dy: number, angleDeg: number) => void;
   /** Reset alle stenen naar hun grid-positie. */
   resetAll: () => void;
   /** Tilt een steen op (z > 0) of zet hem terug op tafel (z = 0). */
@@ -164,7 +170,11 @@ export function useStonePhysics(
           cy: baseCy + (seed?.dy ?? 0),
           baseCx,
           baseCy,
+          targetCx: baseCx + (seed?.dx ?? 0),
+          targetCy: baseCy + (seed?.dy ?? 0),
           angle,
+          baseAngle: angle,
+          targetAngle: angle,
           orientation: d.orientation,
           z: 0,
           ghostUntilClear: false,
@@ -174,9 +184,10 @@ export function useStonePhysics(
           Math.abs(existing.baseCx - baseCx) > 0.5 ||
           Math.abs(existing.baseCy - baseCy) > 0.5 ||
           existing.orientation !== d.orientation;
+        const angleChanged = Math.abs(existing.baseAngle - angle) > 0.001;
         existing.baseCx = baseCx;
         existing.baseCy = baseCy;
-        existing.angle = angle;
+        existing.baseAngle = angle;
         existing.orientation = d.orientation;
         // Als "Fix stenen" dezelfde domino-id's naar nieuwe grid-posities legt,
         // moeten bestaande physics-bodies meteen naar hun nieuwe anker springen.
@@ -185,7 +196,15 @@ export function useStonePhysics(
         if (baseChanged) {
           existing.cx = baseCx;
           existing.cy = baseCy;
+          existing.targetCx = baseCx;
+          existing.targetCy = baseCy;
+          existing.angle = angle;
+          existing.targetAngle = angle;
           existing.ghostUntilClear = false;
+          snappedToNewBases = true;
+        } else if (angleChanged) {
+          existing.angle = angle;
+          existing.targetAngle = angle;
           snappedToNewBases = true;
         }
       }
@@ -207,8 +226,9 @@ export function useStonePhysics(
       const a = anchorRef.current;
       if (a > 0) {
         for (const b of bodies) {
-          b.cx += (b.baseCx - b.cx) * a;
-          b.cy += (b.baseCy - b.cy) * a;
+          b.cx += (b.targetCx - b.cx) * a;
+          b.cy += (b.targetCy - b.cy) * a;
+          b.angle += (b.targetAngle - b.angle) * a * 0.8;
         }
       }
 
@@ -247,7 +267,12 @@ export function useStonePhysics(
       off.clear();
       for (let i = 0; i < entries.length; i++) {
         const [id, b] = entries[i];
-        off.set(id, { dx: b.cx - b.baseCx, dy: b.cy - b.baseCy, z: b.z });
+        off.set(id, {
+          dx: b.cx - b.baseCx,
+          dy: b.cy - b.baseCy,
+          z: b.z,
+          angleDeg: ((b.angle - b.baseAngle) * 180) / Math.PI,
+        });
       }
 
       forceTick((t) => (t + 1) & 0xffff);
@@ -259,7 +284,7 @@ export function useStonePhysics(
 
   return {
     getOffset: (id: string) =>
-      offsetsRef.current.get(id) || { dx: 0, dy: 0, z: 0 },
+      offsetsRef.current.get(id) || { dx: 0, dy: 0, z: 0, angleDeg: 0 },
     nudge: (id: string, dx: number, dy: number) => {
       const b = bodiesRef.current.get(id);
       if (b) {
@@ -267,10 +292,27 @@ export function useStonePhysics(
         b.cy += dy;
       }
     },
+    scatter: (id: string, dx: number, dy: number, angleDeg: number) => {
+      const b = bodiesRef.current.get(id);
+      if (b) {
+        const angleRad = (angleDeg * Math.PI) / 180;
+        b.cx += dx;
+        b.cy += dy;
+        b.targetCx += dx;
+        b.targetCy += dy;
+        b.angle += angleRad;
+        b.targetAngle += angleRad;
+        forceTick((t) => (t + 1) & 0xffff);
+      }
+    },
     resetAll: () => {
       for (const b of bodiesRef.current.values()) {
         b.cx = b.baseCx;
         b.cy = b.baseCy;
+        b.targetCx = b.baseCx;
+        b.targetCy = b.baseCy;
+        b.angle = b.baseAngle;
+        b.targetAngle = b.baseAngle;
         b.z = 0;
         b.ghostUntilClear = false;
       }
