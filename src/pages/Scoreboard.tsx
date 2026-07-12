@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,8 +18,9 @@ interface LeaderRow {
 }
 
 export default function Scoreboard() {
+  const { t } = useTranslation();
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
-  const [seasonName, setSeasonName] = useState<string>('Huidig seizoen');
+  const [seasonName, setSeasonName] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,29 +59,29 @@ export default function Scoreboard() {
       <div className="relative z-10 p-4">
         <div className="max-w-4xl mx-auto space-y-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-white">Scoreboard — {seasonName}</h1>
-            <Button variant="outline" onClick={() => navigate('/')} className="border-white/30 bg-white/10 text-white hover:bg-white/20">Terug</Button>
+            <h1 className="text-2xl font-bold text-white">{t('scoreboard.title')} — {seasonName || t('scoreboard.currentSeason')}</h1>
+            <Button variant="outline" onClick={() => navigate('/')} className="border-white/30 bg-white/10 text-white hover:bg-white/20">{t('common.back')}</Button>
           </div>
 
           <Card className="bg-white/10 backdrop-blur-md border-white/20 text-white">
             <CardHeader>
-              <CardTitle className="text-white">Top spelers</CardTitle>
+              <CardTitle className="text-white">{t('scoreboard.topPlayers')}</CardTitle>
             </CardHeader>
             <CardContent>
               {leaderboard.length === 0 ? (
-                <p className="text-white/80">Nog geen resultaten.</p>
+                <p className="text-white/80">{t('scoreboard.noResults')}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left border-b border-white/20 text-white/80">
                         <th className="py-2 pr-4">#</th>
-                        <th className="py-2 pr-4">Speler</th>
-                        <th className="py-2 pr-4">Gespeeld</th>
-                        <th className="py-2 pr-4">Gewonnen</th>
-                        <th className="py-2 pr-4">Changa</th>
-                        <th className="py-2 pr-4">Punten</th>
-                        <th className="py-2 pr-4">Hard Slams</th>
+                        <th className="py-2 pr-4">{t('scoreboard.player')}</th>
+                        <th className="py-2 pr-4">{t('scoreboard.played')}</th>
+                        <th className="py-2 pr-4">{t('scoreboard.won')}</th>
+                        <th className="py-2 pr-4">{t('scoreboard.changa')}</th>
+                        <th className="py-2 pr-4">{t('scoreboard.points')}</th>
+                        <th className="py-2 pr-4">{t('scoreboard.hardSlams')}</th>
                       </tr>
                     </thead>
                     <tbody>

@@ -1,4 +1,5 @@
 import { CSSProperties, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,6 +60,7 @@ const Profile = () => {
   const { isAdmin, loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { getSetting } = useAppSettings();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,8 +96,8 @@ const Profile = () => {
       if (error) {
         console.error('Error loading profile:', error);
         toast({
-          title: "Error",
-          description: "Kon profiel niet laden",
+          title: t('common.error'),
+          description: t('profile.toastLoadFail'),
           variant: "destructive",
         });
         return;
@@ -194,14 +196,14 @@ const Profile = () => {
       setSelectedGloveSkinId(skinId);
       setProfile((prev) => (prev ? { ...prev, selected_glove_skin_id: skinId } : prev));
       toast({
-        title: 'Skin opgeslagen',
-        description: 'Je handschoen skin is bijgewerkt.',
+        title: t('profile.toastSkinSaved'),
+        description: t('profile.toastSkinSavedDesc'),
       });
     } catch (error) {
       console.error('Error updating selected glove skin:', error);
       toast({
-        title: 'Fout',
-        description: 'Kon handschoen skin niet opslaan.',
+        title: t('common.error'),
+        description: t('profile.toastSkinFail'),
         variant: 'destructive',
       });
     } finally {
@@ -214,8 +216,8 @@ const Profile = () => {
 
     if (!formData.username.trim()) {
       toast({
-        title: "Error",
-        description: "Gebruikersnaam is verplicht",
+        title: t('common.error'),
+        description: t('profile.toastUsernameRequired'),
         variant: "destructive",
       });
       return;
@@ -223,8 +225,8 @@ const Profile = () => {
 
     if (formData.username.length < 3) {
       toast({
-        title: "Error",
-        description: "Gebruikersnaam moet minstens 3 karakters zijn",
+        title: t('common.error'),
+        description: t('profile.toastUsernameShort'),
         variant: "destructive",
       });
       return;
@@ -243,14 +245,14 @@ const Profile = () => {
       if (error) {
         if (error.code === '23505') {
           toast({
-            title: "Error",
-            description: "Deze gebruikersnaam is al in gebruik",
+            title: t('common.error'),
+            description: t('profile.toastUsernameTaken'),
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Error",
-            description: "Kon profiel niet bijwerken",
+            title: t('common.error'),
+            description: t('profile.toastUpdateFail'),
             variant: "destructive",
           });
         }
@@ -258,8 +260,8 @@ const Profile = () => {
       }
 
       toast({
-        title: "Succes",
-        description: "Profiel succesvol bijgewerkt",
+        title: t('common.success'),
+        description: t('profile.toastUpdateOk'),
       });
 
       setEditing(false);
@@ -267,8 +269,8 @@ const Profile = () => {
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
-        title: "Error",
-        description: "Er is iets misgegaan",
+        title: t('common.error'),
+        description: t('auth.toast.somethingWrong'),
         variant: "destructive",
       });
     }
@@ -278,8 +280,8 @@ const Profile = () => {
     const { error } = await signOut();
     if (error) {
       toast({
-        title: "Error",
-        description: "Kon niet uitloggen",
+        title: t('common.error'),
+        description: t('profile.toastLogoutFail'),
         variant: "destructive",
       });
     } else {
@@ -292,7 +294,7 @@ const Profile = () => {
       <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 flex items-center justify-center">
         <Card>
           <CardContent className="p-6">
-            <div className="text-center">Loading...</div>
+            <div className="text-center">{t('common.loading')}</div>
           </CardContent>
         </Card>
       </div>
@@ -304,7 +306,7 @@ const Profile = () => {
       <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 flex items-center justify-center">
         <Card>
           <CardContent className="p-6">
-            <div className="text-center">Profiel niet gevonden</div>
+            <div className="text-center">{t('profile.profileNotFound')}</div>
           </CardContent>
         </Card>
       </div>
@@ -328,24 +330,24 @@ const Profile = () => {
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 <User className="h-8 w-8 text-primary" />
-                Mijn Profiel
+                {t('profile.myProfile')}
               </h1>
-              <p className="text-muted-foreground">Beheer je account en statistieken</p>
+              <p className="text-muted-foreground">{t('profile.manage')}</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               {!rolesLoading && isAdmin && (
                 <Button variant="default" size="sm" onClick={() => navigate('/admin')} className="w-full sm:w-auto">
                   <Shield className="mr-2 h-4 w-4" />
-                  Admin Page
+                  {t('profile.adminPage')}
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={() => navigate('/')} className="w-full sm:w-auto">
                 <Home className="mr-2 h-4 w-4" />
-                Home
+                {t('profile.home')}
               </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full sm:w-auto">
                 <LogOut className="mr-2 h-4 w-4" />
-                Uitloggen
+                {t('nav.logout')}
               </Button>
             </div>
           </div>
@@ -355,15 +357,15 @@ const Profile = () => {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              Profiel
+              {t('profile.tabProfile')}
             </TabsTrigger>
             <TabsTrigger value="invitations" className="flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
-              Uitnodigingen
+              {t('profile.tabInvitations')}
             </TabsTrigger>
             <TabsTrigger value="stats" className="flex items-center gap-2">
               <Trophy className="h-4 w-4" />
-              Statistieken
+              {t('profile.tabStats')}
             </TabsTrigger>
           </TabsList>
 
@@ -376,22 +378,22 @@ const Profile = () => {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Settings className="h-5 w-5" />
-                        Profiel Informatie
+                        {t('profile.profileInfo')}
                       </CardTitle>
                       <CardDescription>
-                        {editing ? 'Bewerk je profielgegevens' : 'Je account informatie'}
+                        {editing ? t('profile.editHint') : t('profile.viewHint')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {editing ? (
                         <>
                           <div className="space-y-2">
-                            <Label htmlFor="username">Gebruikersnaam</Label>
+                            <Label htmlFor="username">{t('auth.username')}</Label>
                             <Input
                               id="username"
                               value={formData.username}
                               onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                              placeholder="Je gebruikersnaam"
+                              placeholder={t('profile.usernamePh')}
                             />
                           </div>
 
@@ -402,13 +404,13 @@ const Profile = () => {
                               onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Selecteer status" />
+                                <SelectValue placeholder={t('profile.statusPh')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Beschikbaar">🟢 Beschikbaar</SelectItem>
-                                <SelectItem value="Aan het spelen">🎮 Aan het spelen</SelectItem>
-                                <SelectItem value="Afwezig">🟡 Afwezig</SelectItem>
-                                <SelectItem value="Niet storen">🔴 Niet storen</SelectItem>
+                                <SelectItem value="Beschikbaar">🟢 {t('profile.statusAvailable')}</SelectItem>
+                                <SelectItem value="Aan het spelen">🎮 {t('profile.statusPlaying')}</SelectItem>
+                                <SelectItem value="Afwezig">🟡 {t('profile.statusAway')}</SelectItem>
+                                <SelectItem value="Niet storen">🔴 {t('profile.statusDnd')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -419,17 +421,17 @@ const Profile = () => {
                               id="bio"
                               value={formData.bio}
                               onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                              placeholder="Vertel iets over jezelf..."
+                              placeholder={t('profile.bioPh')}
                               rows={4}
                             />
                           </div>
 
                           <div className="flex gap-2">
                             <Button onClick={handleSave}>
-                              Opslaan
+                              {t('common.save')}
                             </Button>
                             <Button variant="outline" onClick={() => setEditing(false)}>
-                              Annuleren
+                              {t('common.cancel')}
                             </Button>
                           </div>
                         </>
@@ -457,7 +459,7 @@ const Profile = () => {
                           )}
 
                           <div>
-                            <Label>Account aangemaakt</Label>
+                            <Label>{t('profile.accountCreated')}</Label>
                             <p className="mt-1 text-muted-foreground">
                               {new Date(profile.created_at).toLocaleDateString('nl-NL')}
                             </p>
@@ -465,7 +467,7 @@ const Profile = () => {
 
                           <Button onClick={() => setEditing(true)}>
                             <Settings className="mr-2 h-4 w-4" />
-                            Bewerk Profiel
+                            {t('profile.editProfile')}
                           </Button>
                         </>
                       )}
@@ -474,15 +476,15 @@ const Profile = () => {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Handschoen Skin</CardTitle>
+                      <CardTitle>{t('profile.gloveSkin')}</CardTitle>
                       <CardDescription>
-                        Kies je actieve handschoen uit skins die aan jouw account zijn toegewezen.
+                        {t('profile.gloveSkinDesc')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {availableGloveSkins.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
-                          Je hebt nog geen beschikbare skins. Vraag een admin om skins toe te wijzen.
+                          {t('profile.noSkins')}
                         </p>
                       ) : (
                         <>
@@ -495,7 +497,7 @@ const Profile = () => {
                             disabled={savingGloveSkin}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Kies een handschoen skin" />
+                              <SelectValue placeholder={t('profile.gloveSkinPh')} />
                             </SelectTrigger>
                             <SelectContent>
                               {availableGloveSkins.map((skin) => (
@@ -530,7 +532,7 @@ const Profile = () => {
                                 )}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                Actieve skin: <span className="font-medium text-foreground">
+                                {t('profile.activeSkin')}: <span className="font-medium text-foreground">
                                   {selectedGloveSkin.name}
                                 </span>
                               </div>
@@ -560,23 +562,23 @@ const Profile = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Trophy className="h-5 w-5 text-yellow-500" />
-                    Prestaties
+                    {t('profile.achievements')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-primary">{profile.games_won}</div>
-                    <p className="text-sm text-muted-foreground">Games gewonnen</p>
+                    <p className="text-sm text-muted-foreground">{t('profile.gamesWon')}</p>
                   </div>
                   
                   <div className="text-center">
                     <div className="text-3xl font-bold">{profile.games_played}</div>
-                    <p className="text-sm text-muted-foreground">Games gespeeld</p>
+                    <p className="text-sm text-muted-foreground">{t('profile.gamesPlayed')}</p>
                   </div>
 
                   <div className="text-center">
                     <div className="text-3xl font-bold text-green-500">{winRate}%</div>
-                    <p className="text-sm text-muted-foreground">Win percentage</p>
+                    <p className="text-sm text-muted-foreground">{t('profile.winRate')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -585,22 +587,22 @@ const Profile = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <GamepadIcon className="h-5 w-5" />
-                    Game Statistieken
+                    {t('profile.gameStats')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Beste winstreak:</span>
-                      <span className="font-medium">Binnenkort</span>
+                      <span className="text-muted-foreground">{t('profile.bestStreak')}</span>
+                      <span className="font-medium">{t('profile.soon')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Favoriete tijd:</span>
-                      <span className="font-medium">Binnenkort</span>
+                      <span className="text-muted-foreground">{t('profile.favoriteTime')}</span>
+                      <span className="font-medium">{t('profile.soon')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Gemiddelde game tijd:</span>
-                      <span className="font-medium">Binnenkort</span>
+                      <span className="text-muted-foreground">{t('profile.avgTime')}</span>
+                      <span className="font-medium">{t('profile.soon')}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -610,22 +612,22 @@ const Profile = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <UserPlus className="h-5 w-5" />
-                    Referral Prestaties
+                    {t('profile.referralAchievements')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Uitnodigingen verstuurd:</span>
+                      <span className="text-muted-foreground">{t('profile.invitesSent')}</span>
                       <span className="font-medium">-</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Vrienden geworven:</span>
+                      <span className="text-muted-foreground">{t('profile.friendsInvited')}</span>
                       <span className="font-medium">-</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Referral niveau:</span>
-                      <span className="font-medium">Starter</span>
+                      <span className="text-muted-foreground">{t('profile.referralLevel')}</span>
+                      <span className="font-medium">{t('profile.referralStarter')}</span>
                     </div>
                   </div>
                 </CardContent>

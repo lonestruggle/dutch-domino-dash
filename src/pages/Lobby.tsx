@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,6 +48,7 @@ export default function Lobby() {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { addBot, removeBot } = useLobbies();
   const { version: localVersion, setVersion: setLocalVersion } = useGameVersion();
   const { canAccessDevTools } = useUserRoles();
@@ -81,8 +83,8 @@ export default function Lobby() {
     if (error) {
       console.error('Error fetching lobby:', error);
       toast({
-        title: "Error",
-        description: "Could not load lobby",
+        title: t('common.error'),
+        description: t('lobbyPage.toastLoadFail'),
         variant: "destructive"
       });
       navigate('/');
@@ -150,8 +152,8 @@ export default function Lobby() {
 
     if (lobby.created_by !== user.id) {
       toast({
-        title: "Error",
-        description: "Only the lobby creator can start the game",
+        title: t('common.error'),
+        description: t('lobbyPage.toastOnlyCreator'),
         variant: "destructive"
       });
       return;
@@ -159,8 +161,8 @@ export default function Lobby() {
 
     if (lobby.players.length < 1) {
       toast({
-        title: "Error", 
-        description: "Need at least 1 player to start",
+        title: t('common.error'), 
+        description: t('lobbyPage.toastNeedPlayer'),
         variant: "destructive"
       });
       return;
@@ -270,8 +272,8 @@ export default function Lobby() {
     if (createError) {
       console.error('Game creation error:', createError);
       toast({
-        title: "Error",
-        description: `Could not create game: ${createError.message}`,
+        title: t('common.error'),
+        description: t('lobbyPage.toastCreateGameFail', { msg: createError.message }),
         variant: "destructive"
       });
       return;
@@ -292,8 +294,8 @@ export default function Lobby() {
 
     if (error) {
       toast({
-        title: "Error",
-        description: "Could not leave lobby",
+        title: t('common.error'),
+        description: t('lobbyPage.toastLeaveFail'),
         variant: "destructive"
       });
       return;
@@ -307,13 +309,13 @@ export default function Lobby() {
     try {
       await navigator.clipboard.writeText(lobbyUrl);
       toast({
-        title: "Success",
-        description: "Lobby link copied to clipboard!"
+        title: t('common.success'),
+        description: t('lobbyPage.toastCopied')
       });
     } catch (error) {
       toast({
-        title: "Error", 
-        description: "Could not copy link",
+        title: t('common.error'), 
+        description: t('lobbyPage.toastCopyFail'),
         variant: "destructive"
       });
     }
@@ -325,14 +327,14 @@ export default function Lobby() {
     const { error } = await addBot(lobbyId, user);
     if (error) {
       toast({
-        title: "Error",
-        description: typeof error === 'string' ? error : error.message || "Could not add bot",
+        title: t('common.error'),
+        description: typeof error === 'string' ? error : error.message || t('lobbyPage.toastBotAddFail'),
         variant: "destructive"
       });
     } else {
       toast({
-        title: "Success",
-        description: "Bot added to lobby!"
+        title: t('common.success'),
+        description: t('lobbyPage.toastBotAdded')
       });
     }
   };
@@ -343,14 +345,14 @@ export default function Lobby() {
     const { error } = await removeBot(lobbyId, position, user);
     if (error) {
       toast({
-        title: "Error",
-        description: typeof error === 'string' ? error : error.message || "Could not remove bot",
+        title: t('common.error'),
+        description: typeof error === 'string' ? error : error.message || t('lobbyPage.toastBotRemoveFail'),
         variant: "destructive"
       });
     } else {
       toast({
-        title: "Success",
-        description: "Bot removed from lobby!"
+        title: t('common.success'),
+        description: t('lobbyPage.toastBotRemoved')
       });
     }
   };
@@ -452,7 +454,7 @@ export default function Lobby() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading lobby...</p>
+          <p className="mt-2 text-muted-foreground">{t('lobbyPage.loading')}</p>
         </div>
       </div>
     );
@@ -463,9 +465,9 @@ export default function Lobby() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground">Lobby not found</p>
+            <p className="text-muted-foreground">{t('lobbyPage.notFound')}</p>
             <Button onClick={() => navigate('/lobbies')} className="mt-4">
-              Back to Lobbies
+              {t('lobbyPage.backToLobbies')}
             </Button>
           </CardContent>
         </Card>
@@ -509,8 +511,8 @@ export default function Lobby() {
                   className="flex-1 sm:flex-none border-white/30 bg-white/10 text-white hover:bg-white/20"
                 >
                   <Copy className="h-4 w-4 mr-1 sm:mr-2" />
-                  <span className="hidden xs:inline">Share Link</span>
-                  <span className="xs:hidden">Share</span>
+                  <span className="hidden xs:inline">{t('lobbyPage.shareLink')}</span>
+                  <span className="xs:hidden">{t('lobbyPage.share')}</span>
                 </Button>
                 <Button 
                   variant="outline" 
@@ -519,7 +521,7 @@ export default function Lobby() {
                   className="flex-1 sm:flex-none border-white/30 bg-white/10 text-white hover:bg-white/20"
                 >
                   <LogOut className="h-4 w-4 mr-1 sm:mr-2" />
-                  Leave
+                  {t('lobbyPage.leave')}
                 </Button>
                 {isLobbyCreator && (
                   <Button 
@@ -528,7 +530,7 @@ export default function Lobby() {
                     className="w-full sm:w-auto bg-primary hover:bg-primary/80 text-white"
                   >
                     <Play className="h-4 w-4 mr-1 sm:mr-2" />
-                    Start Game
+                    {t('lobbyPage.startGame')}
                   </Button>
                 )}
               </div>
@@ -544,7 +546,7 @@ export default function Lobby() {
               return (
                 <div className="rounded-lg border border-white/20 p-3 bg-black/20 space-y-2">
                   <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="font-semibold">Spelversie:</span>
+                    <span className="font-semibold">{t('lobbyPage.gameVersion')}</span>
                     {canAccessDevTools && isLobbyCreator ? (
                       <Select
                         value={lobbyVer}
@@ -566,13 +568,13 @@ export default function Lobby() {
                     ) : (
                       <span className="rounded bg-primary/30 px-2 py-0.5 text-xs">{lobbyVer}</span>
                     )}
-                    <span className="text-xs text-white/60">jouw versie: {localVersion}</span>
+                    <span className="text-xs text-white/60">{t('lobbyPage.yourVersion', { v: localVersion })}</span>
                   </div>
                   {mismatched.length > 0 && (
                     <div className="flex items-start gap-2 rounded border border-yellow-400/50 bg-yellow-500/10 p-2 text-xs text-yellow-100">
                       <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                       <div>
-                        Verschillende spelversies gedetecteerd. De volgende spelers draaien een andere versie en zullen automatisch herladen:
+                        {t('lobbyPage.mismatchWarning')}
                         <ul className="mt-1 list-disc list-inside">
                           {mismatched.map((p) => (
                             <li key={p.id}>{p.username} ({p.client_version})</li>
@@ -604,7 +606,7 @@ export default function Lobby() {
                           )}
                           {player.user_id === lobby.created_by && (
                             <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                              Creator
+                              {t('lobbyPage.creator')}
                             </span>
                           )}
                           {!player.is_bot && typeof player.coins === 'number' && (
@@ -614,7 +616,7 @@ export default function Lobby() {
                           )}
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">Waiting for player...</span>
+                        <span className="text-muted-foreground">{t('lobbyPage.waitingForPlayer')}</span>
                       )}
                     </span>
                   </div>
@@ -649,11 +651,11 @@ export default function Lobby() {
               <div className="space-y-3 sm:space-y-4">
                 <div className="rounded-lg border border-white/20 p-3 space-y-3 bg-black/20">
                   <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Coins className="h-4 w-4" /> Spelmodus
+                    <Coins className="h-4 w-4" /> {t('lobbies.gameMode')}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-white/80">Modus</Label>
+                      <Label className="text-white/80">{t('lobbyPage.mode')}</Label>
                       <Select
                         value={gameMode}
                         onValueChange={async (v) => {
@@ -671,14 +673,14 @@ export default function Lobby() {
                           <SelectValue className="text-black" />
                         </SelectTrigger>
                         <SelectContent className="bg-white text-black border-white/70">
-                          <SelectItem value="classic" className="text-black focus:bg-black/10 focus:text-black">Klassiek</SelectItem>
-                          <SelectItem value="wega_di_sen" className="text-black focus:bg-black/10 focus:text-black">Wega di sen</SelectItem>
+                          <SelectItem value="classic" className="text-black focus:bg-black/10 focus:text-black">{t('lobbies.classic')}</SelectItem>
+                          <SelectItem value="wega_di_sen" className="text-black focus:bg-black/10 focus:text-black">{t('lobbies.wega')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     {gameMode === 'wega_di_sen' && (
                       <div>
-                        <Label className="text-white/80">Inzet (coins)</Label>
+                        <Label className="text-white/80">{t('lobbyPage.stakeCoins')}</Label>
                         <Input
                           type="number"
                           min={1}
@@ -725,8 +727,8 @@ export default function Lobby() {
               <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
                   {isLobbyCreator 
-                    ? "Waiting for players to join. Click 'Start Game' when ready!"
-                    : "Waiting for the lobby creator to start the game..."
+                    ? t('lobbyPage.waitingHost')
+                    : t('lobbyPage.waitingForHost')
                   }
                 </p>
               </div>

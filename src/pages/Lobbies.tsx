@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -21,6 +22,7 @@ export default function Lobbies() {
   const { getSetting } = useAppSettings();
   const wegaEnabled = getSetting('wega_di_sen_enabled') !== false;
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
   const [username, setUsername] = useState('');
@@ -71,8 +73,8 @@ export default function Lobbies() {
     
     if (!lobbyName.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter a lobby name",
+        title: t('common.error'),
+        description: t('lobbies.toastEnterName'),
         variant: "destructive"
       });
       return;
@@ -89,8 +91,8 @@ export default function Lobbies() {
     
     if (error) {
       toast({
-        title: "Error",
-        description: "Could not create lobby",
+        title: t('common.error'),
+        description: t('lobbies.toastCreateFail'),
         variant: "destructive"
       });
     } else if (data) {
@@ -109,8 +111,8 @@ export default function Lobbies() {
     
     if (error) {
       toast({
-        title: "Error",
-        description: typeof error === 'string' ? error : error.message || "Could not join lobby",
+        title: t('common.error'),
+        description: typeof error === 'string' ? error : error.message || t('lobbies.toastJoinFail'),
         variant: "destructive"
       });
     } else {
@@ -126,14 +128,14 @@ export default function Lobbies() {
     
     if (error) {
       toast({
-        title: "Error",
-        description: typeof error === 'string' ? error : error.message || "Could not delete lobby",
+        title: t('common.error'),
+        description: typeof error === 'string' ? error : error.message || t('lobbies.toastDeleteFail'),
         variant: "destructive"
       });
     } else {
       toast({
-        title: "Success",
-        description: "Lobby deleted successfully"
+        title: t('common.success'),
+        description: t('lobbies.toastDeleteOk')
       });
     }
   };
@@ -143,18 +145,18 @@ export default function Lobbies() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-center">Authentication Required</CardTitle>
+            <CardTitle className="text-center">{t('lobbies.authRequired')}</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">
-              You need to log in to access multiplayer lobbies
+              {t('lobbies.authRequiredDesc')}
             </p>
             <Button onClick={() => navigate('/auth')} className="w-full">
               <LogIn className="h-4 w-4 mr-2" />
-              Go to Login
+              {t('lobbies.goToLogin')}
             </Button>
             <Button variant="outline" onClick={() => navigate('/')} className="w-full">
-              Back to Home
+              {t('common.backHome')}
             </Button>
           </CardContent>
         </Card>
@@ -173,9 +175,9 @@ export default function Lobbies() {
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-white">Multiplayer Lobbies</h1>
+            <h1 className="text-3xl font-bold text-white">{t('lobbies.title')}</h1>
             <p className="text-white/80 flex items-center gap-2">
-              Welcome, {displayUsername || user?.email}!
+              {t('lobbies.welcome', { name: displayUsername || user?.email })}
               {myCoins !== null && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-yellow-100 text-xs">
                   <Coins className="h-3 w-3" /> {myCoins}
@@ -185,32 +187,32 @@ export default function Lobbies() {
           </div>
           <div className="flex w-full sm:w-auto gap-2 sm:justify-end">
             <Button variant="outline" onClick={() => navigate('/')} className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20">
-              Back to Home
+              {t('common.backHome')}
             </Button>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
                 <Button className="w-full sm:w-auto bg-primary hover:bg-primary/80 text-white">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Lobby
+                  {t('lobbies.createLobby')}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create New Lobby</DialogTitle>
+                  <DialogTitle>{t('lobbies.createLobbyTitle')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="lobbyName">Lobby Name</Label>
+                    <Label htmlFor="lobbyName">{t('lobbies.lobbyName')}</Label>
                     <Input
                       id="lobbyName"
                       value={lobbyName}
                       onChange={(e) => setLobbyName(e.target.value)}
-                      placeholder="Enter lobby name"
+                      placeholder={t('lobbies.lobbyNamePh')}
                       className="bg-white text-black placeholder:text-black/50"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="maxPlayers">Max Players</Label>
+                    <Label htmlFor="maxPlayers">{t('lobbies.maxPlayers')}</Label>
                     <Input
                       id="maxPlayers"
                       type="number"
@@ -222,22 +224,22 @@ export default function Lobbies() {
                     />
                   </div>
                   <div>
-                    <Label>Spelmodus</Label>
+                    <Label>{t('lobbies.gameMode')}</Label>
                     <Select value={gameMode} onValueChange={(v) => setGameMode(v as 'classic' | 'wega_di_sen')}>
                       <SelectTrigger className="bg-white text-black border-input">
-                        <SelectValue placeholder="Kies een spelmodus" />
+                        <SelectValue placeholder={t('lobbies.gameModePh')} />
                       </SelectTrigger>
                       <SelectContent className="bg-white text-black">
-                        <SelectItem value="classic" className="text-black focus:bg-black/10 focus:text-black">Klassiek</SelectItem>
+                        <SelectItem value="classic" className="text-black focus:bg-black/10 focus:text-black">{t('lobbies.classic')}</SelectItem>
                         {wegaEnabled && (
-                          <SelectItem value="wega_di_sen" className="text-black focus:bg-black/10 focus:text-black">Wega di sen (coins)</SelectItem>
+                          <SelectItem value="wega_di_sen" className="text-black focus:bg-black/10 focus:text-black">{t('lobbies.wega')}</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
                   </div>
                   {gameMode === 'wega_di_sen' && (
                     <div>
-                      <Label htmlFor="wegaStake">Inzet (coins per ronde)</Label>
+                      <Label htmlFor="wegaStake">{t('lobbies.stakeLabel')}</Label>
                       <Input
                         id="wegaStake"
                         type="number"
@@ -247,7 +249,7 @@ export default function Lobbies() {
                         className="bg-white text-black"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Jouw saldo: {myCoins ?? 0} coins
+                        {t('lobbies.yourBalance', { coins: myCoins ?? 0 })}
                       </p>
                     </div>
                   )}
@@ -256,7 +258,7 @@ export default function Lobbies() {
                     disabled={creating}
                     className="w-full"
                   >
-                    {creating ? 'Creating...' : 'Create Lobby'}
+                    {creating ? t('lobbies.creating') : t('lobbies.createLobby')}
                   </Button>
                 </div>
               </DialogContent>
@@ -267,14 +269,14 @@ export default function Lobbies() {
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-white/80">Loading lobbies...</p>
+            <p className="mt-2 text-white/80">{t('lobbies.loadingLobbies')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {lobbies.length === 0 ? (
               <div className="col-span-full text-center py-8">
-                <p className="text-white/80">No lobbies available</p>
-                <p className="text-sm text-white/70 mt-1">Create a new lobby to get started!</p>
+                <p className="text-white/80">{t('lobbies.noLobbies')}</p>
+                <p className="text-sm text-white/70 mt-1">{t('lobbies.noLobbiesHint')}</p>
               </div>
             ) : (
               lobbies.map((lobby) => (
@@ -296,7 +298,7 @@ export default function Lobbies() {
                   <CardContent>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="text-sm text-white/80">
-                        Status: {lobby.status}
+                        {t('lobbies.status', { status: lobby.status })}
                       </div>
                       <div className="flex gap-2 w-full sm:w-auto">
                         {user?.id === lobby.created_by && (
@@ -314,7 +316,7 @@ export default function Lobbies() {
                           size="sm"
                           className="w-full sm:w-auto bg-primary hover:bg-primary/80 text-white"
                         >
-                          {lobby.player_count >= lobby.max_players ? 'Full' : 'Join'}
+                          {lobby.player_count >= lobby.max_players ? t('lobbies.full') : t('lobbies.join')}
                         </Button>
                       </div>
                     </div>
