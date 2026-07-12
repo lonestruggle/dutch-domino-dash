@@ -1022,7 +1022,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // ------------------------------------------------------------------------
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto aspect-square">
+    <div className="relative w-full max-w-4xl mx-auto aspect-square" data-hard-slam-renderer="physics-wrapper">
       {shouldShowPersistentGlove && (
         <div className="pointer-events-none absolute inset-0 z-[95]">
           <div
@@ -1134,7 +1134,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   top: boardSize / 2 + domino.y * GRID_CELL_SIZE,
                   width: w,
                   height: h,
-                  transform: `translate3d(${phys.dx + hardSlamShakeX + hardSlamJump}px, ${phys.dy + hardSlamShakeY + hardSlamJump}px, 0) rotate(${hardSlamAngle}deg) scale(${liftScale})`,
+                  transform: `translate3d(${phys.dx + hardSlamShakeX + hardSlamJump}px, ${phys.dy + hardSlamShakeY + hardSlamJump}px, 0) rotate(${(phys.angleDeg || 0) + hardSlamAngle}deg) scale(${liftScale})`,
                   transformOrigin: 'center center',
                   willChange: physicsEnabled || shouldAnimate ? 'transform, filter' : undefined,
                   filter: hardSlamShadow
@@ -1169,7 +1169,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                       top: 0,
                       width: w,
                       height: h,
-                      transform: `rotate(${domino.rotation || 0}deg)`,
+                      transform: `rotate(${(domino.rotation || 0) + (phys.angleDeg || 0)}deg)`,
                       transformOrigin: 'center',
                       background: 'rgba(255, 80, 80, 0.18)',
                       border: '1px solid rgba(255, 80, 80, 0.7)',
@@ -1190,7 +1190,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               }}
             >
               <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-14 w-14 items-center justify-center">
-                {renderAnimatedHand(settings.gloveScale || 1, hardSlamGloveSkinConfig)}
+                {renderAnimatedHand(settings.hardSlamGloveScale || settings.gloveScale || 1, hardSlamGloveSkinConfig)}
               </div>
             </div>
           )}
