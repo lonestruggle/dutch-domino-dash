@@ -109,7 +109,7 @@ export interface StonePhysicsAPI {
   /** Geeft een steen een directe visuele duw (in px). Handig voor testen. */
   nudge: (id: string, dx: number, dy: number) => void;
   /** CanvasDemo Hard Slam: verplaats óók het doelpunt, zodat stenen blijven liggen waar ze landen. */
-  scatter: (id: string, dx: number, dy: number, angleDeg: number) => void;
+  scatter: (id: string, dx: number, dy: number, angleDeg: number, targetAngleDeltaDeg?: number) => void;
   /** Reset alle stenen naar hun grid-positie. */
   resetAll: () => void;
   /** Tilt een steen op (z > 0) of zet hem terug op tafel (z = 0). */
@@ -292,16 +292,15 @@ export function useStonePhysics(
         b.cy += dy;
       }
     },
-    scatter: (id: string, dx: number, dy: number, angleDeg: number) => {
+    scatter: (id: string, dx: number, dy: number, angleDeg: number, targetAngleDeltaDeg = 0) => {
       const b = bodiesRef.current.get(id);
       if (b) {
         const angleRad = (angleDeg * Math.PI) / 180;
-        b.cx += dx;
-        b.cy += dy;
-        b.targetCx += dx;
-        b.targetCy += dy;
+        const targetAngleDeltaRad = (targetAngleDeltaDeg * Math.PI) / 180;
+        b.targetCx = b.cx + dx;
+        b.targetCy = b.cy + dy;
         b.angle += angleRad;
-        b.targetAngle += angleRad;
+        b.targetAngle = b.angle + targetAngleDeltaRad;
         forceTick((t) => (t + 1) & 0xffff);
       }
     },
