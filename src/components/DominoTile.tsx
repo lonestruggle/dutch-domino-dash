@@ -103,10 +103,18 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         height: `${dominoHeight}px`,
         // Spread alle andere style properties EERST
         ...style,
-        // CRITICAL: Include original rotation in initial transform
-        transform: style?.transform 
-          ? `${style.transform} rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ + rotation}deg)`
-          : `rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ + rotation}deg)`,
+        // CRITICAL: Include original rotation in initial transform.
+        // Tijdens de hard-slam shake schrijft de RAF-loop rechtstreeks
+        // naar element.style.transform — als we hier op elke render een
+        // nieuwe transform zetten wordt die animatie meteen weggevaagd
+        // (met name in beta waar de physics-wrapper elke frame re-rendert).
+        ...(isShaking
+          ? {}
+          : {
+              transform: style?.transform
+                ? `${style.transform} rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ + rotation}deg)`
+                : `rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ + rotation}deg)`,
+            }),
       } as React.CSSProperties}
     >
       {/* Voorkant */}
