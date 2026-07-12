@@ -609,36 +609,31 @@ const useGameVisualSettingsState = () => {
         const progress = elapsedTime / durationInMs;
 
         if (progress < 1) {
-          const decayFactor = Math.pow(1 - progress, 1.5);
+          // Envelope à la CanvasDemo: snelle attack, exponentiële decay.
+          const tSeconds = elapsedTime / 1000;
+          const attack = Math.min(1, tSeconds * 4.5);
+          const decay = Math.exp(-tSeconds * 3.8);
+          const env = attack * decay;
+          const intensity = Math.max(0.3, shakeSettings.intensity);
           const animatedDominoes = getBoardDominoElements();
 
-          animatedDominoes.forEach((domino: Element, index: number) => {
+          animatedDominoes.forEach((domino: Element) => {
             const htmlDomino = domino as HTMLElement;
-            const seed = randomSeedsRef.current[index] || (index * 1000);
-            const phaseX = Math.sin(seed * 0.001) * 2 * Math.PI;
-            const phaseY = Math.cos(seed * 0.001) * 2 * Math.PI;
-            const phaseZ = Math.sin(seed * 0.002) * 2 * Math.PI;
-
-            const waveX = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + phaseX);
-            const waveY = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + phaseY);
-            const waveZ = Math.cos(elapsedTime * speedMultiplier * Math.PI / 1000 + phaseZ);
-
-            const amplitudeMultX = 0.5 + Math.sin(seed * 0.003);
-            const amplitudeMultY = 0.5 + Math.cos(seed * 0.003);
-            const amplitudeMultZ = 0.5 + Math.sin(seed * 0.004);
-
             const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
 
-            const rotateX = shakeSettings.rotationAmplitudeX * waveX * decayFactor * amplitudeMultX * shakeSettings.intensity;
-            const rotateY = shakeSettings.rotationAmplitudeY * waveY * decayFactor * amplitudeMultY * shakeSettings.intensity;
-            const rotateZ = originalRotationZ + (shakeSettings.rotationAmplitudeZ * waveZ * decayFactor * amplitudeMultZ * shakeSettings.intensity);
-
-            const jitterX = (shakeSettings.intensity * 2.5) * Math.sin(elapsedTime * speedMultiplier * 0.015 + phaseX);
-            const jitterY = (shakeSettings.intensity * 2.5) * Math.cos(elapsedTime * speedMultiplier * 0.015 + phaseY);
+            // Per-frame random translate + kleine 2D-rotatie + pop-scale
+            // (zelfde recept als CanvasDemo shakeX/Y/A/lift).
+            const shakeX = (Math.random() - 0.5) * 15 * env * intensity;
+            const shakeY = (Math.random() - 0.5) * 15 * env * intensity;
+            const shakeADeg = (Math.random() - 0.5) * 5.7 * env * intensity;
+            const popScale = 1 + env * intensity * 0.12;
 
             const currentTransform = htmlDomino.style.transform || '';
-            const baseTransform = currentTransform.replace(/translate3d\([^)]*\)|rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
-            htmlDomino.style.transform = `${baseTransform} translate3d(${jitterX}px, ${jitterY}px, 0) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)`.trim();
+            const baseTransform = currentTransform
+              .replace(/translate3d\([^)]*\)|rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)|scale\([^)]*\)/g, '')
+              .trim();
+            htmlDomino.style.transform =
+              `${baseTransform} translate3d(${shakeX}px, ${shakeY}px, 0) rotateZ(${originalRotationZ + shakeADeg}deg) scale(${popScale})`.trim();
           });
 
           animationRef.current.current = requestAnimationFrame(animate);
