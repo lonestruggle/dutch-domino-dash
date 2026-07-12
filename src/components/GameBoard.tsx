@@ -1360,6 +1360,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           Collision-boxes
         </label>
         <label className="flex flex-col gap-0.5">
+          <span>Slam intensiteit: {settings.shakeIntensity.toFixed(1)}x</span>
+          <input
+            type="range"
+            min={0.3}
+            max={2}
+            step={0.1}
+            value={settings.shakeIntensity}
+            onChange={(e) => updateShakeIntensity(parseFloat(e.target.value))}
+          />
+        </label>
+        <label className="flex flex-col gap-0.5">
+          <span>Slam duur: {settings.shakeDuration.toFixed(1)}s</span>
+          <input
+            type="range"
+            min={0.5}
+            max={5}
+            step={0.1}
+            value={settings.shakeDuration}
+            onChange={(e) => updateShakeDuration(parseFloat(e.target.value))}
+          />
+        </label>
+        <label className="flex flex-col gap-0.5">
           <span>Anker: {anchorStrength.toFixed(3)}</span>
           <input
             type="range"
