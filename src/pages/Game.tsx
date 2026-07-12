@@ -945,7 +945,7 @@ const relayoutTableState = (
     const placement = placements[index];
     const seed = parseDominoIndex(dominoId) + 1;
     const wobble = (((seed * 2654435761) >>> 0) % 100) / 100;
-    const rotationOffset = index === 0 ? 0 : (wobble - 0.5) * 4;
+    const rotationOffset = Number((((wobble - 0.5) * 3.6) || 1.2).toFixed(2));
     const relaidDomino = {
       ...domino,
       x: placement.x,
@@ -953,7 +953,7 @@ const relayoutTableState = (
       orientation: placement.orientation,
       flipped: placement.flipped,
       rotation: rotationOffset,
-      rotationZ: rotationOffset,
+      rotationZ: 0,
       rotationX: 0,
       rotationY: 0,
     };
