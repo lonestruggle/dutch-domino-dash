@@ -458,6 +458,17 @@ const useGameVisualSettingsState = () => {
     return { ...raw, ...normalizedPersonal, ...normalizedGlobal };
   };
 
+  const emitHardSlamShakeFrame = (detail: {
+    env: number;
+    intensity: number;
+    progress: number;
+    elapsedTime: number;
+    done?: boolean;
+  }) => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('dominoHardSlamShakeFrame', { detail }));
+  };
+
   // Animation functions met exacte logica uit DominoTileDemo
   const forceStopAnimation = () => {
     console.log('🎬 🛑 Force stopping animation');
@@ -483,6 +494,7 @@ const useGameVisualSettingsState = () => {
     randomSeedsRef.current = [];
 
     restoreBoardDominoTransforms();
+    emitHardSlamShakeFrame({ env: 0, intensity: 0, progress: 1, elapsedTime: 0, done: true });
     
     console.log('🎬 ✅ Animation force stopped and cleaned up');
   };
@@ -525,7 +537,7 @@ const useGameVisualSettingsState = () => {
       const htmlDomino = domino as HTMLElement;
       const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
       const currentTransform = htmlDomino.style.transform || '';
-      const baseTransform = currentTransform.replace(/translate3d\([^)]*\)|rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)/g, '').trim();
+      const baseTransform = currentTransform.replace(/translate3d\([^)]*\)|rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)|scale\([^)]*\)/g, '').trim();
       htmlDomino.style.transform = `${baseTransform} rotateX(0deg) rotateY(0deg) rotateZ(${originalRotationZ}deg)`.trim();
     });
   };
@@ -617,6 +629,15 @@ const useGameVisualSettingsState = () => {
           const intensity = Math.max(0.3, shakeSettings.intensity);
           const animatedDominoes = getBoardDominoElements();
 
+          // Beta board gebruikt physics-wrappers; dit event laat die wrappers
+          // dezelfde CanvasDemo-achtige x/y jump, pop-scale en rotatie renderen.
+          emitHardSlamShakeFrame({
+            env,
+            intensity,
+            progress,
+            elapsedTime,
+          });
+
           animatedDominoes.forEach((domino: Element) => {
             const htmlDomino = domino as HTMLElement;
             const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
@@ -641,6 +662,7 @@ const useGameVisualSettingsState = () => {
         }
 
         restoreBoardDominoTransforms();
+        emitHardSlamShakeFrame({ env: 0, intensity: 0, progress: 1, elapsedTime, done: true });
         setIsAnimating(false);
         setAnimationMode(null);
       };
@@ -648,6 +670,7 @@ const useGameVisualSettingsState = () => {
       animationRef.current.stopFunction = () => {
         shouldContinue = false;
         restoreBoardDominoTransforms();
+        emitHardSlamShakeFrame({ env: 0, intensity: 0, progress: 1, elapsedTime: 0, done: true });
         setIsAnimating(false);
         setAnimationMode(null);
       };

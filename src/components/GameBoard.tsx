@@ -76,6 +76,12 @@ interface HardSlamHandPlacementState {
   top: number;
 }
 
+interface HardSlamShakeFrameState {
+  env: number;
+  intensity: number;
+  elapsedTime: number;
+}
+
 const HARD_SLAM_HAND_ANIMATION_MS = 980;
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
@@ -124,6 +130,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [dragGhostPos, setDragGhostPos] = useState<{ x: number; y: number } | null>(null);
   const [isDraggingHandGhost, setIsDraggingHandGhost] = useState(false);
   const [hoverMoveKey, setHoverMoveKey] = useState<string | null>(null);
+  const [hardSlamShakeFrame, setHardSlamShakeFrame] = useState<HardSlamShakeFrameState>({
+    env: 0,
+    intensity: 0,
+    elapsedTime: 0,
+  });
   // ------------------------------------------------------------------------
 
   const persistentGlovePosRef = useRef<{ x: number; y: number }>({
@@ -242,6 +253,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     (window as any).stonePhysics = stonePhysics;
     (window as any).dominoIds = Object.keys(gameState.dominoes);
   }, [stonePhysics, gameState.dominoes]);
+
+  useEffect(() => {
+    const handleHardSlamShakeFrame = (event: Event) => {
+      const detail = (event as CustomEvent<Partial<HardSlamShakeFrameState> & { done?: boolean }>).detail || {};
+      if (detail.done) {
+        setHardSlamShakeFrame({ env: 0, intensity: 0, elapsedTime: 0 });
+        return;
+      }
+
+      setHardSlamShakeFrame({
+        env: Math.max(0, Number(detail.env) || 0),
+        intensity: Math.max(0, Number(detail.intensity) || 0),
+        elapsedTime: Math.max(0, Number(detail.elapsedTime) || 0),
+      });
+    };
+
+    window.addEventListener('dominoHardSlamShakeFrame', handleHardSlamShakeFrame);
+    return () => window.removeEventListener('dominoHardSlamShakeFrame', handleHardSlamShakeFrame);
+  }, []);
 
 
   // Listen for live settings updates and reapply scaling
@@ -1047,10 +1077,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // diepere slagschaduw zodat duidelijk wordt dat ze boven de tafel
             // hangen. Botsingen worden in de physics-laag al overgeslagen.
             const lift = phys.z || 0;
-            const liftScale = 1 + Math.min(lift, 2) * 0.06;
+            const hardSlamLift = shouldAnimate ? hardSlamShakeFrame.env * hardSlamShakeFrame.intensity : 0;
+            const hardSlamShakeX = shouldAnimate ? (Math.random() - 0.5) * 15 * hardSlamLift : 0;
+            const hardSlamShakeY = shouldAnimate ? (Math.random() - 0.5) * 15 * hardSlamLift : 0;
+            const hardSlamJump = shouldAnimate ? -hardSlamLift * 20 : 0;
+            const hardSlamAngle = shouldAnimate ? (Math.random() - 0.5) * 5.7 * hardSlamLift : 0;
+            const physicsLiftScale = 1 + Math.min(lift, 2) * 0.06;
+            const hardSlamPopScale = 1 + hardSlamLift * 0.15;
+            const liftScale = physicsLiftScale * hardSlamPopScale;
             const liftShadow =
               lift > 0
                 ? `0 ${6 + lift * 10}px ${10 + lift * 14}px rgba(0,0,0,${Math.min(0.55, 0.25 + lift * 0.15)})`
+                : undefined;
+            const hardSlamShadow =
+              hardSlamLift > 0
+                ? `${8 + hardSlamLift * 30}px ${8 + hardSlamLift * 30}px ${10 + hardSlamLift * 30}px rgba(0,0,0,${Math.max(0.18, 0.45 - hardSlamLift * 0.2)})`
                 : undefined;
 
             return (
@@ -1062,11 +1103,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   top: boardSize / 2 + domino.y * GRID_CELL_SIZE,
                   width: w,
                   height: h,
-                  transform: `translate3d(${phys.dx}px, ${phys.dy}px, 0) scale(${liftScale})`,
+                  transform: `translate3d(${phys.dx + hardSlamShakeX + hardSlamJump}px, ${phys.dy + hardSlamShakeY + hardSlamJump}px, 0) rotate(${hardSlamAngle}deg) scale(${liftScale})`,
                   transformOrigin: 'center center',
-                  willChange: physicsEnabled ? 'transform' : undefined,
-                  filter: liftShadow ? `drop-shadow(${liftShadow})` : undefined,
-                  zIndex: lift > 0 ? 50 + Math.round(lift * 10) : undefined,
+                  willChange: physicsEnabled || shouldAnimate ? 'transform, filter' : undefined,
+                  filter: hardSlamShadow
+                    ? `drop-shadow(${hardSlamShadow})`
+                    : liftShadow
+                      ? `drop-shadow(${liftShadow})`
+                      : undefined,
+                  zIndex: lift > 0 || hardSlamLift > 0 ? 50 + Math.round(Math.max(lift, hardSlamLift) * 10) : undefined,
                 }}
               >
                 <DominoTile
