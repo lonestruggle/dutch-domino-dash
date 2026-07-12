@@ -65,6 +65,14 @@ const getDominoNumericId = (dominoId: string): number => {
   return match ? Number(match[1]) : -1;
 };
 
+const createSeededRandom = (seed: number) => {
+  let state = (seed >>> 0) || 1;
+  return () => {
+    state = (1664525 * state + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+};
+
 interface PlaceHandAnimationState {
   dominoId: string;
   left: number;
@@ -102,7 +110,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { settings, applyOriginalRotations, isAnimating, animationMode, updateGlovePosition } = useGameVisualSettings();
+  const {
+    settings,
+    applyOriginalRotations,
+    isAnimating,
+    animationMode,
+    updateGlovePosition,
+    updateShakeIntensity,
+    updateShakeDuration,
+  } = useGameVisualSettings();
   const { getSetting } = useAppSettings();
   const [playerGloveSkinByUserId, setPlayerGloveSkinByUserId] = useState<Record<string, PlayerGloveSkinConfig>>({});
   const [placeHandAnimation, setPlaceHandAnimation] = useState<PlaceHandAnimationState | null>(null);
@@ -117,7 +133,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // --- STAP 1: OBB / SAT physics-laag (debug) -------------------------------
   // Anker start op 0.000: stenen blijven liggen waar collision ze duwt.
   const [physicsEnabled, setPhysicsEnabled] = useState(true);
-  const [anchorStrength, setAnchorStrength] = useState(0);
+  const [anchorStrength, setAnchorStrength] = useState(0.03);
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
   const [physicsPanelOpen, setPhysicsPanelOpen] = useState(false);
   // ------------------------------------------------------------------------
@@ -576,9 +592,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       (hardSlamEndMs > 0 && Date.now() < hardSlamEndMs);
 
     if (!eventId || !isHardSlamActive) return;
+    if (gameState.hardSlamDominoId && !gameState.dominoes[gameState.hardSlamDominoId]) return;
     if (lastHardSlamEventRef.current === eventId) return;
 
     lastHardSlamEventRef.current = eventId;
+    const random = profile ? createSeededRandom(profile.seed) : Math.random;
+    const intensity = Math.max(0.3, profile?.intensity ?? settings.shakeIntensity ?? 1);
+    const scatterBase = 70;
+
+    Object.keys(gameState.dominoes).forEach((id) => {
+      const dx = (random() - 0.5) * 2 * scatterBase * intensity;
+      const dy = (random() - 0.5) * 2 * scatterBase * intensity;
+      const daDeg = ((random() - 0.5) * 0.8 * intensity * 180) / Math.PI;
+      const targetDaDeg = ((random() - 0.5) * 0.6 * intensity * 180) / Math.PI;
+      stonePhysics.scatter(id, dx, dy, daDeg, targetDaDeg);
+    });
+
     const slammedDomino = gameState.hardSlamDominoId ? gameState.dominoes[gameState.hardSlamDominoId] : undefined;
     if (slammedDomino) {
       const widthCells = slammedDomino.orientation === 'horizontal' ? 2 : 1;
@@ -611,6 +640,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     gameState.dominoes,
     boardSize,
     GRID_CELL_SIZE,
+    settings.shakeIntensity,
+    stonePhysics,
   ]);
 
   const getBackgroundImage = (backgroundChoice?: string) => {
@@ -991,7 +1022,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // ------------------------------------------------------------------------
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto aspect-square">
+    <div className="relative w-full max-w-4xl mx-auto aspect-square" data-hard-slam-renderer="physics-wrapper">
       {shouldShowPersistentGlove && (
         <div className="pointer-events-none absolute inset-0 z-[95]">
           <div
@@ -1103,7 +1134,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   top: boardSize / 2 + domino.y * GRID_CELL_SIZE,
                   width: w,
                   height: h,
-                  transform: `translate3d(${phys.dx + hardSlamShakeX + hardSlamJump}px, ${phys.dy + hardSlamShakeY + hardSlamJump}px, 0) rotate(${hardSlamAngle}deg) scale(${liftScale})`,
+                  transform: `translate3d(${phys.dx + hardSlamShakeX + hardSlamJump}px, ${phys.dy + hardSlamShakeY + hardSlamJump}px, 0) rotate(${(phys.angleDeg || 0) + hardSlamAngle}deg) scale(${liftScale})`,
                   transformOrigin: 'center center',
                   willChange: physicsEnabled || shouldAnimate ? 'transform, filter' : undefined,
                   filter: hardSlamShadow
@@ -1138,7 +1169,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                       top: 0,
                       width: w,
                       height: h,
-                      transform: `rotate(${domino.rotation || 0}deg)`,
+                      transform: `rotate(${(domino.rotation || 0) + (phys.angleDeg || 0)}deg)`,
                       transformOrigin: 'center',
                       background: 'rgba(255, 80, 80, 0.18)',
                       border: '1px solid rgba(255, 80, 80, 0.7)',
@@ -1159,7 +1190,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               }}
             >
               <div key={hardSlamHandAnimKey} className="hard-slam-hand flex h-14 w-14 items-center justify-center">
-                {renderAnimatedHand(settings.gloveScale || 1, hardSlamGloveSkinConfig)}
+                {renderAnimatedHand(settings.hardSlamGloveScale || settings.gloveScale || 1, hardSlamGloveSkinConfig)}
               </div>
             </div>
           )}
@@ -1327,6 +1358,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             onChange={(e) => setShowCollisionDebug(e.target.checked)}
           />
           Collision-boxes
+        </label>
+        <label className="flex flex-col gap-0.5">
+          <span>Slam intensiteit: {settings.shakeIntensity.toFixed(1)}x</span>
+          <input
+            type="range"
+            min={0.3}
+            max={2}
+            step={0.1}
+            value={settings.shakeIntensity}
+            onChange={(e) => updateShakeIntensity(parseFloat(e.target.value))}
+          />
+        </label>
+        <label className="flex flex-col gap-0.5">
+          <span>Slam duur: {settings.shakeDuration.toFixed(1)}s</span>
+          <input
+            type="range"
+            min={0.5}
+            max={5}
+            step={0.1}
+            value={settings.shakeDuration}
+            onChange={(e) => updateShakeDuration(parseFloat(e.target.value))}
+          />
         </label>
         <label className="flex flex-col gap-0.5">
           <span>Anker: {anchorStrength.toFixed(3)}</span>
