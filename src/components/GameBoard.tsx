@@ -65,6 +65,14 @@ const getDominoNumericId = (dominoId: string): number => {
   return match ? Number(match[1]) : -1;
 };
 
+const createSeededRandom = (seed: number) => {
+  let state = (seed >>> 0) || 1;
+  return () => {
+    state = (1664525 * state + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+};
+
 interface PlaceHandAnimationState {
   dominoId: string;
   left: number;
@@ -102,7 +110,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { settings, applyOriginalRotations, isAnimating, animationMode, updateGlovePosition } = useGameVisualSettings();
+  const {
+    settings,
+    applyOriginalRotations,
+    isAnimating,
+    animationMode,
+    updateGlovePosition,
+    updateShakeIntensity,
+    updateShakeDuration,
+  } = useGameVisualSettings();
   const { getSetting } = useAppSettings();
   const [playerGloveSkinByUserId, setPlayerGloveSkinByUserId] = useState<Record<string, PlayerGloveSkinConfig>>({});
   const [placeHandAnimation, setPlaceHandAnimation] = useState<PlaceHandAnimationState | null>(null);
@@ -117,7 +133,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // --- STAP 1: OBB / SAT physics-laag (debug) -------------------------------
   // Anker start op 0.000: stenen blijven liggen waar collision ze duwt.
   const [physicsEnabled, setPhysicsEnabled] = useState(true);
-  const [anchorStrength, setAnchorStrength] = useState(0);
+  const [anchorStrength, setAnchorStrength] = useState(0.03);
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
   const [physicsPanelOpen, setPhysicsPanelOpen] = useState(false);
   // ------------------------------------------------------------------------
