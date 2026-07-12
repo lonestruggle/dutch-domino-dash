@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation, Trans } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +27,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   // Check if open registration is enabled
   useEffect(() => {
@@ -70,7 +73,7 @@ const Auth = () => {
 
       if (error) {
         console.error('Invitation validation error:', error);
-        setInviteError('Fout bij valideren uitnodigingscode');
+        setInviteError(t('auth.toast.inviteValidationError'));
         return;
       }
 
@@ -78,7 +81,7 @@ const Auth = () => {
       const validationResult = data as any;
 
       if (!validationResult.valid) {
-        setInviteError(validationResult.error || 'Ongeldige uitnodigingscode');
+        setInviteError(validationResult.error || t('auth.toast.invalidInvite'));
         return;
       }
 
@@ -91,7 +94,7 @@ const Auth = () => {
 
       setInviteInfo({
         email: validationResult.invited_email || '', // Handle empty email
-        inviter: inviterData?.username || 'Onbekend'
+        inviter: inviterData?.username || t('auth.unknown')
       });
       
       // Only pre-fill email if invitation has one
@@ -102,7 +105,7 @@ const Auth = () => {
       setInviteError('');
     } catch (error) {
       console.error('Exception validating invitation:', error);
-      setInviteError('Fout bij valideren uitnodigingscode');
+      setInviteError(t('auth.toast.inviteValidationError'));
     }
   };
 
@@ -113,8 +116,8 @@ const Auth = () => {
     if (!email || !password) {
       console.log('Sign in failed: missing email or password');
       toast({
-        title: "Error",
-        description: "Vul alle velden in",
+        title: t('common.error'),
+        description: t('auth.toast.fillAllFields'),
         variant: "destructive",
       });
       return;
@@ -136,8 +139,8 @@ const Auth = () => {
         if (lookupError || !foundEmail) {
           console.log('Username not found:', lookupError);
           toast({
-            title: "Inloggen mislukt",
-            description: "Gebruikersnaam of wachtwoord is onjuist",
+            title: t('auth.toast.loginFailed'),
+            description: t('auth.toast.wrongCredentials'),
             variant: "destructive",
           });
           return;
@@ -158,24 +161,24 @@ const Auth = () => {
       if (error) {
         console.log('Sign in error:', error);
         toast({
-          title: "Inloggen mislukt",
-          description: "Email/gebruikersnaam of wachtwoord is onjuist",
+          title: t('auth.toast.loginFailed'),
+          description: t('auth.toast.wrongCredentialsFull'),
           variant: "destructive",
         });
       } else {
         console.log('Sign in successful, navigating to return URL or home');
         const returnUrl = searchParams.get('returnUrl') || '/';
         toast({
-          title: "Welkom terug!",
-          description: "Je bent succesvol ingelogd",
+          title: t('auth.toast.welcomeBack'),
+          description: t('auth.toast.signInSuccess'),
         });
         navigate(returnUrl);
       }
     } catch (error) {
       console.error('Sign in exception:', error);
       toast({
-        title: "Error",
-        description: "Er is iets misgegaan",
+        title: t('common.error'),
+        description: t('auth.toast.somethingWrong'),
         variant: "destructive",
       });
     } finally {
@@ -193,8 +196,8 @@ const Auth = () => {
     if (!password || !confirmPassword || !username || (emailRequired && !email)) {
       console.log('Sign up failed: missing required fields');
       toast({
-        title: "Error",
-        description: emailRequired ? "Vul alle velden in" : "Vul gebruikersnaam, wachtwoord en bevestig wachtwoord in",
+        title: t('common.error'),
+        description: emailRequired ? t('auth.toast.fillAllFields') : t('auth.toast.fillSignupFields'),
         variant: "destructive",
       });
       return;
@@ -203,8 +206,8 @@ const Auth = () => {
     // Uitnodigingscode is verplicht tenzij open registratie aan staat
     if (!openRegistration && !inviteCode) {
       toast({
-        title: "Error",
-        description: "Uitnodigingscode is verplicht om te registreren",
+        title: t('common.error'),
+        description: t('auth.toast.inviteRequired'),
         variant: "destructive",
       });
       return;
@@ -213,8 +216,8 @@ const Auth = () => {
     // Valideer dat er geldige uitnodigingsinfo is (alleen als invite code is opgegeven)
     if (!openRegistration && inviteCode && !inviteInfo) {
       toast({
-        title: "Error",
-        description: "Ongeldige uitnodigingscode",
+        title: t('common.error'),
+        description: t('auth.toast.invalidInvite'),
         variant: "destructive",
       });
       return;
@@ -223,8 +226,8 @@ const Auth = () => {
     // Email moet overeenkomen met uitnodiging (alleen als uitnodiging een email heeft)
     if (!openRegistration && inviteInfo && inviteInfo.email && email !== inviteInfo.email) {
       toast({
-        title: "Error",
-        description: "Email moet overeenkomen met uitnodiging",
+        title: t('common.error'),
+        description: t('auth.toast.emailMustMatchInvite'),
         variant: "destructive",
       });
       return;
@@ -233,8 +236,8 @@ const Auth = () => {
     if (password !== confirmPassword) {
       console.log('Sign up failed: passwords do not match');
       toast({
-        title: "Error",
-        description: "Wachtwoorden komen niet overeen",
+        title: t('common.error'),
+        description: t('auth.toast.passwordsMismatch'),
         variant: "destructive",
       });
       return;
@@ -243,8 +246,8 @@ const Auth = () => {
     if (password.length < 6) {
       console.log('Sign up failed: password too short');
       toast({
-        title: "Error",
-        description: "Wachtwoord moet minstens 6 karakters zijn",
+        title: t('common.error'),
+        description: t('auth.toast.passwordTooShort'),
         variant: "destructive",
       });
       return;
@@ -253,8 +256,8 @@ const Auth = () => {
     if (username.length < 3) {
       console.log('Sign up failed: username too short');
       toast({
-        title: "Error",
-        description: "Gebruikersnaam moet minstens 3 karakters zijn",
+        title: t('common.error'),
+        description: t('auth.toast.usernameTooShort'),
         variant: "destructive",
       });
       return;
@@ -282,7 +285,7 @@ const Auth = () => {
       if (error) {
         console.log('Sign up error:', error);
         toast({
-          title: "Registratie mislukt",
+          title: t('auth.toast.signupFailed'),
           description: error.message,
           variant: "destructive",
         });
@@ -306,10 +309,10 @@ const Auth = () => {
 
         console.log('Sign up successful');
         toast({
-          title: "Registratie succesvol!",
+          title: t('auth.toast.signupSuccess'),
           description: inviteCode 
-            ? "Account aangemaakt via uitnodiging! Controleer je email om te bevestigen."
-            : "Controleer je email om je account te bevestigen",
+            ? t('auth.toast.signupInviteCheckEmail')
+            : t('auth.toast.signupCheckEmail'),
         });
         // Clear form
         setEmail('');
@@ -321,8 +324,8 @@ const Auth = () => {
     } catch (error) {
       console.error('Sign up exception:', error);
       toast({
-        title: "Error",
-        description: "Er is iets misgegaan",
+        title: t('common.error'),
+        description: t('auth.toast.somethingWrong'),
         variant: "destructive",
       });
     } finally {
@@ -334,10 +337,9 @@ const Auth = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Wegi Domino</CardTitle>
-          <CardDescription>
-            Log in of registreer je via uitnodiging om te spelen
-          </CardDescription>
+          <div className="flex justify-end mb-2"><LanguageSwitcher /></div>
+          <CardTitle className="text-2xl font-bold">{t('auth.brand')}</CardTitle>
+          <CardDescription>{t('auth.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           {/* Show invite info if present */}
@@ -345,7 +347,7 @@ const Auth = () => {
             <Alert className="mb-4 border-green-200 bg-green-50">
               <UserCheck className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                Je bent uitgenodigd door <strong>{inviteInfo.inviter}</strong> voor {inviteInfo.email}
+                <Trans i18nKey="auth.invitedBy" values={{ inviter: inviteInfo.inviter, email: inviteInfo.email }} components={{ 1: <strong /> }} />
               </AlertDescription>
             </Alert>
           )}
@@ -362,25 +364,25 @@ const Auth = () => {
           
           <Tabs defaultValue={searchParams.get('tab') === 'signup' ? 'signup' : 'signin'} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Inloggen</TabsTrigger>
-              <TabsTrigger value="signup">Registreren</TabsTrigger>
+              <TabsTrigger value="signin">{t('auth.signIn')}</TabsTrigger>
+              <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email of Gebruikersnaam</Label>
+                  <Label htmlFor="email">{t('auth.emailOrUsername')}</Label>
                   <Input
                     id="email"
                     type="text"
-                    placeholder="je@email.com of gebruikersnaam"
+                    placeholder={t('auth.emailOrUsernamePh')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Wachtwoord</Label>
+                  <Label htmlFor="password">{t('auth.password')}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -394,10 +396,10 @@ const Auth = () => {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Inloggen...
+                      {t('auth.signingIn')}
                     </>
                   ) : (
-                    'Inloggen'
+                    t('auth.signIn')
                   )}
                 </Button>
               </form>
@@ -408,11 +410,11 @@ const Auth = () => {
                 {/* Uitnodigingscode - niet nodig bij open registratie */}
                 {!openRegistration && !inviteInfo && (
                   <div className="space-y-2">
-                    <Label htmlFor="invite-code">Uitnodigingscode *</Label>
+                    <Label htmlFor="invite-code">{t('auth.inviteCode')}</Label>
                     <Input
                       id="invite-code"
                       type="text"
-                      placeholder="Voer je uitnodigingscode in"
+                      placeholder={t('auth.inviteCodePh')}
                       value={inviteCode}
                       onChange={(e) => {
                         const code = e.target.value;
@@ -427,24 +429,24 @@ const Auth = () => {
                       required
                     />
                     <p className="text-sm text-muted-foreground">
-                      Je hebt een uitnodigingscode nodig om te registreren
+                      {t('auth.inviteCodeHelp')}
                     </p>
                   </div>
                 )}
                 {openRegistration && (
                   <Alert className="border-blue-200 bg-blue-50">
                     <AlertDescription className="text-blue-800">
-                      Open registratie is actief — geen uitnodigingscode nodig!
+                      {t('auth.openRegistrationActive')}
                     </AlertDescription>
                   </Alert>
                 )}
                 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-username">Gebruikersnaam</Label>
+                  <Label htmlFor="signup-username">{t('auth.username')}</Label>
                   <Input
                     id="signup-username"
                     type="text"
-                    placeholder="JeNaam"
+                    placeholder={t('auth.usernamePh')}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
@@ -452,12 +454,12 @@ const Auth = () => {
                 </div>
                  <div className="space-y-2">
                    <Label htmlFor="signup-email">
-                     Email {inviteInfo && inviteInfo.email ? '*' : '(optioneel)'}
+                     {t('auth.emailLabel')} {inviteInfo && inviteInfo.email ? '*' : t('auth.emailOptional')}
                    </Label>
                    <Input
                      id="signup-email"
                      type="email"
-                     placeholder={inviteInfo && inviteInfo.email ? inviteInfo.email : "je@email.com (optioneel)"}
+                     placeholder={inviteInfo && inviteInfo.email ? inviteInfo.email : t('auth.emailPh')}
                      value={email}
                      onChange={(e) => setEmail(e.target.value)}
                      disabled={!!(inviteInfo && inviteInfo.email)} // Disable if invite has specific email
@@ -465,7 +467,7 @@ const Auth = () => {
                    />
                  </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Wachtwoord</Label>
+                  <Label htmlFor="signup-password">{t('auth.password')}</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -476,7 +478,7 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Bevestig Wachtwoord</Label>
+                  <Label htmlFor="confirm-password">{t('auth.confirmPassword')}</Label>
                   <Input
                     id="confirm-password"
                     type="password"
@@ -490,10 +492,10 @@ const Auth = () => {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Registreren...
+                      {t('auth.signingUp')}
                     </>
                   ) : (
-                    'Account Aanmaken'
+                    t('auth.createAccount')
                   )}
                 </Button>
                 
@@ -506,7 +508,7 @@ const Auth = () => {
                     className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Instagram className="h-4 w-4" />
-                    Volg ons op Instagram @wegidomino
+                    {t('auth.followInstagram')}
                   </a>
                 </div>
               </form>
