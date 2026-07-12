@@ -11,6 +11,17 @@ type Orientation = 'horizontal' | 'vertical';
 
 const isDouble = (d: DominoData) => d?.value1 === d?.value2;
 
+const naturalFixRotation = (dominoId: string, index: number): number => {
+  let hash = 2166136261 >>> 0;
+  for (let i = 0; i < dominoId.length; i += 1) {
+    hash ^= dominoId.charCodeAt(i);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  const magnitude = 1.2 + ((hash % 1800) / 1000); // 1.2 .. 3.0 graden
+  const sign = ((hash + index) & 1) === 0 ? 1 : -1;
+  return Number((magnitude * sign).toFixed(2));
+};
+
 // ---------- hasDifferentNeighbor (pure) ----------
 const hasDifferentNeighbor = (board: GameState['board'], x: number, y: number): boolean => {
   const n = [
@@ -273,7 +284,7 @@ const applyMove = (state: GameState, move: PureLegalMove, dominoId: string): Gam
   const dominoState: DominoState = {
     data: dominoData, x, y, orientation, flipped,
     isSpinner: isDouble(dominoData),
-    rotation: 0, rotationX: 0, rotationY: 0, rotationZ: 0,
+    rotation: naturalFixRotation(dominoId, 0), rotationX: 0, rotationY: 0, rotationZ: 0,
   };
 
   const pips = flipped
@@ -335,7 +346,7 @@ export const stableRelayoutTableState = (
     orientation: firstOrientation,
     flipped: false,
     isSpinner: firstIsDouble,
-    rotation: 0, rotationX: 0, rotationY: 0, rotationZ: 0,
+    rotation: naturalFixRotation(firstId, 0), rotationX: 0, rotationY: 0, rotationZ: 0,
   };
 
   const initBoard: GameState['board'] = {};
@@ -361,6 +372,20 @@ export const stableRelayoutTableState = (
     moves.sort((a, b) => scoreMoveForL(b, i, total) - scoreMoveForL(a, i, total));
     const chosen = moves[0];
     working = applyMove(working, chosen, dominoId);
+    const placed = working.dominoes[dominoId];
+    working = {
+      ...working,
+      dominoes: {
+        ...working.dominoes,
+        [dominoId]: {
+          ...placed,
+          rotation: naturalFixRotation(dominoId, i),
+          rotationX: 0,
+          rotationY: 0,
+          rotationZ: 0,
+        },
+      },
+    };
   }
 
   const finalOpenEnds = regenerateOpenEnds(working);

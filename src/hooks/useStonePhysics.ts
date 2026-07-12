@@ -48,10 +48,9 @@ function bodyOBB(b: PhysicsBody, cell: number): OBB {
   const isH = b.orientation === 'horizontal';
   const w = isH ? cell * 2 : cell;
   const h = isH ? cell : cell * 2;
-  // Contact-tolerance: bij kleine rotaties (Fix stenen wobble ±2°) mogen
-  // corners minimaal overlappen zonder dat SAT ze uit elkaar duwt, zodat
-  // stenen langs de aanlegzijde tegen elkaar blijven kleven.
-  const tol = Math.min(2.5, cell * 0.06);
+  // Kleine tolerance: genoeg om subpixel-trillingen te voorkomen, maar niet
+  // zo groot dat licht geroteerde gefixte stenen strak aan elkaar blijven kleven.
+  const tol = Math.min(0.75, cell * 0.018);
   return {
     cx: b.cx,
     cy: b.cy,
@@ -145,6 +144,7 @@ export function useStonePhysics(
   // update baseCx/baseCy + angle voor bestaande).
   useEffect(() => {
     const m = bodiesRef.current;
+    let snappedToNewBases = false;
     const ids = new Set(Object.keys(dominoes));
     for (const id of Array.from(m.keys())) {
       if (!ids.has(id)) m.delete(id);
@@ -170,11 +170,29 @@ export function useStonePhysics(
           ghostUntilClear: false,
         });
       } else {
+        const baseChanged =
+          Math.abs(existing.baseCx - baseCx) > 0.5 ||
+          Math.abs(existing.baseCy - baseCy) > 0.5 ||
+          existing.orientation !== d.orientation;
         existing.baseCx = baseCx;
         existing.baseCy = baseCy;
         existing.angle = angle;
         existing.orientation = d.orientation;
+        // Als "Fix stenen" dezelfde domino-id's naar nieuwe grid-posities legt,
+        // moeten bestaande physics-bodies meteen naar hun nieuwe anker springen.
+        // Anders blijft de eerste klik visueel op de oude layout hangen en lijkt
+        // pas de tweede klik goed te werken.
+        if (baseChanged) {
+          existing.cx = baseCx;
+          existing.cy = baseCy;
+          existing.ghostUntilClear = false;
+          snappedToNewBases = true;
+        }
       }
+    }
+    if (snappedToNewBases) {
+      offsetsRef.current.clear();
+      forceTick((t) => (t + 1) & 0xffff);
     }
   }, [dominoes, gridCellSize]);
 

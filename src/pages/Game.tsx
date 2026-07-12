@@ -945,7 +945,7 @@ const relayoutTableState = (
     const placement = placements[index];
     const seed = parseDominoIndex(dominoId) + 1;
     const wobble = (((seed * 2654435761) >>> 0) % 100) / 100;
-    const rotationOffset = index === 0 ? 0 : (wobble - 0.5) * 4;
+    const rotationOffset = Number((((wobble - 0.5) * 3.6) || 1.2).toFixed(2));
     const relaidDomino = {
       ...domino,
       x: placement.x,
@@ -953,7 +953,7 @@ const relayoutTableState = (
       orientation: placement.orientation,
       flipped: placement.flipped,
       rotation: rotationOffset,
-      rotationZ: rotationOffset,
+      rotationZ: 0,
       rotationX: 0,
       rotationY: 0,
     };
@@ -1538,11 +1538,16 @@ export default function Game() {
     updateGameState(consolidatedState, syncState.currentPlayer);
     moveAnimationLockUntilRef.current = Date.now() + 320;
 
-    // Reset alle physics-offsets zodat stenen direct op hun grid-anker
-    // starten en meteen tegen elkaar aanliggen (contact-snap).
+    // Reset pas na de render-cycle, zodat physics de nieuwe grid-ankers ziet.
+    // Direct resetten gebruikte op mobiel soms nog de oude ankers, waardoor
+    // de eerste fix-click visueel verkeerd uitpakte en de tweede pas goed was.
     try {
-      (window as unknown as { stonePhysics?: { resetAll: () => void } })
-        .stonePhysics?.resetAll();
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          (window as unknown as { stonePhysics?: { resetAll: () => void } })
+            .stonePhysics?.resetAll();
+        });
+      });
     } catch { /* physics niet beschikbaar */ }
 
     const lShape = analyzeLShapeFromChain(relaidState);
