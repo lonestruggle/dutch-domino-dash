@@ -48,6 +48,8 @@
     "confirmPassword": "Confirm Password",
     "signingIn": "Logging in...",
     "signingUp": "Signing up...",
+    "createAccount": "Create Account",
+    "followInstagram": "Follow us on Instagram @wegidomino",
     "invitedBy": "You were invited by <1>{{inviter}}</1> for {{email}}",
     "unknown": "Unknown",
     "inviteCode": "Invitation code *",
