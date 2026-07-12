@@ -82,5 +82,36 @@
       "signupCheckEmail": "Controleer je email om je account te bevestigen",
       "signupInviteCheckEmail": "Account aangemaakt via uitnodiging! Controleer je email om te bevestigen."
     }
+  },
+  "game": {
+    "fixTiles": "Fix stenen",
+    "fixing": "Fixen...",
+    "pass": "Pas",
+    "boneyard": "Boneyard",
+    "drawFromBoneyard": "Trek uit Boneyard",
+    "hardSlam": "Hard Slam!",
+    "hardSlamReady": "Hard Slam Ready!",
+    "yourTurn": "Jouw beurt",
+    "waitingFor": "Wachten op {{name}}...",
+    "gameOver": "Spel afgelopen",
+    "youWin": "Je hebt gewonnen!",
+    "youLose": "Helaas, je hebt verloren.",
+    "blocked": "Spel geblokkeerd! Geen zetten mogelijk.",
+    "noMovesDraw": "Geen zetten mogelijk. Trek een steen.",
+    "selectStone": "Jouw beurt. Selecteer een steen.",
+    "notYourTurn": "Het is niet jouw beurt!",
+    "notAvailable": "Niet beschikbaar",
+    "showResult": "Resultaat tonen"
+  },
+  "lobby": {
+    "title": "Lobby's",
+    "createGame": "Maak Spel",
+    "joinGame": "Doe mee",
+    "leaveGame": "Verlaat Spel",
+    "startGame": "Start Spel",
+    "waitingPlayers": "Wachten op spelers... ({{count}}/{{max}})",
+    "gameName": "Spelnaam",
+    "players": "Spelers",
+    "hostBadge": "Host"
   }
 }

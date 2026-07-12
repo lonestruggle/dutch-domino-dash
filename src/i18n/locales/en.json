@@ -82,5 +82,36 @@
       "signupCheckEmail": "Check your email to confirm your account",
       "signupInviteCheckEmail": "Account created via invitation! Check your email to confirm."
     }
+  },
+  "game": {
+    "fixTiles": "Fix tiles",
+    "fixing": "Fixing...",
+    "pass": "Pass",
+    "boneyard": "Boneyard",
+    "drawFromBoneyard": "Draw from Boneyard",
+    "hardSlam": "Hard Slam!",
+    "hardSlamReady": "Hard Slam Ready!",
+    "yourTurn": "Your turn",
+    "waitingFor": "Waiting for {{name}}...",
+    "gameOver": "Game Over",
+    "youWin": "You won!",
+    "youLose": "You lost.",
+    "blocked": "Game blocked! No moves possible.",
+    "noMovesDraw": "No moves possible. Draw a tile.",
+    "selectStone": "Your turn. Select a tile.",
+    "notYourTurn": "It's not your turn!",
+    "notAvailable": "Not available",
+    "showResult": "Show result"
+  },
+  "lobby": {
+    "title": "Lobbies",
+    "createGame": "Create Game",
+    "joinGame": "Join",
+    "leaveGame": "Leave Game",
+    "startGame": "Start Game",
+    "waitingPlayers": "Waiting for players... ({{count}}/{{max}})",
+    "gameName": "Game name",
+    "players": "Players",
+    "hostBadge": "Host"
   }
 }
