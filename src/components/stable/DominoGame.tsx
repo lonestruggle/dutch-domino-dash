@@ -212,6 +212,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
     console.warn('passMove function not available');
   });
 
+  const [devConsoleVisible, setDevConsoleVisible] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('devConsoleVisible') === 'true';
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('devConsoleVisible', String(devConsoleVisible));
+  }, [devConsoleVisible]);
+
   const blockedDebug = useMemo(() => {
     if (!gameState) return null;
 
@@ -424,14 +433,6 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   };
 
   const canInspectBotHands = isAdmin || isDev;
-  const [devConsoleVisible, setDevConsoleVisible] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem('devConsoleVisible') === 'true';
-  });
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem('devConsoleVisible', String(devConsoleVisible));
-  }, [devConsoleVisible]);
   const showDevLockstepInfo = canInspectBotHands && devConsoleVisible;
   const adminBoneyardFaceUp = isAdmin && Boolean(getSetting('admin_boneyard_face_up', false));
   const visibleBotHandPlayer = visibleBotHandPosition !== null
