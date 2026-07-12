@@ -612,44 +612,31 @@ export const useDominoGame = (localPlayerPosition?: number) => {
           // Then add comprehensive forbidden positions around it
           let dir = end.fromDir;
           if (dir === 'N') {
-            // Forbidden positions around North direction for doubles
-            newForbiddens[`${x - 1},${y + 2}`] = true;
-            newForbiddens[`${x + 1},${y + 2}`] = true;
+            // Forbidden posities alleen direct naast de dubbel (langs zijkanten),
+            // NIET aan de "far side" richting de bestaande keten — dat blokkeert
+            // legitieme N/S plaatsingen op het andere uiteinde.
             newForbiddens[`${x - 1},${y + 1}`] = true;
             newForbiddens[`${x + 1},${y + 1}`] = true;
-            newForbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
-            newForbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
-            newForbiddens[`${x},${y + 2}`] = true;
+            newForbiddens[`${x - 1},${y}`] = true;
+            newForbiddens[`${x + 1},${y}`] = true;
           }
           if (dir === 'S') {
-            // Forbidden positions around South direction for doubles
             newForbiddens[`${x - 1},${y - 1}`] = true;
             newForbiddens[`${x + 1},${y - 1}`] = true;
-            newForbiddens[`${x - 1},${y - 2}`] = true;
-            newForbiddens[`${x + 1},${y - 2}`] = true;
-            newForbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
-            newForbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
-            newForbiddens[`${x},${y - 2}`] = true;
+            newForbiddens[`${x - 1},${y}`] = true;
+            newForbiddens[`${x + 1},${y}`] = true;
           }
           if (dir === 'E') {
-            // Forbidden positions around East direction for doubles
-            newForbiddens[`${x - 1},${y + 1}`] = true;
-            newForbiddens[`${x - 1},${y - 1}`] = true;
-            newForbiddens[`${x - 2},${y + 1}`] = true;
-            newForbiddens[`${x - 2},${y - 1}`] = true;
-            newForbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
-            newForbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
-            newForbiddens[`${x - 2},${y}`] = true;
-          }
-          if (dir === 'W') {
-            // Forbidden positions around West direction for doubles
+            newForbiddens[`${x},${y + 1}`] = true;
+            newForbiddens[`${x},${y - 1}`] = true;
             newForbiddens[`${x + 1},${y + 1}`] = true;
             newForbiddens[`${x + 1},${y - 1}`] = true;
-            newForbiddens[`${x + 2},${y + 1}`] = true;
-            newForbiddens[`${x + 2},${y - 1}`] = true;
-            newForbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
-            newForbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
-            newForbiddens[`${x + 2},${y}`] = true;
+          }
+          if (dir === 'W') {
+            newForbiddens[`${x},${y + 1}`] = true;
+            newForbiddens[`${x},${y - 1}`] = true;
+            newForbiddens[`${x - 1},${y + 1}`] = true;
+            newForbiddens[`${x - 1},${y - 1}`] = true;
           }
         } else {
           let dir = end.fromDir;
