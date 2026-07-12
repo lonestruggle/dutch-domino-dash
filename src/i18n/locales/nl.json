@@ -48,6 +48,8 @@
     "confirmPassword": "Bevestig Wachtwoord",
     "signingIn": "Inloggen...",
     "signingUp": "Registreren...",
+    "createAccount": "Account Aanmaken",
+    "followInstagram": "Volg ons op Instagram @wegidomino",
     "invitedBy": "Je bent uitgenodigd door <1>{{inviter}}</1> voor {{email}}",
     "unknown": "Onbekend",
     "inviteCode": "Uitnodigingscode *",
