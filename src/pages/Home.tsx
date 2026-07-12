@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +11,7 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { Play, Users, UserCircle, LogOut, LogIn, Settings, UserPlus } from 'lucide-react';
 import { DominoIcon } from '@/components/DominoIcon';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -16,6 +19,8 @@ export default function Home() {
   const { trackPageView } = useAnalytics();
   const { getSetting } = useAppSettings();
   const [username, setUsername] = useState<string>('');
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.resolvedLanguage || i18n.language || 'nl').slice(0, 2);
 
   useEffect(() => {
     trackPageView('home');
@@ -58,6 +63,13 @@ export default function Home() {
         backgroundRepeat: 'no-repeat'
       }}
     >
+      <Helmet>
+        <html lang={lang} />
+        <title>{t('home.metaTitle')}</title>
+        <meta name="description" content={t('home.metaDescription')} />
+        <meta property="og:title" content={t('home.metaTitle')} />
+        <meta property="og:description" content={t('home.metaDescription')} />
+      </Helmet>
       {/* Dark overlay for better readability */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
       
@@ -69,30 +81,31 @@ export default function Home() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <DominoIcon className="h-8 w-8 text-white" size={32} />
-                <span className="font-bold text-xl text-white">Wegi Domino</span>
+                <span className="font-bold text-xl text-white">{t('home.brand')}</span>
               </div>
               
               <div className="flex w-full sm:w-auto flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                <LanguageSwitcher variant="light" className="self-end sm:self-auto" />
                 {isAuthenticated && user ? (
                   <>
                      <div className="flex items-center gap-2 text-white">
                        <UserCircle className="h-5 w-5" />
-                       <span className="text-sm font-medium">Welkom, {username || user.email}</span>
+                       <span className="text-sm font-medium">{t('nav.welcome', { name: username || user.email })}</span>
                      </div>
                     <Button variant="outline" size="sm" onClick={() => navigate('/profile')} className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20">
                       <UserCircle className="mr-2 h-4 w-4" />
-                      Profiel
+                      {t('nav.profile')}
                     </Button>
                     <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20">
                       <LogOut className="mr-2 h-4 w-4" />
-                      Uitloggen
+                      {t('nav.logout')}
                     </Button>
                   </>
                 ) : (
                   <div className="flex w-full sm:w-auto flex-col gap-2 sm:flex-row">
                     <Button onClick={() => navigate('/auth')} className="w-full sm:w-auto bg-primary hover:bg-primary/80 text-white">
                       <LogIn className="mr-2 h-4 w-4" />
-                      Inloggen
+                      {t('nav.login')}
                     </Button>
                     <Button 
                       onClick={() => navigate('/auth?tab=signup')} 
@@ -100,7 +113,7 @@ export default function Home() {
                       className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20"
                     >
                       <UserPlus className="mr-2 h-4 w-4" />
-                      Registreren
+                      {t('nav.register')}
                     </Button>
                   </div>
                 )}
@@ -115,13 +128,10 @@ export default function Home() {
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <DominoIcon className="h-12 w-12 text-white" size={48} />
-                <h1 className="text-4xl font-bold text-white drop-shadow-2xl">Domino Game</h1>
+                <h1 className="text-4xl font-bold text-white drop-shadow-2xl">{t('home.title')}</h1>
               </div>
               <p className="text-lg text-white/90 drop-shadow-lg">
-                {isAuthenticated ? 
-                  'Kies je spelmodus en begin met spelen!' : 
-                  'Log in om je voortgang bij te houden en te spelen met anderen!'
-                }
+                {isAuthenticated ? t('home.subtitleAuthed') : t('home.subtitleGuest')}
               </p>
             </div>
 
@@ -132,11 +142,11 @@ export default function Home() {
                     <div className="mx-auto mb-4 p-3 bg-white/20 rounded-full w-fit">
                       <Play className="h-8 w-8 text-white" />
                     </div>
-                    <CardTitle className="text-xl text-white">Single Player</CardTitle>
+                    <CardTitle className="text-xl text-white">{t('home.singlePlayer')}</CardTitle>
                   </CardHeader>
                   <CardContent className="text-center space-y-4">
                     <p className="text-white/80">
-                      Speel tegen de computer en oefen je vaardigheden
+                      {t('home.singlePlayerDesc')}
                     </p>
                     <Button 
                       onClick={() => navigate('/single-player')} 
@@ -144,7 +154,7 @@ export default function Home() {
                       size="lg"
                       disabled
                     >
-                      Tijdelijk Buiten Gebruik
+                      {t('home.singlePlayerDisabled')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -155,11 +165,11 @@ export default function Home() {
                   <div className="mx-auto mb-4 p-3 bg-white/20 rounded-full w-fit">
                     <Users className="h-8 w-8 text-white" />
                   </div>
-                  <CardTitle className="text-xl text-white">Multiplayer</CardTitle>
+                  <CardTitle className="text-xl text-white">{t('home.multiplayer')}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center space-y-4">
                   <p className="text-white/80">
-                    Speel met vrienden online (maximaal 4 spelers)
+                    {t('home.multiplayerDesc')}
                   </p>
                   <div className="grid gap-2">
                     <Button 
@@ -167,7 +177,7 @@ export default function Home() {
                       className="w-full bg-primary hover:bg-primary/80 text-white"
                       size="lg"
                     >
-                      Join Multiplayer
+                      {t('home.joinMultiplayer')}
                     </Button>
                     <Button 
                       onClick={() => navigate('/scoreboard')} 
@@ -175,7 +185,7 @@ export default function Home() {
                       className="w-full border-white/30 bg-white/10 text-white hover:bg-white/20"
                       size="lg"
                     >
-                      Scoreboard
+                      {t('home.scoreboard')}
                     </Button>
                   </div>
                 </CardContent>
@@ -184,7 +194,7 @@ export default function Home() {
 
             <div className="mt-8 text-center">
               <p className="text-sm text-white/60">
-                Maak lobby's aan, join bestaande games en speel real-time met anderen
+                {t('home.footer')}
               </p>
             </div>
           </div>
