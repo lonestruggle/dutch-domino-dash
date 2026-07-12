@@ -619,7 +619,6 @@ export const useDominoGame = (localPlayerPosition?: number) => {
             newForbiddens[`${x + 1},${y + 1}`] = true;
             newForbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
             newForbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
-            newForbiddens[`${x},${y + 3}`] = true;
             newForbiddens[`${x},${y + 2}`] = true;
           }
           if (dir === 'S') {
@@ -631,7 +630,6 @@ export const useDominoGame = (localPlayerPosition?: number) => {
             newForbiddens[`${x - 1},${y}`] = true;     // Direct adjacent
             newForbiddens[`${x + 1},${y}`] = true;     // Direct adjacent
             newForbiddens[`${x},${y - 2}`] = true;
-            newForbiddens[`${x},${y - 3}`] = true;
           }
           if (dir === 'E') {
             // Forbidden positions around East direction for doubles
@@ -642,7 +640,6 @@ export const useDominoGame = (localPlayerPosition?: number) => {
             newForbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
             newForbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
             newForbiddens[`${x - 2},${y}`] = true;
-            newForbiddens[`${x - 3},${y}`] = true;
           }
           if (dir === 'W') {
             // Forbidden positions around West direction for doubles
@@ -653,7 +650,6 @@ export const useDominoGame = (localPlayerPosition?: number) => {
             newForbiddens[`${x},${y + 1}`] = true;     // Direct adjacent
             newForbiddens[`${x},${y - 1}`] = true;     // Direct adjacent
             newForbiddens[`${x + 2},${y}`] = true;
-            newForbiddens[`${x + 3},${y}`] = true;
           }
         } else {
           let dir = end.fromDir;
