@@ -612,7 +612,7 @@ const Profile = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <UserPlus className="h-5 w-5" />
-                    Referral {t('profile.achievements')}
+                    {t('profile.referralAchievements')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
