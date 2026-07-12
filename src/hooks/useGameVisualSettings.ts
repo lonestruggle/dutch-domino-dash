@@ -79,7 +79,7 @@ const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   rotateZ: 65.5,
   rotationSpeed: 5,
   shakeIntensity: 0.6,
-  shakeDuration: 0.6,
+  shakeDuration: 1.5,
   dominoWidth: 64,
   dominoHeight: 32,
   dominoThickness: 8,
@@ -600,6 +600,7 @@ const useGameVisualSettingsState = () => {
 
     setTimeout(() => {
       const allBoardDominoes = getBoardDominoElements();
+      const boardUsesCanvasDemoPhysics = Boolean(document.querySelector('[data-hard-slam-renderer="physics-wrapper"]'));
       const randomSource = profile ? createSeededRandom(profile.seed) : Math.random;
       randomSeedsRef.current = Array.from({ length: allBoardDominoes.length }, () => randomSource() * 10000);
 
@@ -638,24 +639,26 @@ const useGameVisualSettingsState = () => {
             elapsedTime,
           });
 
-          animatedDominoes.forEach((domino: Element) => {
-            const htmlDomino = domino as HTMLElement;
-            const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
+          if (!boardUsesCanvasDemoPhysics) {
+            animatedDominoes.forEach((domino: Element) => {
+              const htmlDomino = domino as HTMLElement;
+              const originalRotationZ = parseFloat(htmlDomino.dataset.originalRotation || '0');
 
-            // Per-frame random translate + kleine 2D-rotatie + pop-scale
-            // (zelfde recept als CanvasDemo shakeX/Y/A/lift).
-            const shakeX = (Math.random() - 0.5) * 15 * env * intensity;
-            const shakeY = (Math.random() - 0.5) * 15 * env * intensity;
-            const shakeADeg = (Math.random() - 0.5) * 5.7 * env * intensity;
-            const popScale = 1 + env * intensity * 0.12;
+              // Per-frame random translate + kleine 2D-rotatie + pop-scale
+              // (zelfde recept als CanvasDemo shakeX/Y/A/lift).
+              const shakeX = (Math.random() - 0.5) * 15 * env * intensity;
+              const shakeY = (Math.random() - 0.5) * 15 * env * intensity;
+              const shakeADeg = (Math.random() - 0.5) * 5.7 * env * intensity;
+              const popScale = 1 + env * intensity * 0.12;
 
-            const currentTransform = htmlDomino.style.transform || '';
-            const baseTransform = currentTransform
-              .replace(/translate3d\([^)]*\)|rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)|scale\([^)]*\)/g, '')
-              .trim();
-            htmlDomino.style.transform =
-              `${baseTransform} translate3d(${shakeX}px, ${shakeY}px, 0) rotateZ(${originalRotationZ + shakeADeg}deg) scale(${popScale})`.trim();
-          });
+              const currentTransform = htmlDomino.style.transform || '';
+              const baseTransform = currentTransform
+                .replace(/translate3d\([^)]*\)|rotateX\([^)]*\)|rotateY\([^)]*\)|rotateZ\([^)]*\)|scale\([^)]*\)/g, '')
+                .trim();
+              htmlDomino.style.transform =
+                `${baseTransform} translate3d(${shakeX}px, ${shakeY}px, 0) rotateZ(${originalRotationZ + shakeADeg}deg) scale(${popScale})`.trim();
+            });
+          }
 
           animationRef.current.current = requestAnimationFrame(animate);
           return;
