@@ -132,7 +132,7 @@ export function useStonePhysics(
   options: UseStonePhysicsOptions,
 ): StonePhysicsAPI {
   const bodiesRef = useRef<Map<string, PhysicsBody>>(new Map());
-  const offsetsRef = useRef<Map<string, { dx: number; dy: number; z: number }>>(
+  const offsetsRef = useRef<Map<string, { dx: number; dy: number; z: number; angleDeg: number }>>(
     new Map(),
   );
   /** Pending seeds: key = `${gridX},${gridY}` → {dx, dy}. */
