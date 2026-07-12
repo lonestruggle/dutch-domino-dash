@@ -592,9 +592,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       (hardSlamEndMs > 0 && Date.now() < hardSlamEndMs);
 
     if (!eventId || !isHardSlamActive) return;
+    if (gameState.hardSlamDominoId && !gameState.dominoes[gameState.hardSlamDominoId]) return;
     if (lastHardSlamEventRef.current === eventId) return;
 
     lastHardSlamEventRef.current = eventId;
+    const random = profile ? createSeededRandom(profile.seed) : Math.random;
+    const intensity = Math.max(0.3, profile?.intensity ?? settings.shakeIntensity ?? 1);
+    const scatterBase = 70;
+
+    Object.keys(gameState.dominoes).forEach((id) => {
+      const dx = (random() - 0.5) * 2 * scatterBase * intensity;
+      const dy = (random() - 0.5) * 2 * scatterBase * intensity;
+      const daDeg = ((random() - 0.5) * 0.8 * intensity * 180) / Math.PI;
+      const targetDaDeg = ((random() - 0.5) * 0.6 * intensity * 180) / Math.PI;
+      stonePhysics.scatter(id, dx, dy, daDeg, targetDaDeg);
+    });
+
     const slammedDomino = gameState.hardSlamDominoId ? gameState.dominoes[gameState.hardSlamDominoId] : undefined;
     if (slammedDomino) {
       const widthCells = slammedDomino.orientation === 'horizontal' ? 2 : 1;
@@ -627,6 +640,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     gameState.dominoes,
     boardSize,
     GRID_CELL_SIZE,
+    settings.shakeIntensity,
+    stonePhysics,
   ]);
 
   const getBackgroundImage = (backgroundChoice?: string) => {
