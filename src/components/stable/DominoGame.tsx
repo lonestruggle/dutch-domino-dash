@@ -716,7 +716,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   size="sm"
                   className="text-xs"
                 >
-                  {isFixingTable ? 'Fixen...' : `Fix stenen (${activeFixLayout.label})`}
+                  {isFixingTable ? 'Fixen...' : 'Fix stenen'}
                 </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
@@ -790,7 +790,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   disabled={!canFixTable}
                   variant="outline"
                 >
-                  {isFixingTable ? 'Fixen...' : `Fix stenen (${activeFixLayout.label})`}
+                  {isFixingTable ? 'Fixen...' : 'Fix stenen'}
                 </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
