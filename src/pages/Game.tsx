@@ -1538,11 +1538,16 @@ export default function Game() {
     updateGameState(consolidatedState, syncState.currentPlayer);
     moveAnimationLockUntilRef.current = Date.now() + 320;
 
-    // Reset alle physics-offsets zodat stenen direct op hun grid-anker
-    // starten en meteen tegen elkaar aanliggen (contact-snap).
+    // Reset pas na de render-cycle, zodat physics de nieuwe grid-ankers ziet.
+    // Direct resetten gebruikte op mobiel soms nog de oude ankers, waardoor
+    // de eerste fix-click visueel verkeerd uitpakte en de tweede pas goed was.
     try {
-      (window as unknown as { stonePhysics?: { resetAll: () => void } })
-        .stonePhysics?.resetAll();
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          (window as unknown as { stonePhysics?: { resetAll: () => void } })
+            .stonePhysics?.resetAll();
+        });
+      });
     } catch { /* physics niet beschikbaar */ }
 
     const lShape = analyzeLShapeFromChain(relaidState);

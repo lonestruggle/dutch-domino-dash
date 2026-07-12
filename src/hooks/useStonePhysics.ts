@@ -144,6 +144,7 @@ export function useStonePhysics(
   // update baseCx/baseCy + angle voor bestaande).
   useEffect(() => {
     const m = bodiesRef.current;
+    let snappedToNewBases = false;
     const ids = new Set(Object.keys(dominoes));
     for (const id of Array.from(m.keys())) {
       if (!ids.has(id)) m.delete(id);
@@ -185,8 +186,13 @@ export function useStonePhysics(
           existing.cx = baseCx;
           existing.cy = baseCy;
           existing.ghostUntilClear = false;
+          snappedToNewBases = true;
         }
       }
+    }
+    if (snappedToNewBases) {
+      offsetsRef.current.clear();
+      forceTick((t) => (t + 1) & 0xffff);
     }
   }, [dominoes, gridCellSize]);
 
