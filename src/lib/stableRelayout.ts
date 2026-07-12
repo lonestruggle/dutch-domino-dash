@@ -232,22 +232,22 @@ const applyMove = (state: GameState, move: PureLegalMove, dominoId: string): Gam
       newForbiddens[`${x - 1},${y + 2}`] = true; newForbiddens[`${x + 1},${y + 2}`] = true;
       newForbiddens[`${x - 1},${y + 1}`] = true; newForbiddens[`${x + 1},${y + 1}`] = true;
       newForbiddens[`${x - 1},${y}`] = true;     newForbiddens[`${x + 1},${y}`] = true;
-      newForbiddens[`${x},${y + 3}`] = true;     newForbiddens[`${x},${y + 2}`] = true;
+      newForbiddens[`${x},${y + 2}`] = true;
     } else if (dir === 'S') {
       newForbiddens[`${x - 1},${y - 1}`] = true; newForbiddens[`${x + 1},${y - 1}`] = true;
       newForbiddens[`${x - 1},${y - 2}`] = true; newForbiddens[`${x + 1},${y - 2}`] = true;
       newForbiddens[`${x - 1},${y}`] = true;     newForbiddens[`${x + 1},${y}`] = true;
-      newForbiddens[`${x},${y - 2}`] = true;     newForbiddens[`${x},${y - 3}`] = true;
+      newForbiddens[`${x},${y - 2}`] = true;
     } else if (dir === 'E') {
       newForbiddens[`${x - 1},${y + 1}`] = true; newForbiddens[`${x - 1},${y - 1}`] = true;
       newForbiddens[`${x - 2},${y + 1}`] = true; newForbiddens[`${x - 2},${y - 1}`] = true;
       newForbiddens[`${x},${y + 1}`] = true;     newForbiddens[`${x},${y - 1}`] = true;
-      newForbiddens[`${x - 2},${y}`] = true;     newForbiddens[`${x - 3},${y}`] = true;
+      newForbiddens[`${x - 2},${y}`] = true;
     } else if (dir === 'W') {
       newForbiddens[`${x + 1},${y + 1}`] = true; newForbiddens[`${x + 1},${y - 1}`] = true;
       newForbiddens[`${x + 2},${y + 1}`] = true; newForbiddens[`${x + 2},${y - 1}`] = true;
       newForbiddens[`${x},${y + 1}`] = true;     newForbiddens[`${x},${y - 1}`] = true;
-      newForbiddens[`${x + 2},${y}`] = true;     newForbiddens[`${x + 3},${y}`] = true;
+      newForbiddens[`${x + 2},${y}`] = true;
     }
   } else {
     const dir = end.fromDir;
