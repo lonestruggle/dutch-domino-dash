@@ -89,7 +89,8 @@ export const DominoTile: React.FC<DominoTileProps> = ({
         double && orientation === 'horizontal' && 'double-horizontal-offset',
         selected && 'ring-2 ring-blue-500 scale-105 shadow-[var(--shadow-domino-hover)]',
         'hover:scale-105 hover:shadow-[var(--shadow-domino-hover)]',
-        'rounded-sm transition-all duration-200',
+        'rounded-sm',
+        isShaking ? '' : 'transition-all duration-200',
         className
       )}
       onClick={onClick}
