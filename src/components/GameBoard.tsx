@@ -1143,7 +1143,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const hardSlamShakeX = shouldAnimate ? (Math.random() - 0.5) * shakeAmp * hardSlamLift : 0;
             const hardSlamShakeY = shouldAnimate ? (Math.random() - 0.5) * shakeAmp * hardSlamLift : 0;
             const hardSlamJump = shouldAnimate ? -bounceEnv * jumpHeight : 0;
-            const hardSlamAngle = shouldAnimate ? (Math.random() - 0.5) * 5.7 * hardSlamLift : 0;
+            // Per-tile deterministische draai-richting zodat elke steen tijdens
+            // de bounce consistent één kant op kantelt (i.p.v. puur ruis).
+            const bounceSign = individualAngle >= 0 ? 1 : -1;
+            const hardSlamAngle = shouldAnimate
+              ? (Math.random() - 0.5) * 5.7 * hardSlamLift + bounceEnv * 12 * bounceSign
+              : 0;
             const physicsLiftScale = 1 + Math.min(lift, 2) * 0.06;
             const hardSlamPopScale = 1 + bounceEnv * popScaleAmount;
             const liftScale = physicsLiftScale * hardSlamPopScale;
