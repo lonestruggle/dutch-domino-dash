@@ -312,7 +312,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const handleHardSlamShakeFrame = (event: Event) => {
       const detail = (event as CustomEvent<Partial<HardSlamShakeFrameState> & { done?: boolean }>).detail || {};
       if (detail.done) {
-        pendingHardSlamScatterRef.current = null;
         setHardSlamShakeFrame({ env: 0, intensity: 0, elapsedTime: 0 });
         return;
       }
@@ -650,10 +649,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     pendingHardSlamScatterRef.current = {
       eventId,
       actions: Object.keys(gameState.dominoes).map((id) => {
-      const dx = (random() - 0.5) * 2 * scatterBase * intensity;
-      const dy = (random() - 0.5) * 2 * scatterBase * intensity;
-      const daDeg = ((random() - 0.5) * 0.8 * intensity * 180) / Math.PI;
-      const targetDaDeg = ((random() - 0.5) * 0.6 * intensity * 180) / Math.PI;
+        const dx = (random() - 0.5) * 2 * scatterBase * intensity;
+        const dy = (random() - 0.5) * 2 * scatterBase * intensity;
+        const daDeg = ((random() - 0.5) * 0.8 * intensity * 180) / Math.PI;
+        const targetDaDeg = ((random() - 0.5) * 0.6 * intensity * 180) / Math.PI;
         return { id, dx, dy, daDeg, targetDaDeg };
       }),
     };
