@@ -90,6 +90,19 @@ interface HardSlamShakeFrameState {
   elapsedTime: number;
 }
 
+interface HardSlamScatterAction {
+  id: string;
+  dx: number;
+  dy: number;
+  daDeg: number;
+  targetDaDeg: number;
+}
+
+interface PendingHardSlamScatter {
+  eventId: string;
+  actions: HardSlamScatterAction[];
+}
+
 const HARD_SLAM_HAND_ANIMATION_MS = 980;
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
@@ -173,6 +186,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     intensity: 0,
     elapsedTime: 0,
   });
+  const pendingHardSlamScatterRef = useRef<PendingHardSlamScatter | null>(null);
+  const stonePhysicsRef = useRef<ReturnType<typeof useStonePhysics> | null>(null);
   // ------------------------------------------------------------------------
 
   const persistentGlovePosRef = useRef<{ x: number; y: number }>({
@@ -284,6 +299,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     GRID_CELL_SIZE,
     { anchorStrength, enabled: physicsEnabled },
   );
+  stonePhysicsRef.current = stonePhysics;
 
   // Debug: expose physics + domino-ids op window zodat je vanuit de console
   // `stonePhysics.nudge(id, dx, dy)` kan aanroepen om een steen te verschuiven.
@@ -296,8 +312,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const handleHardSlamShakeFrame = (event: Event) => {
       const detail = (event as CustomEvent<Partial<HardSlamShakeFrameState> & { done?: boolean }>).detail || {};
       if (detail.done) {
+        pendingHardSlamScatterRef.current = null;
         setHardSlamShakeFrame({ env: 0, intensity: 0, elapsedTime: 0 });
         return;
+      }
+
+      const pendingScatter = pendingHardSlamScatterRef.current;
+      const physics = stonePhysicsRef.current;
+      if (pendingScatter && physics) {
+        pendingScatter.actions.forEach(({ id, dx, dy, daDeg, targetDaDeg }) => {
+          physics.scatter(id, dx, dy, daDeg, targetDaDeg);
+        });
+        pendingHardSlamScatterRef.current = null;
       }
 
       setHardSlamShakeFrame({
@@ -621,13 +647,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const random = profile ? createSeededRandom(profile.seed) : Math.random;
     const intensity = Math.max(0.3, profile?.intensity ?? settings.shakeIntensity ?? 1);
 
-    Object.keys(gameState.dominoes).forEach((id) => {
+    pendingHardSlamScatterRef.current = {
+      eventId,
+      actions: Object.keys(gameState.dominoes).map((id) => {
       const dx = (random() - 0.5) * 2 * scatterBase * intensity;
       const dy = (random() - 0.5) * 2 * scatterBase * intensity;
       const daDeg = ((random() - 0.5) * 0.8 * intensity * 180) / Math.PI;
       const targetDaDeg = ((random() - 0.5) * 0.6 * intensity * 180) / Math.PI;
-      stonePhysics.scatter(id, dx, dy, daDeg, targetDaDeg);
-    });
+        return { id, dx, dy, daDeg, targetDaDeg };
+      }),
+    };
 
     const slammedDomino = gameState.hardSlamDominoId ? gameState.dominoes[gameState.hardSlamDominoId] : undefined;
     if (slammedDomino) {
@@ -1433,13 +1462,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           onClick={() => {
             const random = Math.random;
             const intensity = Math.max(0.3, settings.shakeIntensity ?? 1);
-            Object.keys(gameState.dominoes).forEach((id) => {
-              const dx = (random() - 0.5) * 2 * scatterBase * intensity;
-              const dy = (random() - 0.5) * 2 * scatterBase * intensity;
-              const daDeg = ((random() - 0.5) * 0.8 * intensity * 180) / Math.PI;
-              const targetDaDeg = ((random() - 0.5) * 0.6 * intensity * 180) / Math.PI;
-              stonePhysics.scatter(id, dx, dy, daDeg, targetDaDeg);
-            });
+            pendingHardSlamScatterRef.current = {
+              eventId: `test-slam-${Date.now()}`,
+              actions: Object.keys(gameState.dominoes).map((id) => {
+                const dx = (random() - 0.5) * 2 * scatterBase * intensity;
+                const dy = (random() - 0.5) * 2 * scatterBase * intensity;
+                const daDeg = ((random() - 0.5) * 0.8 * intensity * 180) / Math.PI;
+                const targetDaDeg = ((random() - 0.5) * 0.6 * intensity * 180) / Math.PI;
+                return { id, dx, dy, daDeg, targetDaDeg };
+              }),
+            };
             startShakeAnimation();
           }}
         >
