@@ -133,9 +133,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // --- STAP 1: OBB / SAT physics-laag (debug) -------------------------------
   // Anker start op 0.000: stenen blijven liggen waar collision ze duwt.
   const [physicsEnabled, setPhysicsEnabled] = useState(true);
-  const [anchorStrength, setAnchorStrength] = useState(0.03);
+  const [anchorStrength, setAnchorStrength] = useState(0.1);
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
   const [physicsPanelOpen, setPhysicsPanelOpen] = useState(false);
+  // Vergelijkings-modus: twee presets (A/B) om snel te wisselen tussen
+  // physics-instellingen en het effect na een Hard Slam te vergelijken.
+  type PhysicsPreset = { intensity: number; duration: number; anchor: number };
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [activePreset, setActivePreset] = useState<'A' | 'B'>('A');
+  const [presetA, setPresetA] = useState<PhysicsPreset>({ intensity: 0.4, duration: 0.6, anchor: 0.1 });
+  const [presetB, setPresetB] = useState<PhysicsPreset>({ intensity: 1.0, duration: 1.5, anchor: 0.4 });
   // ------------------------------------------------------------------------
 
   // --- Drag & Drop placement -----------------------------------------------
@@ -1359,39 +1366,131 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           />
           Collision-boxes
         </label>
-        <label className="flex flex-col gap-0.5">
-          <span>Slam intensiteit: {settings.shakeIntensity.toFixed(1)}x</span>
-          <input
-            type="range"
-            min={0.3}
-            max={2}
-            step={0.1}
-            value={settings.shakeIntensity}
-            onChange={(e) => updateShakeIntensity(parseFloat(e.target.value))}
-          />
-        </label>
-        <label className="flex flex-col gap-0.5">
-          <span>Slam duur: {settings.shakeDuration.toFixed(1)}s</span>
-          <input
-            type="range"
-            min={0.5}
-            max={5}
-            step={0.1}
-            value={settings.shakeDuration}
-            onChange={(e) => updateShakeDuration(parseFloat(e.target.value))}
-          />
-        </label>
-        <label className="flex flex-col gap-0.5">
-          <span>Anker: {anchorStrength.toFixed(3)}</span>
-          <input
-            type="range"
-            min={0}
-            max={0.25}
-            step={0.005}
-            value={anchorStrength}
-            onChange={(e) => setAnchorStrength(parseFloat(e.target.value))}
-          />
-        </label>
+        {/* Vergelijkings-modus */}
+        <div className="flex items-center justify-between gap-2 rounded bg-white/5 px-2 py-1">
+          <label className="flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              checked={comparisonMode}
+              onChange={(e) => setComparisonMode(e.target.checked)}
+            />
+            Vergelijken (A/B)
+          </label>
+          {comparisonMode && (
+            <div className="flex gap-1">
+              {(['A', 'B'] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  className={`rounded px-2 py-0.5 text-[11px] ${activePreset === k ? 'bg-white/30' : 'bg-white/10 hover:bg-white/20'}`}
+                  onClick={() => {
+                    const p = k === 'A' ? presetA : presetB;
+                    setActivePreset(k);
+                    updateShakeIntensity(p.intensity);
+                    updateShakeDuration(p.duration);
+                    setAnchorStrength(p.anchor);
+                  }}
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {(() => {
+          const applyIntensity = (v: number) => {
+            updateShakeIntensity(v);
+            if (comparisonMode) {
+              (activePreset === 'A' ? setPresetA : setPresetB)((p) => ({ ...p, intensity: v }));
+            }
+          };
+          const applyDuration = (v: number) => {
+            updateShakeDuration(v);
+            if (comparisonMode) {
+              (activePreset === 'A' ? setPresetA : setPresetB)((p) => ({ ...p, duration: v }));
+            }
+          };
+          const applyAnchor = (v: number) => {
+            const clamped = Math.max(0, Math.min(1, v));
+            setAnchorStrength(clamped);
+            if (comparisonMode) {
+              (activePreset === 'A' ? setPresetA : setPresetB)((p) => ({ ...p, anchor: clamped }));
+            }
+          };
+          return (
+            <>
+              <label className="flex flex-col gap-0.5">
+                <span>Slam intensiteit: {settings.shakeIntensity.toFixed(1)}x</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    className="flex-1"
+                    min={0.3}
+                    max={2}
+                    step={0.1}
+                    value={settings.shakeIntensity}
+                    onChange={(e) => applyIntensity(parseFloat(e.target.value))}
+                  />
+                  <input
+                    type="number"
+                    className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0.1}
+                    max={5}
+                    step={0.1}
+                    value={settings.shakeIntensity}
+                    onChange={(e) => applyIntensity(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Slam duur: {settings.shakeDuration.toFixed(1)}s</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    className="flex-1"
+                    min={0.1}
+                    max={5}
+                    step={0.1}
+                    value={settings.shakeDuration}
+                    onChange={(e) => applyDuration(parseFloat(e.target.value))}
+                  />
+                  <input
+                    type="number"
+                    className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0.1}
+                    max={10}
+                    step={0.1}
+                    value={settings.shakeDuration}
+                    onChange={(e) => applyDuration(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Anker: {anchorStrength.toFixed(2)} (hoger = sneller stoppen)</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    className="flex-1"
+                    min={0}
+                    max={1}
+                    step={0.1}
+                    value={anchorStrength}
+                    onChange={(e) => applyAnchor(parseFloat(e.target.value))}
+                  />
+                  <input
+                    type="number"
+                    className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={anchorStrength}
+                    onChange={(e) => applyAnchor(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </label>
+            </>
+          );
+        })()}
         <div className="flex gap-1">
           <button
             type="button"
