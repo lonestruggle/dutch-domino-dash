@@ -118,6 +118,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     updateGlovePosition,
     updateShakeIntensity,
     updateShakeDuration,
+    startShakeAnimation,
   } = useGameVisualSettings();
   const { getSetting } = useAppSettings();
   const [playerGloveSkinByUserId, setPlayerGloveSkinByUserId] = useState<Record<string, PlayerGloveSkinConfig>>({});
@@ -1406,6 +1407,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </div>
           )}
         </div>
+        {/* Test Slam knop: triggert lokaal een hard slam zonder steen te plaatsen */}
+        <button
+          type="button"
+          className="rounded bg-orange-500/80 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-orange-500"
+          onClick={() => {
+            const random = Math.random;
+            const intensity = Math.max(0.3, settings.shakeIntensity ?? 1);
+            Object.keys(gameState.dominoes).forEach((id) => {
+              const dx = (random() - 0.5) * 2 * scatterBase * intensity;
+              const dy = (random() - 0.5) * 2 * scatterBase * intensity;
+              const daDeg = ((random() - 0.5) * 0.8 * intensity * 180) / Math.PI;
+              const targetDaDeg = ((random() - 0.5) * 0.6 * intensity * 180) / Math.PI;
+              stonePhysics.scatter(id, dx, dy, daDeg, targetDaDeg);
+            });
+            startShakeAnimation();
+          }}
+        >
+          Test Slam
+        </button>
         {(() => {
           const applyIntensity = (v: number) => {
             updateShakeIntensity(v);
