@@ -1540,6 +1540,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         >
           Test Slam
         </button>
+        {/* Opslaan voor iedereen: schrijft alle physics-instellingen naar app_settings.
+            Alleen admins mogen schrijven (RLS); anderen krijgen een foutmelding. */}
+        <button
+          type="button"
+          className="rounded bg-emerald-600/80 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-emerald-600 disabled:opacity-60"
+          onClick={saveGlobalPhysics}
+          disabled={physicsSaveStatus === 'saving'}
+        >
+          {physicsSaveStatus === 'saving' && 'Opslaan...'}
+          {physicsSaveStatus === 'saved' && '✓ Opgeslagen voor iedereen'}
+          {physicsSaveStatus === 'error' && '✗ Fout (admin nodig?)'}
+          {physicsSaveStatus === 'idle' && 'Opslaan voor iedereen'}
+        </button>
         {(() => {
           const applyIntensity = (v: number) => {
             updateShakeIntensity(v);
