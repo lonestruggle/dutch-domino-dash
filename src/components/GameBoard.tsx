@@ -1497,6 +1497,46 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   />
                 </div>
               </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Scatter afstand: {scatterBase}px (hoe ver stenen wegspringen)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={200} step={5}
+                    value={scatterBase} onChange={(e) => setScatterBase(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={500} step={5}
+                    value={scatterBase} onChange={(e) => setScatterBase(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Jump hoogte: {jumpHeight}px (visuele "sprong" omhoog)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={80} step={1}
+                    value={jumpHeight} onChange={(e) => setJumpHeight(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={200} step={1}
+                    value={jumpHeight} onChange={(e) => setJumpHeight(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Pop-scale: {popScaleAmount.toFixed(2)} (extra vergroting op piek)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={0.6} step={0.01}
+                    value={popScaleAmount} onChange={(e) => setPopScaleAmount(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={1} step={0.01}
+                    value={popScaleAmount} onChange={(e) => setPopScaleAmount(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Trill-amplitude: {shakeAmp}px (per-frame jitter)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={40} step={1}
+                    value={shakeAmp} onChange={(e) => setShakeAmp(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={100} step={1}
+                    value={shakeAmp} onChange={(e) => setShakeAmp(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
             </>
           );
         })()}
