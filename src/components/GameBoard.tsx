@@ -136,6 +136,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [anchorStrength, setAnchorStrength] = useState(0.1);
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
   const [physicsPanelOpen, setPhysicsPanelOpen] = useState(false);
+  // Hard-slam visuele tuning (matcht CanvasDemo defaults).
+  // scatterBase = pixels dat elke steen wegspringt (demo: 70)
+  // jumpHeight  = pixels dat de steen "omhoog" wipt via translate (demo: 20)
+  // popScale    = extra schaal op de piek van de envelope (demo: 0.15)
+  // shakeAmp    = per-frame trill-amplitude in pixels (demo: 15)
+  const [scatterBase, setScatterBase] = useState(70);
+  const [jumpHeight, setJumpHeight] = useState(20);
+  const [popScaleAmount, setPopScaleAmount] = useState(0.15);
+  const [shakeAmp, setShakeAmp] = useState(15);
   // Vergelijkings-modus: twee presets (A/B) om snel te wisselen tussen
   // physics-instellingen en het effect na een Hard Slam te vergelijken.
   type PhysicsPreset = { intensity: number; duration: number; anchor: number };
@@ -605,7 +614,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     lastHardSlamEventRef.current = eventId;
     const random = profile ? createSeededRandom(profile.seed) : Math.random;
     const intensity = Math.max(0.3, profile?.intensity ?? settings.shakeIntensity ?? 1);
-    const scatterBase = 70;
 
     Object.keys(gameState.dominoes).forEach((id) => {
       const dx = (random() - 0.5) * 2 * scatterBase * intensity;
@@ -649,6 +657,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     GRID_CELL_SIZE,
     settings.shakeIntensity,
     stonePhysics,
+    scatterBase,
   ]);
 
   const getBackgroundImage = (backgroundChoice?: string) => {
@@ -1116,12 +1125,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // hangen. Botsingen worden in de physics-laag al overgeslagen.
             const lift = phys.z || 0;
             const hardSlamLift = shouldAnimate ? hardSlamShakeFrame.env * hardSlamShakeFrame.intensity : 0;
-            const hardSlamShakeX = shouldAnimate ? (Math.random() - 0.5) * 15 * hardSlamLift : 0;
-            const hardSlamShakeY = shouldAnimate ? (Math.random() - 0.5) * 15 * hardSlamLift : 0;
-            const hardSlamJump = shouldAnimate ? -hardSlamLift * 20 : 0;
+            const hardSlamShakeX = shouldAnimate ? (Math.random() - 0.5) * shakeAmp * hardSlamLift : 0;
+            const hardSlamShakeY = shouldAnimate ? (Math.random() - 0.5) * shakeAmp * hardSlamLift : 0;
+            const hardSlamJump = shouldAnimate ? -hardSlamLift * jumpHeight : 0;
             const hardSlamAngle = shouldAnimate ? (Math.random() - 0.5) * 5.7 * hardSlamLift : 0;
             const physicsLiftScale = 1 + Math.min(lift, 2) * 0.06;
-            const hardSlamPopScale = 1 + hardSlamLift * 0.15;
+            const hardSlamPopScale = 1 + hardSlamLift * popScaleAmount;
             const liftScale = physicsLiftScale * hardSlamPopScale;
             const liftShadow =
               lift > 0
@@ -1486,6 +1495,46 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     value={anchorStrength}
                     onChange={(e) => applyAnchor(parseFloat(e.target.value) || 0)}
                   />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Scatter afstand: {scatterBase}px (hoe ver stenen wegspringen)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={200} step={5}
+                    value={scatterBase} onChange={(e) => setScatterBase(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={500} step={5}
+                    value={scatterBase} onChange={(e) => setScatterBase(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Jump hoogte: {jumpHeight}px (visuele "sprong" omhoog)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={80} step={1}
+                    value={jumpHeight} onChange={(e) => setJumpHeight(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={200} step={1}
+                    value={jumpHeight} onChange={(e) => setJumpHeight(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Pop-scale: {popScaleAmount.toFixed(2)} (extra vergroting op piek)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={0.6} step={0.01}
+                    value={popScaleAmount} onChange={(e) => setPopScaleAmount(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={1} step={0.01}
+                    value={popScaleAmount} onChange={(e) => setPopScaleAmount(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Trill-amplitude: {shakeAmp}px (per-frame jitter)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={40} step={1}
+                    value={shakeAmp} onChange={(e) => setShakeAmp(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={100} step={1}
+                    value={shakeAmp} onChange={(e) => setShakeAmp(parseFloat(e.target.value) || 0)} />
                 </div>
               </label>
             </>
