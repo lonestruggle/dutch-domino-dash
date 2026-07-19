@@ -627,6 +627,8 @@ export default function Lobby() {
                               variant="outline" 
                               size="sm"
                               onClick={() => handleRemoveBot(position)}
+                              className="border-white/40 bg-black/40 text-white hover:bg-black/60 hover:text-white"
+                              aria-label={t('lobbyPage.removeBot')}
                             >
                               <Minus className="h-4 w-4" />
                             </Button>
@@ -635,6 +637,8 @@ export default function Lobby() {
                               variant="outline" 
                               size="sm"
                               onClick={handleAddBot}
+                              className="border-white/40 bg-black/40 text-white hover:bg-black/60 hover:text-white"
+                              aria-label={t('lobbyPage.addBot')}
                             >
                               <Plus className="h-4 w-4 mr-1" />
                               <Bot className="h-4 w-4" />
