@@ -657,6 +657,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     GRID_CELL_SIZE,
     settings.shakeIntensity,
     stonePhysics,
+    scatterBase,
   ]);
 
   const getBackgroundImage = (backgroundChoice?: string) => {
