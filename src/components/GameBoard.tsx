@@ -614,7 +614,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     lastHardSlamEventRef.current = eventId;
     const random = profile ? createSeededRandom(profile.seed) : Math.random;
     const intensity = Math.max(0.3, profile?.intensity ?? settings.shakeIntensity ?? 1);
-    const scatterBase = 70;
 
     Object.keys(gameState.dominoes).forEach((id) => {
       const dx = (random() - 0.5) * 2 * scatterBase * intensity;
