@@ -146,6 +146,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [jumpHeight, setJumpHeight] = useState(20);
   const [popScaleAmount, setPopScaleAmount] = useState(0.15);
   const [shakeAmp, setShakeAmp] = useState(15);
+  // Bouncing jump: het aantal keer dat de steen op-en-neer wipt en hoe snel
+  // die bounces uitdempen. |sin(π·f·t)| * exp(-t·damping) geeft meerdere
+  // decayende sprongetjes zoals een echte steen die op tafel valt.
+  const [bounceFrequency, setBounceFrequency] = useState(5); // Hz (aantal bounces per seconde)
+  const [bounceDamping, setBounceDamping] = useState(2.5); // hoe snel de sprong uitdempt
   // Vergelijkings-modus: twee presets (A/B) om snel te wisselen tussen
   // physics-instellingen en het effect na een Hard Slam te vergelijken.
   type PhysicsPreset = { intensity: number; duration: number; anchor: number };
