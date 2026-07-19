@@ -245,10 +245,16 @@ export function useStonePhysics(
               bodyOBB(bodies[j], gridCellSize),
             );
             if (!mtv) continue;
-            bodies[i].cx -= mtv.x * 0.5;
-            bodies[i].cy -= mtv.y * 0.5;
-            bodies[j].cx += mtv.x * 0.5;
-            bodies[j].cy += mtv.y * 0.5;
+            const pushX = mtv.x * 0.5;
+            const pushY = mtv.y * 0.5;
+            bodies[i].cx -= pushX;
+            bodies[i].cy -= pushY;
+            bodies[i].targetCx -= pushX;
+            bodies[i].targetCy -= pushY;
+            bodies[j].cx += pushX;
+            bodies[j].cy += pushY;
+            bodies[j].targetCx += pushX;
+            bodies[j].targetCy += pushY;
           }
         }
       }
@@ -296,17 +302,23 @@ export function useStonePhysics(
     scatter: (id: string, dx: number, dy: number, angleDeg: number, targetAngleDeltaDeg = 0) => {
       const b = bodiesRef.current.get(id);
       if (b) {
-        const angleRad = (angleDeg * Math.PI) / 180;
-        const targetAngleDeltaRad = (targetAngleDeltaDeg * Math.PI) / 180;
+        const totalAngleRad = ((angleDeg + targetAngleDeltaDeg) * Math.PI) / 180;
+        const a = Math.min(1, Math.abs(anchorRef.current));
         // Hard Slam is één gezamenlijke impuls: positie, rotatie én het physics-
         // anker krijgen in dezelfde frame exact dezelfde stap. Daardoor ontstaat
         // er geen volgorde-effect bij anker > 0 of anker < 0.
-        b.cx += dx;
-        b.cy += dy;
-        b.angle += angleRad;
-        b.targetCx = b.cx;
-        b.targetCy = b.cy;
-        b.targetAngle = b.angle + targetAngleDeltaRad;
+        if (a === 0) {
+          b.cx += dx;
+          b.cy += dy;
+          b.angle += totalAngleRad;
+          b.targetCx = b.cx;
+          b.targetCy = b.cy;
+          b.targetAngle = b.angle;
+        } else {
+          b.targetCx = b.cx + dx;
+          b.targetCy = b.cy + dy;
+          b.targetAngle = b.angle + totalAngleRad;
+        }
         forceTick((t) => (t + 1) & 0xffff);
       }
     },
