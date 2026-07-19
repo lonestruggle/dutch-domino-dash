@@ -1440,7 +1440,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             }
           };
           const applyAnchor = (v: number) => {
-            const clamped = Math.max(0, Math.min(1, v));
+            const clamped = Math.max(-1, Math.min(1, v));
             setAnchorStrength(clamped);
             if (comparisonMode) {
               (activePreset === 'A' ? setPresetA : setPresetB)((p) => ({ ...p, anchor: clamped }));
@@ -1495,12 +1495,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </div>
               </label>
               <label className="flex flex-col gap-0.5">
-                <span>Anker: {anchorStrength.toFixed(2)} (hoger = sneller stoppen)</span>
+                <span>Anker: {anchorStrength.toFixed(2)} (sterker = sneller stoppen)</span>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
                     className="flex-1"
-                    min={0}
+                    min={-1}
                     max={1}
                     step={0.1}
                     value={anchorStrength}
@@ -1509,9 +1509,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   <input
                     type="number"
                     className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
-                    min={0}
+                    min={-1}
                     max={1}
-                    step={0.05}
+                    step={0.1}
                     value={anchorStrength}
                     onChange={(e) => applyAnchor(parseFloat(e.target.value) || 0)}
                   />
