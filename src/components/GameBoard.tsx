@@ -136,6 +136,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [anchorStrength, setAnchorStrength] = useState(0.1);
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
   const [physicsPanelOpen, setPhysicsPanelOpen] = useState(false);
+  // Hard-slam visuele tuning (matcht CanvasDemo defaults).
+  // scatterBase = pixels dat elke steen wegspringt (demo: 70)
+  // jumpHeight  = pixels dat de steen "omhoog" wipt via translate (demo: 20)
+  // popScale    = extra schaal op de piek van de envelope (demo: 0.15)
+  // shakeAmp    = per-frame trill-amplitude in pixels (demo: 15)
+  const [scatterBase, setScatterBase] = useState(70);
+  const [jumpHeight, setJumpHeight] = useState(20);
+  const [popScaleAmount, setPopScaleAmount] = useState(0.15);
+  const [shakeAmp, setShakeAmp] = useState(15);
   // Vergelijkings-modus: twee presets (A/B) om snel te wisselen tussen
   // physics-instellingen en het effect na een Hard Slam te vergelijken.
   type PhysicsPreset = { intensity: number; duration: number; anchor: number };
