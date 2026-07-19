@@ -228,7 +228,7 @@ export function useStonePhysics(
         for (const b of bodies) {
           b.cx += (b.targetCx - b.cx) * a;
           b.cy += (b.targetCy - b.cy) * a;
-          b.angle += (b.targetAngle - b.angle) * a * 0.8;
+          b.angle += (b.targetAngle - b.angle) * a;
         }
       }
 
