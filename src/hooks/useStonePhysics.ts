@@ -98,7 +98,7 @@ function satResolve(a: OBB, b: OBB): { x: number; y: number } | null {
 }
 
 export interface UseStonePhysicsOptions {
-  /** Sterkte (0..0.25) waarmee stenen terug naar grid worden getrokken. 0 = blijven liggen. */
+  /** Sterkte (-1..1) waarmee stenen naar hun physics-anker worden getrokken. 0 = blijven liggen. */
   anchorStrength: number;
   /** Of de physics-loop actief is. Bij false: alle offsets = 0. */
   enabled: boolean;
@@ -222,8 +222,9 @@ export function useStonePhysics(
       const entries = Array.from(bodiesRef.current.entries());
       const bodies = entries.map(([, b]) => b);
 
-      // 1) Anchor pull (alleen als > 0)
-      const a = anchorRef.current;
+      // 1) Anchor pull. Negatieve waarden gebruiken dezelfde timing als positieve
+      // waarden, zodat positie + rotatie nooit omgekeerd of asynchroon gaan lopen.
+      const a = Math.min(1, Math.abs(anchorRef.current));
       if (a > 0) {
         for (const b of bodies) {
           b.cx += (b.targetCx - b.cx) * a;
@@ -297,12 +298,15 @@ export function useStonePhysics(
       if (b) {
         const angleRad = (angleDeg * Math.PI) / 180;
         const targetAngleDeltaRad = (targetAngleDeltaDeg * Math.PI) / 180;
-        b.targetCx = b.cx + dx;
-        b.targetCy = b.cy + dy;
-        // Rotatie NIET meteen snappen — laat 'm samen met de positie easen
-        // via de anchor-pull, zodat sprong + rotatie tegelijk gebeuren i.p.v.
-        // eerst een instant flip en dan pas de sprong.
-        b.targetAngle = b.angle + angleRad + targetAngleDeltaRad;
+        // Hard Slam is één gezamenlijke impuls: positie, rotatie én het physics-
+        // anker krijgen in dezelfde frame exact dezelfde stap. Daardoor ontstaat
+        // er geen volgorde-effect bij anker > 0 of anker < 0.
+        b.cx += dx;
+        b.cy += dy;
+        b.angle += angleRad;
+        b.targetCx = b.cx;
+        b.targetCy = b.cy;
+        b.targetAngle = b.angle + targetAngleDeltaRad;
         forceTick((t) => (t + 1) & 0xffff);
       }
     },
