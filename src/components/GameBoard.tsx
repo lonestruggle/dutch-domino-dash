@@ -118,6 +118,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     updateGlovePosition,
     updateShakeIntensity,
     updateShakeDuration,
+    startShakeAnimation,
   } = useGameVisualSettings();
   const { getSetting } = useAppSettings();
   const [playerGloveSkinByUserId, setPlayerGloveSkinByUserId] = useState<Record<string, PlayerGloveSkinConfig>>({});
