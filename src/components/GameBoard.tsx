@@ -146,6 +146,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [jumpHeight, setJumpHeight] = useState(20);
   const [popScaleAmount, setPopScaleAmount] = useState(0.15);
   const [shakeAmp, setShakeAmp] = useState(15);
+  // Bouncing jump: het aantal keer dat de steen op-en-neer wipt en hoe snel
+  // die bounces uitdempen. |sin(π·f·t)| * exp(-t·damping) geeft meerdere
+  // decayende sprongetjes zoals een echte steen die op tafel valt.
+  const [bounceFrequency, setBounceFrequency] = useState(5); // Hz (aantal bounces per seconde)
+  const [bounceDamping, setBounceDamping] = useState(2.5); // hoe snel de sprong uitdempt
   // Vergelijkings-modus: twee presets (A/B) om snel te wisselen tussen
   // physics-instellingen en het effect na een Hard Slam te vergelijken.
   type PhysicsPreset = { intensity: number; duration: number; anchor: number };
@@ -1126,12 +1131,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // hangen. Botsingen worden in de physics-laag al overgeslagen.
             const lift = phys.z || 0;
             const hardSlamLift = shouldAnimate ? hardSlamShakeFrame.env * hardSlamShakeFrame.intensity : 0;
+            // Bouncing envelope: |sin(π·f·t)| * exp(-t·damping) → een paar
+            // dempende op-en-neer sprongen. Vermenigvuldig met intensity zodat
+            // de slider blijft doorwerken.
+            const bounceT = hardSlamShakeFrame.elapsedTime / 1000;
+            const bounceEnv = shouldAnimate && bounceFrequency > 0
+              ? Math.abs(Math.sin(bounceT * Math.PI * bounceFrequency))
+                  * Math.exp(-bounceT * bounceDamping)
+                  * hardSlamShakeFrame.intensity
+              : 0;
             const hardSlamShakeX = shouldAnimate ? (Math.random() - 0.5) * shakeAmp * hardSlamLift : 0;
             const hardSlamShakeY = shouldAnimate ? (Math.random() - 0.5) * shakeAmp * hardSlamLift : 0;
-            const hardSlamJump = shouldAnimate ? -hardSlamLift * jumpHeight : 0;
+            const hardSlamJump = shouldAnimate ? -bounceEnv * jumpHeight : 0;
             const hardSlamAngle = shouldAnimate ? (Math.random() - 0.5) * 5.7 * hardSlamLift : 0;
             const physicsLiftScale = 1 + Math.min(lift, 2) * 0.06;
-            const hardSlamPopScale = 1 + hardSlamLift * popScaleAmount;
+            const hardSlamPopScale = 1 + bounceEnv * popScaleAmount;
             const liftScale = physicsLiftScale * hardSlamPopScale;
             const liftShadow =
               lift > 0
@@ -1139,7 +1153,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 : undefined;
             const hardSlamShadow =
               hardSlamLift > 0
-                ? `${8 + hardSlamLift * 30}px ${8 + hardSlamLift * 30}px ${10 + hardSlamLift * 30}px rgba(0,0,0,${Math.max(0.18, 0.45 - hardSlamLift * 0.2)})`
+                ? `${8 + bounceEnv * 30}px ${8 + bounceEnv * 30}px ${10 + bounceEnv * 30}px rgba(0,0,0,${Math.max(0.18, 0.45 - bounceEnv * 0.2)})`
                 : undefined;
 
             return (
@@ -1555,6 +1569,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
                     min={0} max={100} step={1}
                     value={shakeAmp} onChange={(e) => setShakeAmp(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Bounces/sec: {bounceFrequency.toFixed(1)} (aantal op-en-neer sprongetjes)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={15} step={0.5}
+                    value={bounceFrequency} onChange={(e) => setBounceFrequency(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={30} step={0.5}
+                    value={bounceFrequency} onChange={(e) => setBounceFrequency(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Bounce demping: {bounceDamping.toFixed(1)} (hoger = sneller uitdempen)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={10} step={0.1}
+                    value={bounceDamping} onChange={(e) => setBounceDamping(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={20} step={0.1}
+                    value={bounceDamping} onChange={(e) => setBounceDamping(parseFloat(e.target.value) || 0)} />
                 </div>
               </label>
             </>
