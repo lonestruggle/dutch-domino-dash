@@ -197,6 +197,67 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     x: settings.glovePosX || 82,
     y: settings.glovePosY || 76,
   });
+
+  // --- Global physics settings (app_settings.physics_slam) -----------------
+  useEffect(() => {
+    if (hasLoadedGlobalPhysicsRef.current) return;
+    hasLoadedGlobalPhysicsRef.current = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('app_settings')
+          .select('setting_value')
+          .eq('setting_key', 'physics_slam')
+          .maybeSingle();
+        if (error || !data?.setting_value) return;
+        const v: any = data.setting_value;
+        if (typeof v.anchorStrength === 'number') setAnchorStrength(v.anchorStrength);
+        if (typeof v.scatterBase === 'number') setScatterBase(v.scatterBase);
+        if (typeof v.jumpHeight === 'number') setJumpHeight(v.jumpHeight);
+        if (typeof v.popScaleAmount === 'number') setPopScaleAmount(v.popScaleAmount);
+        if (typeof v.shakeAmp === 'number') setShakeAmp(v.shakeAmp);
+        if (typeof v.bounceFrequency === 'number') setBounceFrequency(v.bounceFrequency);
+        if (typeof v.bounceDamping === 'number') setBounceDamping(v.bounceDamping);
+        if (typeof v.shakeIntensity === 'number') updateShakeIntensity(v.shakeIntensity);
+        if (typeof v.shakeDuration === 'number') updateShakeDuration(v.shakeDuration);
+      } catch (e) {
+        console.warn('[physics_slam] load failed', e);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveGlobalPhysics = async () => {
+    setPhysicsSaveStatus('saving');
+    try {
+      const payload = {
+        anchorStrength,
+        scatterBase,
+        jumpHeight,
+        popScaleAmount,
+        shakeAmp,
+        bounceFrequency,
+        bounceDamping,
+        shakeIntensity: settings.shakeIntensity,
+        shakeDuration: settings.shakeDuration,
+      };
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert(
+          { setting_key: 'physics_slam', setting_value: payload as any, description: 'Hard slam physics tuning (global)' },
+          { onConflict: 'setting_key' },
+        );
+      if (error) throw error;
+      setPhysicsSaveStatus('saved');
+      setTimeout(() => setPhysicsSaveStatus('idle'), 1800);
+    } catch (e) {
+      console.error('[physics_slam] save failed', e);
+      setPhysicsSaveStatus('error');
+      setTimeout(() => setPhysicsSaveStatus('idle'), 2500);
+    }
+  };
+  // ------------------------------------------------------------------------
+
   const configuredBaseGloveImageUrl = String(
     getSetting('global_base_glove_image_url', BASE_GLOVE_IMAGE) || BASE_GLOVE_IMAGE
   ).trim() || BASE_GLOVE_IMAGE;
