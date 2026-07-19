@@ -1124,12 +1124,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // hangen. Botsingen worden in de physics-laag al overgeslagen.
             const lift = phys.z || 0;
             const hardSlamLift = shouldAnimate ? hardSlamShakeFrame.env * hardSlamShakeFrame.intensity : 0;
-            const hardSlamShakeX = shouldAnimate ? (Math.random() - 0.5) * 15 * hardSlamLift : 0;
-            const hardSlamShakeY = shouldAnimate ? (Math.random() - 0.5) * 15 * hardSlamLift : 0;
-            const hardSlamJump = shouldAnimate ? -hardSlamLift * 20 : 0;
+            const hardSlamShakeX = shouldAnimate ? (Math.random() - 0.5) * shakeAmp * hardSlamLift : 0;
+            const hardSlamShakeY = shouldAnimate ? (Math.random() - 0.5) * shakeAmp * hardSlamLift : 0;
+            const hardSlamJump = shouldAnimate ? -hardSlamLift * jumpHeight : 0;
             const hardSlamAngle = shouldAnimate ? (Math.random() - 0.5) * 5.7 * hardSlamLift : 0;
             const physicsLiftScale = 1 + Math.min(lift, 2) * 0.06;
-            const hardSlamPopScale = 1 + hardSlamLift * 0.15;
+            const hardSlamPopScale = 1 + hardSlamLift * popScaleAmount;
             const liftScale = physicsLiftScale * hardSlamPopScale;
             const liftShadow =
               lift > 0
