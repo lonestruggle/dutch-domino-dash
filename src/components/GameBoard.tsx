@@ -1131,12 +1131,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             // hangen. Botsingen worden in de physics-laag al overgeslagen.
             const lift = phys.z || 0;
             const hardSlamLift = shouldAnimate ? hardSlamShakeFrame.env * hardSlamShakeFrame.intensity : 0;
+            // Bouncing envelope: |sin(π·f·t)| * exp(-t·damping) → een paar
+            // dempende op-en-neer sprongen. Vermenigvuldig met intensity zodat
+            // de slider blijft doorwerken.
+            const bounceT = hardSlamShakeFrame.elapsedTime / 1000;
+            const bounceEnv = shouldAnimate && bounceFrequency > 0
+              ? Math.abs(Math.sin(bounceT * Math.PI * bounceFrequency))
+                  * Math.exp(-bounceT * bounceDamping)
+                  * hardSlamShakeFrame.intensity
+              : 0;
             const hardSlamShakeX = shouldAnimate ? (Math.random() - 0.5) * shakeAmp * hardSlamLift : 0;
             const hardSlamShakeY = shouldAnimate ? (Math.random() - 0.5) * shakeAmp * hardSlamLift : 0;
-            const hardSlamJump = shouldAnimate ? -hardSlamLift * jumpHeight : 0;
+            const hardSlamJump = shouldAnimate ? -bounceEnv * jumpHeight : 0;
             const hardSlamAngle = shouldAnimate ? (Math.random() - 0.5) * 5.7 * hardSlamLift : 0;
             const physicsLiftScale = 1 + Math.min(lift, 2) * 0.06;
-            const hardSlamPopScale = 1 + hardSlamLift * popScaleAmount;
+            const hardSlamPopScale = 1 + bounceEnv * popScaleAmount;
             const liftScale = physicsLiftScale * hardSlamPopScale;
             const liftShadow =
               lift > 0
@@ -1144,7 +1153,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 : undefined;
             const hardSlamShadow =
               hardSlamLift > 0
-                ? `${8 + hardSlamLift * 30}px ${8 + hardSlamLift * 30}px ${10 + hardSlamLift * 30}px rgba(0,0,0,${Math.max(0.18, 0.45 - hardSlamLift * 0.2)})`
+                ? `${8 + bounceEnv * 30}px ${8 + bounceEnv * 30}px ${10 + bounceEnv * 30}px rgba(0,0,0,${Math.max(0.18, 0.45 - bounceEnv * 0.2)})`
                 : undefined;
 
             return (
