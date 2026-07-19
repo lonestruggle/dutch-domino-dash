@@ -133,9 +133,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // --- STAP 1: OBB / SAT physics-laag (debug) -------------------------------
   // Anker start op 0.000: stenen blijven liggen waar collision ze duwt.
   const [physicsEnabled, setPhysicsEnabled] = useState(true);
-  const [anchorStrength, setAnchorStrength] = useState(0.03);
+  const [anchorStrength, setAnchorStrength] = useState(0.1);
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
   const [physicsPanelOpen, setPhysicsPanelOpen] = useState(false);
+  // Vergelijkings-modus: twee presets (A/B) om snel te wisselen tussen
+  // physics-instellingen en het effect na een Hard Slam te vergelijken.
+  type PhysicsPreset = { intensity: number; duration: number; anchor: number };
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [activePreset, setActivePreset] = useState<'A' | 'B'>('A');
+  const [presetA, setPresetA] = useState<PhysicsPreset>({ intensity: 0.4, duration: 0.6, anchor: 0.1 });
+  const [presetB, setPresetB] = useState<PhysicsPreset>({ intensity: 1.0, duration: 1.5, anchor: 0.4 });
   // ------------------------------------------------------------------------
 
   // --- Drag & Drop placement -----------------------------------------------
