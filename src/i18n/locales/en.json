@@ -175,7 +175,9 @@
     "toastBotAdded": "Bot added to lobby!",
     "toastBotAddFail": "Could not add bot",
     "toastBotRemoved": "Bot removed from lobby!",
-    "toastBotRemoveFail": "Could not remove bot"
+    "toastBotRemoveFail": "Could not remove bot",
+    "addBot": "Add bot",
+    "removeBot": "Remove bot"
   },
   "profile": {
     "myProfile": "My Profile",
