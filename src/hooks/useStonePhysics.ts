@@ -303,22 +303,15 @@ export function useStonePhysics(
       const b = bodiesRef.current.get(id);
       if (b) {
         const totalAngleRad = ((angleDeg + targetAngleDeltaDeg) * Math.PI) / 180;
-        const a = Math.min(1, Math.abs(anchorRef.current));
-        // Hard Slam is één gezamenlijke impuls: positie, rotatie én het physics-
-        // anker krijgen in dezelfde frame exact dezelfde stap. Daardoor ontstaat
-        // er geen volgorde-effect bij anker > 0 of anker < 0.
-        if (a === 0) {
-          b.cx += dx;
-          b.cy += dy;
-          b.angle += totalAngleRad;
-          b.targetCx = b.cx;
-          b.targetCy = b.cy;
-          b.targetAngle = b.angle;
-        } else {
-          b.targetCx = b.cx + dx;
-          b.targetCy = b.cy + dy;
-          b.targetAngle = b.angle + totalAngleRad;
-        }
+        // Hard Slam is één gezamenlijke impuls: locatie, rotatie én het anker
+        // krijgen dezelfde waarde in dezelfde call. Daardoor kan anchorStrength
+        // (ook negatief) nooit eerst locatie laten bewegen en daarna pas jump/rotatie.
+        b.cx += dx;
+        b.cy += dy;
+        b.angle += totalAngleRad;
+        b.targetCx = b.cx;
+        b.targetCy = b.cy;
+        b.targetAngle = b.angle;
         forceTick((t) => (t + 1) & 0xffff);
       }
     },
