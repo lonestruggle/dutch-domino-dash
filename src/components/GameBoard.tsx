@@ -164,6 +164,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // decayende sprongetjes zoals een echte steen die op tafel valt.
   const [bounceFrequency, setBounceFrequency] = useState(5); // Hz (aantal bounces per seconde)
   const [bounceDamping, setBounceDamping] = useState(2.5); // hoe snel de sprong uitdempt
+  // Global save/load status voor physics-instellingen (in app_settings).
+  const [physicsSaveStatus, setPhysicsSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const hasLoadedGlobalPhysicsRef = useRef(false);
   // Vergelijkings-modus: twee presets (A/B) om snel te wisselen tussen
   // physics-instellingen en het effect na een Hard Slam te vergelijken.
   type PhysicsPreset = { intensity: number; duration: number; anchor: number };
