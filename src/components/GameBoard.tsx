@@ -1571,6 +1571,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     value={shakeAmp} onChange={(e) => setShakeAmp(parseFloat(e.target.value) || 0)} />
                 </div>
               </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Bounces/sec: {bounceFrequency.toFixed(1)} (aantal op-en-neer sprongetjes)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={15} step={0.5}
+                    value={bounceFrequency} onChange={(e) => setBounceFrequency(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={30} step={0.5}
+                    value={bounceFrequency} onChange={(e) => setBounceFrequency(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span>Bounce demping: {bounceDamping.toFixed(1)} (hoger = sneller uitdempen)</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" className="flex-1" min={0} max={10} step={0.1}
+                    value={bounceDamping} onChange={(e) => setBounceDamping(parseFloat(e.target.value))} />
+                  <input type="number" className="w-16 rounded bg-white/10 px-1 py-0.5 text-right"
+                    min={0} max={20} step={0.1}
+                    value={bounceDamping} onChange={(e) => setBounceDamping(parseFloat(e.target.value) || 0)} />
+                </div>
+              </label>
             </>
           );
         })()}
