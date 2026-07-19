@@ -299,8 +299,10 @@ export function useStonePhysics(
         const targetAngleDeltaRad = (targetAngleDeltaDeg * Math.PI) / 180;
         b.targetCx = b.cx + dx;
         b.targetCy = b.cy + dy;
-        b.angle += angleRad;
-        b.targetAngle = b.angle + targetAngleDeltaRad;
+        // Rotatie NIET meteen snappen — laat 'm samen met de positie easen
+        // via de anchor-pull, zodat sprong + rotatie tegelijk gebeuren i.p.v.
+        // eerst een instant flip en dan pas de sprong.
+        b.targetAngle = b.angle + angleRad + targetAngleDeltaRad;
         forceTick((t) => (t + 1) & 0xffff);
       }
     },
