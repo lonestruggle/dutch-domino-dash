@@ -164,6 +164,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // decayende sprongetjes zoals een echte steen die op tafel valt.
   const [bounceFrequency, setBounceFrequency] = useState(5); // Hz (aantal bounces per seconde)
   const [bounceDamping, setBounceDamping] = useState(2.5); // hoe snel de sprong uitdempt
+  // Global save/load status voor physics-instellingen (in app_settings).
+  const [physicsSaveStatus, setPhysicsSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const hasLoadedGlobalPhysicsRef = useRef(false);
   // Vergelijkings-modus: twee presets (A/B) om snel te wisselen tussen
   // physics-instellingen en het effect na een Hard Slam te vergelijken.
   type PhysicsPreset = { intensity: number; duration: number; anchor: number };
@@ -194,6 +197,67 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     x: settings.glovePosX || 82,
     y: settings.glovePosY || 76,
   });
+
+  // --- Global physics settings (app_settings.physics_slam) -----------------
+  useEffect(() => {
+    if (hasLoadedGlobalPhysicsRef.current) return;
+    hasLoadedGlobalPhysicsRef.current = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('app_settings')
+          .select('setting_value')
+          .eq('setting_key', 'physics_slam')
+          .maybeSingle();
+        if (error || !data?.setting_value) return;
+        const v: any = data.setting_value;
+        if (typeof v.anchorStrength === 'number') setAnchorStrength(v.anchorStrength);
+        if (typeof v.scatterBase === 'number') setScatterBase(v.scatterBase);
+        if (typeof v.jumpHeight === 'number') setJumpHeight(v.jumpHeight);
+        if (typeof v.popScaleAmount === 'number') setPopScaleAmount(v.popScaleAmount);
+        if (typeof v.shakeAmp === 'number') setShakeAmp(v.shakeAmp);
+        if (typeof v.bounceFrequency === 'number') setBounceFrequency(v.bounceFrequency);
+        if (typeof v.bounceDamping === 'number') setBounceDamping(v.bounceDamping);
+        if (typeof v.shakeIntensity === 'number') updateShakeIntensity(v.shakeIntensity);
+        if (typeof v.shakeDuration === 'number') updateShakeDuration(v.shakeDuration);
+      } catch (e) {
+        console.warn('[physics_slam] load failed', e);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveGlobalPhysics = async () => {
+    setPhysicsSaveStatus('saving');
+    try {
+      const payload = {
+        anchorStrength,
+        scatterBase,
+        jumpHeight,
+        popScaleAmount,
+        shakeAmp,
+        bounceFrequency,
+        bounceDamping,
+        shakeIntensity: settings.shakeIntensity,
+        shakeDuration: settings.shakeDuration,
+      };
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert(
+          { setting_key: 'physics_slam', setting_value: payload as any, description: 'Hard slam physics tuning (global)' },
+          { onConflict: 'setting_key' },
+        );
+      if (error) throw error;
+      setPhysicsSaveStatus('saved');
+      setTimeout(() => setPhysicsSaveStatus('idle'), 1800);
+    } catch (e) {
+      console.error('[physics_slam] save failed', e);
+      setPhysicsSaveStatus('error');
+      setTimeout(() => setPhysicsSaveStatus('idle'), 2500);
+    }
+  };
+  // ------------------------------------------------------------------------
+
   const configuredBaseGloveImageUrl = String(
     getSetting('global_base_glove_image_url', BASE_GLOVE_IMAGE) || BASE_GLOVE_IMAGE
   ).trim() || BASE_GLOVE_IMAGE;
@@ -1475,6 +1539,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           }}
         >
           Test Slam
+        </button>
+        {/* Opslaan voor iedereen: schrijft alle physics-instellingen naar app_settings.
+            Alleen admins mogen schrijven (RLS); anderen krijgen een foutmelding. */}
+        <button
+          type="button"
+          className="rounded bg-emerald-600/80 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-emerald-600 disabled:opacity-60"
+          onClick={saveGlobalPhysics}
+          disabled={physicsSaveStatus === 'saving'}
+        >
+          {physicsSaveStatus === 'saving' && 'Opslaan...'}
+          {physicsSaveStatus === 'saved' && '✓ Opgeslagen voor iedereen'}
+          {physicsSaveStatus === 'error' && '✗ Fout (admin nodig?)'}
+          {physicsSaveStatus === 'idle' && 'Opslaan voor iedereen'}
         </button>
         {(() => {
           const applyIntensity = (v: number) => {
