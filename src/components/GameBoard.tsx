@@ -147,7 +147,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // --- STAP 1: OBB / SAT physics-laag (debug) -------------------------------
   // Anker start op 0.000: stenen blijven liggen waar collision ze duwt.
   const [physicsEnabled, setPhysicsEnabled] = useState(true);
-  const [anchorStrength, setAnchorStrength] = useState(0.1);
+  const [anchorStrength, setAnchorStrength] = useState(-1);
   const [showCollisionDebug, setShowCollisionDebug] = useState(false);
   const [physicsPanelOpen, setPhysicsPanelOpen] = useState(false);
   // Hard-slam visuele tuning (matcht CanvasDemo defaults).
@@ -155,15 +155,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // jumpHeight  = pixels dat de steen "omhoog" wipt via translate (demo: 20)
   // popScale    = extra schaal op de piek van de envelope (demo: 0.15)
   // shakeAmp    = per-frame trill-amplitude in pixels (demo: 15)
-  const [scatterBase, setScatterBase] = useState(70);
+  const [scatterBase, setScatterBase] = useState(15);
   const [jumpHeight, setJumpHeight] = useState(20);
   const [popScaleAmount, setPopScaleAmount] = useState(0.15);
   const [shakeAmp, setShakeAmp] = useState(15);
   // Bouncing jump: het aantal keer dat de steen op-en-neer wipt en hoe snel
   // die bounces uitdempen. |sin(π·f·t)| * exp(-t·damping) geeft meerdere
   // decayende sprongetjes zoals een echte steen die op tafel valt.
-  const [bounceFrequency, setBounceFrequency] = useState(5); // Hz (aantal bounces per seconde)
-  const [bounceDamping, setBounceDamping] = useState(2.5); // hoe snel de sprong uitdempt
+  const [bounceFrequency, setBounceFrequency] = useState(11.5); // Hz (aantal bounces per seconde)
+  const [bounceDamping, setBounceDamping] = useState(7); // hoe snel de sprong uitdempt
   // Global save/load status voor physics-instellingen (in app_settings).
   const [physicsSaveStatus, setPhysicsSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const hasLoadedGlobalPhysicsRef = useRef(false);
