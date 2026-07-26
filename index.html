@@ -15,6 +15,27 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <script>
+      // Canonical host redirect: root domain -> www variant (same TLD behouden)
+      (function () {
+        try {
+          var host = window.location.hostname;
+          var roots = ["wegidomino.com", "wegidomino.nl"];
+          if (roots.indexOf(host) !== -1) {
+            var target =
+              "https://www." +
+              host +
+              window.location.pathname +
+              window.location.search +
+              window.location.hash;
+            window.location.replace(target);
+          }
+        } catch (e) {
+          /* geen redirect bij fouten */
+        }
+      })();
+    </script>
   </head>
 
   <body>
