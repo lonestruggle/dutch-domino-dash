@@ -1,4 +1,5 @@
 import React from 'react';
+import logoAsset from '@/assets/wegidomino-logo.png.asset.json';
 
 interface DominoIconProps {
   className?: string;
@@ -8,8 +9,8 @@ interface DominoIconProps {
 export const DominoIcon: React.FC<DominoIconProps> = ({ className = "", size = 24 }) => {
   return (
     <img
-      src="/lovable-uploads/1e198cd8-a84d-4a5e-be9d-e088b01c3d54.png"
-      alt="Domino Logo"
+      src={logoAsset.url}
+      alt="Wegi Domino Logo"
       width={size}
       height={size}
       className={className}
