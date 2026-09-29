@@ -16,3 +16,9 @@
 - [x] "Wega di sen" vertalen als "money play"
 - [x] Onvertaalde/onduidelijke teksten aan gebruiker melden (Changa + CanvasDemo openstaand bij gebruiker)
 - [ ] Verifiëren in preview: NL/EN wissel toont vertaalde teksten op alle schermen
+
+## Vertaalbeslissingen (bevestigd door gebruiker)
+- Verzuim (EN): "failed to claim the highest domino ... in time"
+- "laatste plaatser" (EN): "the last player to place a tile"
+- Changa: nog onbekend — voorlopig onvertaald laten
+- CanvasDemo: bewust niet vertalen (interne testpagina)
