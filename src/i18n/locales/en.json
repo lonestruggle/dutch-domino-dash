@@ -139,7 +139,7 @@
     "gameMode": "Game mode",
     "gameModePh": "Pick a game mode",
     "classic": "Classic",
-    "wega": "Wega di sen (coins)",
+    "wega": "Money Play (coins)",
     "stakeLabel": "Stake (coins per round)",
     "yourBalance": "Your balance: {{coins}} coins",
     "creating": "Creating...",
