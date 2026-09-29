@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ interface TableBackgroundManagerProps {
 }
 
 export const TableBackgroundManager: React.FC<TableBackgroundManagerProps> = ({ onBackgroundsChange }) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [backgrounds, setBackgrounds] = useState<TableBackground[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,7 +215,7 @@ export const TableBackgroundManager: React.FC<TableBackgroundManagerProps> = ({ 
   };
 
   if (loading) {
-    return <div>Laden...</div>;
+    return <div>{t('common.loading')}</div>;
   }
 
   return (
@@ -223,7 +225,7 @@ export const TableBackgroundManager: React.FC<TableBackgroundManagerProps> = ({ 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
-            Nieuwe Tafel Achtergrond Uploaden
+            {t('bg.uploadNew')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -276,7 +278,7 @@ export const TableBackgroundManager: React.FC<TableBackgroundManagerProps> = ({ 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5" />
-            Beheer Tafel Achtergronden ({backgrounds.length})
+            {t('bg.manage', { n: backgrounds.length })}
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Heart, HeartOff } from 'lucide-react';
@@ -27,6 +28,7 @@ export const TableBackgroundSelector: React.FC<TableBackgroundSelectorProps> = (
   const [backgrounds, setBackgrounds] = useState<TableBackground[]>([]);
   const [loading, setLoading] = useState(true);
   const { favoriteBackground, setFavoriteTableBackground } = useFavoriteTableBackground();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchTableBackgrounds = async () => {
@@ -66,10 +68,10 @@ export const TableBackgroundSelector: React.FC<TableBackgroundSelectorProps> = (
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Tafel Achtergrond</CardTitle>
+          <CardTitle className="text-lg">{t('bg.table')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Laden...</p>
+          <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
         </CardContent>
       </Card>
     );
@@ -82,9 +84,9 @@ export const TableBackgroundSelector: React.FC<TableBackgroundSelectorProps> = (
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Tafel Achtergrond</CardTitle>
+        <CardTitle className="text-lg">{t('bg.table')}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Kies een speciale achtergrond voor achter de tafel (optioneel)
+          {t('bg.chooseTable')}
         </p>
       </CardHeader>
       <CardContent>

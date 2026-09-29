@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ interface BackgroundPermission {
 }
 
 export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ onBackgroundsChange }) => {
+  const { t } = useTranslation();
   console.log('BackgroundManager component mounting...');
   
   const { backgrounds, loading, refetch } = useCustomBackgrounds();
@@ -319,7 +321,7 @@ export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ onBackgrou
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-muted-foreground">Achtergronden laden...</div>
+        <div className="text-muted-foreground">{t('bg.loading')}</div>
       </div>
     );
   }
@@ -328,7 +330,7 @@ export const BackgroundManager: React.FC<BackgroundManagerProps> = ({ onBackgrou
   if (!backgrounds) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-muted-foreground">Kan achtergronden niet laden</div>
+        <div className="text-muted-foreground">{t('bg.loadError')}</div>
       </div>
     );
   }

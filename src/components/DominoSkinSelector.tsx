@@ -1,6 +1,7 @@
 import { useDominoSkins, skinBackgroundStyle } from '@/hooks/useDominoSkins';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface DominoSkinSelectorProps {
   selectedSkinId: string | null;
@@ -9,13 +10,14 @@ interface DominoSkinSelectorProps {
 
 export function DominoSkinSelector({ selectedSkinId, onSelect }: DominoSkinSelectorProps) {
   const { skins, loading } = useDominoSkins();
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium text-white/90">Domino skin (achterkant)</div>
+      <div className="text-sm font-medium text-white/90">{t('skins.selector')}</div>
       {loading ? (
         <div className="flex items-center gap-2 text-white/70 text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" /> Skins laden...
+          <Loader2 className="h-4 w-4 animate-spin" /> {t('skins.loading')}
         </div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">

@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Play, Users, UserCircle, LogOut, LogIn, Settings, UserPlus } from 'lucide-react';
 import { DominoIcon } from '@/components/DominoIcon';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { IS_DESKTOP } from '@/lib/platform';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -21,6 +22,8 @@ export default function Home() {
   const [username, setUsername] = useState<string>('');
   const { t, i18n } = useTranslation();
   const lang = (i18n.resolvedLanguage || i18n.language || 'nl').slice(0, 2);
+  // In der Desktop-App ist Single Player (gegen Bots) immer verfügbar – auch offline.
+  const singlePlayerAvailable = IS_DESKTOP || getSetting('single_player_enabled') === true;
 
   useEffect(() => {
     trackPageView('home');
@@ -135,8 +138,8 @@ export default function Home() {
               </p>
             </div>
 
-            <div className={`grid grid-cols-1 ${getSetting('single_player_enabled') === true ? 'md:grid-cols-2' : ''} gap-6`}>
-              {getSetting('single_player_enabled') === true && (
+            <div className={`grid grid-cols-1 ${singlePlayerAvailable ? 'md:grid-cols-2' : ''} gap-6`}>
+              {singlePlayerAvailable && (
                 <Card className="hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white/10 backdrop-blur-md border-white/20">
                   <CardHeader className="text-center">
                     <div className="mx-auto mb-4 p-3 bg-white/20 rounded-full w-fit">
@@ -148,14 +151,28 @@ export default function Home() {
                     <p className="text-white/80">
                       {t('home.singlePlayerDesc')}
                     </p>
-                    <Button 
-                      onClick={() => navigate('/single-player')} 
-                      className="w-full bg-gray-500 hover:bg-gray-500 text-white cursor-not-allowed"
-                      size="lg"
-                      disabled
-                    >
-                      {t('home.singlePlayerDisabled')}
-                    </Button>
+                    {IS_DESKTOP ? (
+                      <Button
+                        onClick={() => navigate('/single-player')}
+                        className="w-full bg-primary hover:bg-primary/80 text-white"
+                        size="lg"
+                      >
+                        <Play className="mr-2 h-4 w-4" />
+                        {t('home.playVsBots')}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => navigate('/single-player')}
+                        className="w-full bg-gray-500 hover:bg-gray-500 text-white cursor-not-allowed"
+                        size="lg"
+                        disabled
+                      >
+                        {t('home.singlePlayerDisabled')}
+                      </Button>
+                    )}
+                    {IS_DESKTOP && (
+                      <p className="text-xs text-white/60">{t('home.offlineNote')}</p>
+                    )}
                   </CardContent>
                 </Card>
               )}

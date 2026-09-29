@@ -5,6 +5,7 @@ import { BoneyardScatter } from '@/components/BoneyardScatter';
 import { DominoTile } from '@/components/DominoTile';
 import { Coins, Hand, AlertTriangle } from 'lucide-react';
 import type { DominoData } from '@/types/domino';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   lobbyId: string;
@@ -25,6 +26,7 @@ const CLAIM_TIMER_MS = 3000;
  * - ended (claim_verzuim): rode verzuim-overlay met boete
  */
 export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPosition, allPlayers, onChanged, adminFaceUp, skin }) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState<number>(() => Date.now());
@@ -101,7 +103,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
         if (error) throw error;
         const res = data as any;
         if (res?.blocked) {
-          toast({ title: 'Spel stilgelegd!', description: 'Iemand heeft een eerdere steen verzuimd te claimen.', variant: 'destructive' });
+          toast({ title: t('wega.halted'), description: t('wega.missedClaimToast'), variant: 'destructive' });
         }
         onChanged();
       } catch (e: any) {
@@ -156,7 +158,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
 
             {missed.length > 0 && (
               <div className="text-xs text-orange-300/80 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> {missed.length} steen/stenen verzuimd — spel wordt geblokkeerd bij volgende claim
+                <AlertTriangle className="h-3 w-3" /> {t('wega.missedCount', { n: missed.length })}
               </div>
             )}
           </div>
@@ -183,9 +185,9 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
       <div className="max-w-4xl w-full mx-auto">
         <header className="text-center mb-4">
           <h2 className="text-2xl font-bold text-yellow-300 flex items-center justify-center gap-2">
-            <Coins className="h-6 w-6" /> Wega di sen — Inzet {stake} coins
+            <Coins className="h-6 w-6" /> {t('wega.title', { stake })}
           </h2>
-          <p className="text-sm text-white/80 mt-1">Trek 5 stenen uit de boneyard</p>
+          <p className="text-sm text-white/80 mt-1">{t('wega.drawFive')}</p>
         </header>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
@@ -202,7 +204,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
 
         <div className="bg-black/40 rounded-xl p-3">
           <div className="text-white/80 text-sm mb-2 text-center">
-            {myCount < 5 ? `Klik op een steen — nog ${5 - myCount} te trekken` : 'Wacht tot iedereen 5 stenen heeft…'}
+            {myCount < 5 ? t('wega.clickTileLeft', { left: 5 - myCount }) : t('wega.waitAllDraw')}
           </div>
           <BoneyardScatter
             slotCount={slotCount}
@@ -219,6 +221,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
 
 // === Verzuim overlay ===
 const VerzuimOverlay: React.FC<{ verzuim: any; stake: number }> = ({ verzuim, stake }) => {
+  const { t } = useTranslation();
   const tile = verzuim?.tile;
   const tileLabel = tile ? `${tile.value1}-${tile.value2}` : '?';
   return (
@@ -226,11 +229,10 @@ const VerzuimOverlay: React.FC<{ verzuim: any; stake: number }> = ({ verzuim, st
       <div className="max-w-xl w-full mx-auto bg-red-950/80 border-2 border-red-500 rounded-2xl p-6 text-center ring-4 ring-red-500/40 shadow-2xl shadow-red-900/60">
         <div className="flex items-center justify-center gap-2 text-red-300 mb-2">
           <AlertTriangle className="h-7 w-7" />
-          <h2 className="text-2xl font-extrabold uppercase tracking-wider">Spel stilgelegd!</h2>
+          <h2 className="text-2xl font-extrabold uppercase tracking-wider">{t('wega.halted')}</h2>
         </div>
         <p className="text-white text-lg mt-3">
-          <span className="font-bold text-yellow-300">{verzuim?.username || 'Speler'}</span> heeft verzuimd om de{' '}
-          <span className="font-bold text-yellow-300">{tileLabel}</span> tijdig te claimen.
+          <span className="font-bold text-yellow-300">{verzuim?.username || t('wega.playerFallback')}</span>{' '}{t('wega.failedToClaim', { tile: tileLabel })}
         </p>
         <div className="flex justify-center my-4 animate-pulse">
           {tile && (

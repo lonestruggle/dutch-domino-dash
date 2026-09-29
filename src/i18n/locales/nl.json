@@ -33,6 +33,8 @@
     "singlePlayer": "Single Player",
     "singlePlayerDesc": "Speel tegen de computer en oefen je vaardigheden",
     "singlePlayerDisabled": "Tijdelijk Buiten Gebruik",
+    "playVsBots": "Speel tegen bots",
+    "offlineNote": "Werkt ook zonder internet",
     "multiplayer": "Multiplayer",
     "multiplayerDesc": "Speel met vrienden online (maximaal 4 spelers)",
     "joinMultiplayer": "Doe mee met Multiplayer",
@@ -40,6 +42,14 @@
     "footer": "Maak lobby's aan, join bestaande games en speel real-time met anderen",
     "metaTitle": "Wegi Domino - Online Antilliaans Caribisch dominospel",
     "metaDescription": "Speel het traditionele Antilliaanse dominospel online. Wegi Domino brengt het authentieke Caribische dominospel naar je browser."
+  },
+  "singlePlayerSetup": {
+    "title": "Speel tegen bots",
+    "subtitle": "Kies hoeveel bots er meespelen (4 spelers totaal)",
+    "bots": "bots",
+    "start": "Start spel",
+    "back": "Terug",
+    "you": "Jij"
   },
   "auth": {
     "brand": "Wegi Domino",
@@ -105,7 +115,13 @@
     "selectStone": "Jouw beurt. Selecteer een steen.",
     "notYourTurn": "Het is niet jouw beurt!",
     "notAvailable": "Niet beschikbaar",
-    "showResult": "Resultaat tonen"
+    "showResult": "Resultaat tonen",
+    "drawTileAria": "Trek deze steen",
+    "noTilesInHand": "Geen stenen in hand.",
+    "newGameTitle": "Nieuw spel starten?",
+    "newGameBody": "Dit reset het huidige spel voor alle spelers en wist het bord. Weet je het zeker?",
+    "starting": "Starten...",
+    "startNew": "Start nieuw spel"
   },
   "lobby": {
     "title": "Lobby's",
@@ -241,5 +257,77 @@
     "changa": "Changa",
     "points": "Punten",
     "hardSlams": "Hard Slams"
+  },
+  "invite": {
+    "noneSent": "Je hebt nog geen uitnodigingen verstuurd."
+  },
+  "bg": {
+    "table": "Tafelblad Achtergrond",
+    "chooseBoard": "Kies de achtergrond voor het spelbord",
+    "loading": "Achtergronden laden...",
+    "loadError": "Kan achtergronden niet laden",
+    "chooseTable": "Kies een speciale achtergrond voor achter de tafel (optioneel)",
+    "uploadNew": "Nieuwe Tafel Achtergrond Uploaden",
+    "manage": "Beheer Tafel Achtergronden ({{n}})"
+  },
+  "skins": {
+    "selector": "Domino skin (achterkant)",
+    "loading": "Skins laden..."
+  },
+  "glove": {
+    "globalSkin": "Globale handschoen skin (voor iedereen)",
+    "skinViaAdmin": "Skin upload en toewijzing beheer je nu via de Admin Page.",
+    "alwaysVisible": "Handschoen altijd zichtbaar (globaal)"
+  },
+  "wega": {
+    "title": "Wega di sen — Inzet {{stake}} coins",
+    "titleShort": "Wega — Inzet {{stake}}",
+    "drawFive": "Trek 5 stenen uit de boneyard",
+    "clickTileLeft": "Klik op een steen — nog {{left}} te trekken",
+    "waitAllDraw": "Wacht tot iedereen 5 stenen heeft…",
+    "halted": "Spel stilgelegd!",
+    "playerFallback": "Speler",
+    "failedToClaim": "heeft verzuimd om de {{tile}} tijdig te claimen.",
+    "autoPassOn": "Auto-pas aan",
+    "pass": "Pas",
+    "confirmPassTitle": "Pas bevestigen",
+    "confirmPassBody": "Weet je zeker dat je wilt passen? Je betaalt {{stake}} coins aan de laatste plaatser (of meer bij openingsbonus).",
+    "missedClaimToast": "Iemand heeft een eerdere steen verzuimd te claimen.",
+    "missedCount": "{{n}} steen/stenen verzuimd — spel wordt geblokkeerd bij volgende claim"
+  },
+  "devtools": {
+    "autoCompactTitle": "Automatisch stenen samenvoegen na een zet",
+    "autoCompact": "Auto-samenvoegen",
+    "on": "aan",
+    "off": "uit",
+    "autoCompactHint": "Stenen samenvoegen in zo min mogelijk handschoenen",
+    "merge": "Samenvoegen",
+    "alignGlove": "Handschoen uitlijnen",
+    "dragHint": "Sleep sleuven direct op de handschoen. Shift+sleep = draaien. Dubbelklik = reset sleuf.",
+    "dragOn": "✋ Sleep aan",
+    "drag": "✋ Sleep",
+    "calibrateHint": "Klik één voor één op elke sleuf in de handschoen. Klaar in 6 kliks.",
+    "clickSlot": "Klik sleuf",
+    "clickCalibration": "Klik-kalibratie",
+    "reset": "Reset",
+    "copy": "Kopieer",
+    "close": "Sluit",
+    "gloveWidthMobile": "Handschoen breedte (mobile)",
+    "gloveWidthDesktop": "Handschoen breedte (desktop)",
+    "aspectRatio": "Verhouding (h/b)",
+    "glove": "Handschoen",
+    "left": "Links",
+    "rightMirrored": "Rechts (gespiegeld)",
+    "rotation": "Rotatie",
+    "scale": "Schaal",
+    "storedLocally": "Waarden worden lokaal opgeslagen. Klik \"Kopieer\" en stuur ze aan mij zodat ik ze als standaard kan inbouwen.",
+    "nudgeLeft": "Duw eerste steen naar links",
+    "nudgeUp": "Duw eerste steen naar boven",
+    "nudgeDown": "Duw eerste steen naar onderen",
+    "nudgeRight": "Duw eerste steen naar rechts",
+    "nudgeHelp": "Kleine duw van 8px per klik. Klik meerdere keren snel achter elkaar in dezelfde richting → je ziet d1 letterlijk wegschuiven i.p.v. dat d0 er dwars doorheen tunnelt.",
+    "depthTitle": "3D-Depth: til steen op",
+    "liftTitle": "Til de eerste steen op (z=1) — botst niet meer met andere",
+    "dropTitle": "Zet de eerste steen terug op tafel"
   }
 }

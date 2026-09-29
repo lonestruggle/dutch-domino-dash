@@ -78,4 +78,5 @@ export interface GameState {
   // Nieuw voor spelafloop
   gameEndReason?: 'blocked' | 'changa' | 'normal';
   winner_position?: number;
+  consecutivePasses?: number;
 }

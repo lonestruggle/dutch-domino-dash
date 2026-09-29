@@ -8,6 +8,20 @@ const CELL_SIZE = 48;
 
 const isDouble = (data: DominoData) => data?.value1 === data?.value2;
 
+// Bepaal bij een geblokkeerd spel de winnaar: laagste totale pips in hand.
+const getLowestPipWinner = (hands: DominoData[][]): number => {
+  let winner = 0;
+  let minPips = Infinity;
+  hands.forEach((hand, index) => {
+    const totalPips = (hand || []).reduce((sum, d) => sum + d.value1 + d.value2, 0);
+    if (totalPips < minPips) {
+      minPips = totalPips;
+      winner = index;
+    }
+  });
+  return winner;
+};
+
 const shuffleArray = <T>(array: T[]): void => {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -15,7 +29,7 @@ const shuffleArray = <T>(array: T[]): void => {
   }
 };
 
-export const useDominoGame = (localPlayerPosition?: number) => {
+export const useDominoGame = (localPlayerPosition?: number, totalPlayers?: number) => {
   const { settings } = useGameVisualSettings();
   const { toast } = useToast();
   const [gameState, setGameState] = useState<GameState>({
@@ -848,11 +862,29 @@ export const useDominoGame = (localPlayerPosition?: number) => {
           allHandSizes: (newState.playerHands || []).map((h) => h?.length ?? 0),
         });
       }
+
+      // Lokale beurten-logica (offline spel tegen bots): geef de beurt door.
+      if (typeof totalPlayers === 'number' && totalPlayers > 1) {
+        const actor = typeof actorPosition === 'number' ? actorPosition : localPlayerPosition;
+        if (typeof actor === 'number') {
+          const turnHands = newState.playerHands || [newPlayerHand];
+          newState.currentPlayer = (actor + 1) % totalPlayers;
+          newState.consecutivePasses = 0;
+          if (isGameWon) {
+            newState.isGameOver = true;
+            newState.gameEndReason = 'normal';
+            newState.winner_position = actor;
+          } else if (newState.isGameOver) {
+            newState.gameEndReason = 'blocked';
+            newState.winner_position = getLowestPipWinner(turnHands);
+          }
+        }
+      }
       
       
       return newState;
     });
-  }, [checkBlockedGame, localPlayerPosition, regenerateOpenEnds]);
+  }, [checkBlockedGame, localPlayerPosition, regenerateOpenEnds, totalPlayers]);
 
   const drawFromBoneyard = useCallback((actorPosition?: number) => {
     console.log('🎯 LOCAL DRAW START - boneyard size:', gameStateRef.current.boneyard.length);
@@ -917,10 +949,24 @@ export const useDominoGame = (localPlayerPosition?: number) => {
       const isBlocked = boardHasDominoes && checkBlockedGame(openEnds, prev.board, allHands, newBoneyard);
       newState.isGameOver = isBlocked;
       
+      // Lokale beurten-logica (offline spel tegen bots): trekken kost de beurt.
+      if (typeof totalPlayers === 'number' && totalPlayers > 1) {
+        const actor = typeof actorPosition === 'number' ? actorPosition : localPlayerPosition;
+        if (typeof actor === 'number') {
+          newState.currentPlayer = (actor + 1) % totalPlayers;
+          newState.consecutivePasses = 0;
+          if (isBlocked) {
+            newState.isGameOver = true;
+            newState.gameEndReason = 'blocked';
+            newState.winner_position = getLowestPipWinner(allHands);
+          }
+        }
+      }
+
       console.log('✅ LOCAL DRAW COMPLETE - returning new state');
       return newState;
     });
-  }, [checkBlockedGame, localPlayerPosition, regenerateOpenEnds]);
+  }, [checkBlockedGame, localPlayerPosition, regenerateOpenEnds, totalPlayers]);
 
   const selectHandDomino = useCallback((index: number) => {
     setGameState(prev => ({
@@ -991,10 +1037,24 @@ export const useDominoGame = (localPlayerPosition?: number) => {
         console.log('🔄 Game is blocked after drawing from boneyard');
         newState.isGameOver = isBlocked;
       }
+
+      // Lokale beurten-logica (offline spel tegen bots): trekken kost de beurt.
+      if (typeof totalPlayers === 'number' && totalPlayers > 1) {
+        const actor = typeof resolvedActorPosition === 'number' ? resolvedActorPosition : localPlayerPosition;
+        if (typeof actor === 'number') {
+          newState.currentPlayer = (actor + 1) % totalPlayers;
+          newState.consecutivePasses = 0;
+          if (isBlocked) {
+            newState.isGameOver = true;
+            newState.gameEndReason = 'blocked';
+            newState.winner_position = getLowestPipWinner(allHands);
+          }
+        }
+      }
       
       return newState;
     });
-  }, [regenerateOpenEnds, checkBlockedGame, localPlayerPosition]);
+  }, [regenerateOpenEnds, checkBlockedGame, localPlayerPosition, totalPlayers]);
 
   // Function to rotate a domino on the board
   const rotateDomino = useCallback((dominoId: string) => {
@@ -1062,6 +1122,31 @@ export const useDominoGame = (localPlayerPosition?: number) => {
     });
   }, [regenerateOpenEnds]);
 
+  // Lokale pas-functie voor offline spel tegen bots: geef de beurt door.
+  // Als iedereen achter elkaar passt met een lege boneyard is het spel geblokkeerd.
+  const passMove = useCallback((actorPosition?: number) => {
+    if (typeof totalPlayers !== 'number' || totalPlayers <= 1) return;
+    setGameState(prev => {
+      const actor = typeof actorPosition === 'number' ? actorPosition : (prev.currentPlayer ?? localPlayerPosition ?? 0);
+      const nextPlayer = (actor + 1) % totalPlayers;
+      const passes = (prev.consecutivePasses || 0) + 1;
+      const boneyardEmpty = prev.boneyard.length === 0;
+      const allHands = prev.playerHands || [prev.playerHand];
+      if (boneyardEmpty && passes >= totalPlayers) {
+        return {
+          ...prev,
+          currentPlayer: nextPlayer,
+          consecutivePasses: passes,
+          isGameOver: true,
+          gameEndReason: 'blocked' as const,
+          winner_position: getLowestPipWinner(allHands),
+          selectedHandIndex: null,
+        };
+      }
+      return { ...prev, currentPlayer: nextPlayer, consecutivePasses: passes };
+    });
+  }, [totalPlayers, localPlayerPosition]);
+
   // Hard Slam function
   const hardSlam = useCallback(() => {
     console.log('🔥 HARD SLAM ACTIVATED!');
@@ -1085,6 +1170,7 @@ export const useDominoGame = (localPlayerPosition?: number) => {
     resetGame,
     rotateDomino,
     hardSlam,
+    passMove,
     hasDifferentNeighbor: (x: number, y: number) => hasDifferentNeighbor(x, y),
     regenerateOpenEnds: (state?: GameState) => regenerateOpenEnds(state || gameStateRef.current),
     manualBlockedCheck: () => {
