@@ -1742,7 +1742,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 const id = Object.keys(gameState.dominoes)[0];
                 if (id) stonePhysics.nudge(id, -8, 0);
               }}
-              title="Duw eerste steen naar links"
+              title={t('devtools.nudgeLeft')}
             >
               ←
             </button>
@@ -1753,7 +1753,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 const id = Object.keys(gameState.dominoes)[0];
                 if (id) stonePhysics.nudge(id, 0, -8);
               }}
-              title="Duw eerste steen naar boven"
+              title={t('devtools.nudgeUp')}
             >
               ↑
             </button>
@@ -1764,7 +1764,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 const id = Object.keys(gameState.dominoes)[0];
                 if (id) stonePhysics.nudge(id, 0, 8);
               }}
-              title="Duw eerste steen naar onderen"
+              title={t('devtools.nudgeDown')}
             >
               ↓
             </button>
@@ -1775,20 +1775,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 const id = Object.keys(gameState.dominoes)[0];
                 if (id) stonePhysics.nudge(id, 8, 0);
               }}
-              title="Duw eerste steen naar rechts"
+              title={t('devtools.nudgeRight')}
             >
               →
             </button>
           </div>
           <div className="mt-1 text-[10px] opacity-60">
-            Kleine duw van 8px per klik. Klik meerdere keren snel achter elkaar
-            in dezelfde richting → je ziet d1 letterlijk wegschuiven i.p.v.
-            dat d0 er dwars doorheen tunnelt.
+            {t('devtools.nudgeHelp')}
           </div>
         </div>
         <div className="mt-1 border-t border-white/10 pt-1">
           <div className="mb-1 text-[10px] uppercase tracking-wide opacity-70">
-            3D-Depth: til steen op
+            {t('devtools.depthTitle')}
           </div>
           <div className="flex gap-1">
             <button
@@ -1798,7 +1796,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 const id = Object.keys(gameState.dominoes)[0];
                 if (id) stonePhysics.setLift(id, 1);
               }}
-              title="Til de eerste steen op (z=1) — botst niet meer met andere"
+              title={t('devtools.liftTitle')}
             >
               Lift d0 ↑
             </button>
@@ -1809,7 +1807,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 const id = Object.keys(gameState.dominoes)[0];
                 if (id) stonePhysics.setLift(id, 0);
               }}
-              title="Zet de eerste steen terug op tafel"
+              title={t('devtools.dropTitle')}
             >
               Drop d0 ↓
             </button>

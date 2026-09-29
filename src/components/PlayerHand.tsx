@@ -85,6 +85,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   flippedTiles,
   onTileDoubleClick,
 }) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -337,18 +338,18 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               type="button"
               onClick={() => setAutoCompact(v => !v)}
               className={`text-xs px-2 py-1 rounded border border-ui-border ${autoCompact ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
-              title="Automatisch stenen samenvoegen na een zet"
+              title={t('devtools.autoCompactTitle')}
             >
-              Auto-samenvoegen: {autoCompact ? 'aan' : 'uit'}
+              {t('devtools.autoCompact')}: {autoCompact ? t('devtools.on') : t('devtools.off')}
             </button>
             {!autoCompact && hand.length > COMPACT_THRESHOLD && chunks.length > 1 && (
               <button
                 type="button"
                 onClick={() => setCompactTick(t => t + 1)}
                 className="text-xs px-2 py-1 rounded border border-ui-border bg-white hover:bg-gray-100 text-gray-900"
-                title="Stenen samenvoegen in zo min mogelijk handschoenen"
+                title={t('devtools.autoCompactHint')}
               >
-                Samenvoegen
+                {t('devtools.merge')}
               </button>
             )}
             {canAccessDevTools && (
@@ -356,7 +357,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
               type="button"
               onClick={() => setShowAligner(s => !s)}
               className="text-xs px-2 py-1 rounded border border-ui-border bg-white hover:bg-gray-100 text-gray-900"
-              title="Handschoen uitlijnen"
+              title={t('devtools.alignGlove')}
             >
               ⚙︎
             </button>
@@ -366,9 +367,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 type="button"
                 onClick={() => setDragMode(d => !d)}
                 className={`text-xs px-2 py-1 rounded border border-ui-border ${dragMode ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
-                title="Sleep sleuven direct op de handschoen. Shift+sleep = draaien. Dubbelklik = reset sleuf."
+                title={t('devtools.dragHint')}
               >
-                {dragMode ? '✋ Sleep aan' : '✋ Sleep'}
+                {dragMode ? t('devtools.dragOn') : t('devtools.drag')}
               </button>
             )}
             {canAccessDevTools && showAligner && (
@@ -376,9 +377,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
                 type="button"
                 onClick={() => setCalibrateStep(s => (s === null ? 0 : null))}
                 className={`text-xs px-2 py-1 rounded border border-ui-border ${calibrateStep !== null ? 'bg-accent text-accent-foreground' : 'bg-white hover:bg-gray-100 text-gray-900'}`}
-                title="Klik één voor één op elke sleuf in de handschoen. Klaar in 6 kliks."
+                title={t('devtools.calibrateHint')}
               >
-                {calibrateStep !== null ? `🎯 Klik sleuf ${calibrateStep + 1}/6` : '🎯 Klik-kalibratie'}
+                {calibrateStep !== null ? `🎯 ${t('devtools.clickSlot')} ${calibrateStep + 1}/6` : `🎯 ${t('devtools.clickCalibration')}`}
               </button>
             )}
           </div>
@@ -594,6 +595,7 @@ interface GloveAlignerProps {
   onClose: () => void;
 }
 const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, onReset, onClose }) => {
+  const { t } = useTranslation();
   const [slotIdx, setSlotIdx] = useState(0);
   const [side, setSide] = useState<'left' | 'right'>('left');
 
@@ -641,32 +643,32 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
   return (
     <div className="relative z-[80] mb-3 mx-auto max-w-md p-3 rounded-lg border border-ui-border bg-ui-bg/95 shadow-lg text-ui-text">
       <div className="flex items-center justify-between mb-2">
-        <strong className="text-sm">Handschoen uitlijnen</strong>
+        <strong className="text-sm">{t('devtools.alignGlove')}</strong>
         <div className="flex gap-1">
-          <button type="button" onClick={onReset} className="text-xs px-2 py-0.5 rounded border border-ui-border hover:bg-black/5">Reset</button>
-          <button type="button" onClick={copyJSON} className="text-xs px-2 py-0.5 rounded border border-ui-border hover:bg-black/5">Kopieer</button>
-          <button type="button" onClick={onClose} className="text-xs px-2 py-0.5 rounded border border-ui-border hover:bg-black/5">Sluit</button>
+          <button type="button" onClick={onReset} className="text-xs px-2 py-0.5 rounded border border-ui-border hover:bg-black/5">{t('devtools.reset')}</button>
+          <button type="button" onClick={copyJSON} className="text-xs px-2 py-0.5 rounded border border-ui-border hover:bg-black/5">{t('devtools.copy')}</button>
+          <button type="button" onClick={onClose} className="text-xs px-2 py-0.5 rounded border border-ui-border hover:bg-black/5">{t('devtools.close')}</button>
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <Row label={isMobile ? 'Handschoen breedte (mobile)' : 'Handschoen breedte (desktop)'}
+        <Row label={isMobile ? t('devtools.gloveWidthMobile') : t('devtools.gloveWidthDesktop')}
              value={isMobile ? align.widthMobile : align.widthDesktop}
              min={160} max={900} step={2} suffix="px"
              onChange={(n) => onChange(isMobile ? { widthMobile: n } : { widthDesktop: n })} />
-        <Row label="Verhouding (h/b)" value={align.aspectRatio} min={0.2} max={1.2} step={0.01} onChange={(n) => onChange({ aspectRatio: n })} />
+        <Row label={t('devtools.aspectRatio')} value={align.aspectRatio} min={0.2} max={1.2} step={0.01} onChange={(n) => onChange({ aspectRatio: n })} />
 
         <div className="mt-2 pt-2 border-t border-ui-border/60">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs w-36 shrink-0">Handschoen</span>
+            <span className="text-xs w-36 shrink-0">{t('devtools.glove')}</span>
             <div className="flex gap-1">
               <button type="button"
                 onClick={() => setSide('left')}
                 className={`text-[11px] px-2 py-0.5 rounded border border-ui-border ${side==='left' ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg'}`}
-              >Links</button>
+              >{t('devtools.left')}</button>
               <button type="button"
                 onClick={() => setSide('right')}
                 className={`text-[11px] px-2 py-0.5 rounded border border-ui-border ${side==='right' ? 'bg-accent text-accent-foreground' : 'bg-ui-bg/60 hover:bg-ui-bg'}`}
-              >Rechts (gespiegeld)</button>
+              >{t('devtools.rightMirrored')}</button>
               {side === 'right' && align.slotsMirrored && (
                 <button type="button"
                   onClick={resetMirroredToAuto}
@@ -844,14 +846,14 @@ const GloveAligner: React.FC<GloveAlignerProps> = ({ align, isMobile, onChange, 
               <>
                 <Row label="X (%)" value={s.xPct} min={-20} max={120} step={0.5} suffix="%" onChange={(n) => patchSlot({ xPct: n })} />
                 <Row label="Y (%)" value={s.yPct} min={-20} max={120} step={0.5} suffix="%" onChange={(n) => patchSlot({ yPct: n })} />
-                <Row label="Rotatie" value={s.rotateDeg} min={-180} max={180} step={0.5} suffix="°" onChange={(n) => patchSlot({ rotateDeg: n })} />
-                <Row label="Schaal" value={s.scale} min={0.3} max={4} step={0.02} onChange={(n) => patchSlot({ scale: n })} />
+                <Row label={t('devtools.rotation')} value={s.rotateDeg} min={-180} max={180} step={0.5} suffix="°" onChange={(n) => patchSlot({ rotateDeg: n })} />
+                <Row label={t('devtools.scale')} value={s.scale} min={0.3} max={4} step={0.02} onChange={(n) => patchSlot({ scale: n })} />
               </>
             );
           })()}
         </div>
       </div>
-      <p className="mt-2 text-[10px] opacity-70">Waarden worden lokaal opgeslagen. Klik "Kopieer" en stuur ze aan mij zodat ik ze als standaard kan inbouwen.</p>
+      <p className="mt-2 text-[10px] opacity-70">{t('devtools.storedLocally')}</p>
     </div>
   );
 };
