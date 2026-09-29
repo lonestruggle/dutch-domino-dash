@@ -33,6 +33,8 @@
     "singlePlayer": "Single Player",
     "singlePlayerDesc": "Play against the computer and practice your skills",
     "singlePlayerDisabled": "Temporarily Unavailable",
+    "playVsBots": "Play vs Bots",
+    "offlineNote": "Also works without internet",
     "multiplayer": "Multiplayer",
     "multiplayerDesc": "Play online with friends (up to 4 players)",
     "joinMultiplayer": "Join Multiplayer",
@@ -40,6 +42,14 @@
     "footer": "Create lobbies, join existing games and play real-time with others",
     "metaTitle": "Wegi Domino - Online Antillean Caribbean domino game",
     "metaDescription": "Play the traditional Antillean domino game online. Wegi Domino brings the authentic Caribbean domino experience to your browser."
+  },
+  "singlePlayerSetup": {
+    "title": "Play vs Bots",
+    "subtitle": "Choose how many bots join (4 players total)",
+    "bots": "bots",
+    "start": "Start game",
+    "back": "Back",
+    "you": "You"
   },
   "auth": {
     "brand": "Wegi Domino",
