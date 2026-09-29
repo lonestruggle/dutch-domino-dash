@@ -115,7 +115,13 @@
     "selectStone": "Your turn. Select a tile.",
     "notYourTurn": "It's not your turn!",
     "notAvailable": "Not available",
-    "showResult": "Show result"
+    "showResult": "Show result",
+    "drawTileAria": "Draw this tile",
+    "noTilesInHand": "No tiles in hand.",
+    "newGameTitle": "Start a new game?",
+    "newGameBody": "This resets the current game for everyone and clears the board. Are you sure?",
+    "starting": "Starting...",
+    "startNew": "Start new game"
   },
   "lobby": {
     "title": "Lobbies",
@@ -251,5 +257,73 @@
     "changa": "Changa",
     "points": "Points",
     "hardSlams": "Hard Slams"
+  },
+  "invite": {
+    "noneSent": "You haven't sent any invitations yet."
+  },
+  "bg": {
+    "table": "Table Background",
+    "chooseBoard": "Choose the background for the game board",
+    "loading": "Loading backgrounds...",
+    "loadError": "Unable to load backgrounds",
+    "chooseTable": "Choose a special background behind the table (optional)"
+  },
+  "skins": {
+    "selector": "Domino skin (back)",
+    "loading": "Loading skins..."
+  },
+  "glove": {
+    "globalSkin": "Global glove skin (for everyone)",
+    "skinViaAdmin": "Skin upload and assignment is now managed via the Admin Page.",
+    "alwaysVisible": "Glove always visible (global)"
+  },
+  "wega": {
+    "title": "Money Play — Stake {{stake}} coins",
+    "titleShort": "Money Play — Stake {{stake}}",
+    "drawFive": "Draw 5 tiles from the boneyard",
+    "clickTileLeft": "Click a tile — {{left}} left to draw",
+    "waitAllDraw": "Wait until everyone has drawn 5 tiles…",
+    "halted": "Game halted!",
+    "playerFallback": "Player",
+    "failedToClaim": "failed to claim the {{tile}} in time.",
+    "autoPassOn": "Auto-pass on",
+    "pass": "Pass",
+    "confirmPassTitle": "Confirm pass",
+    "confirmPassBody": "Are you sure you want to pass? You pay {{stake}} coins to the last player to place a tile (or more with the opening bonus)."
+  },
+  "devtools": {
+    "autoCompactTitle": "Automatically merge tiles after a move",
+    "autoCompact": "Auto-merge",
+    "on": "on",
+    "off": "off",
+    "autoCompactHint": "Merge tiles into as few gloves as possible",
+    "merge": "Merge",
+    "alignGlove": "Align glove",
+    "dragHint": "Drag slots directly on the glove. Shift+drag = rotate. Double-click = reset slot.",
+    "dragOn": "✋ Drag on",
+    "drag": "✋ Drag",
+    "calibrateHint": "Click each slot on the glove one by one. Done in 6 clicks.",
+    "clickSlot": "Click slot",
+    "clickCalibration": "Click calibration",
+    "reset": "Reset",
+    "copy": "Copy",
+    "close": "Close",
+    "gloveWidthMobile": "Glove width (mobile)",
+    "gloveWidthDesktop": "Glove width (desktop)",
+    "aspectRatio": "Ratio (h/w)",
+    "glove": "Glove",
+    "left": "Left",
+    "rightMirrored": "Right (mirrored)",
+    "rotation": "Rotation",
+    "scale": "Scale",
+    "storedLocally": "Values are stored locally. Click \"Copy\" and send them to me so I can build them in as defaults.",
+    "nudgeLeft": "Push first tile left",
+    "nudgeUp": "Push first tile up",
+    "nudgeDown": "Push first tile down",
+    "nudgeRight": "Push first tile right",
+    "nudgeHelp": "Small push of 8px per click. Click several times quickly in the same direction → you see d1 literally slide away instead of d0 tunneling through.",
+    "depthTitle": "3D depth: lift tile",
+    "liftTitle": "Lift the first tile (z=1) — no longer collides with others",
+    "dropTitle": "Put the first tile back on the table"
   }
 }
