@@ -37,3 +37,4 @@
 - [ ] Nieuwe mobiele ontwerpopties voor het spelscherm tonen; eerdere filmische richting niet gebruiken.
 
 - [ ] Spelscherm mobiel herontwerpen in stijl van Domino Legends D6-voorbeeld: portret-layout, tegenstanders rond tafel met kleine stenen aan de randen, HUD bovenaan (ronde/punten/tijd), avatar onderaan, Klaar/Pas-knoppen; bestaande stenen en handrendering behouden; schaalt ook naar tablet/pc.
+- [ ] Mobiel spelerscherm: voorbeelden maken op basis van Domino Legends D6-referentie (topbar RONDE/PUNTEN/TIJD, tafel met spelers eromheen, handdock onderaan) — spel zelf ongewijzigd. Wacht op keuze van de gebruiker.
