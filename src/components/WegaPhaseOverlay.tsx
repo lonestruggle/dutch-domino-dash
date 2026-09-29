@@ -26,6 +26,7 @@ const CLAIM_TIMER_MS = 3000;
  * - ended (claim_verzuim): rode verzuim-overlay met boete
  */
 export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPosition, allPlayers, onChanged, adminFaceUp, skin }) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState<number>(() => Date.now());
@@ -220,6 +221,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
 
 // === Verzuim overlay ===
 const VerzuimOverlay: React.FC<{ verzuim: any; stake: number }> = ({ verzuim, stake }) => {
+  const { t } = useTranslation();
   const tile = verzuim?.tile;
   const tileLabel = tile ? `${tile.value1}-${tile.value2}` : '?';
   return (
@@ -230,8 +232,7 @@ const VerzuimOverlay: React.FC<{ verzuim: any; stake: number }> = ({ verzuim, st
           <h2 className="text-2xl font-extrabold uppercase tracking-wider">{t('wega.halted')}</h2>
         </div>
         <p className="text-white text-lg mt-3">
-          <span className="font-bold text-yellow-300">{verzuim?.username || t('wega.playerFallback')}</span>{' '}{t('wega.failedToClaimPre')}{' '}
-          <span className="font-bold text-yellow-300">{tileLabel}</span> tijdig te claimen.
+          <span className="font-bold text-yellow-300">{verzuim?.username || t('wega.playerFallback')}</span>{' '}{t('wega.failedToClaim', { tile: tileLabel })}
         </p>
         <div className="flex justify-center my-4 animate-pulse">
           {tile && (
