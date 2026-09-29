@@ -20,6 +20,7 @@ import { WegaPhaseOverlay } from '@/components/WegaPhaseOverlay';
 import { WegaPlayingOverlay } from '@/components/WegaPlayingOverlay';
 import { logGameEvent } from '@/lib/gameLogger';
 import { stableRelayoutTableState } from '@/lib/stableRelayout';
+import { useTranslation } from 'react-i18next';
 
 type MoveWithEffects = LegalMove & { localHardSlamActive?: boolean };
 
@@ -1027,6 +1028,7 @@ const analyzeLShapeFromChain = (
 };
 
 export default function Game() {
+  const { t } = useTranslation();
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -1363,8 +1365,8 @@ export default function Game() {
             winner_position: actorPosition
           };
           const winnerLabel = actorPosition === syncState.playerPosition
-            ? 'Je hebt gewonnen met CHANGA!'
-            : `${syncState.allPlayers[actorPosition]?.username || 'Een speler'} won met CHANGA!`;
+            ? t('game.wonWithChanga')
+            : t('game.playerWonWithChanga', { name: syncState.allPlayers[actorPosition]?.username || t('game.somePlayer') });
           toast({ title: 'CHANGA!', description: winnerLabel });
           changaRef.current = false;
         }
@@ -1381,7 +1383,7 @@ export default function Game() {
     console.log('🎲 Draw from boneyard - turn validation removed, database controls turns');
     const wegaPhase = (syncState.gameState as any)?.wegaPhase;
     if (wegaPhase === 'playing' || wegaPhase === 'ended') {
-      toast({ title: 'Boneyard gesloten', description: 'In Wega di sen kun je geen extra stenen meer trekken.', variant: 'destructive' });
+      toast({ title: t('wega.boneyardClosed'), description: t('wega.boneyardClosedDesc'), variant: 'destructive' });
       return;
     }
     const actingPosition = typeof actorPosition === 'number' ? actorPosition : syncState.currentPlayer;
@@ -1418,7 +1420,7 @@ export default function Game() {
     console.log('🎲 Draw specific from boneyard - turn validation removed, database controls turns');
     const wegaPhase = (syncState.gameState as any)?.wegaPhase;
     if (wegaPhase === 'playing' || wegaPhase === 'ended') {
-      toast({ title: 'Boneyard gesloten', description: 'In Wega di sen kun je geen extra stenen meer trekken.', variant: 'destructive' });
+      toast({ title: t('wega.boneyardClosed'), description: t('wega.boneyardClosedDesc'), variant: 'destructive' });
       return;
     }
     const actingPosition = typeof actorPosition === 'number' ? actorPosition : syncState.currentPlayer;
@@ -1486,8 +1488,8 @@ export default function Game() {
 
     if (syncState.currentPlayer !== syncState.playerPosition) {
       toast({
-        title: 'Niet jouw beurt',
-        description: 'Je kunt stenen alleen fixen in je eigen beurt.',
+        title: t('game.notYourTurnShort'),
+        description: t('game.fixOnlyOwnTurn'),
       });
       return null;
     }
@@ -1495,8 +1497,8 @@ export default function Game() {
     const now = Date.now();
     if (isAnimating || now < moveAnimationLockUntilRef.current) {
       toast({
-        title: 'Animatie actief',
-        description: 'Wacht tot de animatie klaar is en probeer opnieuw.',
+        title: t('game.animationActive'),
+        description: t('game.waitForAnimation'),
       });
       return null;
     }
@@ -1525,8 +1527,8 @@ export default function Game() {
       ?? relayoutTableState(gameState, chosenRotation, gameHook.regenerateOpenEnds);
     if (!relaidState) {
       toast({
-        title: 'Fix mislukt',
-        description: 'Kon geen geldige L-layout maken met deze rotatie.',
+        title: t('game.fixFailed'),
+        description: t('game.noValidLayout'),
         variant: 'destructive',
       });
       return null;
@@ -1553,18 +1555,18 @@ export default function Game() {
     const lShape = analyzeLShapeFromChain(relaidState);
     if (lShape.isL) {
       toast({
-        title: '✅ L-vorm bereikt',
-        description: `Benen: ${lShape.firstLegLength} + ${lShape.secondLegLength} stenen.`,
+        title: `✅ ${t('game.lShapeReached')}`,
+        description: t('game.legsCount', { first: lShape.firstLegLength, second: lShape.secondLegLength }),
       });
     } else if (lShape.turnCount === 0) {
       toast({
-        title: 'Stenen gefixt (rechte lijn)',
-        description: 'Nog geen L-vorm — voeg een bocht toe door verder te leggen.',
+        title: t('game.tilesFixedStraight'),
+        description: t('game.addBend'),
       });
     } else {
       toast({
-        title: 'Stenen gefixt',
-        description: `Nog geen zuivere L (${lShape.turnCount} bochten). Doel: exact één hoek met minimaal 2 stenen per been.`,
+        title: t('game.tilesFixed'),
+        description: t('game.notPureL', { count: lShape.turnCount }),
       });
     }
     return chosenRotation;
@@ -1720,8 +1722,8 @@ export default function Game() {
     if (!wasBlocked) {
       console.log('✅ Manual blocked check: game is NOT blocked');
       toast({
-        title: 'Niet geblokkeerd',
-        description: 'Er is nog minimaal 1 legale zet mogelijk (in hand of boneyard).',
+        title: t('game.notBlocked'),
+        description: t('game.legalMoveExists'),
       });
     }
   }, [gameState, toast, tryFinalizeBlockedGame]);
@@ -2197,21 +2199,21 @@ export default function Game() {
         if (error) {
           console.error('record_game_outcome error', error);
           toast({
-            title: 'Opslaan mislukt',
-            description: error.message || 'Kon uitslag niet opslaan.',
+            title: t('game.saveFailed'),
+            description: error.message || t('game.couldNotSaveResult'),
             variant: 'destructive'
           });
         } else {
           toast({ 
-            title: wonByChanga ? 'Uitslag: CHANGA' : 'Uitslag opgeslagen', 
-            description: wonByChanga ? 'Scorebord bijgewerkt — gewonnen met CHANGA!' : 'Scorebord bijgewerkt.' 
+            title: wonByChanga ? t('game.resultChanga') : t('game.resultSaved'),
+            description: wonByChanga ? t('game.scoreboardUpdatedChanga') : t('game.scoreboardUpdated')
           });
         }
       } catch (err: unknown) {
-        const description = err instanceof Error ? err.message : 'Onbekende fout bij opslaan.';
+        const description = err instanceof Error ? err.message : t('game.unknownSaveError');
         console.error('Result save flow error', err);
         toast({
-          title: 'Opslaan mislukt',
+          title: t('game.saveFailed'),
           description,
           variant: 'destructive'
         });
@@ -2635,7 +2637,7 @@ export default function Game() {
         if (fallback >= 0 && fallback < serverHand.length) handIndex = fallback;
       }
       if (handIndex < 0) {
-        toast({ title: 'Steen niet in hand', description: 'De geselecteerde steen staat niet meer in je hand. Selecteer een andere.', variant: 'destructive' });
+        toast({ title: t('game.tileNotInHand'), description: t('game.tileNoLongerInHand'), variant: 'destructive' });
         setWegaSelectedIndex(null);
         return;
       }
@@ -2652,23 +2654,23 @@ export default function Game() {
       if (r?.ok) {
         setWegaSelectedIndex(null);
         if (r?.win) {
-          toast({ title: r.changa ? '🎉 CHANGA!' : 'Je hebt gewonnen!', description: r.changa ? 'Dubbele uitbetaling!' : 'Spel afgelopen.' });
+          toast({ title: r.changa ? '🎉 CHANGA!' : t('game.youWin'), description: r.changa ? t('wega.doublePayout') : t('game.gameOver') });
         }
       } else {
         const stake = (syncState.gameState as any)?.wegaStake || 10;
         toast({
-          title: `Foute zet — boete ${r?.penalty || stake} coins per speler`,
-          description: r?.reason === 'cell_occupied' ? 'Cel is al bezet'
-            : r?.reason === 'no_matching_end' ? 'Geen passende open einde'
-            : r?.reason === 'illegal_adjacency' ? 'Pips komen niet overeen'
-            : r?.reason === 'pip_mismatch' ? 'Pips komen niet overeen — boete naar tegenstander'
-            : r?.reason === 'illegal_position' ? 'Ongeldige positie (lange zijde of geen open einde)'
-            : r?.reason === 'not_your_turn' ? 'Niet jouw beurt' : 'Ongeldige zet',
+          title: t('wega.invalidMovePenalty', { penalty: r?.penalty || stake }),
+          description: r?.reason === 'cell_occupied' ? t('wega.cellOccupied')
+            : r?.reason === 'no_matching_end' ? t('wega.noMatchingEnd')
+            : r?.reason === 'illegal_adjacency' ? t('wega.pipsMismatch')
+            : r?.reason === 'pip_mismatch' ? t('wega.pipsMismatchPenalty')
+            : r?.reason === 'illegal_position' ? t('wega.invalidPosition')
+            : r?.reason === 'not_your_turn' ? t('game.notYourTurnShort') : t('wega.invalidMove'),
           variant: 'destructive',
         });
       }
     } catch (e: any) {
-      toast({ title: 'Fout', description: e?.message || String(e), variant: 'destructive' });
+      toast({ title: t('common.error'), description: e?.message || String(e), variant: 'destructive' });
     }
   }, [isWegaPlay, wrappedExecuteMove, gameId, wegaSelectedIndex, syncState.gameState, syncState.playerPosition, toast]);
 
@@ -2683,12 +2685,12 @@ export default function Game() {
       const r = data as any;
       const stake = (syncState.gameState as any)?.wegaStake || 10;
       if (r?.blocked) {
-        toast({ title: 'Spel geblokkeerd', description: `Speler ${r.winner_position + 1} wint met laagste pips.` });
+        toast({ title: t('wega.gameBlocked'), description: t('wega.playerWinsLowest', { number: r.winner_position + 1 }) });
       } else {
-        toast({ title: 'Gepast', description: `Boete: ${r?.penalty || stake} coins${r?.bonus ? ' (openingsbonus x2)' : ''}` });
+        toast({ title: t('wega.passed'), description: t('wega.penaltyCoins', { penalty: r?.penalty || stake, bonus: r?.bonus ? t('wega.openingBonus') : '' }) });
       }
     } catch (e: any) {
-      toast({ title: 'Fout', description: e?.message || String(e), variant: 'destructive' });
+      toast({ title: t('common.error'), description: e?.message || String(e), variant: 'destructive' });
     }
   }, [isWegaPlay, passMove, gameId, syncState.gameState, toast]);
 

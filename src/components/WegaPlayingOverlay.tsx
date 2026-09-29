@@ -53,8 +53,8 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, curren
     // Eigen pas: handlePass toont zelf al een "Gepast"-toast.
     if (passerPos === playerPosition) return;
     const passer = allPlayers?.find((p) => p.position === passerPos);
-    const name = passer?.username || `Speler ${passerPos + 1}`;
-    toast({ title: `${name} heeft gepast`, duration: 2000 });
+    const name = passer?.username || t('wega.playerNumber', { number: passerPos + 1 });
+    toast({ title: t('wega.playerPassed', { name }), duration: 2000 });
   }, [gameState?.lastPasserAt, gameState?.lastPasserPosition, allPlayers, playerPosition, toast]);
 
   const phase = gameState?.wegaPhase as string | undefined;
@@ -70,12 +70,12 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, curren
       if (error) throw error;
       const r = data as any;
       if (r?.blocked) {
-        toast({ title: 'Spel geblokkeerd', description: `Speler ${r.winner_position + 1} wint met laagste pips.` });
+        toast({ title: t('wega.gameBlocked'), description: t('wega.playerWinsLowest', { number: r.winner_position + 1 }) });
       } else {
-        toast({ title: 'Gepast', description: `Boete: ${r?.penalty || stake} coins${r?.bonus ? ' (openingsbonus x2)' : ''}` });
+        toast({ title: t('wega.passed'), description: t('wega.penaltyCoins', { penalty: r?.penalty || stake, bonus: r?.bonus ? t('wega.openingBonus') : '' }) });
       }
     } catch (e: any) {
-      toast({ title: 'Fout', description: e?.message || String(e), variant: 'destructive' });
+      toast({ title: t('common.error'), description: e?.message || String(e), variant: 'destructive' });
     } finally {
       setBusy(false);
     }
