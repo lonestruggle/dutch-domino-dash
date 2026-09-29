@@ -3,6 +3,7 @@ import { useDeviceType, DeviceType } from './useDeviceType';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import type { ShakeAnimationProfile } from '@/types/domino';
+import i18n from '@/i18n';
 
 // Personal settings (per user)
 export interface PersonalSettings {
@@ -574,7 +575,7 @@ const useGameVisualSettingsState = () => {
           .maybeSingle();
 
         if (permissions && !permissions.can_hard_slam) {
-          return { success: false, message: "Je hebt geen toestemming om te schudden. Neem contact op met een beheerder." };
+          return { success: false, message: i18n.t('visuals.noShakePermission') };
         }
       } catch (error) {
         console.error('Error checking permissions:', error);
@@ -593,7 +594,7 @@ const useGameVisualSettingsState = () => {
 
     const boardDominoes = getBoardDominoElements();
     if (boardDominoes.length === 0) {
-      return { success: false, message: "Geen domino's op het bord gevonden om te schudden." };
+      return { success: false, message: i18n.t('visuals.noTilesToShake') };
     }
 
     forceStopAnimation();
@@ -681,14 +682,14 @@ const useGameVisualSettingsState = () => {
       animationRef.current.current = requestAnimationFrame(animate);
     }, 50);
 
-    return { success: true, message: "De dominostenen schudden..." };
+    return { success: true, message: i18n.t('visuals.shaking') };
   };
 
   const startContinuousRotate = () => {
     // ✅ FIX: Use getSettingsForDevice() for consistent settings retrieval  
     const currentSettings = getSettingsForDevice(deviceType);
     if (currentSettings.rotationAmplitudeX === 0 && currentSettings.rotationAmplitudeY === 0 && currentSettings.rotationAmplitudeZ === 0) {
-      return { success: false, message: "De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen." };
+      return { success: false, message: i18n.t('visuals.zeroRotationAmplitude') };
     }
     
     console.log('🎬 Starting continuous rotate with settings:', currentSettings);

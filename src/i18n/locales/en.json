@@ -362,6 +362,20 @@
     "skinViaAdmin": "Skin upload and assignment is now managed via the Admin Page.",
     "alwaysVisible": "Glove always visible (global)"
   },
+  "visuals": {
+    "noShakePermission": "You do not have permission to shake the tiles. Contact an administrator.",
+    "noTilesToShake": "No dominoes were found on the board to shake.",
+    "shaking": "The dominoes are shaking...",
+    "zeroRotationAmplitude": "The rotation amplitude for every axis is 0°. Set a value to move the tile."
+  },
+  "favorites": {
+    "loginRequired": "You must be logged in to set a favorite",
+    "backgroundSet": "Favorite background set",
+    "backgroundRemoved": "Favorite background removed",
+    "tableBackgroundSet": "Favorite table background set",
+    "tableBackgroundRemoved": "Favorite table background removed",
+    "setFailed": "Could not set favorite"
+  },
   "wega": {
     "title": "Money Play — Stake {{stake}} coins",
     "titleShort": "Money Play — Stake {{stake}}",

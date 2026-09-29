@@ -453,7 +453,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <Card className="p-3 md:p-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center space-x-2 md:space-x-4">
-              <h2 className={`font-bold ${isMobile ? "text-lg" : "text-2xl"}`}>Domino Game</h2>
+              <h2 className={`font-bold ${isMobile ? "text-lg" : "text-2xl"}`}>{t('home.title')}</h2>
               <Badge variant={isMyTurn ? "default" : "secondary"} className={isMobile ? "text-xs" : ""}>
                 {isMyTurn ? t('game.yourTurn') : t('game.turnOf', { name: currentPlayerName })}
               </Badge>
@@ -506,7 +506,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           {/* Game Info Row */}
           <div className="flex items-center justify-between mt-3 pt-3 border-t">
             <span className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
-              Boneyard: {gameState?.boneyard?.length || 0} {isMobile ? "" : "tiles"}
+              {t('game.boneyard')}: {gameState?.boneyard?.length || 0} {isMobile ? "" : t('game.tiles')}
             </span>
             <div className="flex items-center space-x-2">
               <Switch 
@@ -746,7 +746,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     )}
                   >
-                    {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
+                    {hardSlamActive ? `${t('game.hardSlamReady')} 🔥` : `${t('game.hardSlam')} 💥`}
                   </Button>
                 )}
               </div>
@@ -818,7 +818,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     )}
                   >
-                    {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
+                    {hardSlamActive ? `${t('game.hardSlamReady')} 🔥` : `${t('game.hardSlam')} 💥`}
                   </Button>
                 )}
               </div>

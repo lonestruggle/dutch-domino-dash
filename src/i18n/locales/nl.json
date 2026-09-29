@@ -362,6 +362,20 @@
     "skinViaAdmin": "Skin upload en toewijzing beheer je nu via de Admin Page.",
     "alwaysVisible": "Handschoen altijd zichtbaar (globaal)"
   },
+  "visuals": {
+    "noShakePermission": "Je hebt geen toestemming om te schudden. Neem contact op met een beheerder.",
+    "noTilesToShake": "Geen dominostenen op het bord gevonden om te schudden.",
+    "shaking": "De dominostenen schudden...",
+    "zeroRotationAmplitude": "De rotatie-amplitude voor alle assen is 0°. Stel een waarde in om de steen te laten bewegen."
+  },
+  "favorites": {
+    "loginRequired": "Je moet ingelogd zijn om een favoriet in te stellen",
+    "backgroundSet": "Favoriete achtergrond ingesteld",
+    "backgroundRemoved": "Favoriete achtergrond verwijderd",
+    "tableBackgroundSet": "Favoriete tafelachtergrond ingesteld",
+    "tableBackgroundRemoved": "Favoriete tafelachtergrond verwijderd",
+    "setFailed": "Kon favoriet niet instellen"
+  },
   "wega": {
     "title": "Wega di sen — Inzet {{stake}} coins",
     "titleShort": "Wega — Inzet {{stake}}",
