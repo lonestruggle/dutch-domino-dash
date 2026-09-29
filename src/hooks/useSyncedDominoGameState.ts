@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { GameState, DominoData, ShakeAnimationProfile } from '@/types/domino';
 import { Json, Tables } from '@/integrations/supabase/types';
+import { useTranslation } from 'react-i18next';
 
 export type PersistedGameState = GameState & Record<string, unknown>;
 
@@ -63,6 +64,7 @@ const parseServerTimestampMs = (payload: { commit_timestamp?: string; new?: { up
 };
 
 export const useSyncedDominoGameState = (gameId: string, userId: string, ignoringSync = false) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [syncState, setSyncState] = useState<SyncedGameState>({
     isLoading: true,
@@ -328,14 +330,14 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
         const msg = (error as any)?.message || '';
         if (msg.includes('Game not found')) {
           toast({
-            title: "Spel niet gevonden",
-            description: "Dit spel bestaat niet meer (mogelijk opgeruimd). Ga terug naar de lobby en start een nieuw spel.",
+            title: t('game.notFound'),
+            description: t('game.notFoundDesc'),
             variant: "destructive"
           });
         } else {
           toast({
-            title: "Error",
-            description: `Failed to update game state${msg ? `: ${msg}` : ''}`,
+            title: t('common.error'),
+            description: t('game.updateFailed', { message: msg ? `: ${msg}` : '' }),
             variant: "destructive"
           });
         }
@@ -345,7 +347,7 @@ export const useSyncedDominoGameState = (gameId: string, userId: string, ignorin
     } catch (error) {
       console.error('Error updating game state:', error);
     }
-  }, [gameId, syncState.currentPlayer, toast]);
+  }, [gameId, syncState.currentPlayer, t, toast]);
 
   // Validate game move using server-side function
   const validateGameMove = useCallback(async (gameId: string, playerPosition: number, moveData: Json) => {
