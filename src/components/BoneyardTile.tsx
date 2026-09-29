@@ -34,25 +34,26 @@ export const BoneyardTile: React.FC<BoneyardTileProps> = ({ index, skin, onClick
   return (
     <button
       type="button"
-      onClick={onClick}
+      onPointerDown={(e) => { if (e.button !== 0 && e.pointerType === 'mouse') return; e.preventDefault(); onClick(); }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       aria-label={t('game.drawTileAria')}
       className={cn(
         positioned
           ? 'absolute group cursor-pointer transition-all duration-200'
           : 'relative group cursor-pointer transition-all duration-200',
-        'hover:scale-110 hover:-translate-y-1 focus:outline-none',
+        'p-2 touch-manipulation focus:outline-none',
         'focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-md',
         className,
       )}
       style={{
         ...(positioned
-          ? { left: x - 28, top: y - 14, transform: `rotate(${rot}deg)` }
+          ? { left: x - 36, top: y - 22, transform: `rotate(${rot}deg)` }
           : { transform: `translate(${x}px, ${y}px) rotate(${rot}deg)` }),
         filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))',
       }}
     >
       <div
-        className="w-14 h-7 rounded-md border border-black/40 ring-1 ring-white/10 group-hover:ring-yellow-400 transition-colors overflow-hidden"
+        className="w-14 h-7 rounded-md border border-black/40 ring-1 ring-white/10 group-hover:ring-yellow-400 group-hover:brightness-125 transition-[filter,box-shadow] overflow-hidden"
         style={{
           ...skinBackgroundStyle(skin),
           boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.15), inset 0 -2px 3px rgba(0,0,0,0.35)',
