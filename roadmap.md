@@ -10,3 +10,8 @@
 - [ ] Electron: vite base, electron/main.cjs (locale http server voor dist), package.json main
 - [ ] Dependencies installeren (electron, @electron/packager), Windows .exe pakket bouwen
 - [ ] Zip in Files (/mnt/documents) + instructies voor de gebruiker
+
+## Volledige NL/EN vertaling (nieuwe taak)
+- [ ] Alle UI-teksten: NL + EN compleet, EN-teksten die al Engels zijn blijven staan
+- [ ] "Wega di sen" vertalen als "money play"
+- [ ] Onvertaalde/onduidelijke teksten aan gebruiker melden
