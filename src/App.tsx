@@ -34,7 +34,7 @@ console.log('App.tsx: QueryClient created successfully');
 // Hide visual controls on certain routes
 const ConditionalControls: React.FC = () => {
   const location = useLocation();
-  const hideOn = ['/scoreboard'];
+  const hideOn = ['/scoreboard', '/tafel-demo'];
   const shouldHide = hideOn.some((p) => location.pathname.startsWith(p));
   if (shouldHide) return null;
   return <GameVisualControls />;
