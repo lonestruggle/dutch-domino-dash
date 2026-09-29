@@ -15,6 +15,7 @@ import Game from "./pages/Game";
 import NotFound from "./pages/NotFound";
 import DominoTileDemo from "./components/DominoTileDemo";
 import CanvasDemo from "./pages/CanvasDemo";
+import TableDemo from "./pages/TableDemo";
 import { GameVisualControls } from "@/components/GameVisualControls";
 import Scoreboard from "./pages/Scoreboard";
 import { GameVisualSettingsProvider } from "@/hooks/useGameVisualSettings";
@@ -33,7 +34,7 @@ console.log('App.tsx: QueryClient created successfully');
 // Hide visual controls on certain routes
 const ConditionalControls: React.FC = () => {
   const location = useLocation();
-  const hideOn = ['/scoreboard'];
+  const hideOn = ['/scoreboard', '/tafel-demo'];
   const shouldHide = hideOn.some((p) => location.pathname.startsWith(p));
   if (shouldHide) return null;
   return <GameVisualControls />;
@@ -62,6 +63,7 @@ const App = () => {
                 <Route path="/scoreboard" element={<Scoreboard />} />
                 <Route path="/demo" element={<DominoTileDemo />} />
                 <Route path="/canvas-demo" element={<CanvasDemo />} />
+                <Route path="/tafel-demo" element={<TableDemo />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
