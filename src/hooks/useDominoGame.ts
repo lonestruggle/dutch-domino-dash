@@ -688,13 +688,16 @@ export const useDominoGame = (localPlayerPosition?: number, totalPlayers?: numbe
       const newSpinnerId = (!prev.spinnerId && isDouble(dominoData)) ? id : prev.spinnerId;
 
       const usePlayerHands = Array.isArray(prev.playerHands);
-      const hasActorPosition = usePlayerHands && typeof actorPosition === 'number';
+      // Los de acterende speler op: zonder expliciete actorPosition is het de lokale speler
+      const resolvedActor = typeof actorPosition === 'number' ? actorPosition : localPlayerPosition;
+      const hasActorPosition = usePlayerHands && typeof resolvedActor === 'number';
       const activeHand = hasActorPosition
-        ? [...(prev.playerHands?.[actorPosition] || [])]
+        ? [...(prev.playerHands?.[resolvedActor] || [])]
         : [...prev.playerHand];
 
       console.log('[classicMove] executeMove pre', {
         actorPosition,
+        resolvedActor,
         usePlayerHands,
         index,
         activeHandSize: activeHand.length,
@@ -705,7 +708,7 @@ export const useDominoGame = (localPlayerPosition?: number, totalPlayers?: numbe
       if (index < 0 || index >= activeHand.length) {
         console.warn('❌ executeMove aborted: invalid hand index for active player', {
           index,
-          actorPosition,
+          actorPosition: resolvedActor,
           handLength: activeHand.length
         });
         return prev;
@@ -715,7 +718,7 @@ export const useDominoGame = (localPlayerPosition?: number, totalPlayers?: numbe
 
       const nextPlayerHands = usePlayerHands ? [...(prev.playerHands || [])] : undefined;
       if (nextPlayerHands && hasActorPosition) {
-        nextPlayerHands[actorPosition] = activeHand;
+        nextPlayerHands[resolvedActor] = activeHand;
       }
 
       const newPlayerHand = nextPlayerHands && typeof localPlayerPosition === 'number'
