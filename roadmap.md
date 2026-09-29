@@ -22,3 +22,8 @@
 - "laatste plaatser" (EN): "the last player to place a tile"
 - Changa: nog onbekend — voorlopig onvertaald laten
 - CanvasDemo: bewust niet vertalen (interne testpagina)
+
+## Bug pc-versie: geplaatste stenen blijven in hand (huidige taak)
+- [ ] Reproduceren: single-player, steen plaatsen → check of tile uit hand verdwijnt
+- [ ] Oorzaak vinden en fixen (lokale hand-update / sync)
+- [ ] Windows-pakket herbouwen na fix
