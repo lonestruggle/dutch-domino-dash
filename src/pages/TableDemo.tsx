@@ -15,7 +15,7 @@ const DEMO_CHAIN: DominoData[] = [
 function DemoChain({ chain }: { chain: DominoData[] }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-      <div className="flex items-center gap-[3px]" style={{ transform: `scale(${Math.min(1, 7 / Math.max(chain.length, 1))})` }}>
+      <div className="flex items-center gap-[3px]" style={{ transform: `scale(${Math.min(0.8, 5 / Math.max(chain.length, 1))})` }}>
         {chain.map((d, i) => (
           <div key={i} style={{ transform: `rotate(${((i * 37) % 7) - 3}deg)` }}>
             <DominoTile data={d} orientation={d.value1 === d.value2 ? "vertical" : "horizontal"} />
