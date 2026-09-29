@@ -278,8 +278,6 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
           description: `verwacht: ${kept.join(', ')} — nu: ${keptInCurrentOrder.join(', ')}`,
           duration: 4000,
         });
-      } else if (currentSig.length !== prev.length) {
-        toast.success(`✅ Hand OK (${hand.length} stenen)`, { duration: 1500 });
       }
     }
     prevHandSigRef.current = currentSig;

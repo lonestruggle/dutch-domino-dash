@@ -1625,8 +1625,21 @@ export default function Game() {
           })
         : (state.playerHands || [state.playerHand || []]);
 
-    // If anyone has already emptied their hand, this is not a blocked endgame.
-    if (allHands.some((hand) => hand.length === 0)) return false;
+    // Alleen echt bekende handen (niet lege placeholders van tegenstanders) tellen mee.
+    const handKnown = allHands.map((_, i) => Array.isArray(state.playerHands?.[i]) || i === syncState.playerPosition);
+    if (allHands.some((hand, i) => handKnown[i] && hand.length === 0)) return false;
+
+    // Board-only regel: voor elke open-eind waarde liggen alle 7 stenen al op tafel
+    // -> niemand kan nog iets aanleggen, ongeacht wat er in handen zit.
+    const freshOpenEnds = gameHook.regenerateOpenEnds(state);
+    const openVals = Array.from(new Set(freshOpenEnds.map((e) => e.value)));
+    if (openVals.length > 0) {
+      const boardTiles = Object.values(state.dominoes || {});
+      const allExhausted = openVals.every((v) =>
+        boardTiles.filter((d) => d.data.value1 === v || d.data.value2 === v).length >= 7
+      );
+      if (allExhausted) return finalizeBlockedGame(`all-values-exhausted:${openVals.join(',')}`, allHands);
+    }
 
     // In Wega di sen "playing" fase: gebruik een pip-gebaseerde check op alle lege buurcellen
     // van bezette cellen. Voorkomt dat strikte forbiddens/neighbor-regels ten onrechte een
