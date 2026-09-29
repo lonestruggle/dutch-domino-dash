@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DominoGame } from '@/components/DominoGame';
 import { useDominoGame } from '@/hooks/useDominoGame';
 import { useBotAI } from '@/hooks/useBotAI';
-import type { DominoData, LegalMove } from '@/types/domino';
+import type { DominoData, LegalMove, ShakeAnimationProfile } from '@/types/domino';
+import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 
 // Dezelfde bots als in multiplayer: Dave en Betty zijn makkelijk, Raja is moeilijk.
 const BOT_NAMES = ['Dave', 'Betty', 'Raja'];
@@ -84,9 +85,48 @@ const Index = () => {
     setStarted(true);
   }, [gameHook, totalPlayers]);
 
+  // Hard slam offline: dezelfde animatie-flags zetten als in het online spel (Game.tsx).
+  const { settings: visualSettings } = useGameVisualSettings();
+  const hardSlamResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (hardSlamResetRef.current) clearTimeout(hardSlamResetRef.current); }, []);
+
+  const executeMoveWithHardSlam = useCallback((move: any) => {
+    if (move?.localHardSlamActive) {
+      const hardSlamDominoId = `d${gameHook.gameState.nextDominoId}`;
+      const hardSlamAnimationProfile: ShakeAnimationProfile = {
+        eventId: `${hardSlamDominoId}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`,
+        seed: Math.floor(Math.random() * 0x7fffffff),
+        startedAtMs: Date.now(),
+        intensity: visualSettings.shakeIntensity,
+        duration: visualSettings.shakeDuration,
+        rotationAmplitudeX: visualSettings.rotationAmplitudeX,
+        rotationAmplitudeY: visualSettings.rotationAmplitudeY,
+        rotationAmplitudeZ: visualSettings.rotationAmplitudeZ,
+        rotationSpeed: visualSettings.rotationSpeed,
+      };
+      gameHook.setGameState((s) => ({
+        ...s,
+        hardSlamNextMove: true,
+        isHardSlamming: true,
+        hardSlamDominoId,
+        triggerHardSlamAnimation: true,
+        hardSlamAnimationProfile,
+        hardSlamActorUserId: null,
+      }));
+      gameHook.executeMove(move);
+      if (hardSlamResetRef.current) clearTimeout(hardSlamResetRef.current);
+      hardSlamResetRef.current = setTimeout(() => {
+        gameHook.setGameState((s) => ({ ...s, triggerHardSlamAnimation: false, isHardSlamming: false }));
+      }, 2000);
+      return;
+    }
+    gameHook.executeMove(move);
+  }, [gameHook, visualSettings]);
+
   const gameHookWithStart = useMemo(
     () => ({
       ...gameHook,
+      executeMove: executeMoveWithHardSlam,
       startNewGame,
       syncState: {
         isLoading: false,
@@ -96,7 +136,7 @@ const Index = () => {
         currentPlayer: gameState?.currentPlayer ?? 0,
       },
     }),
-    [gameHook, startNewGame, allPlayers, gameState?.currentPlayer]
+    [gameHook, executeMoveWithHardSlam, startNewGame, allPlayers, gameState?.currentPlayer]
   );
 
   // Lokale bot-loop: laat de bot aan de beurt zetten doen (zelfde AI als in multiplayer).
