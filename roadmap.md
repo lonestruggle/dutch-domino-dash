@@ -12,6 +12,7 @@
 - [x] Zip in Files (/mnt/documents) + instructies voor de gebruiker
 
 ## Volledige NL/EN vertaling (nieuwe taak)
-- [ ] Alle UI-teksten: NL + EN compleet, EN-teksten die al Engels zijn blijven staan
-- [ ] "Wega di sen" vertalen als "money play"
-- [ ] Onvertaalde/onduidelijke teksten aan gebruiker melden
+- [x] Alle UI-teksten: NL + EN compleet, EN-teksten die al Engels zijn blijven staan
+- [x] "Wega di sen" vertalen als "money play"
+- [x] Onvertaalde/onduidelijke teksten aan gebruiker melden (Changa + CanvasDemo openstaand bij gebruiker)
+- [ ] Verifiëren in preview: NL/EN wissel toont vertaalde teksten op alle schermen
