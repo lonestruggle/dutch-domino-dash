@@ -8,6 +8,7 @@ import { useUserRoles } from '@/hooks/useUserRoles';
 import { useFavoriteBackground } from '@/hooks/useFavoriteBackground';
 import dominoTable1 from '@/assets/domino-table-1.webp';
 import dominoTable2 from '@/assets/domino-table-2.webp';
+import { useTranslation } from 'react-i18next';
 const curacaoFlagTable = '/lovable-uploads/f85e0ba4-a21e-4716-b54c-d9c55efc9496.png';
 const premiumWoodTable = '/lovable-uploads/06c1799a-c59e-44f8-8d9c-3cc8d671f4c2.png';
 
@@ -38,6 +39,7 @@ export const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({
   const { backgrounds: customBackgrounds, loading } = useCustomBackgrounds();
   const { isAdmin, isModerator } = useUserRoles();
   const { favoriteBackground, setFavoriteBackground } = useFavoriteBackground();
+  const { t } = useTranslation();
   const [allBackgrounds, setAllBackgrounds] = useState<BackgroundOption[]>(defaultBackgroundOptions);
 
   // Set the selected background to favorite on load if no background is selected
@@ -109,9 +111,9 @@ export const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Tafelblad Achtergrond</CardTitle>
+        <CardTitle className="text-lg">{t('bg.table')}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Kies de achtergrond voor het spelbord
+          {t('bg.chooseBoard')}
         </p>
       </CardHeader>
       <CardContent>

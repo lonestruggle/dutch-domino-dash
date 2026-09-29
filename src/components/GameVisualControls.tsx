@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { cn } from '@/lib/utils';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useTranslation } from 'react-i18next';
 
 
 const deviceIcons = {
@@ -35,6 +36,7 @@ const deviceLabels = {
 const DEFAULT_GLOVE_IMAGE = '/glove-hand.svg';
 
 export const GameVisualControls: React.FC = () => {
+  const { t } = useTranslation();
   const { isAdmin, loading } = useUserRoles();
   const { getSetting, updateSetting } = useAppSettings();
   const canAccessVisualControls = isAdmin;
@@ -476,16 +478,16 @@ export const GameVisualControls: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="text-xs font-medium">Globale handschoen skin (voor iedereen)</div>
+              <div className="text-xs font-medium">{t('glove.globalSkin')}</div>
               <Input value={globalGloveSkinUrl} readOnly />
               <p className="text-[11px] text-muted-foreground">
-                Skin upload en toewijzing beheer je nu via de Admin Page.
+                {t('glove.skinViaAdmin')}
               </p>
             </div>
 
             <div className="space-y-2 rounded border border-border/60 p-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium">Handschoen altijd zichtbaar (globaal)</span>
+                <span className="text-xs font-medium">{t('glove.alwaysVisible')}</span>
                 <Switch
                   checked={globalGloveAlwaysVisible}
                   onCheckedChange={handleGlobalGloveVisibilityChange}

@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Users, Copy, Check, Link, Share, Trash2, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Invitation {
   id: string;
@@ -17,6 +18,7 @@ interface Invitation {
 }
 
 export const InviteUsers = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -213,7 +215,7 @@ export const InviteUsers = () => {
           {invitations.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Je hebt nog geen uitnodigingen verstuurd.</p>
+              <p>{t('invite.noneSent')}</p>
             </div>
           ) : (
             <div className="space-y-3">

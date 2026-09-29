@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ interface TableBackgroundManagerProps {
 }
 
 export const TableBackgroundManager: React.FC<TableBackgroundManagerProps> = ({ onBackgroundsChange }) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [backgrounds, setBackgrounds] = useState<TableBackground[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,7 +215,7 @@ export const TableBackgroundManager: React.FC<TableBackgroundManagerProps> = ({ 
   };
 
   if (loading) {
-    return <div>Laden...</div>;
+    return <div>{t('common.loading')}</div>;
   }
 
   return (
