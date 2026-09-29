@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { DominoTile } from './DominoTile';
 import { DominoData } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from 'react-i18next';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
