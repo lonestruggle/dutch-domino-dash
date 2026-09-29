@@ -428,6 +428,27 @@ export default function TableDemo() {
   });
 
   const [is3D, setIs3D] = useState(true);
+  const [hand, setHand] = useState<DominoData[]>(DEMO_HAND);
+  const [chain, setChain] = useState<DominoData[]>(DEMO_CHAIN);
+  const [selected, setSelected] = useState<number | null>(null);
+  const handleSelect = (index: number) => {
+    const d = hand[index];
+    if (!d) return;
+    const left = chain[0].value1;
+    const right = chain[chain.length - 1].value2;
+    let next: DominoData[] | null = null;
+    if (d.value1 === right) next = [...chain, d];
+    else if (d.value2 === right) next = [...chain, { value1: d.value2, value2: d.value1 }];
+    else if (d.value2 === left) next = [d, ...chain];
+    else if (d.value1 === left) next = [{ value1: d.value2, value2: d.value1 }, ...chain];
+    if (next) {
+      setChain(next);
+      setHand((h) => h.filter((_, i) => i !== index));
+      setSelected(null);
+    } else {
+      setSelected(index === selected ? null : index);
+    }
+  };
   const [soundOn, setSoundOn] = useState(true);
   const [turnIndex, setTurnIndex] = useState(0);
   const [toast, setToast] = useState("");
