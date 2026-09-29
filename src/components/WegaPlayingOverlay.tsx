@@ -89,7 +89,7 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, curren
       </span>
       {autoPass ? <span className="text-yellow-300/80">{t('wega.autoPassOn')}</span> : null}
       <Button size="sm" variant="destructive" disabled={!isMyTurn || busy} onClick={() => setConfirmOpen(true)} className="h-7 px-3 text-xs">
-        Pas
+        {t('wega.pass')}
       </Button>
     </div>
     <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
