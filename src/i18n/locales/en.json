@@ -268,7 +268,7 @@
     "loadError": "Unable to load backgrounds",
     "chooseTable": "Choose a special background behind the table (optional)",
     "uploadNew": "Upload New Table Background",
-    "manage": "Manage Table Backgrounds ({{count}})"
+    "manage": "Manage Table Backgrounds ({{n}})"
   },
   "skins": {
     "selector": "Domino skin (back)",
@@ -293,7 +293,7 @@
     "confirmPassTitle": "Confirm pass",
     "confirmPassBody": "Are you sure you want to pass? You pay {{stake}} coins to the last player to place a tile (or more with the opening bonus).",
     "missedClaimToast": "Someone failed to claim an earlier tile.",
-    "missedCount": "{{count}} tile(s) not claimed — the game will be blocked at the next claim"
+    "missedCount": "{{n}} tile(s) not claimed — the game will be blocked at the next claim"
   },
   "devtools": {
     "autoCompactTitle": "Automatically merge tiles after a move",

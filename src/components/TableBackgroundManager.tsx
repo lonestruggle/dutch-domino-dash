@@ -278,7 +278,7 @@ export const TableBackgroundManager: React.FC<TableBackgroundManagerProps> = ({ 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5" />
-            {t('bg.manage', { count: backgrounds.length })}
+            {t('bg.manage', { n: backgrounds.length })}
           </CardTitle>
         </CardHeader>
         <CardContent>

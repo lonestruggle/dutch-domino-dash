@@ -268,7 +268,7 @@
     "loadError": "Kan achtergronden niet laden",
     "chooseTable": "Kies een speciale achtergrond voor achter de tafel (optioneel)",
     "uploadNew": "Nieuwe Tafel Achtergrond Uploaden",
-    "manage": "Beheer Tafel Achtergronden ({{count}})"
+    "manage": "Beheer Tafel Achtergronden ({{n}})"
   },
   "skins": {
     "selector": "Domino skin (achterkant)",
@@ -293,7 +293,7 @@
     "confirmPassTitle": "Pas bevestigen",
     "confirmPassBody": "Weet je zeker dat je wilt passen? Je betaalt {{stake}} coins aan de laatste plaatser (of meer bij openingsbonus).",
     "missedClaimToast": "Iemand heeft een eerdere steen verzuimd te claimen.",
-    "missedCount": "{{count}} steen/stenen verzuimd — spel wordt geblokkeerd bij volgende claim"
+    "missedCount": "{{n}} steen/stenen verzuimd — spel wordt geblokkeerd bij volgende claim"
   },
   "devtools": {
     "autoCompactTitle": "Automatisch stenen samenvoegen na een zet",

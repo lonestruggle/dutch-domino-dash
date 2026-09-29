@@ -158,7 +158,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
 
             {missed.length > 0 && (
               <div className="text-xs text-orange-300/80 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> {t('wega.missedCount', { count: missed.length })}
+                <AlertTriangle className="h-3 w-3" /> {t('wega.missedCount', { n: missed.length })}
               </div>
             )}
           </div>
