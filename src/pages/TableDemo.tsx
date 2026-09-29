@@ -15,7 +15,7 @@ const DEMO_CHAIN: DominoData[] = [
 function DemoChain({ chain }: { chain: DominoData[] }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-      <div className="flex items-center gap-[3px] scale-[0.72] sm:scale-90">
+      <div className="flex items-center gap-[3px]" style={{ transform: `scale(${Math.min(0.8, 5 / Math.max(chain.length, 1))})` }}>
         {chain.map((d, i) => (
           <div key={i} style={{ transform: `rotate(${((i * 37) % 7) - 3}deg)` }}>
             <DominoTile data={d} orientation={d.value1 === d.value2 ? "vertical" : "horizontal"} />
@@ -143,10 +143,10 @@ class TableRenderer {
   }
 
   private resize = () => {
-    const container = this.canvas.parentElement;
+    const container = (this.canvas.closest("main") as HTMLElement | null) ?? this.canvas.parentElement;
     if (!container) return;
     const rect = container.getBoundingClientRect();
-    const size = Math.min(rect.width, rect.height) * 0.98;
+    const size = Math.min(rect.width * 1.0, rect.height * 0.96);
     this.width = Math.max(340, Math.floor(size));
     this.height = Math.max(340, Math.floor(size));
     this.canvas.width = this.width * this.dpr;
