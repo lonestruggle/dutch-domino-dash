@@ -4,7 +4,7 @@ export type GameVersion = 'stable' | 'beta';
 const STORAGE_KEY = 'gameVersion';
 
 const readInitial = (): GameVersion => {
-  if (typeof window === 'undefined') return 'stable';
+  if (typeof window === 'undefined') return 'beta';
   try {
     const url = new URL(window.location.href);
     const param = url.searchParams.get('v');
@@ -15,7 +15,7 @@ const readInitial = (): GameVersion => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'beta' || stored === 'stable') return stored;
   } catch { /* ignore */ }
-  return 'stable';
+  return 'beta';
 };
 
 export const useGameVersion = () => {

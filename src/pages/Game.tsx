@@ -1110,7 +1110,7 @@ export default function Game() {
         .eq('id', gameId)
         .maybeSingle();
       if (cancelled || error || !data) return;
-      const target = ((data as any).game_version ?? 'stable') as 'stable' | 'beta';
+      const target = ((data as any).game_version ?? 'beta') as 'stable' | 'beta';
       if (target !== gameVersion) {
         setGameVersion(target);
         setTimeout(() => window.location.reload(), 50);
