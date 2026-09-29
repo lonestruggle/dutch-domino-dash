@@ -287,12 +287,12 @@
     "waitAllDraw": "Wait until everyone has drawn 5 tiles…",
     "halted": "Game halted!",
     "playerFallback": "Player",
-    "failedToClaim": "failed to claim the {{tile}} in time.",
+    "failedToClaim": "failed to claim the highest domino {{tile}} in time.",
     "autoPassOn": "Auto-pass on",
     "pass": "Pass",
     "confirmPassTitle": "Confirm pass",
     "confirmPassBody": "Are you sure you want to pass? You pay {{stake}} coins to the last player to place a tile (or more with the opening bonus).",
-    "missedClaimToast": "Someone failed to claim an earlier tile.",
+    "missedClaimToast": "Someone failed to claim the highest domino in time.",
     "missedCount": "{{n}} tile(s) not claimed — the game will be blocked at the next claim"
   },
   "devtools": {
