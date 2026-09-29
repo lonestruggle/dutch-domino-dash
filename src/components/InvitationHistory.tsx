@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { UserPlus, Calendar, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface InvitationStats {
   total_sent: number;
@@ -14,6 +15,7 @@ interface InvitationStats {
 }
 
 export const InvitationHistory = () => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<InvitationStats | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -57,7 +59,7 @@ export const InvitationHistory = () => {
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Profile error:', profileError);
       } else if (profileData?.invited_by) {
-        stats.invited_by_username = (profileData as any).inviter?.username || 'Onbekend';
+        stats.invited_by_username = (profileData as any).inviter?.username || t('auth.unknown');
         stats.invitation_code = profileData.invitation_code;
       }
 
@@ -92,7 +94,7 @@ export const InvitationHistory = () => {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <User className="h-4 w-4" />
-              Uitgenodigd Door
+              {t('invite.invitedBy')}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -100,7 +102,7 @@ export const InvitationHistory = () => {
               <span className="font-medium">{stats.invited_by_username}</span>
               {stats.invitation_code && (
                 <Badge variant="secondary">
-                  Code: {stats.invitation_code}
+                  {t('invite.code')}: {stats.invitation_code}
                 </Badge>
               )}
             </div>
@@ -113,22 +115,22 @@ export const InvitationHistory = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <UserPlus className="h-4 w-4" />
-            Jouw Uitnodigingen
+            {t('invite.yourInvitations')}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-primary">{stats.total_sent}</div>
-              <div className="text-sm text-muted-foreground">Verstuurd</div>
+              <div className="text-sm text-muted-foreground">{t('invite.sent')}</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-green-600">{stats.accepted}</div>
-              <div className="text-sm text-muted-foreground">Geaccepteerd</div>
+              <div className="text-sm text-muted-foreground">{t('invite.accepted')}</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-              <div className="text-sm text-muted-foreground">In Afwachting</div>
+              <div className="text-sm text-muted-foreground">{t('invite.pending')}</div>
             </div>
           </div>
         </CardContent>

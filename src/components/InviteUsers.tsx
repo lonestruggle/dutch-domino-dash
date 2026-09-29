@@ -55,16 +55,16 @@ export const InviteUsers = () => {
       await navigator.clipboard.writeText(inviteUrl);
       
       toast({
-        title: "Uitnodigingslink aangemaakt!",
-        description: "De link is gekopieerd naar je klembord. Deel deze via WhatsApp of andere apps!"
+        title: t('invite.linkCreated'),
+        description: t('invite.linkCreatedDesc')
       });
 
       loadInvitations();
     } catch (error) {
       console.error('Error creating invitation:', error);
       toast({
-        title: "Fout",
-        description: "Kon uitnodigingslink niet aanmaken",
+        title: t('common.error'),
+        description: t('invite.createFailed'),
         variant: "destructive"
       });
     } finally {
@@ -95,13 +95,13 @@ export const InviteUsers = () => {
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2000);
       toast({
-        title: "Link gekopieerd!",
-        description: "Uitnodigingslink is naar klembord gekopieerd."
+        title: t('invite.linkCopied'),
+        description: t('invite.linkCopiedDesc')
       });
     } catch (error) {
       toast({
-        title: "Fout",
-        description: "Kon link niet kopiëren",
+        title: t('common.error'),
+        description: t('invite.copyFailed'),
         variant: "destructive"
       });
     }
@@ -117,16 +117,16 @@ export const InviteUsers = () => {
       if (error) throw error;
 
       toast({
-        title: "Uitnodiging verwijderd",
-        description: "De uitnodiging is succesvol verwijderd."
+        title: t('invite.deleted'),
+        description: t('invite.deletedDesc')
       });
 
       loadInvitations();
     } catch (error) {
       console.error('Error deleting invitation:', error);
       toast({
-        title: "Fout",
-        description: "Kon uitnodiging niet verwijderen",
+        title: t('common.error'),
+        description: t('invite.deleteFailed'),
         variant: "destructive"
       });
     }
@@ -138,16 +138,16 @@ export const InviteUsers = () => {
     const diff = expiry - now;
 
     if (diff <= 0) {
-      return 'Verlopen';
+      return t('invite.expired');
     }
 
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
     if (hours > 0) {
-      return `${hours}u ${minutes}m resterend`;
+      return t('invite.hoursMinutesLeft', { hours, minutes });
     } else {
-      return `${minutes}m resterend`;
+      return t('invite.minutesLeft', { minutes });
     }
   };
 
@@ -172,9 +172,9 @@ export const InviteUsers = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'accepted': return 'Geaccepteerd';
-      case 'expired': return 'Verlopen';
-      default: return 'In afwachting';
+      case 'accepted': return t('invite.accepted');
+      case 'expired': return t('invite.expired');
+      default: return t('invite.pending');
     }
   };
 
@@ -185,12 +185,12 @@ export const InviteUsers = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Share className="h-5 w-5" />
-            Uitnodigingslink Maken
+            {t('invite.createLink')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            Maak een uitnodigingslink die je kunt delen via WhatsApp, Telegram of andere apps.
+            {t('invite.createLinkDesc')}
           </p>
           <Button 
             onClick={createInvitation}
@@ -198,7 +198,7 @@ export const InviteUsers = () => {
             className="w-full"
           >
             <Link className="h-4 w-4 mr-2" />
-            {loading ? 'Link maken...' : 'Nieuwe Uitnodigingslink Maken'}
+            {loading ? t('invite.creatingLink') : t('invite.createNewLink')}
           </Button>
         </CardContent>
       </Card>
@@ -208,7 +208,7 @@ export const InviteUsers = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Mijn Uitnodigingen ({invitations.length})
+            {t('invite.myInvitations', { count: invitations.length })}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -225,10 +225,10 @@ export const InviteUsers = () => {
                   className="flex items-center justify-between p-3 border rounded-lg"
                  >
                    <div className="flex-1">
-                     <p className="font-medium">Uitnodigingslink #{invitation.code}</p>
+                      <p className="font-medium">{t('invite.linkNumber', { code: invitation.code })}</p>
                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
                        <span>
-                         Status: 
+                          {t('invite.status')}:{' '}
                          <span className={`ml-1 ${getStatusColor(invitation.status)}`}>
                            {getStatusText(invitation.status)}
                          </span>
@@ -236,14 +236,14 @@ export const InviteUsers = () => {
                        <span className="flex items-center gap-1">
                          <Clock className="h-3 w-3" />
                          {isExpired(invitation.expires_at) ? (
-                           <span className="text-red-600">Verlopen</span>
+                            <span className="text-red-600">{t('invite.expired')}</span>
                          ) : (
                            <span className="text-orange-600">{getTimeRemaining(invitation.expires_at)}</span>
                          )}
                        </span>
                      </div>
                      <p className="text-xs text-muted-foreground">
-                       Aangemaakt: {new Date(invitation.created_at).toLocaleDateString('nl-NL', {
+                        {t('invite.created')}: {new Date(invitation.created_at).toLocaleDateString(undefined, {
                          day: 'numeric',
                          month: 'short',
                          hour: '2-digit',
@@ -257,6 +257,7 @@ export const InviteUsers = () => {
                        variant="outline"
                        onClick={() => copyInviteLink(invitation.code)}
                        disabled={isExpired(invitation.expires_at) || invitation.status === 'accepted'}
+                        aria-label={t('invite.copyLink')}
                      >
                        {copiedCode === invitation.code ? (
                          <Check className="h-4 w-4" />
@@ -269,6 +270,7 @@ export const InviteUsers = () => {
                        variant="outline"
                        onClick={() => deleteInvitation(invitation.id)}
                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        aria-label={t('invite.deleteInvitation')}
                      >
                        <Trash2 className="h-4 w-4" />
                      </Button>

@@ -60,7 +60,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
   const handleDraw = async (index: number) => {
     if (busy || myCount >= 5) return;
     if (phase !== 'drawing') {
-      toast({ title: 'Kon steen niet trekken', description: `Niet meer in trekfase (huidige fase: ${phase})`, variant: 'destructive' });
+      toast({ title: t('wega.couldNotDraw'), description: t('wega.notDrawingPhase', { phase }), variant: 'destructive' });
       return;
     }
     setBusy(true);
@@ -72,7 +72,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
       if (error) throw error;
       onChanged();
     } catch (e: any) {
-      toast({ title: 'Kon steen niet trekken', description: `${e?.message || String(e)} · fase=${phase}`, variant: 'destructive' });
+      toast({ title: t('wega.couldNotDraw'), description: `${e?.message || String(e)} · ${t('wega.phase', { phase })}`, variant: 'destructive' });
     } finally {
       setBusy(false);
     }
@@ -107,7 +107,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
         }
         onChanged();
       } catch (e: any) {
-        toast({ title: 'Kon niet claimen', description: e?.message || String(e), variant: 'destructive' });
+        toast({ title: t('wega.couldNotClaim'), description: e?.message || String(e), variant: 'destructive' });
       } finally {
         setBusy(false);
       }
@@ -120,13 +120,13 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
         <div className="max-w-2xl w-full mx-auto">
           <header className="text-center mb-3">
             <h2 className="text-2xl font-bold text-yellow-300 flex items-center justify-center gap-2">
-              <Coins className="h-6 w-6" /> Claim de startbeurt
+               <Coins className="h-6 w-6" /> {t('wega.claimStarterTurn')}
             </h2>
-            <p className="text-sm text-white/70 mt-1">Stap {idx + 1} van {seq.length} · Inzet {stake} coins</p>
+             <p className="text-sm text-white/70 mt-1">{t('wega.stepStake', { step: idx + 1, total: seq.length, stake })}</p>
           </header>
 
           <div className="bg-black/50 rounded-2xl p-6 flex flex-col items-center gap-4 ring-1 ring-white/10">
-            <div className="text-white/80 text-lg">Wie heeft de <span className="text-yellow-300 font-bold">{tileLabel}</span>?</div>
+             <div className="text-white/80 text-lg">{t('wega.whoHasTile', { tile: tileLabel })}</div>
 
             {currentTile && (
               <div className={`transition-transform ${iHaveIt ? 'animate-pulse scale-110' : 'opacity-50'}`}>
@@ -153,7 +153,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
                   : 'bg-white/10 text-white/40 cursor-not-allowed'
               }`}
             >
-              {iHaveIt ? `Claim ${tileLabel}!` : 'Niet jouw steen'}
+               {iHaveIt ? t('wega.claimTile', { tile: tileLabel }) : t('wega.notYourTile')}
             </button>
 
             {missed.length > 0 && (

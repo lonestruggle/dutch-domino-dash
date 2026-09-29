@@ -55,6 +55,40 @@ const withCacheBuster = (url: string, version: string) => {
   return `${url}${separator}v=${encodeURIComponent(version)}`;
 };
 
+const statusTranslationKey = (status: string) => {
+  const keys: Record<string, string> = {
+    Beschikbaar: 'profile.statusAvailable',
+    available: 'profile.statusAvailable',
+    'Aan het spelen': 'profile.statusPlaying',
+    playing: 'profile.statusPlaying',
+    Afwezig: 'profile.statusAway',
+    away: 'profile.statusAway',
+    'Niet storen': 'profile.statusDnd',
+    dnd: 'profile.statusDnd',
+  };
+  return keys[status] || 'profile.statusAvailable';
+};
+
+const statusStorageValue = (status: string) => {
+  const values: Record<string, string> = {
+    available: 'Beschikbaar',
+    playing: 'Aan het spelen',
+    away: 'Afwezig',
+    dnd: 'Niet storen',
+  };
+  return values[status] || status;
+};
+
+const statusSelectValue = (status: string) => {
+  const values: Record<string, string> = {
+    Beschikbaar: 'available',
+    'Aan het spelen': 'playing',
+    Afwezig: 'away',
+    'Niet storen': 'dnd',
+  };
+  return values[status] || status || 'available';
+};
+
 const Profile = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
@@ -118,7 +152,7 @@ const Profile = () => {
 
       setFormData({
         username: data.username || '',
-        status: data.status || 'Beschikbaar',
+        status: statusSelectValue(data.status),
         bio: data.bio || '',
       });
 
@@ -237,7 +271,7 @@ const Profile = () => {
         .from('profiles')
         .update({
           username: formData.username.trim(),
-          status: formData.status,
+          status: statusStorageValue(formData.status),
           bio: formData.bio.trim(),
         })
         .eq('user_id', user.id);
@@ -398,7 +432,7 @@ const Profile = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="status">Status</Label>
+                            <Label htmlFor="status">{t('profile.statusLabel')}</Label>
                             <Select
                               value={formData.status}
                               onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
@@ -407,16 +441,16 @@ const Profile = () => {
                                 <SelectValue placeholder={t('profile.statusPh')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Beschikbaar">🟢 {t('profile.statusAvailable')}</SelectItem>
-                                <SelectItem value="Aan het spelen">🎮 {t('profile.statusPlaying')}</SelectItem>
-                                <SelectItem value="Afwezig">🟡 {t('profile.statusAway')}</SelectItem>
-                                <SelectItem value="Niet storen">🔴 {t('profile.statusDnd')}</SelectItem>
+                                <SelectItem value="available">🟢 {t('profile.statusAvailable')}</SelectItem>
+                                <SelectItem value="playing">🎮 {t('profile.statusPlaying')}</SelectItem>
+                                <SelectItem value="away">🟡 {t('profile.statusAway')}</SelectItem>
+                                <SelectItem value="dnd">🔴 {t('profile.statusDnd')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="bio">Bio</Label>
+                            <Label htmlFor="bio">{t('profile.bioLabel')}</Label>
                             <Textarea
                               id="bio"
                               value={formData.bio}
@@ -446,14 +480,14 @@ const Profile = () => {
                             <div>
                               <h3 className="text-xl font-semibold">{profile.username}</h3>
                               <Badge variant="outline" className="mt-1">
-                                {profile.status}
+                                {t(statusTranslationKey(profile.status))}
                               </Badge>
                             </div>
                           </div>
 
                           {profile.bio && (
                             <div>
-                              <Label>Bio</Label>
+                              <Label>{t('profile.bioLabel')}</Label>
                               <p className="mt-1 text-muted-foreground">{profile.bio}</p>
                             </div>
                           )}
@@ -461,7 +495,7 @@ const Profile = () => {
                           <div>
                             <Label>{t('profile.accountCreated')}</Label>
                             <p className="mt-1 text-muted-foreground">
-                              {new Date(profile.created_at).toLocaleDateString('nl-NL')}
+                              {new Date(profile.created_at).toLocaleDateString()}
                             </p>
                           </div>
 
@@ -511,7 +545,7 @@ const Profile = () => {
                           {selectedGloveSkin && (
                             <div className="flex items-center gap-3 rounded border p-3">
                               <div className="relative h-14 w-14 shrink-0 rounded-full bg-muted/60 flex items-center justify-center overflow-hidden border">
-                                <img src={withCacheBuster(configuredBaseGloveImageUrl, gloveAssetVersion)} alt="Basis handschoen" className="domino-hand-image fixed-glove-image" />
+                                <img src={withCacheBuster(configuredBaseGloveImageUrl, gloveAssetVersion)} alt={t('profile.baseGloveAlt')} className="domino-hand-image fixed-glove-image" />
                                 {showSelectedGloveOverlay && (
                                   <span
                                     className="domino-hand-skin-mask"

@@ -4,6 +4,7 @@ import { DominoData } from '@/types/domino';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface PlayerHandProps {
   hand: DominoData[];
@@ -28,6 +29,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   flippedTiles,
   onTileDoubleClick,
 }) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const { settings } = useGameVisualSettings();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,7 +93,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
   return (
     <div ref={containerRef} className={`game-ui ${isMobile ? "p-2" : "p-6"}`}>
       <h2 className={`font-semibold text-center text-ui-text ${isMobile ? "text-sm mb-2" : "text-lg mb-4"}`}>
-        Jouw Hand
+        {t('game.yourHand')}
       </h2>
       
       <div

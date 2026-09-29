@@ -102,7 +102,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   const handleStartNewGame = async () => {
     if (!syncState?.isHost) {
-      toast({ title: 'Alleen host', description: 'Alleen de host kan een nieuw spel starten.', variant: 'destructive' });
+      toast({ title: t('game.onlyHost'), description: t('game.onlyHostNewGame'), variant: 'destructive' });
       return;
     }
     if (startingNewGame) return;
@@ -375,7 +375,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
   const handleFixTable = async () => {
     if (!gameHook.fixTableStones) {
-      toast({ title: 'Niet beschikbaar', description: 'Fix stenen is nog niet gekoppeld.', variant: 'destructive' });
+      toast({ title: t('game.notAvailable'), description: t('game.fixNotConnected'), variant: 'destructive' });
       return;
     }
 
@@ -452,9 +452,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <Card className="p-3 md:p-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center space-x-2 md:space-x-4">
-              <h2 className={`font-bold ${isMobile ? "text-lg" : "text-2xl"}`}>Domino Game</h2>
+              <h2 className={`font-bold ${isMobile ? "text-lg" : "text-2xl"}`}>{t('home.title')}</h2>
               <Badge variant={isMyTurn ? "default" : "secondary"} className={isMobile ? "text-xs" : ""}>
-                {isMyTurn ? "Your Turn" : `${currentPlayerName}'s Turn`}
+                {isMyTurn ? t('game.yourTurn') : t('game.turnOf', { name: currentPlayerName })}
               </Badge>
             </div>
             <div className="flex items-center space-x-2">
@@ -466,7 +466,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               >
                 <ArrowLeft className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
                 <span className={isMobile ? "text-xs" : ""}>
-                  {isMobile ? "Lobby" : "Back to Lobby"}
+                  {isMobile ? t('game.lobby') : t('game.backToLobby')}
                 </span>
               </Button>
               <Button 
@@ -476,7 +476,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 size={isMobile ? "sm" : "default"}
                 className={isMobile ? "text-xs" : ""}
               >
-                {isMobile ? "Nieuw Spel" : startingNewGame ? "Starten..." : "Start New Game"}
+                {startingNewGame ? t('game.starting') : t('game.startNew')}
               </Button>
               {canInspectBotHands && (
                 <Button
@@ -505,7 +505,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           {/* Game Info Row */}
           <div className="flex items-center justify-between mt-3 pt-3 border-t">
             <span className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
-              Boneyard: {gameState?.boneyard?.length || 0} {isMobile ? "" : "tiles"}
+               {t('game.boneyard')}: {gameState?.boneyard?.length || 0} {isMobile ? "" : t('game.tiles')}
             </span>
             <div className="flex items-center space-x-2">
               <Switch 
@@ -514,7 +514,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 id="boneyard-view"
               />
               <label htmlFor="boneyard-view" className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
-                Boneyard view
+                 {t('game.boneyardView')}
               </label>
             </div>
           </div>
@@ -574,7 +574,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
 
         {/* Players List */}
         <Card className={isMobile ? "p-3" : "p-4"}>
-          <h3 className={`font-semibold mb-3 ${isMobile ? "text-sm" : ""}`}>Players</h3>
+          <h3 className={`font-semibold mb-3 ${isMobile ? "text-sm" : ""}`}>{t('lobby.players')}</h3>
           <div className="flex flex-wrap gap-2">
             {syncState?.allPlayers?.map((player: any) => {
               const isCurrentPlayer = player.position === syncState?.currentPlayer;
@@ -621,8 +621,8 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 : "text-muted-foreground"
             )}>
               {syncState?.currentPlayer === syncState?.playerPosition 
-                ? "🎯 Jouw beurt!" 
-                : `Beurt van ${syncState?.allPlayers?.find(p => p.position === syncState?.currentPlayer)?.username || 'Speler'}`
+                ? `🎯 ${t('game.yourTurn')}!`
+                : t('game.turnOf', { name: syncState?.allPlayers?.find(p => p.position === syncState?.currentPlayer)?.username || t('game.player') })
               }
             </div>
           </div>
@@ -708,7 +708,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   size="sm"
                   className={`text-xs ${shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
                 >
-                  Pas
+                  {t('game.pass')}
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -719,7 +719,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   size="sm"
                   className="text-xs"
                 >
-                  {isFixingTable ? 'Fixen...' : 'Fix stenen'}
+                  {isFixingTable ? t('game.fixing') : t('game.fixTiles')}
                 </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
@@ -728,7 +728,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   size="sm"
                   className="text-xs bg-slate-100 hover:bg-slate-200"
                 >
-                  🔧 Check Blocked
+                  🔧 {t('game.checkBlocked')}
                 </Button>
 {canHardSlam && (
                   <Button
@@ -746,13 +746,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     )}
                   >
-                    {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
+                    {hardSlamActive ? `${t('game.hardSlamReady')} 🔥` : `${t('game.hardSlam')} 💥`}
                   </Button>
                 )}
               </div>
               {gameState?.isGameOver && (
                 <div className="text-center">
-                  <span className="text-sm font-semibold text-green-600 block mb-2">Game Over!</span>
+                  <span className="text-sm font-semibold text-green-600 block mb-2">{t('game.gameOver')}!</span>
                   {!showGameOverDialog && (
                     <Button 
                       size="sm" 
@@ -761,7 +761,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                       className="text-xs"
                     >
                       <Trophy className="h-3 w-3 mr-1" />
-                      Resultaat tonen
+                      {t('game.showResult')}
                     </Button>
                   )}
                 </div>
@@ -778,7 +778,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   className="flex items-center space-x-2"
                 >
                   {boneyardViewEnabled && <Grid3X3 className="h-4 w-4" />}
-                  <span>Draw from Boneyard ({gameState?.boneyard?.length || 0})</span>
+                  <span>{t('game.drawFromBoneyard')} ({gameState?.boneyard?.length || 0})</span>
                 </Button>
                 <Button 
                   onClick={passMove}
@@ -786,14 +786,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   variant={shouldEnablePassButton ? "destructive" : "outline"}
                   className={shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
                 >
-                  Pas
+                  {t('game.pass')}
                 </Button>
                 <Button
                   onClick={handleFixTable}
                   disabled={!canFixTable}
                   variant="outline"
                 >
-                  {isFixingTable ? 'Fixen...' : 'Fix stenen'}
+                  {isFixingTable ? t('game.fixing') : t('game.fixTiles')}
                 </Button>
                 <Button 
                   onClick={() => gameHook.manualBlockedCheck?.()}
@@ -801,7 +801,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   variant="outline"
                   className="bg-slate-100 hover:bg-slate-200"
                 >
-                  🔧 Check Blocked
+                  🔧 {t('game.checkBlocked')}
                 </Button>
                 {canHardSlam && (
                   <Button
@@ -818,14 +818,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     )}
                   >
-                    {hardSlamActive ? "Hard Slam Ready! 🔥" : "Hard Slam! 💥"}
+                    {hardSlamActive ? `${t('game.hardSlamReady')} 🔥` : `${t('game.hardSlam')} 💥`}
                   </Button>
                 )}
               </div>
               <div className="text-sm text-muted-foreground flex items-center">
                 {gameState?.isGameOver ? (
                   <>
-                    <span className="font-semibold text-green-600 mr-2">Game Over!</span>
+                    <span className="font-semibold text-green-600 mr-2">{t('game.gameOver')}!</span>
                     {!showGameOverDialog && (
                       <Button 
                         size="sm" 
@@ -834,12 +834,12 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                         className="text-xs py-1 h-7"
                       >
                         <Trophy className="h-3 w-3 mr-1" />
-                        Resultaat tonen
+                        {t('game.showResult')}
                       </Button>
                     )}
                   </>
                 ) : (
-                  <span>Game in progress...</span>
+                  <span>{t('game.inProgress')}</span>
                 )}
               </div>
             </div>
@@ -856,7 +856,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
           <DialogContent className={isMobile ? "max-w-[95vw] max-h-[85vh]" : "sm:max-w-2xl"}>
             <DialogHeader>
               <DialogTitle className={`text-center ${isMobile ? "text-base" : ""}`}>
-                Kies een steen uit de boneyard
+                {t('game.chooseBoneyardTile')}
               </DialogTitle>
             </DialogHeader>
             {adminBoneyardFaceUp ? (
@@ -913,12 +913,12 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                 {didIWin ? (
                   <>
                     <Trophy className="w-8 h-8 text-yellow-500 animate-bounce" />
-                    Gefeliciteerd!
+                    {t('game.congratulations')}
                     <Trophy className="w-8 h-8 text-yellow-500 animate-bounce" />
                   </>
                 ) : (
                   <>
-                    😔 Helaas! 😔
+                    😔 {t('game.unfortunately')} 😔
                   </>
                 )}
               </DialogTitle>
@@ -937,14 +937,14 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                    {/* Winner Message */}
                    <div className="bg-white/70 rounded-lg p-4 border border-yellow-200">
                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                       🎉 Je hebt gewonnen! 🎉
+                        🎉 {t('game.youWin')} 🎉
                      </h3>
                      <p className="text-gray-600">
                        {(gameState as any)?.gameEndReason === 'changa'
-                         ? "CHANGA! Je hebt gewonnen met CHANGA!"
+                          ? t('game.winChanga')
                          : isBlockedGame 
-                           ? "Spel geblokkeerd! Je hebt gewonnen met de minste punten!" 
-                           : "Je hebt alle dominostenen succesvol gespeeld!"
+                            ? t('game.winBlocked')
+                            : t('game.winAllPlayed')
                        }
                      </p>
                    </div>
@@ -968,18 +968,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                    {/* Loser Message */}
                    <div className="bg-white/70 rounded-lg p-4 border border-red-200">
                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                       Je hebt verloren!
+                        {t('game.youLose')}
                      </h3>
                      <p className="text-gray-600">
                        {(gameState as any)?.gameEndReason === 'changa'
-                         ? "CHANGA! Een andere speler won met CHANGA."
+                          ? t('game.loseChanga')
                          : isBlockedGame 
-                           ? "Spel geblokkeerd! Een andere speler had minder punten." 
-                           : "Een andere speler heeft alle stenen als eerste gespeeld."
+                            ? t('game.loseBlocked')
+                            : t('game.loseAllPlayed')
                        }
                      </p>
                      <p className="text-sm text-gray-500 mt-2">
-                       Veel succes volgende keer! 🍀
+                        {t('game.goodLuck')} 🍀
                      </p>
                    </div>
                   
@@ -1000,7 +1000,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   className="font-medium py-3 text-base flex items-center justify-center shadow hover:shadow-md transition-all"
                 >
                   <Eye className="h-4 w-4 mr-2" />
-                  Spel bekijken
+                  {t('game.viewGame')}
                 </Button>
                 
                 <Button 
@@ -1012,7 +1012,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                       : 'bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white'
                   }`}
                 >
-                  🎮 {startingNewGame ? 'Starten...' : 'Nieuw Spel'}
+                  🎮 {startingNewGame ? t('game.starting') : t('game.startNew')}
                 </Button>
               </div>
             </div>

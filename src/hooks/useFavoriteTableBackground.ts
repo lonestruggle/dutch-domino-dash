@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 interface FavoriteTableBackground {
   id: string;
@@ -11,6 +12,7 @@ interface FavoriteTableBackground {
 }
 
 export const useFavoriteTableBackground = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [favoriteBackground, setFavoriteBackground] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,8 +55,8 @@ export const useFavoriteTableBackground = () => {
       
       if (userError || !userData.user) {
         toast({
-          title: "Fout",
-          description: "Je moet ingelogd zijn om een favoriet in te stellen",
+          title: t('common.error'),
+          description: t('favorites.loginRequired'),
           variant: "destructive",
         });
         return;
@@ -90,17 +92,17 @@ export const useFavoriteTableBackground = () => {
       setFavoriteBackground(backgroundUrl);
       
       toast({
-        title: "Succes",
+        title: t('common.success'),
         description: backgroundUrl 
-          ? "Favoriet tafel achtergrond ingesteld" 
-          : "Favoriet tafel achtergrond verwijderd",
+          ? t('favorites.tableBackgroundSet')
+          : t('favorites.tableBackgroundRemoved'),
       });
 
     } catch (error) {
       console.error('Error setting favorite table background:', error);
       toast({
-        title: "Fout",
-        description: "Kon favoriet niet instellen",
+        title: t('common.error'),
+        description: t('favorites.setFailed'),
         variant: "destructive",
       });
     }
