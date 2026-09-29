@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 import { useStonePhysics } from '@/hooks/useStonePhysics';
 import { supabase } from '@/integrations/supabase/client';
 import dominoTable1 from '@/assets/domino-table-1.webp';
@@ -119,6 +120,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   hardSlamMode,
   isMyTurn = true
 }) => {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
