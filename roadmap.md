@@ -33,3 +33,5 @@
 - [x] Wega-meldingen en claimscherm gekoppeld aan NL/EN
 - [x] Profielstatus en uitnodigingen gekoppeld aan NL/EN
 - [x] Engelse spelknoppen en locale-sleutels gecontroleerd; build OK
+
+- [ ] Nieuwe mobiele ontwerpopties voor het spelscherm tonen; eerdere filmische richting niet gebruiken.
