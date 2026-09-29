@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Play, Users, UserCircle, LogOut, LogIn, Settings, UserPlus } from 'lucide-react';
 import { DominoIcon } from '@/components/DominoIcon';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { IS_DESKTOP } from '@/lib/platform';
 
 export default function Home() {
   const navigate = useNavigate();
