@@ -539,7 +539,7 @@ export default function Lobby() {
           <CardContent className="space-y-4">
             {/* Versiebeheer + mismatch waarschuwing */}
             {(() => {
-              const lobbyVer = (lobby.game_version ?? 'stable') as GameVersion;
+              const lobbyVer = (lobby.game_version ?? 'beta') as GameVersion;
               const mismatched = lobby.players.filter(
                 (p) => !p.is_bot && p.user_id && p.client_version && p.client_version !== lobbyVer
               );
