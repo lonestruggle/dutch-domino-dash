@@ -225,7 +225,7 @@ export const TableBackgroundManager: React.FC<TableBackgroundManagerProps> = ({ 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
-            Nieuwe Tafel Achtergrond Uploaden
+            {t('bg.uploadNew')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -278,7 +278,7 @@ export const TableBackgroundManager: React.FC<TableBackgroundManagerProps> = ({ 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5" />
-            Beheer Tafel Achtergronden ({backgrounds.length})
+            {t('bg.manage', { count: backgrounds.length })}
           </CardTitle>
         </CardHeader>
         <CardContent>

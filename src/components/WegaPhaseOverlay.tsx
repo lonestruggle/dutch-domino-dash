@@ -103,7 +103,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
         if (error) throw error;
         const res = data as any;
         if (res?.blocked) {
-          toast({ title: 'Spel stilgelegd!', description: 'Iemand heeft een eerdere steen verzuimd te claimen.', variant: 'destructive' });
+          toast({ title: t('wega.halted'), description: t('wega.missedClaimToast'), variant: 'destructive' });
         }
         onChanged();
       } catch (e: any) {
@@ -158,7 +158,7 @@ export const WegaPhaseOverlay: React.FC<Props> = ({ lobbyId, gameState, playerPo
 
             {missed.length > 0 && (
               <div className="text-xs text-orange-300/80 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> {missed.length} steen/stenen verzuimd — spel wordt geblokkeerd bij volgende claim
+                <AlertTriangle className="h-3 w-3" /> {t('wega.missedCount', { count: missed.length })}
               </div>
             )}
           </div>

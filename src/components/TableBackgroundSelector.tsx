@@ -84,7 +84,7 @@ export const TableBackgroundSelector: React.FC<TableBackgroundSelectorProps> = (
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Tafel Achtergrond</CardTitle>
+        <CardTitle className="text-lg">{t('bg.table')}</CardTitle>
         <p className="text-sm text-muted-foreground">
           {t('bg.chooseTable')}
         </p>
