@@ -27,3 +27,10 @@
 - [x] Reproduceren: plaatsing hield 7 stenen (bug bevestigd)
 - [x] Fix: executeMove gebruikt nu localPlayerPosition als actor zonder actorPosition
 - [x] Windows-pakket herbouwd (wegidomino-windows.zip)
+
+## Hertest volledige NL/EN vertaling
+- [x] Spelknoppen, beurtstatus, boneyard en eindscherm gekoppeld aan NL/EN
+- [x] Wega-meldingen en claimscherm gekoppeld aan NL/EN
+- [x] Profielstatus en uitnodigingen gekoppeld aan NL/EN
+- [ ] Engelse spelweergave en controles verifiëren
+- [ ] Windows-pakket opnieuw bouwen
