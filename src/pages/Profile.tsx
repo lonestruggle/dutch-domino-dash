@@ -69,6 +69,26 @@ const statusTranslationKey = (status: string) => {
   return keys[status] || 'profile.statusAvailable';
 };
 
+const statusStorageValue = (status: string) => {
+  const values: Record<string, string> = {
+    available: 'Beschikbaar',
+    playing: 'Aan het spelen',
+    away: 'Afwezig',
+    dnd: 'Niet storen',
+  };
+  return values[status] || status;
+};
+
+const statusSelectValue = (status: string) => {
+  const values: Record<string, string> = {
+    Beschikbaar: 'available',
+    'Aan het spelen': 'playing',
+    Afwezig: 'away',
+    'Niet storen': 'dnd',
+  };
+  return values[status] || status || 'available';
+};
+
 const Profile = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
@@ -132,7 +152,7 @@ const Profile = () => {
 
       setFormData({
         username: data.username || '',
-        status: data.status || 'available',
+        status: statusSelectValue(data.status),
         bio: data.bio || '',
       });
 
@@ -251,7 +271,7 @@ const Profile = () => {
         .from('profiles')
         .update({
           username: formData.username.trim(),
-          status: formData.status,
+          status: statusStorageValue(formData.status),
           bio: formData.bio.trim(),
         })
         .eq('user_id', user.id);

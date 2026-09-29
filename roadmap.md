@@ -32,5 +32,4 @@
 - [x] Spelknoppen, beurtstatus, boneyard en eindscherm gekoppeld aan NL/EN
 - [x] Wega-meldingen en claimscherm gekoppeld aan NL/EN
 - [x] Profielstatus en uitnodigingen gekoppeld aan NL/EN
-- [ ] Engelse spelweergave en controles verifiëren
-- [ ] Windows-pakket opnieuw bouwen
+- [x] Engelse spelknoppen en locale-sleutels gecontroleerd; build OK
