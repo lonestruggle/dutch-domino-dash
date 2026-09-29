@@ -1,4 +1,43 @@
 import { useEffect, useRef, useState } from "react";
+import { DominoTile } from "@/components/DominoTile";
+import { PlayerHand } from "@/components/PlayerHand";
+import { BoneyardTile } from "@/components/BoneyardTile";
+import type { DominoData } from "@/types/domino";
+
+const DEMO_HAND: DominoData[] = [
+  { value1: 6, value2: 4 }, { value1: 3, value2: 3 }, { value1: 2, value2: 5 },
+  { value1: 1, value2: 6 }, { value1: 0, value2: 4 }, { value1: 5, value2: 5 }, { value1: 2, value2: 3 },
+];
+const DEMO_CHAIN: DominoData[] = [
+  { value1: 4, value2: 1 }, { value1: 1, value2: 6 }, { value1: 6, value2: 6 }, { value1: 6, value2: 2 }, { value1: 2, value2: 0 },
+];
+
+function DemoChain({ chain }: { chain: DominoData[] }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+      <div className="flex items-center gap-[3px] scale-[0.72] sm:scale-90">
+        {chain.map((d, i) => (
+          <div key={i} style={{ transform: `rotate(${((i * 37) % 7) - 3}deg)` }}>
+            <DominoTile data={d} orientation={d.value1 === d.value2 ? "vertical" : "horizontal"} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OpponentTiles({ count, vertical }: { count: number; vertical?: boolean }) {
+  return (
+    <div className={`flex ${vertical ? "flex-col" : "flex-row"} gap-0.5 scale-50 origin-center pointer-events-none`}>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="relative" style={{ width: vertical ? 44 : 22, height: vertical ? 22 : 44 }}>
+          <BoneyardTile index={i} onClick={() => {}} placement={{ x: 0, y: 0, rotation: vertical ? 90 : 0 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 
 /**
  * TAFEL-DEMO (voorbeeld)
@@ -863,7 +902,13 @@ export default function TableDemo() {
         </div>
 
         {/* Table canvas */}
-        <canvas ref={canvasRef} className="max-w-full max-h-full rounded-3xl transition duration-300 z-10" />
+        <div className="tdemo-table relative z-10 max-w-full max-h-full">
+          <canvas ref={canvasRef} className="max-w-full max-h-full rounded-3xl block" />
+          <DemoChain chain={chain} />
+          <div className="absolute top-[14%] left-1/2 -translate-x-1/2 z-10"><OpponentTiles count={7} /></div>
+          <div className="absolute left-[12%] top-1/2 -translate-y-1/2 z-10"><OpponentTiles count={7} vertical /></div>
+          <div className="absolute right-[12%] top-1/2 -translate-y-1/2 z-10"><OpponentTiles count={7} vertical /></div>
+        </div>
 
         {/* Toast */}
         <div
@@ -874,6 +919,11 @@ export default function TableDemo() {
           {toast || "Tafel Gereed"}
         </div>
       </main>
+
+      {/* Eigen hand: exact dezelfde stenen/hand als in het spel */}
+      <div className="relative z-30 w-full">
+        <PlayerHand hand={hand} selectedIndex={selected} onDominoSelect={handleSelect} isMyTurn />
+      </div>
 
       {/* Bottom bar */}
       <footer className="tdemo-glass-bar mx-auto mb-2.5 rounded-2xl w-[96%] max-w-4xl p-2.5 sm:p-3.5 flex flex-col items-center shadow-2xl z-30">
@@ -946,17 +996,17 @@ const tdemoStyles = `
   transition: perspective 0.4s ease;
 }
 
-.tdemo-stage.view-3d canvas {
+.tdemo-stage.view-3d .tdemo-table {
   transform: rotateX(23deg) scale(0.96);
   filter: drop-shadow(0 42px 35px rgba(0, 0, 0, 0.85)) drop-shadow(0 15px 15px rgba(0, 0, 0, 0.6));
 }
 
-.tdemo-stage.view-flat canvas {
+.tdemo-stage.view-flat .tdemo-table {
   transform: rotateX(0deg) scale(1);
   filter: drop-shadow(0 25px 30px rgba(0, 0, 0, 0.75));
 }
 
-.tdemo-stage canvas {
+.tdemo-stage .tdemo-table {
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.45s ease;
   transform-origin: center bottom;
 }
