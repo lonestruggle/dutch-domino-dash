@@ -40,3 +40,4 @@
 - [ ] Mobiel spelerscherm: voorbeelden maken op basis van Domino Legends D6-referentie (topbar RONDE/PUNTEN/TIJD, tafel met spelers eromheen, handdock onderaan) — spel zelf ongewijzigd. Wacht op keuze van de gebruiker.
 - [ ] Spelerscherm-voorbeelden: platte HTML-prototypes afgewezen ("lijken niet op het voorbeeld"); realistische mockup-beelden genereren in Domino Legends D6-stijl (mahonie / tropisch / neon) en laten kiezen. Spel zelf ongewijzigd.
 - [ ] Spelerscherm-voorbeelden: eerste mockups nog te ver van de Domino Legends D6-referentie; opnieuw genereren met letterlijke opbouw (vierkante tafel, handen aan 4 kanten, HUD vast bovenin, menu rechts, KLAAAR/PAS rechtsonder).
+- [x] Tafel-demo nagebouwd als React-pagina /tafel-demo (3D-avatar tafel, canvas houten tafel, interactieknoppen); gecontroleerd met screenshots, build OK.
