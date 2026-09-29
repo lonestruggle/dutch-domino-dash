@@ -24,6 +24,6 @@
 - CanvasDemo: bewust niet vertalen (interne testpagina)
 
 ## Bug pc-versie: geplaatste stenen blijven in hand (huidige taak)
-- [ ] Reproduceren: single-player, steen plaatsen → check of tile uit hand verdwijnt
-- [ ] Oorzaak vinden en fixen (lokale hand-update / sync)
-- [ ] Windows-pakket herbouwen na fix
+- [x] Reproduceren: plaatsing hield 7 stenen (bug bevestigd)
+- [x] Fix: executeMove gebruikt nu localPlayerPosition als actor zonder actorPosition
+- [x] Windows-pakket herbouwd (wegidomino-windows.zip)
