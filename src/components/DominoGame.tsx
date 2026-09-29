@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { GameBoard } from '@/components/GameBoard';
 import { PlayerHand } from '@/components/PlayerHand';
 import { Card } from '@/components/ui/card';
@@ -26,6 +27,7 @@ interface DominoGameProps {
 }
 
 export const DominoGame = ({ gameHook }: DominoGameProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { startShakeAnimation, isAnimating: isVisualAnimating } = useGameVisualSettings();
@@ -676,7 +678,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     orientation={domino.value1 === domino.value2 ? 'vertical' : 'horizontal'}
                   />
                 )) : (
-                  <p className="text-sm text-muted-foreground">Geen stenen in hand.</p>
+                  <p className="text-sm text-muted-foreground">{t('game.noTilesInHand')}</p>
                 )}
               </div>
             </DialogContent>
@@ -874,7 +876,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     type="button"
                     onClick={() => handleBoneyardPick(index)}
                     className="relative cursor-pointer hover:scale-110 transition-all"
-                    aria-label="Trek deze steen"
+                    aria-label={t('game.drawTileAria')}
                   >
                     <DominoTile data={domino} orientation="horizontal" flipped={false} />
                   </button>
@@ -1021,15 +1023,15 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         <AlertDialog open={confirmNewGameOpen} onOpenChange={setConfirmNewGameOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Nieuw spel starten?</AlertDialogTitle>
+              <AlertDialogTitle>{t('game.newGameTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Dit reset het huidige spel voor alle spelers en wist het bord. Weet je het zeker?
+                {t('game.newGameBody')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="flex justify-end gap-2">
-              <AlertDialogCancel>Annuleren</AlertDialogCancel>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
               <AlertDialogAction onClick={actuallyStartNewGame} disabled={startingNewGame}>
-                {startingNewGame ? 'Starten...' : 'Start nieuw spel'}
+                {startingNewGame ? t('game.starting') : t('game.startNew')}
               </AlertDialogAction>
             </div>
           </AlertDialogContent>

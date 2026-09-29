@@ -3,6 +3,7 @@ import { BoneyardTile } from '@/components/BoneyardTile';
 import { DominoSkin } from '@/hooks/useDominoSkins';
 import { DominoTile } from '@/components/DominoTile';
 import type { DominoData } from '@/types/domino';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   /** Aantal vaste slots in de layout (default 26 voor Wega di sen). */
@@ -20,6 +21,7 @@ const TILE_H = 28;
 const MIN_DIST = 64;
 
 export const BoneyardScatter: React.FC<Props> = ({ slotCount = 26, available, skin, onPick, faceUpTiles }) => {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
@@ -92,7 +94,7 @@ export const BoneyardScatter: React.FC<Props> = ({ slotCount = 26, available, sk
               key={i}
               type="button"
               onClick={() => onPick(i)}
-              aria-label="Trek deze steen"
+              aria-label={t('game.drawTileAria')}
               className="absolute group cursor-pointer transition-all duration-200 hover:scale-110 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-md"
               style={{
                 left: p.x - 28,

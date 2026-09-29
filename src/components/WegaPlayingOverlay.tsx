@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Coins } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ interface Props {
  * (zoals in klassieke mode), zodat elk open einde speelbaar is.
  */
 export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, currentPlayer, playerPosition, allPlayers, autoPassEnabled }) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [busy, setBusy] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -83,9 +85,9 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, curren
     <>
     <div className="fixed top-20 right-4 z-40 bg-black/80 backdrop-blur-sm border border-yellow-400/40 rounded-lg px-3 py-2 flex items-center gap-3 text-xs text-white shadow-lg">
       <span className="flex items-center gap-1 text-yellow-300 font-semibold">
-        <Coins className="h-3.5 w-3.5" /> Wega — Inzet {stake}
+        <Coins className="h-3.5 w-3.5" /> {t('wega.titleShort', { stake })}
       </span>
-      {autoPass ? <span className="text-yellow-300/80">Auto-pas aan</span> : null}
+      {autoPass ? <span className="text-yellow-300/80">{t('wega.autoPassOn')}</span> : null}
       <Button size="sm" variant="destructive" disabled={!isMyTurn || busy} onClick={() => setConfirmOpen(true)} className="h-7 px-3 text-xs">
         Pas
       </Button>
@@ -93,14 +95,14 @@ export const WegaPlayingOverlay: React.FC<Props> = ({ lobbyId, gameState, curren
     <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Pas bevestigen</AlertDialogTitle>
+          <AlertDialogTitle>{t('wega.confirmPassTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Weet je zeker dat je wilt passen? Je betaalt {stake} coins aan de laatste plaatser (of meer bij openingsbonus).
+            {t('wega.confirmPassBody', { stake })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Annuleren</AlertDialogCancel>
-          <AlertDialogAction onClick={doPass} disabled={busy}>Pas</AlertDialogAction>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+          <AlertDialogAction onClick={doPass} disabled={busy}>{t('wega.pass')}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { skinBackgroundStyle, DominoSkin } from '@/hooks/useDominoSkins';
+import { useTranslation } from 'react-i18next';
 
 interface BoneyardTileProps {
   index: number;
@@ -18,6 +19,7 @@ interface BoneyardTileProps {
  * - Renders the host-chosen skin on the back
  */
 export const BoneyardTile: React.FC<BoneyardTileProps> = ({ index, skin, onClick, className, placement }) => {
+  const { t } = useTranslation();
   const seed = (index * 9301 + 49297) % 233280;
   const rand = (n: number) => ((seed * (n + 1)) % 100) / 100;
   const fallbackX = rand(1) * 14 - 7;
@@ -33,7 +35,7 @@ export const BoneyardTile: React.FC<BoneyardTileProps> = ({ index, skin, onClick
     <button
       type="button"
       onClick={onClick}
-      aria-label="Trek deze steen"
+      aria-label={t('game.drawTileAria')}
       className={cn(
         positioned
           ? 'absolute group cursor-pointer transition-all duration-200'
