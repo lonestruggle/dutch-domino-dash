@@ -35,3 +35,5 @@
 - [x] Engelse spelknoppen en locale-sleutels gecontroleerd; build OK
 
 - [ ] Nieuwe mobiele ontwerpopties voor het spelscherm tonen; eerdere filmische richting niet gebruiken.
+
+- [ ] Spelscherm mobiel herontwerpen in stijl van Domino Legends D6-voorbeeld: portret-layout, tegenstanders rond tafel met kleine stenen aan de randen, HUD bovenaan (ronde/punten/tijd), avatar onderaan, Klaar/Pas-knoppen; bestaande stenen en handrendering behouden; schaalt ook naar tablet/pc.
