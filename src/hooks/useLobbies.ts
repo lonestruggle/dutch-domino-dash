@@ -12,6 +12,7 @@ export interface Lobby {
   created_at: string;
   game_mode?: 'classic' | 'wega_di_sen';
   wega_stake?: number;
+  coin_reward?: number;
 }
 
 export const useLobbies = () => {
@@ -52,6 +53,7 @@ export const useLobbies = () => {
       player_count: lobby.lobby_players?.[0]?.count || 0,
       game_mode: ((lobby as any).game_mode ?? 'classic') as 'classic' | 'wega_di_sen',
       wega_stake: (lobby as any).wega_stake ?? 10,
+      coin_reward: (lobby as any).coin_reward ?? 5,
     })) || [];
 
     setLobbies(lobbiesWithCount);
@@ -64,6 +66,7 @@ export const useLobbies = () => {
     maxPlayers: number = 4,
     gameMode: 'classic' | 'wega_di_sen' = 'classic',
     wegaStake: number = 10,
+    coinReward: number = 5,
   ) => {
     if (!user) return { error: 'Not authenticated' };
 
@@ -85,6 +88,7 @@ export const useLobbies = () => {
         max_players: maxPlayers,
         game_mode: gameMode,
         wega_stake: wegaStake,
+        coin_reward: Math.min(10, Math.max(0, coinReward)),
       } as any)
       .select()
       .single();
