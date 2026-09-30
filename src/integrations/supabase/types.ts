@@ -471,6 +471,7 @@ export type Database = {
       }
       lobbies: {
         Row: {
+          coin_reward: number
           created_at: string
           created_by: string
           created_by_username: string | null
@@ -487,6 +488,7 @@ export type Database = {
           wega_stake: number
         }
         Insert: {
+          coin_reward?: number
           created_at?: string
           created_by: string
           created_by_username?: string | null
@@ -503,6 +505,7 @@ export type Database = {
           wega_stake?: number
         }
         Update: {
+          coin_reward?: number
           created_at?: string
           created_by?: string
           created_by_username?: string | null
@@ -616,11 +619,13 @@ export type Database = {
           id: string
           invitation_code: string | null
           invited_by: string | null
+          last_daily_bonus: string | null
           selected_glove_skin_id: string | null
           status: string | null
           updated_at: string | null
           user_id: string
           username: string
+          win_streak: number
         }
         Insert: {
           avatar_url?: string | null
@@ -632,11 +637,13 @@ export type Database = {
           id?: string
           invitation_code?: string | null
           invited_by?: string | null
+          last_daily_bonus?: string | null
           selected_glove_skin_id?: string | null
           status?: string | null
           updated_at?: string | null
           user_id: string
           username: string
+          win_streak?: number
         }
         Update: {
           avatar_url?: string | null
@@ -648,11 +655,13 @@ export type Database = {
           id?: string
           invitation_code?: string | null
           invited_by?: string | null
+          last_daily_bonus?: string | null
           selected_glove_skin_id?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string
           username?: string
+          win_streak?: number
         }
         Relationships: [
           {
@@ -973,6 +982,10 @@ export type Database = {
           ty: number
         }[]
       }
+      admin_adjust_coins: {
+        Args: { _amount: number; _mode: string; _target_user: string }
+        Returns: number
+      }
       admin_assign_glove_skin: {
         Args: { _skin_id: string; _target_user: string }
         Returns: undefined
@@ -994,6 +1007,7 @@ export type Database = {
         Returns: undefined
       }
       can_moderate: { Args: { _user_id: string }; Returns: boolean }
+      claim_daily_bonus: { Args: never; Returns: number }
       cleanup_expired_invitations: { Args: never; Returns: number }
       cleanup_expired_lobbies: { Args: never; Returns: number }
       get_active_season_id: { Args: never; Returns: string }
