@@ -31,6 +31,16 @@ export default function Lobbies() {
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [gameMode, setGameMode] = useState<'classic' | 'wega_di_sen'>('classic');
   const [wegaStake, setWegaStake] = useState<number>(10);
+  const [coinReward, setCoinReward] = useState<number>(5);
+  const [canClaimDaily, setCanClaimDaily] = useState(false);
+
+  const claimDaily = async () => {
+    const { data, error } = await (supabase.rpc as any)('claim_daily_bonus');
+    if (error) { toast({ title: t('common.error'), description: error.message, variant: 'destructive' }); return; }
+    if (data === null) { toast({ title: t('lobbies.dailyAlready') }); setCanClaimDaily(false); return; }
+    setMyCoins(data as number); setCanClaimDaily(false);
+    toast({ title: t('lobbies.dailyClaimed') });
+  };
 
   useEffect(() => {
     if (!wegaEnabled && gameMode === 'wega_di_sen') {
@@ -57,13 +67,16 @@ export default function Lobbies() {
     if (!user) return;
     const { data } = await supabase
       .from('profiles')
-      .select('username, coins')
+      .select('username, coins, last_daily_bonus')
       .eq('user_id', user.id)
       .single();
     
     if (data) {
       setDisplayUsername(data.username);
       setMyCoins((data as any).coins ?? 0);
+      const last = (data as any).last_daily_bonus as string | null;
+      const today = new Date().toISOString().slice(0, 10);
+      setCanClaimDaily(!last || last < today);
     }
   };
 
@@ -87,6 +100,7 @@ export default function Lobbies() {
       maxPlayers,
       gameMode,
       gameMode === 'wega_di_sen' ? Math.max(1, wegaStake) : 10,
+      coinReward,
     );
     
     if (error) {
@@ -183,6 +197,11 @@ export default function Lobbies() {
                   <Coins className="h-3 w-3" /> {myCoins}
                 </span>
               )}
+              {canClaimDaily && (
+                <button onClick={claimDaily} className="rounded-full bg-yellow-500 px-2 py-0.5 text-xs font-semibold text-black hover:bg-yellow-400">
+                  {t('lobbies.dailyBonus')}
+                </button>
+              )}
             </p>
           </div>
           <div className="flex w-full sm:w-auto gap-2 sm:justify-end">
@@ -236,6 +255,18 @@ export default function Lobbies() {
                         )}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="coinReward">{t('lobbies.rewardLabel')}</Label>
+                    <Input
+                      id="coinReward"
+                      type="number"
+                      min={0}
+                      max={10}
+                      value={coinReward}
+                      onChange={(e) => setCoinReward(Math.min(10, Math.max(0, parseInt(e.target.value) || 0)))}
+                      className="bg-white text-black"
+                    />
                   </div>
                   {gameMode === 'wega_di_sen' && (
                     <div>

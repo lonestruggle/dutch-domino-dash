@@ -22,6 +22,7 @@ import {
   Settings, Edit, RotateCcw, Key, UserCheck, UserMinus, ShieldCheck, Star, Zap, Copy, LogOut, Image as ImageIcon, FileText
 } from 'lucide-react';
 import { GameLogsViewer } from '@/components/admin/GameLogsViewer';
+import { CoinsManager } from '@/components/admin/CoinsManager';
 import {
   Select,
   SelectContent,
@@ -995,6 +996,10 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
               <Mail className="h-4 w-4" />
               Uitnodigingen
             </TabsTrigger>
+            <TabsTrigger value="coins" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
+              <Star className="h-4 w-4" />
+              Coins
+            </TabsTrigger>
             <TabsTrigger value="game-logs" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs sm:text-sm">
               <FileText className="h-4 w-4" />
               Game Logs
@@ -1775,6 +1780,10 @@ const [manageUser, setManageUser] = useState<UserProfile | null>(null);
           {/* Game Logs Tab */}
           <TabsContent value="game-logs">
             <GameLogsViewer />
+          </TabsContent>
+
+          <TabsContent value="coins">
+            <CoinsManager />
           </TabsContent>
 
           {/* Settings Tab */}
