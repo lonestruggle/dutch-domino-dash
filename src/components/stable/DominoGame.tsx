@@ -450,76 +450,94 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   return (
     <div className="min-h-screen bg-transparent p-2 md:p-4">
       <div className="max-w-6xl mx-auto space-y-3 md:space-y-6">
-        {/* Top Navigation - Always visible */}
-        <Card className="p-3 md:p-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
+        {/* Top Navigation - inklapbaar, standaard dicht */}
+        <Card className="p-2 md:p-3">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center space-x-2 md:space-x-4">
               <h2 className={`font-bold ${isMobile ? "text-lg" : "text-2xl"}`}>{t('home.title')}</h2>
               <Badge variant={isMyTurn ? "default" : "secondary"} className={isMobile ? "text-xs" : ""}>
                 {isMyTurn ? t('game.yourTurn') : t('game.turnOf', { name: currentPlayerName })}
               </Badge>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button 
-                onClick={() => navigate('/lobbies')}
-                variant="outline"
-                size={isMobile ? "sm" : "default"}
-                className="flex items-center space-x-1 md:space-x-2"
-              >
-                <ArrowLeft className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
-                <span className={isMobile ? "text-xs" : ""}>
-                  {isMobile ? t('game.lobby') : t('game.backToLobby')}
-                </span>
-              </Button>
-              <Button 
-                onClick={handleStartNewGame}
-                disabled={!syncState?.isHost || startingNewGame}
-                variant="default"
-                size={isMobile ? "sm" : "default"}
-                className={isMobile ? "text-xs" : ""}
-              >
-                {startingNewGame ? t('game.starting') : t('game.startNew')}
-              </Button>
-              {canInspectBotHands && (
+            <Button
+              variant="outline"
+              size={isMobile ? "sm" : "default"}
+              onClick={() => setHeaderOpen(v => !v)}
+              className="flex items-center gap-1"
+              aria-expanded={headerOpen}
+            >
+              <Menu className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
+              <span className={isMobile ? "text-xs" : ""}>{t('game.menu')}</span>
+              {headerOpen
+                ? <ChevronUp className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
+                : <ChevronDown className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />}
+            </Button>
+          </div>
+
+          {headerOpen && (
+            <div className="animate-accordion-down">
+              <div className="flex items-center justify-end flex-wrap gap-2 mt-3 pt-3 border-t">
                 <Button
-                  variant={devConsoleVisible ? "default" : "outline"}
+                  onClick={() => navigate('/lobbies')}
+                  variant="outline"
                   size={isMobile ? "sm" : "default"}
-                  onClick={() => setDevConsoleVisible(v => !v)}
-                  title={devConsoleVisible ? "Debug console verbergen" : "Debug console tonen"}
-                  className="p-2"
+                  className="flex items-center space-x-1 md:space-x-2"
                 >
-                  <Eye className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
+                  <ArrowLeft className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
+                  <span className={isMobile ? "text-xs" : ""}>
+                    {isMobile ? t('game.lobby') : t('game.backToLobby')}
+                  </span>
                 </Button>
-              )}
-              {!isMobile && (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="p-2"
+                  onClick={handleStartNewGame}
+                  disabled={!syncState?.isHost || startingNewGame}
+                  variant="default"
+                  size={isMobile ? "sm" : "default"}
+                  className={isMobile ? "text-xs" : ""}
                 >
-                  {showMobileMenu ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                  {startingNewGame ? t('game.starting') : t('game.startNew')}
                 </Button>
-              )}
+                {canInspectBotHands && (
+                  <Button
+                    variant={devConsoleVisible ? "default" : "outline"}
+                    size={isMobile ? "sm" : "default"}
+                    onClick={() => setDevConsoleVisible(v => !v)}
+                    title={devConsoleVisible ? "Debug console verbergen" : "Debug console tonen"}
+                    className="p-2"
+                  >
+                    <Eye className={`${isMobile ? "h-3 w-3" : "h-4 w-4"}`} />
+                  </Button>
+                )}
+                {!isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowMobileMenu(!showMobileMenu)}
+                    className="p-2"
+                  >
+                    {showMobileMenu ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                  </Button>
+                )}
+              </div>
+
+              {/* Game Info Row */}
+              <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                <span className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
+                  {t('game.boneyard')}: {gameState?.boneyard?.length || 0} {isMobile ? "" : t('game.tiles')}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={boneyardViewEnabled}
+                    onCheckedChange={setBoneyardViewEnabled}
+                    id="boneyard-view"
+                  />
+                  <label htmlFor="boneyard-view" className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
+                    {t('game.boneyardView')}
+                  </label>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          {/* Game Info Row */}
-          <div className="flex items-center justify-between mt-3 pt-3 border-t">
-            <span className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
-              {t('game.boneyard')}: {gameState?.boneyard?.length || 0} {isMobile ? "" : t('game.tiles')}
-            </span>
-            <div className="flex items-center space-x-2">
-              <Switch 
-                checked={boneyardViewEnabled}
-                onCheckedChange={setBoneyardViewEnabled}
-                id="boneyard-view"
-              />
-              <label htmlFor="boneyard-view" className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
-                {t('game.boneyardView')}
-              </label>
-            </div>
-          </div>
+          )}
         </Card>
 
         {showDevLockstepInfo && (
