@@ -72,6 +72,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
   const [boneyardViewEnabled, setBoneyardViewEnabled] = useState(false);
   const [previewDomino, setPreviewDomino] = useState<{ domino: DominoData; index: number } | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [headerOpen, setHeaderOpen] = useState(false);
   const [visibleBotHandPosition, setVisibleBotHandPosition] = useState<number | null>(null);
   const [fixShapeIndex, setFixShapeIndex] = useState(0);
   const [isFixingTable, setIsFixingTable] = useState(false);
