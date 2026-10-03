@@ -2184,20 +2184,28 @@ export default function Game() {
 
         const wonByChanga = gameState.gameEndReason === 'changa';
 
-        const players: GameOutcomePlayerPayload[] = syncState.allPlayers.flatMap((p, index) => {
+        // Gelijkspel: geblokkeerd spel waarbij meerdere spelers evenveel (laagste) ogen hebben
+        const pipTotals = syncState.allPlayers.map((_, i) =>
+          (hands[i] || []).reduce((s, d) => s + d.value1 + d.value2, 0));
+        const isBlocked = gameState.gameEndReason === 'blocked';
+        const minPips = pipTotals.length ? Math.min(...pipTotals) : 0;
+        const tiedPositions = isBlocked ? pipTotals.map((v, i) => (v === minPips ? i : -1)).filter(i => i >= 0) : [];
+        const isTie = tiedPositions.length > 1;
+
+        const players = syncState.allPlayers.flatMap((p, index) => {
           if (!p.user_id) return []; // sla bots of onbekenden over
 
-          const hand = hands[index] || [];
-          const pips_remaining = hand.reduce((sum, d) => sum + d.value1 + d.value2, 0);
+          const pips_remaining = pipTotals[index];
           return [{
             user_id: p.user_id,
             player_position: index,
             points_scored: 0,
             pips_remaining,
-            won: index === winnerPos,
+            won: !isTie && index === winnerPos,
             hard_slams_used: 0,
             turns_played: 0,
             won_by_changa: index === winnerPos ? wonByChanga : false,
+            tied: isTie && tiedPositions.includes(index),
           }];
         });
 

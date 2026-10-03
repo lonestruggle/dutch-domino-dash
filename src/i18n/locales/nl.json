@@ -215,7 +215,7 @@
     "toastJoinFail": "Kon niet deelnemen aan lobby",
     "toastDeleteFail": "Kon lobby niet verwijderen",
     "toastDeleteOk": "Lobby verwijderd",
-    "rewardLabel": "Coins voor de winnaar per potje (0-10)",
+    "rewardLabel": "Inzet per speler (0-10) – winnaar krijgt de pot, bij gelijkspel verdeeld",
     "dailyBonus": "Dagbonus +100",
     "dailyClaimed": "Dagbonus opgehaald: +100 coins!",
     "dailyAlready": "Je hebt je dagbonus vandaag al opgehaald.",

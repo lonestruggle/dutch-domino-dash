@@ -215,7 +215,7 @@
     "toastJoinFail": "Could not join lobby",
     "toastDeleteFail": "Could not delete lobby",
     "toastDeleteOk": "Lobby deleted",
-    "rewardLabel": "Coins for the winner per game (0-10)",
+    "rewardLabel": "Stake per player (0-10) – winner takes the pot, a tie splits it",
     "dailyBonus": "Daily bonus +100",
     "dailyClaimed": "Daily bonus claimed: +100 coins!",
     "dailyAlready": "You already claimed today's bonus.",
