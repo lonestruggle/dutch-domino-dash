@@ -13,7 +13,7 @@ import { DominoTile } from './DominoTile';
 import { BoneyardTile } from '@/components/BoneyardTile';
 import { BoneyardScatter } from '@/components/BoneyardScatter';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trophy, PartyPopper, Star, Eye, ArrowLeft, Grid3X3, Menu, X } from 'lucide-react';
+import { Trophy, PartyPopper, Star, Eye, ArrowLeft, Grid3X3, Menu, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGameVisualSettings } from '@/hooks/useGameVisualSettings';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
