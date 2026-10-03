@@ -421,7 +421,11 @@ export const PlayerHand: React.FC<PlayerHandProps> = React.memo(({
           const slotsForChunk = baseSlotsForChunk;
           const footprint = getHorizontalFootprint(slotsForChunk, desiredGloveWidth);
           const desiredTotalWidth = desiredGloveWidth + footprint.left + footprint.right;
-          const fitScale = Math.min(1, perGloveWidth / Math.max(1, desiredTotalWidth));
+          // Mobiel: de hele hand (handschoen + stenen) uniform verkleinen zodat
+          // het bord meer ruimte krijgt. Uniform schalen houdt de uitlijning
+          // van stenen op de sleuven exact intact.
+          const handShrink = isMobile ? 0.72 : 1;
+          const fitScale = Math.min(1, perGloveWidth / Math.max(1, desiredTotalWidth)) * handShrink;
           return (
             <div
               key={`glove-chunk-${chunkIdx}`}
