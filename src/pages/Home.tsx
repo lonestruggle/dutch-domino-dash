@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
-import { Play, Users, UserCircle, LogOut, LogIn, Settings, UserPlus } from 'lucide-react';
+import { Play, Users, UserCircle, LogOut, LogIn, Settings, UserPlus, Dices } from 'lucide-react';
 import { DominoIcon } from '@/components/DominoIcon';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { IS_DESKTOP } from '@/lib/platform';
@@ -205,6 +205,28 @@ export default function Home() {
                       {t('home.scoreboard')}
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-all duration-200 hover:scale-105 bg-white/10 backdrop-blur-md border-white/20 md:col-span-2">
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4 p-3 bg-white/20 rounded-full w-fit">
+                    <Dices className="h-8 w-8 text-white" />
+                  </div>
+                  <CardTitle className="text-xl text-white">{t('home.mensTitle')}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center space-y-4">
+                  <p className="text-white/80">
+                    {t('home.mensDesc')}
+                  </p>
+                  <Button
+                    onClick={() => navigate('/mens')}
+                    className="w-full bg-primary hover:bg-primary/80 text-white"
+                    size="lg"
+                  >
+                    <Dices className="mr-2 h-4 w-4" />
+                    {t('home.mensPlay')}
+                  </Button>
                 </CardContent>
               </Card>
             </div>
