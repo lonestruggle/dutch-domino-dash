@@ -461,5 +461,9 @@
     "depthTitle": "3D-Depth: til steen op",
     "liftTitle": "Til de eerste steen op (z=1) — botst niet meer met andere",
     "dropTitle": "Zet de eerste steen terug op tafel"
+  },
+  "mens": {
+    "pageTitle": "Mens-Erger-Je-Niet 3D",
+    "loading": "Mens-Erger-Je-Niet 3D wordt geladen…"
   }
 }
