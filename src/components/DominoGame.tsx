@@ -705,18 +705,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         )}
 
         {/* Game Actions */}
-        <Card className={isMobile ? "p-3" : "p-4"}>
+        <Card className={isMobile ? "p-2" : "p-4"}>
           <div id="playerhand-toolbar-slot" className="flex flex-wrap items-center gap-1 mb-2 empty:hidden" />
           {isMobile ? (
             /* Mobile Actions - Compact Layout */
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 <Button 
                   onClick={boneyardViewEnabled ? () => setShowBoneyardDialog(true) : drawFromBoneyard}
                   disabled={!gameState?.boneyard?.length || !isMyTurn}
                   variant="outline"
                   size="sm"
-                  className="text-xs"
+                  className="text-[11px] h-8 px-2"
                 >
                   Boneyard ({gameState?.boneyard?.length || 0})
                 </Button>
