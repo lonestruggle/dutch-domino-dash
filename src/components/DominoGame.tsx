@@ -757,7 +757,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     disabled={!canUseHardSlam || hardSlamActive || !isMyTurn}
                     size="sm"
                     className={cn(
-                      "text-xs transition-all duration-300",
+                      "text-[11px] h-8 px-2 transition-all duration-300",
                       hardSlamActive 
                         ? "bg-gradient-to-r from-orange-500 to-red-500 text-white animate-pulse shadow-lg shadow-orange-500/50" 
                         : canUseHardSlam 
