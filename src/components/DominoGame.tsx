@@ -745,7 +745,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   disabled={!isMyTurn}
                   variant="outline"
                   size="sm"
-                  className="text-xs bg-slate-100 hover:bg-slate-200"
+                  className="text-[11px] h-8 px-2 bg-slate-100 hover:bg-slate-200"
                 >
                   🔧 {t('game.checkBlocked')}
                 </Button>
