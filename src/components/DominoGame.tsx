@@ -592,9 +592,9 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         )}
 
         {/* Players List */}
-        <Card className={isMobile ? "p-3" : "p-4"}>
-          <h3 className={`font-semibold mb-3 ${isMobile ? "text-sm" : ""}`}>{t('lobby.players')}</h3>
-          <div className="flex flex-wrap gap-2">
+        <Card className={isMobile ? "p-2" : "p-4"}>
+          <h3 className={`font-semibold leading-none ${isMobile ? "mb-2 text-xs" : "mb-3 text-sm"}`}>{t('lobby.players')}</h3>
+          <div className="flex flex-wrap gap-1.5">
             {syncState?.allPlayers?.map((player: any) => {
               const isCurrentPlayer = player.position === syncState?.currentPlayer;
               const isMyTurn = syncState?.currentPlayer === syncState?.playerPosition && player.position === syncState?.playerPosition;
@@ -613,28 +613,28 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     }
                   } : undefined}
                   className={cn(
-                    "flex items-center space-x-1 transition-all duration-300",
-                    isMobile ? "text-xs" : "",
+                    "flex items-center space-x-1 px-2 py-0.5 transition-all duration-300",
+                    isMobile ? "text-[11px]" : "text-xs",
                     canOpenBotHand && "cursor-pointer hover:bg-accent hover:text-accent-foreground",
-                    isCurrentPlayer && "ring-2 ring-primary ring-offset-2 bg-primary text-primary-foreground",
+                    isCurrentPlayer && "ring-2 ring-primary ring-offset-1 bg-primary text-primary-foreground",
                     isMyTurn && "animate-pulse shadow-lg"
                   )}
                 >
                   <span>{player.username}</span>
-                  <span className="text-xs opacity-75">
+                  <span className="text-[10px] opacity-75">
                     ({gameState?.playerHands?.[player.position]?.length || 0})
                   </span>
                   {canOpenBotHand && <Eye className="ml-1 h-3 w-3" />}
-                  {isCurrentPlayer && <span className="text-xs ml-1">🎯</span>}
+                  {isCurrentPlayer && <span className="text-[10px] ml-1">🎯</span>}
                 </Badge>
               );
             })}
           </div>
           {/* Turn indicator */}
-          <div className="mt-3 pt-2 border-t">
+          <div className={isMobile ? "mt-2 pt-1.5 border-t" : "mt-3 pt-2 border-t"}>
             <div className={cn(
-              "text-center font-medium transition-all duration-300",
-              isMobile ? "text-sm" : "text-base",
+              "text-center font-medium leading-tight transition-all duration-300",
+              isMobile ? "text-xs" : "text-base",
               syncState?.currentPlayer === syncState?.playerPosition 
                 ? "text-primary animate-pulse" 
                 : "text-muted-foreground"
