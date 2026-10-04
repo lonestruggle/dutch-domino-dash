@@ -725,18 +725,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   disabled={!shouldEnablePassButton}
                   variant={shouldEnablePassButton ? "destructive" : "outline"}
                   size="sm"
-                  className={`text-xs ${shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
+                  className={`text-[11px] h-8 px-2 ${shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
                 >
                   {t('game.pass')}
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 <Button
                   onClick={handleFixTable}
                   disabled={!canFixTable}
                   variant="outline"
                   size="sm"
-                  className="text-xs"
+                  className="text-[11px] h-8 px-2"
                 >
                   {isFixingTable ? t('game.fixing') : t('game.fixTiles')}
                 </Button>
