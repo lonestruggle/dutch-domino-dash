@@ -771,13 +771,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               </div>
               {gameState?.isGameOver && (
                 <div className="text-center">
-                  <span className="text-sm font-semibold text-green-600 block mb-2">{t('game.gameOver')}!</span>
+                  <span className="text-xs font-semibold text-green-600 block mb-1">{t('game.gameOver')}!</span>
                   {!showGameOverDialog && (
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={() => setShowGameOverDialog(true)}
-                      className="text-xs"
+                      className="text-[11px] h-7 px-2"
                     >
                       <Trophy className="h-3 w-3 mr-1" />
                       {t('game.showResult')}
