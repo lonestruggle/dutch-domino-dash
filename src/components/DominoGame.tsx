@@ -705,18 +705,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
         )}
 
         {/* Game Actions */}
-        <Card className={isMobile ? "p-3" : "p-4"}>
+        <Card className={isMobile ? "p-2" : "p-4"}>
           <div id="playerhand-toolbar-slot" className="flex flex-wrap items-center gap-1 mb-2 empty:hidden" />
           {isMobile ? (
             /* Mobile Actions - Compact Layout */
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 <Button 
                   onClick={boneyardViewEnabled ? () => setShowBoneyardDialog(true) : drawFromBoneyard}
                   disabled={!gameState?.boneyard?.length || !isMyTurn}
                   variant="outline"
                   size="sm"
-                  className="text-xs"
+                  className="text-[11px] h-8 px-2"
                 >
                   Boneyard ({gameState?.boneyard?.length || 0})
                 </Button>
@@ -725,18 +725,18 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   disabled={!shouldEnablePassButton}
                   variant={shouldEnablePassButton ? "destructive" : "outline"}
                   size="sm"
-                  className={`text-xs ${shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
+                  className={`text-[11px] h-8 px-2 ${shouldEnablePassButton ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
                 >
                   {t('game.pass')}
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 <Button
                   onClick={handleFixTable}
                   disabled={!canFixTable}
                   variant="outline"
                   size="sm"
-                  className="text-xs"
+                  className="text-[11px] h-8 px-2"
                 >
                   {isFixingTable ? t('game.fixing') : t('game.fixTiles')}
                 </Button>
@@ -745,7 +745,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                   disabled={!isMyTurn}
                   variant="outline"
                   size="sm"
-                  className="text-xs bg-slate-100 hover:bg-slate-200"
+                  className="text-[11px] h-8 px-2 bg-slate-100 hover:bg-slate-200"
                 >
                   🔧 {t('game.checkBlocked')}
                 </Button>
@@ -757,7 +757,7 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
                     disabled={!canUseHardSlam || hardSlamActive || !isMyTurn}
                     size="sm"
                     className={cn(
-                      "text-xs transition-all duration-300",
+                      "text-[11px] h-8 px-2 transition-all duration-300",
                       hardSlamActive 
                         ? "bg-gradient-to-r from-orange-500 to-red-500 text-white animate-pulse shadow-lg shadow-orange-500/50" 
                         : canUseHardSlam 
@@ -771,13 +771,13 @@ export const DominoGame = ({ gameHook }: DominoGameProps) => {
               </div>
               {gameState?.isGameOver && (
                 <div className="text-center">
-                  <span className="text-sm font-semibold text-green-600 block mb-2">{t('game.gameOver')}!</span>
+                  <span className="text-xs font-semibold text-green-600 block mb-1">{t('game.gameOver')}!</span>
                   {!showGameOverDialog && (
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={() => setShowGameOverDialog(true)}
-                      className="text-xs"
+                      className="text-[11px] h-7 px-2"
                     >
                       <Trophy className="h-3 w-3 mr-1" />
                       {t('game.showResult')}
